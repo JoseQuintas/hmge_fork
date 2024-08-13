@@ -39,7 +39,7 @@ FUNCTION Main()
 
       DEFINE TBROWSE obrw AT 115, 40 ;
          CELLED SELECTOR "pointer.bmp" ;
-         COLORS CLR_BLACK, CLR_WHITE, CLR_BLACK, { RGB( 231, 242, 255 ), GetSysColor( COLOR_GRADIENTINACTIVECAPTION ) } ;
+         COLORS CLR_BLACK, CLR_WHITE, CLR_BLACK, { RGB( 230, 240, 255 ), GetSysColor( COLOR_GRADIENTINACTIVECAPTION ) } ;
          ALIAS Alias() ;
          WIDTH win_1.Width - 70 - GetBorderWidth() HEIGHT 220 ;
          ON INIT {| ob | TsbCreate( ob, .T. ) }
@@ -67,16 +67,16 @@ STATIC PROCEDURE TsbCreate( obrw, lInit )
 
       LoadFields( "oBrw", "win_1", .F., aFields )
 
-      FOR EACH oCol IN oBrw:aColumns
-         oCol:cHeading := oCol:cName
-      NEXT
+      AEval( oBrw:aColumns, {|oCol| oCol:lFixLite := .T., oCol:cHeading := oCol:cName } )
 
       WITH OBJECT oBrw
          :nHeightCell += 4
          :nHeightHead := oBrw:nHeightCell - 2
 
-         :SetColor( { 5 }, { CLR_WHITE } )
-         :SetColor( { 6 }, { RGB( 0, 0, 128 ) } )
+         :SetColor( { 5 }, { { |nAt,nNr,oBr| nAt := Nil, ;
+                      If( oBr:nCell == nNr, RGB( 250, 230, 250 ), CLR_BLACK ) } } )
+         :SetColor( { 6 }, { { |nAt,nNr,oBr| nAt := Nil, ;
+                      If( oBr:nCell == nNr, RGB( 0, 0, 128 ), RGB( 230, 230, 230 ) ) } } )
 
          :SetAppendMode( .F. )
          :SetDeleteMode( .T., .F. )

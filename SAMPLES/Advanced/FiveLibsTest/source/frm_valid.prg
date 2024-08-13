@@ -8,6 +8,9 @@ FUNCTION frm_Valid( aItem, Self )
 
    LOCAL nSelect, lFound := .T., xValue, nPos
 
+   IF ! gui_IsCurrentFocus( ::xDlg )
+      RETURN .F.
+   ENDIF
    // if btn cancel abort validate (current on hwgui only)
    nPos := hb_AScan( ::aControlList, { | e | e[ CFG_CTLTYPE ] == TYPE_BUTTON .AND. ;
       e[ CFG_CAPTION ] == "Cancel" } )
@@ -32,7 +35,8 @@ FUNCTION frm_Valid( aItem, Self )
          ENDIF
       ELSE
          IF Eof()
-            gui_Msgbox( "Code not found" )
+            gui_Msgbox( "Code not found " + alias() + " " + hb_ValToExp( xValue )  + ;
+               " index " + Str( IndexOrd() ) )
             gui_SetFocus( ::xDlg, aItem[ CFG_FCONTROL ] ) // minigui need this
             RETURN .F.
          ENDIF

@@ -1,1 +1,1 @@
-call ..\..\..\build.bat demo3.hbp
+call ..\..\..\batch\hbmk2.bat %* demo.hbp

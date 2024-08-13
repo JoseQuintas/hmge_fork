@@ -20,7 +20,7 @@ FUNCTION MsgAbout(hIcon,nIcoSize)
    LOCAL r := _HMG_MouseRow
    DEFAULT hIcon := nIcoSize := 0
 
-   aTmpClr  := _SetMsgAlertColors()  
+   aTmpClr  := _SetMsgAlertColors()
    //aTmpClr  := _SetMsgAlertColors(aBClr,aFClr)  // новые цвета
    //SET MSGALERT BACKCOLOR TO { 159, 191, 236 } STOREIN aTmpClr
    //SET MSGALERT FONTCOLOR TO BLUE

@@ -15,7 +15,7 @@
 FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, aFnt, nwPost, lBlock )
    LOCAL aGrOver, aGrFill, nSizeIcon, lSizeIcon, y1, x1, lTextVertical
    DEFAULT cCapt    := "" , aFntClr := {  BLACK, YELLOW }
-   DEFAULT aFnt     := { "Tahona", 12 , .T. , .F. } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
+   DEFAULT aFnt     := { "Tahoma", 12 , .T. , .F. } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
    DEFAULT aBtnGrad := {} , aBtnClr := { BLUE, YELLOW }
    DEFAULT lBlock   := .F. // не блокировать кнопки
 

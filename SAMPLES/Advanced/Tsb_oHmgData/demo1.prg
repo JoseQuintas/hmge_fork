@@ -10,7 +10,8 @@
 REQUEST HB_CODEPAGE_UTF8, HB_CODEPAGE_RU866, HB_CODEPAGE_RU1251
 REQUEST DBFNTX, DBFCDX, DBFFPT
 
-#define SHOW_TITLE  "Testing columns + SUMMA in Tsbrowse for a dbf file"
+#define PROGRAM  "Testing columns in Tsbrowse for a dbf file (2)"
+#define PROGVER  "Version 0.3 (01.07.2024)"
 #define LANG_PRG "EN"  // "EN" English interface-lang
 
 FUNCTION Main()
@@ -32,10 +33,11 @@ FUNCTION Main()
    nW := Sys.ClientWidth
    nH := Sys.ClientHeight
 
-   DEFINE WINDOW &cForm AT nY, nX WIDTH nW HEIGHT nH TITLE SHOW_TITLE ;
-      MAIN NOSIZE TOPMOST                                             ;
-      BACKCOLOR aBColor                                               ;
-      ON INIT    _wPost( 0)                                           ;
+   DEFINE WINDOW &cForm AT nY, nX WIDTH nW HEIGHT nH ;
+      TITLE PROGRAM + SPACE(5) + PROGVER             ;
+      MAIN NOSIZE TOPMOST                            ;
+      BACKCOLOR aBColor                              ;
+      ON INIT    _wPost( 0)                          ;
       ON RELEASE _wSend(90)
 
       This.Cargo := oHmgData() ; owc := This.Cargo  // для окна создаем объект без переменных (условно пустой)
@@ -54,6 +56,8 @@ FUNCTION Main()
       oTsb := oHmgData()
       oTsb:aNumber   := { 1, 80 }
       oTsb:uSelector := 20
+      oTsb:aBrush    := { 242,216,159 }             // цвет фона под таблицей
+      oTsb:aColor    := Color_Tsb()                 // цвета таблицы
       aClmn          := Column_TSB( oTsb, cAls )    // список колонок таблицы  -> demo_tsb.prg
       owc:aClmn      := aClmn                       // сохраним на окне массив колонок
       // блоки кода для _TBrowse(...) - менять нельзя
@@ -66,7 +70,7 @@ FUNCTION Main()
       // функция в библиотеке \MiniGUI\SOURCE\TsBrowse\h_controlmisc2.prg
       oBrw := _TBrowse( oTsb, cAls, cBrw, nY, nX, nW-nG*2, nH-nY-nG )
 
-      // добавим для удобства доступа к массиву колонок
+      // добавим для удобства доступа к массиву колонок (+1)
       IF oBrw:nColumn("ORDKEYNO", .T.) > 0
          aClmn := hb_AIns(aClmn, 1, {"ORDKEYNO"}, .T.)
       ENDIF
@@ -112,7 +116,22 @@ FUNCTION Main()
                                      Return Nil
                                      } )
 
-      o:Event(90, {|  | dbCloseAll()        })
+      o:Event(90, {|ow,ky| // Release
+                           Local cMsg, ah
+                           ow:Hide()
+                           DO EVENTS
+                           ?  ( cMsg := ProcNL() )
+                           ?? "---[ "+ow:Name+":Event("+hb_ntos(ky)+") ]---"
+                           ?  Repl(".", Len(cMsg)), "=> RELEASE WINDOW <=", ow:Name
+                           ah := ow:Cargo:ahIcoDel
+                           ? Repl(".", Len(cMsg)),"Delete handle icon - ow:Cargo:ahIcoDel="
+                           ?? ah, HB_ValToExp(ah)
+                           IF IsArray(ah)
+                              AEval(ah, {|h| DestroyIcon(h) })  // удалить хендлы иконок
+                           ENDIF
+                           Return Nil
+                           })
+
       o:Event(99, {|ow| ow:Release()        })
 
    END WINDOW
@@ -144,7 +163,6 @@ INIT PROCEDURE Sets_ENV()
    SET OOP ON
 
    SET WINDOW MAIN OFF
-   SET AUTOSCROLL OFF
 
    IF !HB_ISOBJECT( App.Cargo ) ; App.Cargo := oHmgData()
    ENDIF
@@ -158,7 +176,7 @@ INIT PROCEDURE Sets_ENV()
    o:cDocMaskaRU  := "ввод 16.03.24 Иванова"
    o:cDocMaskaEN  := "input 16.03.24 Ivanova"
 
-   IF App.Cargo:cLang == "RU" ; o:cDocMaska := o:cDocMaskaRU 
+   IF App.Cargo:cLang == "RU" ; o:cDocMaska := o:cDocMaskaRU
    ELSE                       ; o:cDocMaska := o:cDocMaskaEN
    ENDIF
 
@@ -219,8 +237,52 @@ INIT PROCEDURE Sets_ENV()
 RETURN
 
 //////////////////////////////////////////////////////////////////
+FUNCTION Color_Tsb()               // цвета таблицы
+   LOCAL aColors, nPane2, nPane3, nPane, nHead1, nHead2, nBCSpH
+
+   nPane   := RGB(247,239,221)    // цвет фона таблицы
+   nPane2  := RGB(249,253,198)    // строка % 2
+   nPane3  := CLR_BLACK           // удалённая запись
+   nHead1  := RGB(255,128,64)
+   nHead2  := RGB( 48, 29,26)     // серо-черный фон
+   nBCSpH  := GetSysColor( COLOR_BTNFACE )   // цвет фона спецхидера таблицы
+   aColors := {}
+   //AAdd( aColors, { CLR_TEXT  , {|| CLR_BLACK             } } )      // 1 , текста в ячейках таблицы
+   //AAdd( aColors, { CLR_PANE  , {|| RGB(247,239,221)      } } )      // 2 , фона в ячейках таблицы
+   // включаем условия показа
+   AAdd( aColors, { CLR_TEXT  , {|nr,nc,ob| nr:=nc, iif( (ob:cAlias)->(DELETED()), CLR_WHITE, CLR_BLACK ) } } ) // 1
+   AAdd( aColors, { CLR_PANE  , {|nr,nc,ob| nr:=nc, iif( (ob:cAlias)->(DELETED()), nPane3 ,;
+                                            iif( ob:nAt % 2 == 0, nPane2, nPane ) )   } } )    // 2 , фона в ячейках таблицы
+
+   AAdd( aColors, { CLR_HEADF , {|| CLR_YELLOW            } } )        // 3 , текста шапки таблицы
+   AAdd( aColors, { CLR_HEADB , {|| { nHead2, nHead1 }    } } )        // 4 , фона шапки таблицы
+   AAdd( aColors, { CLR_FOCUSF, {|| CLR_BLACK } } )                    // 5 , текста курсора, текст в ячейках с фокусом
+   AAdd( aColors, { CLR_FOCUSB, {|a,b,c| a := b, If( c:nCell == b, ;
+                                          -CLR_HRED, -CLR_BLUE ) } } ) // 6 , фона курсора
+
+   AAdd( aColors, { CLR_EDITF , {|| CLR_ORANGE            } } )        // 7 , текста редактируемого поля
+   AAdd( aColors, { CLR_EDITB , {|| CLR_GREEN             } } )        // 8 , фона редактируемого поля
+
+   AAdd( aColors, { CLR_FOOTF , {|| CLR_YELLOW            } } )        // 9 , текста подвала таблицы
+   AAdd( aColors, { CLR_FOOTB , {|| { nHead1, nHead2 }    } } )        // 10, фона подвала таблицы
+   AAdd( aColors, { CLR_SELEF , {|| CLR_GRAY   }            } )        // 11, текста неактивного курсора (selected cell no focused)
+   AAdd( aColors, { CLR_SELEB , {|| { RGB(255,255,74), ;               // 12, фона неактивного курсора (selected cell no focused)
+                                         RGB(240,240, 0) } } } )
+
+   AAdd( aColors, { CLR_ORDF  , {|| CLR_WHITE  }             } )       // 13, текста шапки выбранного индекса
+   AAdd( aColors, { CLR_ORDB  , {|| CLR_RED    }             } )       // 14, фона шапки выбранного индекса
+   AAdd( aColors, { CLR_LINE  , {|| CLR_WHITE  }             } )       // 15, линий между ячейками таблицы
+   AAdd( aColors, { CLR_SUPF  , {|| { nHead1, nHead2 }     } } )       // 16, фона спецхидер
+   AAdd( aColors, { CLR_SUPB  , {|| CLR_HRED   }             } )       // 17, текста спецхидер
+   AAdd( aColors, { CLR_SPCF  , {|| CLR_RED    }             } )       // 18, specheader text
+   AAdd( aColors, { CLR_SPCB  , {|| nBCSpH     }             } )       // 19, specheader back
+   AAdd( aColors, { CLR_SPCA  , {|| CLR_GREEN  }             } )       // 20, active specheader back
+
+RETURN aColors
+
+//////////////////////////////////////////////////////////////////
 FUNCTION myTsbInit( ob, oTsb )  // настройки
-   Local nHImg, nI, oCol
+   Local nHImg, nI, oCol, hFont
 
    nHImg := 32 + 2*2                 // высота картинки + высота строк в ТСБ
 
@@ -241,19 +303,24 @@ FUNCTION myTsbInit( ob, oTsb )  // настройки
       :aColumns[2]:nWidth   := nHImg    // ширина колонки как у картинки
 
       // изменение картинки для удалённых записей в колонке ORDKEYNO
-      :aColumns[1]:aBitMaps := oTsb:aBmp1[2]
+      :aColumns[1]:aBitMaps := { Nil, LoadImage("bRecDel16") }
       :aColumns[1]:uBmpCell := {|nc,ob| nc:=nil, iif( (ob:cAlias)->(Deleted()), ob:aBitMaps[2], ob:aBitMaps[1] ) }
 
-      :aColumns[2]:aBitMaps := oTsb:aBmp1[2]
-      :aColumns[2]:uBmpCell := oTsb:aBmp1[3]
+      :aColumns[2]:aBitMaps := {}
+      // -> oTsb:aBmp1[1] содержит имя-ресурса, создаём массив хендлов ресурса !!! ВОТ ТАК ПРАВИЛЬНО
+      AEval(oTsb:aBmp1[1], {|cn| AAdd(:aColumns[2]:aBitMaps, LoadImage(cn,,nHImg,nHImg))})
+      :aColumns[2]:uBmpCell := oTsb:aBmp1[2]   // блок-код смены картинок -> Column_TSB.prg
       :aColumns[2]:nAlign   := nMakeLong( DT_CENTER, DT_CENTER )
       :aColumns[2]:nHAlign  := DT_CENTER
 
       nI := :nColumn("KR1", .T.)
       :aColumns[nI]:lBitMap  := .T.           // убрать показ значений поля из колонки
       :aColumns[nI]:nWidth   := nHImg         // ширина колонки как у картинки
-      :aColumns[nI]:aBitMaps := oTsb:aBmp6[2]
-      :aColumns[nI]:uBmpCell := oTsb:aBmp6[3]
+      :aColumns[nI]:aBitMaps := {}
+      // -> oTsb:aBmp6[1] содержит имя-ресурса, создаём массив хендлов ресурса !!! ВОТ ТАК ПРАВИЛЬНО
+      AEval(oTsb:aBmp6[1], {|cn| AAdd(:aColumns[nI]:aBitMaps, LoadImage(cn,,nHImg,nHImg))})
+      :aColumns[nI]:uBmpCell := oTsb:aBmp6[2]  // блок-код смены картинок -> Column_TSB.prg
+
       :aColumns[nI]:nAlign   := nMakeLong( DT_CENTER, DT_CENTER )
       :aColumns[nI]:nHAlign  := DT_CENTER
       :aColumns[nI]:bData    :=  {||Nil}
@@ -288,8 +355,9 @@ FUNCTION myTsbInit( ob, oTsb )  // настройки
 
       // изменим цвет колонки - своя виртуальная колонка / own virtual column
       :GetColumn("ORDKEYNO"):nClrBack     := GetSysColor( COLOR_BTNFACE )
-      :GetColumn("ORDKEYNO"):nClrFootBack := CLR_WHITE
-      :GetColumn("ORDKEYNO"):nClrFootFore := CLR_BLACK
+      :GetColumn("ORDKEYNO"):nClrFore     := CLR_RED
+      :GetColumn("ORDKEYNO"):nClrFootBack := GetSysColor( COLOR_BTNFACE )
+      :GetColumn("ORDKEYNO"):nClrFootFore := CLR_RED
       :GetColumn("KR2"     ):nClrBack     := CLR_WHITE   // колонка с картинками
       :GetColumn("KR1"     ):nClrBack     := CLR_WHITE   // колонка с картинками
       :GetColumn("PUSTO"   ):nClrBack     := CLR_YELLOW  // колонка по scope
@@ -300,7 +368,13 @@ FUNCTION myTsbInit( ob, oTsb )  // настройки
             :GetColumn(oCol:cName):nClrFootBack := CLR_ORANGE
             :GetColumn(oCol:cName):nClrFootFore := CLR_BLACK
          ENDIF
+         :GetColumn(oCol:cName):nFAlign  := DT_CENTER  // в подвале текст по центру
       NEXT
+
+      hFont := :aColumns[1]:hFontSpcHd    // 4-special header font
+      // установить фонт для 1 колонки таблицы
+      :aColumns[1]:hFont     := hFont     // 1-cells font
+      :aColumns[1]:hFontFoot := hFont     // 3-footer font
 
    END WITH
 
@@ -335,10 +409,13 @@ FUNCTION myTsbEnd( oBrw )
    ? ProcNL(), "----- SCOPE ----", "["+cDat+"]", LEN(cEnd), lBottom
    // сортировка в таблице по этому индексу
    OrdSetFocus("DOCDTV")      // индекс "маска ввода за день"
-   //DbGotop()
    oBrw:ScopeRec(cDat, cEnd, lBottom)
+   //DbGotop()
    //oBrw:Reset()
    //oBrw:GoTop()
+
+   //SET DELETED OFF  // для теста
+   //DbsetOrder(0)    // для теста
    DO EVENTS
    ? SPACE(5) + "INDEXORD()=",INDEXORD(), ORDSETFOCUS(),
    ? SPACE(5) + "oBrw:Cargo:cMaska=","["+oBrw:Cargo:cMaska+"]", LEN(oBrw:Cargo:cMaska)
@@ -415,7 +492,7 @@ STATIC FUNCTION Prev( uVal, oBrw )
          lRet    := .F.     // не давать редактировать поле в :get
       ELSEIF cFTyp == "M"
          cRet    := CellEditMemo(uVal, oBrw)
-         lWrtUDT := .T.     // записывать User+Date+Time       
+         lWrtUDT := .T.     // записывать User+Date+Time
          lRet    := .F.     // не давать редактировать поле в :get
       ENDIF
    ELSE
@@ -427,7 +504,7 @@ STATIC FUNCTION Prev( uVal, oBrw )
    IF lWrtUDT                                 // записывать User+Date+Time
       IF (oBrw:cAlias)->(RLock())             // делать самому
          IF LEN(cRet) > 0   // для ("C" + CRLF) и ("M")
-           oBrw:SetValue(nCol,cRet) 
+           oBrw:SetValue(nCol,cRet)
          ENDIF
          (oBrw:cAlias)->KOPERAT  := 555       // кто правил запись
          (oBrw:cAlias)->DATEVVOD := DATE()    // дата правки
@@ -515,7 +592,7 @@ RETURN .T.
 FUNCTION DimUsluga(nVal)
    LOCAL cRet, aDim
 
-   IF App.Cargo:cLang == "RU"   
+   IF App.Cargo:cLang == "RU"
       aDim := {"за телефон","за антенну","за уборку","за домофон" }
    ELSE
       aDim := {"for telephone","for antenna","for cleaning","for intercom" }

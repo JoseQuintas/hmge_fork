@@ -135,7 +135,7 @@ FUNCTION EventZero()
    cCodePage := "RU1251"    // потому что нет кодовой страницы для белорусского языка
    // открыть базу для белорусского языка
    SET LANGUAGE TO BYELORUSSIAN
-   SET FONT TO "Tahona", 12    // фонты построения в таблице берутся от этого фонта
+   SET FONT TO "Tahoma", 12    // фонты построения в таблице берутся от этого фонта
    USE (cDbf) ALIAS (cAls) CODEPAGE cCodePage NEW EXCLUSIVE
 
    aTsbPar := { cAls, cCodePage, "Checkpoint (2) !" }

@@ -17,7 +17,7 @@ FUNCTION gui_Init()
    SET MENUSTYLE EXTENDED
    SET NAVIGATION EXTENDED
    SET WINDOW MODAL PARENT HANDLE ON
-   SET WINDOW MAIN OFF
+
    Set( _SET_DEBUG, .F. )
 
    RETURN Nil
@@ -26,7 +26,7 @@ FUNCTION gui_DlgMenu( xDlg, aMenuList, aAllSetup, cTitle )
 
    LOCAL aGroupList, cDBF
 
-   gui_DialogCreate( @xDlg, 0, 0,1024, 768, cTitle,,,.T. )
+   gui_DialogCreate( @xDlg, 0, 0, 1024, 768, cTitle,,,.T. )
 
    DEFINE MAIN MENU OF ( xDlg )
       FOR EACH aGroupList IN aMenuList
@@ -296,8 +296,6 @@ FUNCTION gui_DialogClose( xDlg )
 
 FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lModal )
 
-   //nWindow += 1
-
    IF Empty( xDlg )
       xDlg := gui_NewName( "DLG" )
    ENDIF
@@ -308,7 +306,7 @@ FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lMo
 
    hb_Default( @lModal, .T. )
 
-   IF nWindow == 1
+   IF ++nWindow == 1
       DEFINE WINDOW ( xDlg ) ;
          AT nCol, nRow ;
          WIDTH nWidth ;
@@ -349,7 +347,15 @@ FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lMo
 
 FUNCTION gui_IsCurrentFocus( xDlg, xControl )
 
-      RETURN GetProperty( xDlg, "FOCUSEDCONTROL" )  == xControl
+   LOCAL lOk
+
+   IF PCount() == 1
+      lOk := ( GetActiveWindow() == GetProperty( XDlg, "HANDLE" ) )
+   ELSE
+      lOk := ( GetProperty( xDlg, "FOCUSEDCONTROL" )  == xControl )
+   ENDIF
+
+   RETURN lOk
 
 FUNCTION gui_LabelCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue, lBorder, nFontSize )
 
@@ -472,7 +478,6 @@ FUNCTION gui_TabPageBegin( xDlg, xControl, xPage, nPageCount, cText )
    PAGE ( cText ) IMAGE "bmpfolder"
 
    xPage := xDlg
-   // BACKCOLOR { 50, 50, 50 }
    (xDlg); (xControl); (cText); (nPageCount)
 
    RETURN Nil

@@ -35,7 +35,7 @@
 	www - https://harbour.github.io/
 
 	"Harbour Project"
-	Copyright 1999-2023, https://harbour.github.io/
+	Copyright 1999-2024, https://harbour.github.io/
 
 	"WHAT32"
 	Copyright 2002 AJ Wos <andrwos@aust1.net> 
@@ -843,5 +843,21 @@ _ColorMenu ( <hWnd>, <argb> [, <lSubMenu> ] )
             [ HEADERIMAGE <aHeaderImages> ] ;
             [ <append> ] ;
             [ <delete> ] PAINTDOUBLEBUFFER
+
+
+#command COMPRESS [ FILES ] <afiles> ;
+      TO <zipfile> ;
+      BLOCK <block>  ;
+      [ <ovr: OVERWRITE> ] ;
+      [ <srp: STOREPATH> ] ;
+      [ PASSWORD <password> ] ;
+   => ;
+      COMPRESSFILES ( <zipfile>, <afiles>, <block>, <.ovr.>, <.srp.>, <password> )
+
+#command UNCOMPRESS [ FILE ] <zipfile> ;
+      [ BLOCK <block> ] ;
+      [ PASSWORD <password> ] ;
+   => ;
+      UNCOMPRESSFILES ( <zipfile>, <block>, <password> )
 
 #endif

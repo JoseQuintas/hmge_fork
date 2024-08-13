@@ -50,6 +50,8 @@
  *
  */
 
+#include "SET_COMPILE_HMG_UNICODE.ch"
+
 #include "minigui.ch"
 #include "hbclass.ch"
 
@@ -74,9 +76,6 @@
          Determines a position within the edit buffer based on screen
          coordinates.
          Xbase++ compatible method */
-
-/* TOFIX: ::Minus [vszakats] */
-/* TOFIX: ::DecPos [vszakats] */
 
 #define GET_CLR_UNSELECTED      0
 #define GET_CLR_ENHANCED        1
@@ -583,18 +582,22 @@ METHOD UnTransform( cBuffer ) CLASS HMG_Get
          NEXT
          cBuffer := hb_UPadR( StrTran( cBuffer, Chr( 1 ), "" ), hb_ULen( ::Original ) )
       ENDIF
-
+#ifdef UNICODE
+      IF "!" $ ::cPicFunc .OR. hb_USubStr( ::cPicMask, 1, 1 ) == "!"
+         cBuffer := hmg_Upper( cBuffer )
+      ENDIF
+#endif
       xValue := cBuffer
 
    CASE ::cType == "N"
 
-      // ::lMinus := .f.
       IF "X" $ ::cPicFunc
          IF hb_URight( cBuffer, 2 ) == "DB"
             ::lMinus := .T.
          ENDIF
       ENDIF
-      IF !::lMinus
+
+      IF ! ::lMinus
          FOR nFor := 1 TO ::nMaxLen
             IF ::IsEditable( nFor ) .AND. IsDigit( hb_USubStr( cBuffer, nFor, 1 ) )
                EXIT
@@ -605,11 +608,12 @@ METHOD UnTransform( cBuffer ) CLASS HMG_Get
             ENDIF
          NEXT
       ENDIF
+
       cBuffer := Space( ::FirstEditable() - 1 ) + hb_USubStr( cBuffer, ::FirstEditable(), ::LastEditable() - ::FirstEditable() + 1 )
 
       IF "D" $ ::cPicFunc
          FOR nFor := ::FirstEditable() TO ::LastEditable()
-            IF !::IsEditable( nFor )
+            IF ! ::IsEditable( nFor )
                cBuffer := hb_ULeft( cBuffer, nFor - 1 ) + Chr( 1 ) + hb_USubStr( cBuffer, nFor + 1 )
             ENDIF
          NEXT
@@ -622,7 +626,7 @@ METHOD UnTransform( cBuffer ) CLASS HMG_Get
          ENDIF
 
          FOR nFor := ::FirstEditable() TO ::LastEditable()
-            IF !::IsEditable( nFor ) .AND. hb_USubStr( cBuffer, nFor, 1 ) != "."
+            IF ! ::IsEditable( nFor ) .AND. hb_USubStr( cBuffer, nFor, 1 ) != "."
                cBuffer := hb_ULeft( cBuffer, nFor - 1 ) + Chr( 1 ) + hb_USubStr( cBuffer, nFor + 1 )
             ENDIF
          NEXT
@@ -784,7 +788,7 @@ METHOD Insert( cChar ) CLASS HMG_Get
       // Calculating diferent nMaxEdit for ::lPicComplex
 
       FOR n := ::Pos TO nMaxEdit
-         IF !::IsEditable( n )
+         IF ! ::IsEditable( n )
             EXIT
          ENDIF
       NEXT
@@ -1070,6 +1074,11 @@ METHOD Input( cChar ) CLASS HMG_Get
 
    IF ! Empty( ::cPicFunc )
       cChar := hb_ULeft( Transform( cChar, ::cPicFunc ), 1 ) // Left needed for @D
+#ifdef UNICODE
+   IF "!" $ ::cPicFunc
+      cChar := hmg_Upper( cChar )
+   ENDIF
+#endif
    ENDIF
 
    IF ! Empty( ::cPicMask )
@@ -1098,6 +1107,10 @@ METHOD Input( cChar ) CLASS HMG_Get
             cChar := ""
          ENDIF
 
+#ifdef UNICODE
+      CASE cPic == "!"
+         cChar := hmg_Upper( cChar )
+#endif
          /* Clipper 5.2 undocumented: # allow T,F,Y,N for Logical [ckedem] */
       CASE cPic == "L" .OR. ( cPic == "#" .AND. ::cType == "L" )
          IF !( Upper( cChar ) $ "YNTF" + ;
@@ -1161,6 +1174,7 @@ METHOD PutMask( xValue, lEdit ) CLASS HMG_Get
          cPicFunc := ""
       ENDIF
    ENDIF
+
    IF lEdit .AND. ::lEdit
       IF ( "*" $ cMask ) .OR. ( "$" $ cMask )
          cMask := StrTran( StrTran( cMask, "*", "9" ), "$", "9" )
@@ -1169,10 +1183,15 @@ METHOD PutMask( xValue, lEdit ) CLASS HMG_Get
 
    cBuffer := Transform( xValue, ;
       iif( Empty( cPicFunc ), ;
-      iif( ::lCleanZero .AND. !::HasFocus, "@Z ", "" ), ;
-      cPicFunc + iif( ::lCleanZero .AND. !::HasFocus, "Z", "" ) + " " ) ;
+      iif( ::lCleanZero .AND. ! ::HasFocus, "@Z ", "" ), ;
+      cPicFunc + iif( ::lCleanZero .AND. ! ::HasFocus, "Z", "" ) + " " ) ;
       + cMask )
 
+#ifdef UNICODE
+   IF ::cType == "C" .AND. ( "!" $ cPicFunc .OR. ! Empty( cMask ) .AND. SubStr( cMask, 1, 1 ) == "!" )
+      cBuffer := hmg_Upper( xValue )
+   ENDIF
+#endif
    IF ::cType == "N"
       IF ( "(" $ cPicFunc .OR. ")" $ cPicFunc ) .AND. xValue >= 0
          cBuffer += " "
@@ -1293,7 +1312,7 @@ METHOD _Delete( lDisplay ) CLASS HMG_Get
    IF ::lPicComplex
       // Calculating diferent nMaxLen for ::lPicComplex
       FOR n := ::Pos TO nMaxLen
-         IF !::IsEditable( n )
+         IF ! ::IsEditable( n )
             EXIT
          ENDIF
       NEXT
@@ -1713,7 +1732,7 @@ RETURN ::cType
 
 METHOD Block( bBlock ) CLASS HMG_Get
 
-   IF bBlock != NIL .AND. !::HasFocus
+   IF bBlock != NIL .AND. ! ::HasFocus
 
       ::bBlock   := bBlock
       ::cType    := ValType( ::Original )

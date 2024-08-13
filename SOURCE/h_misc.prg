@@ -48,7 +48,81 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include 'minigui.ch'
 
 #ifndef __XHARBOUR__
-   SET PROCEDURE TO \minigui\source\h_cdomail.prg
+   SET PROCEDURE TO h_cdomail.prg
+#endif
+
+#ifdef _HMG_COMPAT_
+
+#define HB_ZIP_OPEN_ADDINZIP            2
+*------------------------------------------------------------------------------*
+PROCEDURE COMPRESSFILES ( cFileName, aDir, bBlock, lOverwrite, lStorePath, cPassword )
+*------------------------------------------------------------------------------*
+   LOCAL hZip, cZipFile, i
+
+   DEFAULT lOverwrite TO .T.
+
+   IF lOverwrite == .T.
+
+      IF File ( cFileName )
+         DELETE FILE ( cFileName )
+      ENDIF
+
+   ENDIF
+
+   hZip := hb_ZipOpen( cFileName, iif( ! lOverwrite .AND. hb_FileExists( cFileName ), HB_ZIP_OPEN_ADDINZIP, NIL ) )
+
+   IF ! Empty( hZip )
+
+      FOR i := 1 TO Len ( aDir )
+
+         IF ValType ( bBlock ) == 'B'
+            Eval ( bBlock, aDir[ i ], i )
+         ENDIF
+
+         cZipFile := iif( lStorePath, aDir[ i ], cFileNoPath( aDir[ i ] ) )
+
+         hb_ZipStoreFile( hZip, aDir[ i ], cZipFile, cPassword )
+
+      NEXT
+
+      hb_ZipClose( hZip )
+
+   ENDIF
+
+RETURN
+
+*------------------------------------------------------------------------------*
+PROCEDURE UNCOMPRESSFILES ( cFileName, bBlock, cPassword )
+*------------------------------------------------------------------------------*
+   LOCAL i := 0, hUnzip, nErr
+   LOCAL cFile, dDate, cTime, nSize, nCompSize, lCrypted, cComment, cStorePath
+
+   hUnzip := hb_UnZipOpen( cFileName )
+
+   nErr := hb_UnZipFileFirst( hUnzip )
+
+   DO WHILE nErr == 0
+
+      HB_UnzipFileInfo( hUnzip, @cFile, @dDate, @cTime,,,, @nSize, @nCompSize, @lCrypted, @cComment )
+
+      IF ! Empty( ( cStorePath := cFilePath( cFile ) ) ) .AND. ! hb_DirExists( hb_DirSepAdd( cStorePath ) )
+         hb_DirBuild( hb_DirSepAdd( cStorePath ) )
+      ENDIF
+
+      IF ValType ( bBlock ) == 'B'
+         Eval ( bBlock, cFile, ++i )
+      ENDIF
+
+      HB_UnzipExtractCurrentFile( hUnzip, NIL, iif( lCrypted, cPassword, NIL ) )
+
+      nErr := hb_UnZipFileNext( hUnzip )
+
+   ENDDO
+
+   hb_UnZipClose( hUnzip )
+
+RETURN
+
 #endif
 
 *-----------------------------------------------------------------------------*

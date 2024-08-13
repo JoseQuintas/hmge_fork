@@ -2,8 +2,8 @@
  * Harbour MiniGUI Project source code:
  * The definitions for minigui C-level code.
  *
- * Copyright 2015-2022 Grigory Filatov <gfilatov@gmail.com>
- * www - http://www.hmgextended.com
+ * Copyright 2015-2024 Grigory Filatov <gfilatov@gmail.com>
+ * www - https://www.hmgextended.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

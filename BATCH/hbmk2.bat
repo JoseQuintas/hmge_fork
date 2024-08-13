@@ -278,7 +278,6 @@ rem Delete local variables
 rem ***************************************************************************
 
 set PATH=%_PATH%
-set HB_PLATFORM=
 set GT=
 set DEBUG=
 set WARN=

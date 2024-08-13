@@ -535,6 +535,8 @@ goto PARPARSE
   echo %MV_HRB%\lib\hbvpdf.lib + >> _temp.rsp
   echo %MV_HRB%\lib\hbwin.lib + >> _temp.rsp
   echo %MV_HRB%\lib\xhb.lib + >> _temp.rsp
+  echo %MV_HRB%\lib\hbmzip.lib + >> _temp.rsp
+  echo %MV_HRB%\lib\minizip.lib + >> _temp.rsp
   echo ws2_32.lib + >> _temp.rsp
   if %MV_INTMODE%==C goto RSPEND
   echo %MV_HRB%\lib\bostaurus.lib + >> _temp.rsp

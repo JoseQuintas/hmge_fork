@@ -8,18 +8,20 @@
 */
 #include "minigui.ch"
 
-// взята из проекта hbpMergeProjects2 - 28.07.23 - исправлена 21.04.24
+// взята из проекта hbpMergeProjects2 - правка: 28.07.23, 21.04.24, 26.05.24, 29.06.24
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, aFnt, nwPost, lBlock, lHide ,;
-                     lTextVert, lTextLeft  )
-   LOCAL aGrOver, aGrFill, nSizeIcon, lSizeIcon, y1, x1, cForm := _HMG_ThisFormName
+                     lTextVert, lTextLeft )
+   LOCAL aGrOver, aGrFill, nSizeIcon, lSizeIcon, y1, x1, hIco1, hIco2, ahIcoDel, cForm := _HMG_ThisFormName
    DEFAULT cCapt     := "" , aFntClr := {  BLACK, YELLOW }
-   DEFAULT aFnt      := { "Tahona", 12 , .T., 15, "+size" } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
+   DEFAULT aFnt      := { "Tahoma", 12 , .T., 15, "+size" } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
    DEFAULT aBtnGrad  := {} , aBtnClr := { BLUE, YELLOW }
    DEFAULT lBlock    := .F.  // не блокировать кнопки
    DEFAULT lHide     := .F.  // показывать и не скрывать кнопки
    DEFAULT lTextVert := .F.  // .T.-вертикальный текст для кнопок, .F.- НЕ вертикальный текст
    DEFAULT lTextLeft := .F.  // .T.-слева текст для кнопок, .F.-справа
+
+   ahIcoDel := {}  // вернуть хендлы иконок, если нужно
 
    IF LEN(aFnt) < 5
       AlertStop("Error ! LEN(aFnt) < 5 !; " + ;
@@ -39,56 +41,54 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
       aGrFill := { { 0.5, aBtnGrad[1], aBtnGrad[2] }, { 0.5, aBtnGrad[2], aBtnGrad[1] } }
 
       IF lSizeIcon
+         hIco2 := LoadIconByName(aIcon[2], nSizeIcon, nSizeIcon)
+         hIco1 := LoadIconByName(aIcon[1], nSizeIcon, nSizeIcon)
+         AADD( ahIcoDel, hIco2 )   // для удаления хендлов иконок с формы
+         AADD( ahIcoDel, hIco1 )   // для удаления хендлов иконок с формы
+
          IF lTextVert  //  VERTICAL
             @ y, x  BUTTONEX &cObj PARENT &cForm                                      ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                               ;
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD  VERTICAL                               ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Fontcolor := aFntClr[2]  ,;
-                              This.Icon := LoadIconByName(aIcon[2], nSizeIcon, nSizeIcon) ) ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Fontcolor := aFntClr[1]  ,;
-                              This.Icon := LoadIconByName(aIcon[1], nSizeIcon, nSizeIcon) ) ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill, This.Fontcolor := aFntClr[2], This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver, This.Fontcolor := aFntClr[1], This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSEIF lTextLeft
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                               ;
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD  LEFTTEXT                               ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Fontcolor := aFntClr[2]  ,;
-                              This.Icon := LoadIconByName(aIcon[2], nSizeIcon, nSizeIcon) ) ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Fontcolor := aFntClr[1]  ,;
-                              This.Icon := LoadIconByName(aIcon[1], nSizeIcon, nSizeIcon) ) ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill, This.Fontcolor := aFntClr[2], This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver, This.Fontcolor := aFntClr[1], This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSE
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                               ;
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD                                         ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Fontcolor := aFntClr[2]  ,;
-                              This.Icon := LoadIconByName(aIcon[2], nSizeIcon, nSizeIcon) ) ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Fontcolor := aFntClr[1]  ,;
-                              This.Icon := LoadIconByName(aIcon[1], nSizeIcon, nSizeIcon) ) ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill, This.Fontcolor := aFntClr[2], This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver, This.Fontcolor := aFntClr[1], This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ENDIF
          // при первом построении изменить размер иконки
-         This.&(cObj).Icon := LoadIconByName( aIcon[1], nSizeIcon, nSizeIcon )
+         This.&(cObj).Icon := hIco1
       ELSE
+
          IF lTextVert  //  VERTICAL
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
               WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD  VERTICAL                               ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill, This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver, This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ACTION _wPost(This.Cargo, , This.Name)                                  ;
               ON INIT   {|| This.Cargo := nwPost }
          ELSEIF lTextLeft .AND. !lTextVert
@@ -97,10 +97,8 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD LEFTTEXT                                ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ACTION _wPost(This.Cargo, , This.Name)                                  ;
               ON INIT   {|| This.Cargo := nwPost }
          ELSE
@@ -109,10 +107,8 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
               NOXPSTYLE HANDCURSOR NOTABSTOP                                          ;
               BACKCOLOR aGrOver GRADIENTFILL aGrFill                                  ;
               FONT aFnt[1] SIZE aFnt[2]  BOLD                                         ;
-              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.GradientFill := aGrFill , This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.GradientOver := aGrOver , This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ACTION _wPost(This.Cargo, , This.Name)                                  ;
               ON INIT   {|| This.Cargo := nwPost }
          ENDIF
@@ -121,52 +117,49 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
    ELSE
 
       IF lSizeIcon
+         hIco2 := LoadIconByName(aIcon[2], nSizeIcon, nSizeIcon)
+         hIco1 := LoadIconByName(aIcon[1], nSizeIcon, nSizeIcon)
+         AADD( ahIcoDel, hIco2 )   // для удаления хендлов иконок с формы
+         AADD( ahIcoDel, hIco1 )   // для удаления хендлов иконок с формы
+
          IF lTextVert  //  VERTICAL
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                      ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                             ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                                ;
               NOXPSTYLE HANDCURSOR NOTABSTOP BACKCOLOR aBtnClr[1]                      ;
               FONT aFnt[1] SIZE aFnt[2] BOLD VERTICAL                                  ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] ,;
-                              This.Icon := LoadIconByName(aIcon[2],nSizeIcon,nSizeIcon) );
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] ,;
-                              This.Icon := LoadIconByName(aIcon[1],nSizeIcon,nSizeIcon) );
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] , This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] , This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSEIF lTextLeft
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                               ;
               NOXPSTYLE HANDCURSOR NOTABSTOP BACKCOLOR aBtnClr[1]                     ;
               FONT aFnt[1] SIZE aFnt[2] BOLD LEFTTEXT                                 ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] ,;
-                              This.Icon := LoadIconByName(aIcon[2],nSizeIcon,nSizeIcon) );
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] ,;
-                              This.Icon := LoadIconByName(aIcon[1],nSizeIcon,nSizeIcon) );
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] , This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] , This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSE
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
-              WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
+              WIDTH w HEIGHT h CAPTION cCapt ICON hIco1                               ;
               NOXPSTYLE HANDCURSOR NOTABSTOP BACKCOLOR aBtnClr[1]                     ;
               FONT aFnt[1] SIZE aFnt[2] BOLD                                          ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] ,;
-                              This.Icon := LoadIconByName(aIcon[2],nSizeIcon,nSizeIcon) );
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] ,;
-                              This.Icon := LoadIconByName(aIcon[1],nSizeIcon,nSizeIcon) );
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Fontcolor := aFntClr[2] , This.Icon := hIco2 ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Fontcolor := aFntClr[1] , This.Icon := hIco1 ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ENDIF
          // при первом построении изменить размер иконки
-         This.&(cObj).Icon := LoadIconByName( aIcon[1], nSizeIcon, nSizeIcon )
+         This.&(cObj).Icon := hIco1
       ELSE
          IF lTextVert  //  VERTICAL
             @ y, x  BUTTONEX &cObj  PARENT &cForm                                     ;
               WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
               NOXPSTYLE HANDCURSOR NOTABSTOP  BACKCOLOR aBtnClr[1]                    ;
               FONT aFnt[1] SIZE aFnt[2] BOLD  VERTICAL                                ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSEIF lTextLeft
@@ -174,10 +167,8 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
               WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
               NOXPSTYLE HANDCURSOR NOTABSTOP  BACKCOLOR aBtnClr[1]                    ;
               FONT aFnt[1] SIZE aFnt[2] BOLD LEFTTEXT                                 ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ELSE
@@ -185,10 +176,8 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
               WIDTH w HEIGHT h CAPTION cCapt ICON aIcon[1]                            ;
               NOXPSTYLE HANDCURSOR NOTABSTOP  BACKCOLOR aBtnClr[1]                    ;
               FONT aFnt[1] SIZE aFnt[2] BOLD                                          ;
-              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] ,;
-                              This.Fontcolor := aFntClr[2]  )                         ;
-              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] ,;
-                              This.Fontcolor := aFntClr[1]  )                         ;
+              ON MOUSEHOVER ( This.Backcolor := aBtnClr[2] , This.Icon := aIcon[2] , This.Fontcolor := aFntClr[2] ) ;
+              ON MOUSELEAVE ( This.Backcolor := aBtnClr[1] , This.Icon := aIcon[1] , This.Fontcolor := aFntClr[1] ) ;
               ON INIT   {|| This.Cargo := nwPost }                                    ;
               ACTION _wPost(This.Cargo, , This.Name)
          ENDIF
@@ -206,7 +195,7 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
    y1 := y + This.&(cObj).Height
    x1 := x + This.&(cObj).Width
 
-RETURN { y1, x1 }
+RETURN { y1, x1, ahIcoDel }
 
 ///////////////////////////////////////////////////////////////////////////////////
 FUNCTION Draw_BtnEx( y, x, oBtn, nWBtn, nHBtn, nGBtn, lRow )

@@ -9,15 +9,15 @@ rem Builds Harbour library Hmg_Hpdf.lib.
 
 :BUILD
   if exist %MV_BUILD%\hmg_hpdf.lib del %MV_BUILD%\hmg_hpdf.lib
-  %MV_HRB%\bin\harbour hmg_hpdf.prg -n -w3 -es2 -i%MV_HRB%\include;%MG_ROOT%\include
-  %MG_BCC%\bin\bcc32 -c -O2 -tWM -d -6 -OS -I%MV_HRB%\include;%MG_BCC%\include -L%MV_HRB%\lib;%MG_BCC%\lib hmg_hpdf.c
-  %MG_BCC%\bin\tlib %MV_BUILD%\hmg_hpdf.lib +hmg_hpdf.obj
+  %MV_HRB%\bin\harbour core.prg -n -w3 -es2 -i%MV_HRB%\include;%MG_ROOT%\include
+  %MG_BCC%\bin\bcc32 -c -O2 -tWM -d -6 -OS -I%MV_HRB%\include;%MG_BCC%\include -L%MV_HRB%\lib;%MG_BCC%\lib core.c
+  %MG_BCC%\bin\tlib %MV_BUILD%\hmg_hpdf.lib +core.obj
   if exist %MV_BUILD%\hmg_hpdf.bak del %MV_BUILD%\hmg_hpdf.bak
 
 :CLEANUP
   if %MV_DODEL%==N      goto END
-  if exist hmg_hpdf.c   del hmg_hpdf.c
-  if exist hmg_hpdf.obj del hmg_hpdf.obj
+  if exist core.c   del core.c
+  if exist core.obj del core.obj
 
 :END
   call ..\..\batch\makelibend.bat

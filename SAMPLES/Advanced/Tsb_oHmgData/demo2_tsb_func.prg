@@ -251,7 +251,7 @@ FUNCTION myImage()
    oBrw  := oWnd:Cargo:oBrw    // запоминали ранее на окне этот объект
    aImg8 := oBrw:Cargo:aBmp6   // колонка 8 с картинками
    aBmp  := aImg8[1]           // картинки
-   aItem := aImg8[4]           // меню
+   aItem := aImg8[3]           // меню
    Font1 := GetFontHandle( "Normal"   )
    Font2 := GetFontHandle( "Bold"     )
    Font3 := GetFontHandle( "ItalBold" )

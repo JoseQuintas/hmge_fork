@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library source code
  * 
- * Copyright 2014-2022 Grigory Filatov <gfilatov@gmail.com>
+ * Copyright 2014-2024 Grigory Filatov <gfilatov@gmail.com>
  */
 
 #xcommand @ <row>, <col> RATING <name> ;

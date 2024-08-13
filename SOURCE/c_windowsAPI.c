@@ -35,7 +35,7 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2023, https://harbour.github.io/
+    Copyright 1999-2024, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -828,6 +828,224 @@ HB_FUNC( C_ENUMCHILDWINDOWS )
    if( IsWindow( hWnd ) && pCodeBlock )
    {
       hmg_ret_L( EnumChildWindows( hWnd, EnumChildProc, ( LPARAM ) pCodeBlock ) );
+   }
+}
+
+//        IsWow64Process ( [ nProcessID ] ) --> return lBoolean
+HB_FUNC( ISWOW64PROCESS )
+{
+   typedef BOOL ( WINAPI * LPFN_ISWOW64PROCESS )( HANDLE, PBOOL );
+   static LPFN_ISWOW64PROCESS fnIsWow64Process = NULL;
+
+   BOOL IsWow64 = FALSE;
+
+   if( fnIsWow64Process == NULL )
+      fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( GetModuleHandle( "kernel32" ), "IsWow64Process" );
+
+   if( fnIsWow64Process != NULL )
+   {
+      if( HB_ISNUM( 1 ) == FALSE )
+         fnIsWow64Process( GetCurrentProcess(), &IsWow64 );
+      else
+      {
+         DWORD  ProcessID = hmg_par_DWORD( 1 );
+         HANDLE hProcess  = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
+         if( hProcess != NULL )
+         {
+            fnIsWow64Process( hProcess, &IsWow64 );
+            CloseHandle( hProcess );
+         }
+      }
+   }
+   hb_retl( IsWow64 );
+}
+
+//        GetCurrentProcessId() --> return nProcessID
+HB_FUNC( GETCURRENTPROCESSID )
+{
+   hmg_ret_NINT( GetCurrentProcessId() );
+}
+
+//        EnumProcessesID () ---> return array { nProcessID1, nProcessID2, ... }
+HB_FUNC( ENUMPROCESSESID )
+{
+   typedef BOOL ( WINAPI * Func_EnumProcesses )( DWORD *, DWORD, DWORD * );
+   static Func_EnumProcesses pEnumProcesses = NULL;
+
+   DWORD        aProcessesID[ 1024 ], cbNeeded, nProcesses;
+   unsigned int i;
+
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pEnumProcesses == NULL )
+   {
+      HMODULE hLib = LoadLibrary( TEXT( "Psapi.dll" ) );
+      pEnumProcesses = ( Func_EnumProcesses ) wapi_GetProcAddress( hLib, "EnumProcesses" );
+   }
+
+   if( pEnumProcesses == NULL )
+      return;
+
+   // Get the list of process identifiers.
+   if( pEnumProcesses( aProcessesID, sizeof( aProcessesID ), &cbNeeded ) == FALSE )
+      return;
+
+   // Calculate how many process identifiers were returned.
+   nProcesses = cbNeeded / sizeof( DWORD );
+
+   for( i = 0; i < nProcesses; i++ )
+   {
+      if( aProcessesID[ i ] != 0 )
+      {
+         PHB_ITEM pItem = hb_itemPutNL( NULL, ( LONG ) aProcessesID[ i ] );
+         hb_arrayAddForward( pArray, pItem );
+         hb_itemRelease( pItem );
+      }
+   }
+
+   hb_itemReturnRelease( pArray );
+}
+
+//        GetWindowThreadProcessId (hWnd, @nThread, @nProcessID)
+HB_FUNC( GETWINDOWTHREADPROCESSID )
+{
+   DWORD nThread, nProcessID;
+
+   nThread = GetWindowThreadProcessId( hmg_par_raw_HWND( 1 ), &nProcessID );
+
+   if( HB_ISBYREF( 2 ) )
+      hb_storni( nThread, 2 );
+   if( HB_ISBYREF( 3 ) )
+      hb_storni( nProcessID, 3 );
+}
+
+//        GetProcessName ( [ nProcessID ] ) --> return cProcessName
+HB_FUNC( GETPROCESSNAME )
+{
+   typedef BOOL ( WINAPI * Func_EnumProcessModules )( HANDLE, HMODULE *, DWORD, LPDWORD );
+   static Func_EnumProcessModules pEnumProcessModules = NULL;
+
+   typedef DWORD ( WINAPI * Func_GetModuleBaseName )( HANDLE, HMODULE, LPTSTR, DWORD );
+   static Func_GetModuleBaseName pGetModuleBaseName = NULL;
+
+#ifdef UNICODE
+   LPSTR pStr;
+#endif
+   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   TCHAR  cProcessName[ MAX_PATH ] = _TEXT( "" );
+   HANDLE hProcess;
+
+   if( pEnumProcessModules == NULL )
+   {
+      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+      pEnumProcessModules = ( Func_EnumProcessModules ) wapi_GetProcAddress( hLib, "EnumProcessModules" );
+   }
+
+   if( pEnumProcessModules == NULL )
+      return;
+
+   if( pGetModuleBaseName == NULL )
+   {
+      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+
+       #ifdef UNICODE
+      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameW" );
+       #else
+      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameA" );
+       #endif
+   }
+
+   if( pGetModuleBaseName == NULL )
+      return;
+
+   hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
+   if( hProcess != NULL )
+   {
+      HMODULE hMod;
+      DWORD   cbNeeded;
+      if( pEnumProcessModules( hProcess, &hMod, sizeof( hMod ), &cbNeeded ) )
+         pGetModuleBaseName( hProcess, hMod, cProcessName, sizeof( cProcessName ) / sizeof( TCHAR ) );
+
+      CloseHandle( hProcess );
+#ifndef UNICODE
+      hb_retc( cProcessName );
+#else
+      pStr = WideToAnsi( cProcessName );
+      hb_retc( pStr );
+      hb_xfree( pStr );
+#endif
+   }
+}
+
+//        GetProcessFullName ( [ nProcessID ] ) --> return cProcessFullName
+HB_FUNC( GETPROCESSFULLNAME )
+{
+   typedef BOOL ( WINAPI * Func_EnumProcessModules )( HANDLE, HMODULE *, DWORD, LPDWORD );
+   static Func_EnumProcessModules pEnumProcessModules = NULL;
+
+   typedef DWORD ( WINAPI * Func_GetModuleFileNameEx )( HANDLE, HMODULE, LPTSTR, DWORD );
+   static Func_GetModuleFileNameEx pGetModuleFileNameEx = NULL;
+
+#ifdef UNICODE
+   LPSTR pStr;
+#endif
+   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   TCHAR  cProcessFullName[ MAX_PATH ] = _TEXT( "" );
+   HANDLE hProcess;
+
+   if( pEnumProcessModules == NULL )
+   {
+      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+      pEnumProcessModules = ( Func_EnumProcessModules ) wapi_GetProcAddress( hLib, "EnumProcessModules" );
+   }
+
+   if( pEnumProcessModules == NULL )
+      return;
+
+   if( pGetModuleFileNameEx == NULL )
+   {
+      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+
+       #ifdef UNICODE
+      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExW" );
+       #else
+      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExA" );
+       #endif
+   }
+
+   if( pGetModuleFileNameEx == NULL )
+      return;
+
+   hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
+   if( hProcess != NULL )
+   {
+      HMODULE hMod;
+      DWORD   cbNeeded;
+      if( pEnumProcessModules( hProcess, &hMod, sizeof( hMod ), &cbNeeded ) )
+         pGetModuleFileNameEx( hProcess, hMod, cProcessFullName, sizeof( cProcessFullName ) / sizeof( TCHAR ) );
+
+      CloseHandle( hProcess );
+#ifndef UNICODE
+      hb_retc( cProcessFullName );
+#else
+      pStr = WideToAnsi( cProcessFullName );
+      hb_retc( pStr );
+      hb_xfree( pStr );
+#endif
+   }
+}
+
+//        TerminateProcess ( [ nProcessID ] , [ nExitCode ] )
+HB_FUNC( TERMINATEPROCESS )
+{
+   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   UINT   uExitCode = hmg_par_UINT( 2 );
+   HANDLE hProcess  = OpenProcess( PROCESS_TERMINATE, FALSE, ProcessID );
+
+   if( hProcess != NULL )
+   {
+      if( TerminateProcess( hProcess, uExitCode ) == FALSE )
+         CloseHandle( hProcess );
    }
 }
 

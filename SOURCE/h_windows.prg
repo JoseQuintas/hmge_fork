@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2023, https://harbour.github.io/
+   Copyright 1999-2024, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -49,7 +49,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "i_winuser.ch"
 
 #ifndef __XHARBOUR__
-   SET PROCEDURE TO \minigui\source\statics.prg
+   SET PROCEDURE TO statics.prg
 #endif
 
 STATIC nCtEfeito := 0, cDescEfeito := ""
@@ -264,6 +264,10 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       ENDIF
    ENDIF
 
+   IF ValType ( aRGB ) == 'N'
+      aRGB := nRGB2Arr( aRGB )
+   ENDIF
+
    IF ValType ( aRGB ) != 'C' .AND. IsArrayRGB ( aRGB ) == .F.
       aRGB := { -1, -1, -1 }
    ENDIF
@@ -414,10 +418,10 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       AAdd ( _HMG_aFormBkColor, aRGB )
       AAdd ( _HMG_aFormPaintProcedure, PaintProcedure )
       AAdd ( _HMG_aFormNoShow, noshow )
-      AAdd ( _HMG_aFormNotifyIconName, NotifyIconName    )
-      AAdd ( _HMG_aFormNotifyIconToolTip, NotifyIconToolTip    )
-      AAdd ( _HMG_aFormNotifyIconLeftClick, NotifyIconLeftClick    )
-      AAdd ( _HMG_aFormNotifyIconDblClick, NotifyIconDblClick    )
+      AAdd ( _HMG_aFormNotifyIconName, NotifyIconName )
+      AAdd ( _HMG_aFormNotifyIconToolTip, NotifyIconToolTip )
+      AAdd ( _HMG_aFormNotifyIconLeftClick, NotifyIconLeftClick )
+      AAdd ( _HMG_aFormNotifyIconDblClick, NotifyIconDblClick )
       AAdd ( _HMG_aFormGotFocusProcedure, GotFocus )
       AAdd ( _HMG_aFormLostFocusProcedure, LostFocus )
       AAdd ( _HMG_aFormReBarHandle, 0 )

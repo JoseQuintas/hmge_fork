@@ -15,7 +15,7 @@ MEMVAR oMain
 
 /////////////////////////////////////////////////////////////////////////
 FUNCTION Main( cWinType )
-   LOCAL cFont := "Arial" // "DejaVu Sans Mono"  // "Tahona"
+   LOCAL cFont := "Arial" // "DejaVu Sans Mono"
    LOCAL nSize := 12
    LOCAL cLog  := "_msg.log"
    LOCAL y, x, nY, nX, nW, nH, tTime

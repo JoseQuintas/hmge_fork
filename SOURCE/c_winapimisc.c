@@ -35,7 +35,7 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2023, https://harbour.github.io/
+    Copyright 1999-2024, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -58,7 +58,7 @@
 #include "hbapierr.h"
 #include "hbapiitm.h"
 
-#if defined( __XHARBOUR__ )
+#if defined( __XHARBOUR__ ) || ( __HARBOUR__ - 0 < 0x030200 )
 #define HB_FILE_TYPE_MAX   128
 #else
 
@@ -95,7 +95,7 @@ void     RegisterResource( HANDLE hResource, LPCSTR szType );
 
 HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName )
 {
-   FARPROC  pProc;
+   FARPROC pProc;
 
    pProc = GetProcAddress( hModule, lpProcName );
    return( HB_PTRUINT ) pProc;
@@ -430,7 +430,7 @@ HB_FUNC( INKEYGUI )
 
 HB_FUNC( GETDC )
 {
-   hmg_ret_raw_HANDLE( GetDC( hmg_par_raw_HWND( 1 ) ) );
+   hmg_ret_raw_HDC( GetDC( hmg_par_raw_HWND( 1 ) ) );
 }
 
 HB_FUNC( RELEASEDC )
@@ -658,7 +658,7 @@ HB_FUNC( PAINTBKGND )
    ReleaseDC( hwnd, hdc );
 
    RegisterResource( hBrush, "BRUSH" );
-   hmg_ret_raw_HANDLE( hBrush );
+   hmg_ret_raw_HBRUSH( hBrush );
 }
 
 /* Functions Contributed  By Luiz Rafael Culik Guimaraes( culikr@uol.com.br) */

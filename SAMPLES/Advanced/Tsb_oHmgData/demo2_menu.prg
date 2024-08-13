@@ -19,7 +19,7 @@ FUNCTION CreateDataMenu()   // меню-кнопки вверху окна
    oMenu:nPosWin   := 1         // 1-TopWindow, 2-BottomWindow, 3-LeftWindow, 4-RightWindow
    oMenu:nHAlign   := DT_LEFT   // горизонтальные кнопки: 0-LEFT, 1-CENTER, 2-RIGHT
    oMenu:nVAlign   := DT_TOP    // вертикальные кнопки: 0-TOP , 1-CENTER, 2-BOTTOM
-   IF App.Cargo:cLang == "RU"   
+   IF App.Cargo:cLang == "RU"
       oMenu:aCaption := { "Помощь", "F7 Поиск", "Ins-новая;запись", "Del-удалить;запись", "F5 Печать", "Выход" }
    ELSE
       oMenu:aCaption := { "Help", "F7 Search", "Ins-new;entry", "Del-delete;entry", "F5 Print", "Exit" }
@@ -219,7 +219,7 @@ FUNCTION DRAW_Menu(oMenu,nWGaps,nHGaps,oThis)   // меню кнопок для таблицы
          aPos[3] := -nHMenu + nWGaps
       ENDIF
 
-      aObj := Show_Button(oMenu,nWGaps,nHGaps,nPosWin)
+      aObj := Show_Button(oMenu,nWGaps,nHGaps,nPosWin,oThis)
       oThis:Cargo:aObjBtn := aObj
 
    ELSE
@@ -233,16 +233,17 @@ FUNCTION DRAW_Menu(oMenu,nWGaps,nHGaps,oThis)   // меню кнопок для таблицы
 RETURN aObj
 
 ////////////////////////////////////////////////////////////////////////
-FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
+FUNCTION Show_Button(oMenu,nX,nY,nPosWin,oThis)
    LOCAL cForm, nW, nH, aBtnCap, aBtnIco, aBtnClr, aBtnPst, cCapt
    LOCAL cN, cFont, nFSize, lFBold, nJ, aBtnGrd, aGrOver, aGrFill
    LOCAL aFntClr, nwPost, aBtnObj, aFont, aColor, lItalic, nF2Size
    LOCAL lBtnIco, nGBtn, nWBtn, nHBtn, nIndent, nIcoSize, nOnePos
    LOCAL nHAlign, nVAlign, nY2, nX2, nLenBtn, nWBthAll, nHBthAll
-   LOCAL lTextVert, lTextLeft, aIco, nWBtnF7
+   LOCAL lTextVert, lTextLeft, aIco, nWBtnF7, hIco1, hIco2
+   LOCAL owc := oThis:Cargo
 
    aBtnObj := {}
-   cForm   := ThisWindow.Name
+   cForm   := oThis:Name  //ThisWindow.Name
    nW      := This.ClientWidth
    nH      := This.ClientHeight
    nY2     := nY
@@ -329,16 +330,18 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
       aGrFill := { { 0.5, aBtnGrd[1], aBtnGrd[2] }, { 0.5, aBtnGrd[2], aBtnGrd[1] } }
       nwPost  := aBtnPst[nJ]
       IF IsNumeric(nwPost)
-         cN := 'Btn_' + HB_NtoS(nwPost) //StrZero(nJ, 2)
+         cN := 'Btn' + HB_NtoS(nwPost) //StrZero(nJ, 2)
       ELSEIF IsString(nwPost)
-         cN := 'Btn_' + nwPost //StrZero(nJ, 2)
+         cN := 'Btn' + nwPost //StrZero(nJ, 2)
       ELSE
          AlertStop('Error ! Btn_XX - Событие не "N" или "C' + cValToChar(nwPost) )
       ENDIF
       AADD( aBtnObj, { cN, aBtnCap[nJ], nY, nX, nWBtn, nHBtn, aColor, nwPost, IIF( lBtnIco, aIco[1], Nil ) } )
 
       IF lBtnIco .AND. LEN(aIco) > 0  // кнопки с иконками
-         aIco := aBtnIco[nJ]
+         aIco  := aBtnIco[nJ]
+         hIco1 := LoadIconByName( aIco[1], nIcoSize, nIcoSize )
+         hIco2 := LoadIconByName( aIco[2], nIcoSize, nIcoSize )
       ENDIF
 
       // alt_syntax
@@ -348,7 +351,7 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
          WIDTH         nWBtn
          HEIGHT        nHBtn
          CAPTION       cCapt
-         ICON          IIF( lBtnIco, aIco[1], Nil )
+         ICON          IIF( lBtnIco, hIco1, Nil )
          FONTNAME      cFont
          FONTSIZE      nFSize
          FONTCOLOR     aFntClr[1]
@@ -364,7 +367,7 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
          NOTABSTOP     .T.
          ONMOUSEHOVER ( myMouseHL(2) )
          ONMOUSELEAVE ( myMouseHL(1) )
-         ACTION ( This.Enabled := .F., _wPost(This.Cargo:nPost, ThisWindow.Name, This.Name) )  // 29.06.23
+         ACTION ( This.Enabled := .F., _wPost(This.Cargo:nPost, ThisWindow.Name, This.Name) )
          //ACTION ( This.Enabled := .F., _wPost(This.Cargo:nPost, This.Index) )
          /*ONINIT {|o|   // можно и так делать
                     This.Cargo := oHmgData()  // создать объект (контейнер) для этой кнопки
@@ -382,11 +385,12 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
                     o:aFntClr2 := aFntClr[2]
                     o:lBold2   := .T.
                     o:lBold1   := .F.
-                    o:nFSize2  := nF2Size       // увеличенный фонт кнопки
-                    o:nFSize   := nFSize        // фонт кнопки
-                    o:nIcoSize := nIcoSize      // размер иконки
-                    o:aIco     := aIco          // 2 иконки кнопки
-                    o:lBtnIco  := lBtnIco       // есть/нет иконка на кнопке
+                    o:nFSize2  := nF2Size        // увеличенный фонт кнопки
+                    o:nFSize   := nFSize         // фонт кнопки
+                    o:nIcoSize := nIcoSize       // размер иконки
+                    o:aIco     := aIco           // 2 иконки кнопки
+                    o:ahIco    := {hIco1,hIco2}  // 2 хендла иконок кнопки
+                    o:lBtnIco  := lBtnIco        // есть/нет иконка на кнопке
                     Return Nil
                    }          // ON INIT надо задавать только блоком кода */
       END BUTTONEX
@@ -395,13 +399,11 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
          nWBtnF7 := nX
       ENDIF
 
-
       This.&(cN).Cargo := oHmgData()
       WITH OBJECT This.&(cN).Cargo
          :nBtn     := nJ
          :nPost    := nwPost
          :cCapt    := cCapt
-         :aIco     := aIco
          :aBClr    := aColor
          :cObj     := cN
          :aGrFill  := aGrFill
@@ -410,11 +412,12 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
          :aFntClr2 := aFntClr[2]
          :lBold2   := .T.
          :lBold1   := .F.
-         :nFSize2  := nF2Size       // увеличенный фонт кнопки
-         :nFSize   := nFSize        // фонт кнопки
-         :nIcoSize := nIcoSize      // размер иконки
-         :aIco     := aIco          // 2 иконки кнопки
-         :lBtnIco  := lBtnIco       // есть/нет иконка на кнопке
+         :nFSize2  := nF2Size        // увеличенный фонт кнопки
+         :nFSize   := nFSize         // фонт кнопки
+         :nIcoSize := nIcoSize       // размер иконки
+         :aIco     := aIco           // 2 иконки кнопки
+         :ahIco    := {hIco1,hIco2}  // 2 хендла иконок кнопки
+         :lBtnIco  := lBtnIco        // есть/нет иконка на кнопке
       END WITH
 
       // сдвиг кнопки
@@ -438,7 +441,10 @@ FUNCTION Show_Button(oMenu,nX,nY,nPosWin)
          // при первом построении изменить размеры иконки
          This.&(cN).ImageWidth  := nIcoSize
          This.&(cN).ImageHeight := nIcoSize
-         This.&(cN).Icon        := LoadIconByName( aIco[1], nIcoSize, nIcoSize )
+         This.&(cN).Icon        := hIco1
+         // для удаления хендлов иконок с формы
+         AADD( owc:ahIcoDel , hIco1 )
+         AADD( owc:ahIcoDel , hIco2 )
       ENDIF
 
    NEXT
@@ -450,8 +456,9 @@ RETURN aBtnObj
 
 ///////////////////////////////////////////////////////////////////
 FUNCTION myMouseHL(n)
-   LOCAL hIco, o := This.Cargo
+   LOCAL o := This.Cargo
 
+   //? "    *** " + ProcNL(), "n=", n
    IF n == 2
       This.FontColor    := o:aFntClr2
       This.FontSize     := o:nFSize2
@@ -464,9 +471,10 @@ FUNCTION myMouseHL(n)
       This.GradientOver := o:aGrOver
    ENDIF
 
+   //?? o:lBtnIco
    IF o:lBtnIco      // кнопки с иконками
-      hIco := LoadIconByName( o:aIco[n], o:nIcoSize, o:nIcoSize )
-      This.Icon := hIco
+      This.Icon := o:ahIco[n]
+      //?? o:ahIco[n]
    ENDIF
 
 RETURN NIL
@@ -500,6 +508,8 @@ FUNCTION Draw_Icon(owc)  // иконки на форме
 
       owc:ahIcoLogo[nI]  := hIcon
       owc:aIcoLogoYX[nI] := { owc:nYGaps, nX }
+
+      AADD( owc:ahIcoDel, hIcon )         // для удаления хендлов иконок с формы
 
       nX += nHIco
 

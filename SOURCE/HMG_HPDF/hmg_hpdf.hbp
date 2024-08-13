@@ -8,9 +8,8 @@
 
 -I../../include
 
--w2 -es2 -q0
+-w2 -es2 -ko -q0
 
 {bcc}-hbx=../../include/hmg_hpdf.hbx
 
-hmg_hpdf.prg
-
+core.prg

@@ -282,6 +282,7 @@ STATIC FUNCTION myToolBar(oWC)
       cFile := cPath + aImg[i] + "-" + HB_NtoS(nHImg) + ".bmp"
       HMG_SaveImage( hBmp, cFile, "bmp" )
       aImg1[i] := cFile
+      DeleteObject( hBmp )
       DestroyIcon(hIco)
       DO EVENTS
    NEXT

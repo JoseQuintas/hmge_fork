@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2023, https://harbour.github.io/
+   Copyright 1999-2024, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -3180,7 +3180,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
                ELSE
 
-                  IF ISBLOCK( _HMG_aControlDblClick [i]  )
+                  IF ISBLOCK( _HMG_aControlDblClick [i] )
 
                      _PushEventInfo()
                      _HMG_ThisFormIndex := AScan ( _HMG_aFormHandles , _HMG_aControlParentHandles [i] )
@@ -4445,7 +4445,7 @@ PROCEDURE _AutoAdjust ( hWnd, aInitSize )
 #ifdef _TSBROWSE_
             IF ControlType == "TBROWSE"
                oBrw := _HMG_aControlIds [k]
-               IF oBrw:lIsDbf
+               IF oBrw:nDataType == 1 /*DATATYPE_RDD*/
                   oBrw:UpStable()
                ELSE
                   oBrw:Refresh( .T. )

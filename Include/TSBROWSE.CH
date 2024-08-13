@@ -774,19 +774,31 @@
 #ifndef __NO_REDEFINE__
 #define __NO_REDEFINE__
 
+// data types
+#define DATATYPE_NONE        0
+#define DATATYPE_RDD         1
+#define DATATYPE_ARRAY       2
+#define DATATYPE_ADO         4
+#define DATATYPE_TEXT        8
+#define DATATYPE_ODBF       16
+#define DATATYPE_TREE       32
+#define DATATYPE_MYSQL      64
+#define DATATYPE_EXCEL     128
+#define DATATYPE_USER     4096
+
 // Horizontal alignment
 #ifndef DT_LEFT
-   #define DT_LEFT              0
-   #define DT_CENTER            1
-   #define DT_RIGHT             2
+   #define DT_LEFT           0
+   #define DT_CENTER         1
+   #define DT_RIGHT          2
 #endif
-#define DT_VERT              3  // vertical text (only for headers)
+#define DT_VERT              3   // vertical text (only for headers)
 #define DT_CENTERED          DT_CENTER
 
 // Vertical alignment
 #ifndef DT_TOP
-#define DT_TOP               0
-#define DT_BOTTOM            2
+   #define DT_TOP            0
+   #define DT_BOTTOM         2
 #endif
 // Cursor movement after editing
 #define DT_DONT_MOVE         0

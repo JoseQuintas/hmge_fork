@@ -15,7 +15,7 @@
  * Testing columns in Tsbrowse for a dbf file
  * Entering into a table. Check before and after input.
  * Totals for numeric fields, automatic recalculation when data in a column changes
- * Your own window for editing memo fields and text columns with CRLF 
+ * Your own window for editing memo fields and text columns with CRLF
  * Working out a mouse click (right/left) on a superheader/header/footer/table cell
  * Working with SCOPE.
  * Saving/restoring window sizes to an ini file.
@@ -30,7 +30,7 @@ REQUEST HB_CODEPAGE_UTF8, HB_CODEPAGE_RU866, HB_CODEPAGE_RU1251
 REQUEST DBFNTX, DBFCDX, DBFFPT
 
 #define PROGRAM  "Testing columns in Tsbrowse for a dbf file (1)"
-#define PROGVER  "Version 0.1 (02.03.2024)"
+#define PROGVER  "Version 0.3 (01.07.2024)"
 #define LANG_PRG "EN"  // "EN" English interface-lang
 
 FUNCTION Main()
@@ -52,13 +52,14 @@ FUNCTION Main()
    nW := Sys.ClientWidth
    nH := Sys.ClientHeight
 
-   DEFINE WINDOW &cForm AT nY, nX WIDTH nW HEIGHT nH TITLE PROGRAM ;
-      MINWIDTH 500 MINHEIGHT 500                                   ; // блокировка уменьшени€ размеров окна
-      MAIN TOPMOST                                                 ;
-      ON MAXIMIZE ( ResizeForm( oBrw ) )                           ;
-      ON SIZE     ( ResizeForm( oBrw ) )                           ;
-      BACKCOLOR aBColor                                            ;
-      ON INIT    _wPost( 0)                                        ;
+   DEFINE WINDOW &cForm AT nY, nX WIDTH nW HEIGHT nH ;
+      TITLE PROGRAM + SPACE(5) + PROGVER             ;
+      MINWIDTH 500 MINHEIGHT 500                     ; // блокировка уменьшени€ размеров окна
+      MAIN TOPMOST                                   ;
+      ON MAXIMIZE ( ResizeForm( oBrw ) )             ;
+      ON SIZE     ( ResizeForm( oBrw ) )             ;
+      BACKCOLOR aBColor                              ;
+      ON INIT    _wPost( 0)                          ;
       ON RELEASE _wSend(90)
 
       This.Cargo := oHmgData() ; owc := This.Cargo  // дл€ окна создаем объект без переменных (условно пустой)
@@ -68,6 +69,7 @@ FUNCTION Main()
       owc:nCount  := 0                // вывод в подвале таблицы
       owc:aItogo  := {0}              // вывод в подвале таблицы
       owc:cAls    := cAls
+      This.Cargo:ahIcoDel := {}       // дл€ удалени€ хендлов иконок с формы
 
       // верхнее меню окна
       myToolBar(owc)
@@ -88,8 +90,11 @@ FUNCTION Main()
       oTsb := oHmgData()
       oTsb:aNumber   := { 1, 60 }
       oTsb:uSelector := 20
-      aClmn          := Column_TSB( oTsb, cAls )    // список колонок таблицы  -> Column_TSB.prg
-      owc:aClmn      := aClmn                       // сохраним на окне массив колонок
+      oTsb:aBrush    := { 232,212,244 }                  // цвет фона под таблицей
+      aClmn          := Column_TSB( oTsb, cAls, owc )    // список колонок таблицы  -> Column_TSB.prg
+      owc:aClmn      := aClmn                            // сохраним на окне массив колонок
+      //oTsb:aColor  := Color_Tsb()                      // цвета таблицы - можно сделать как в demo1.prg, но
+                                                         // здесь цвета задаютс€ через myTsbColor(ob,op)
       // блоки кода дл€ _TBrowse(...) - мен€ть нельз€ // (op=oTsb)
       // отрабатывают после запуска функции _TBrowse(...), т.е. внутри этой функции
       oTsb:bInit := {|ob,op| Column_Init(ob,op) ,;                      // подготовка колонок -> Column_TSB.prg
@@ -111,12 +116,15 @@ FUNCTION Main()
 
       o := This.Object
 
-      o:Event( 0, {|ow| This.Topmost := .F. , WindowsCoordinat(ow), _wSend(2,ow) , ow:Cargo:oBrw:SetFocus() })
+      o:Event( 0, {|ow| This.Topmost := .F. , _LogFile(.T., "=== Start o:Event(0)", ProcNL(),ProcNL(1),ProcNL(2)) ,;
+                        WindowsCoordinat(ow), _wSend(2,ow) , ow:Cargo:oBrw:SetFocus() ,;
+                        _LogFile(.T., "=== End o:Event(0)", ProcNL(),ProcNL(1),ProcNL(2)) })
 
       o:Event({2, "_ItogGet"}, {|ow| // итого по базе -> demos_use.prg
                                      Local ob := ow:Cargo:oBrw, oCol, cFld
                                      Local aFldSum := ow:Cargo:aFldSum
                                      Local aItog := Itogo_Dbf(aFldSum, ow:Cargo:cAls)
+                                     ? "=== Start o:Event({2, '_ItogGet'}"
                                      ow:Cargo:nCount := aItog[1]
                                      ow:Cargo:aItogo := aItog[2]
                                      // переносим в колонки
@@ -130,6 +138,7 @@ FUNCTION Main()
                                      ?? "INDEXORD()=",INDEXORD(), ORDSETFOCUS()
                                      _wPost("_ItogSay", ob:cParentWnd)
                                      mySayIndex()  // текущий индекс
+                                     ? "=== End o:Event({2, '_ItogGet'}"
                                      Return Nil
                                      } )
 
@@ -148,6 +157,7 @@ FUNCTION Main()
                                              _SetThisFormInfo(), This.&(cn).Enabled := .T. , ob:Setfocus() } )
 
       o:Event({11,"_RecIns"}, {|ow,ky,cn,ob| ob := ow:Cargo:oBrw   , _SetThisFormInfo(ow) ,;
+                                             _LogFile(.T., ProcNL(),ProcNL(1),ProcNL(2)) ,;
                                              RecnoInsert_TSB(ow,ky,cn,ob) , _SetThisFormInfo() ,;       // -> demo_tsb.prg
                                              IIF( ob:Cargo:lRecINS , nil, This.&(cn).Enabled := .T.) ,; // блокировка клавиши INS
                                              ob:Setfocus()  } )                             // VK_INSERT
@@ -164,10 +174,15 @@ FUNCTION Main()
       o:Event({89,"_Exit"  }, {|ow| _LogFile(.T., ProcNL(),">>> Exit button pressed! Window: "+ow:Name), _wSend(99) } )
 
       o:Event(90, {|ow,ky| // Release
-                           Local aWin, oIni
-                           ? "---[ "+ow:Name+":Event("+hb_ntos(ky)+") ]---"
-                           ?  Repl(".", 10), "=> RELEASE WINDOW <=", ow:Name
-                           ?? "... Program running time -", HMG_TimeMS( App.Cargo:tStart )
+                           Local aWin, oIni, ah
+                           ow:Hide()
+                           ? "---[ "+ow:Name+":Event("+hb_ntos(ky)+") ]---", ProcNL()
+                           ah := ow:Cargo:ahIcoDel
+                           ? Repl(".", 10),"Delete handle icon - ow:Cargo:ahIcoDel="
+                           ?? ah, HB_ValToExp(ah)
+                           IF IsArray(ah)
+                              AEval(ah, {|h| DestroyIcon(h) })  // удалить хендлы иконок
+                           ENDIF
                            // сохранить размеры окна
                            aWin := { ow:Row, ow:Col, ow:Width, ow:Height }
                            App.Cargo:oIni:MAIN:aWindow := aWin
@@ -176,6 +191,8 @@ FUNCTION Main()
                            // App.Cargo:oIni:MAIN:cMaska := "????"
                            oIni := App.Cargo:oIni
                            Save_Ini2File( oIni )
+                           ?  Repl(".", 10), "=> RELEASE WINDOW <=", ow:Name
+                           ?? "... Program running time -", HMG_TimeMS( App.Cargo:tStart )
                            Return Nil
                            })
 
@@ -212,7 +229,6 @@ INIT PROCEDURE Sets_ENV()
    SET TOOLTIPSTYLE BALLOON
 
    SET WINDOW MAIN OFF
-   SET AUTOSCROLL OFF
 
    IF !HB_ISOBJECT( App.Cargo ) ; App.Cargo := oHmgData()
    ENDIF
@@ -281,6 +297,7 @@ INIT PROCEDURE Sets_ENV()
    SET NAVIGATION EXTENDED
    SET MENUSTYLE  EXTENDED
    Set ShowRedAlert On        // увеличить фонт дл€ окна "Program Error"
+   SET AUTOSCROLL OFF         // убрать посылку VK_INSERT объекту TBrowse при старте программы
 
    // ѕроверка на запуск второй копии программы
    _HMG_MESSAGE[4] := "ѕопытка запуска второй копии программы:" + CRLF + ;
@@ -410,7 +427,8 @@ STATIC FUNCTION myToolBar(oWC)
       cFile := cPath + aImg[i] + ".png"
       HMG_SaveImage( hBmp, cFile, "png" )
       aImg1[i] := cFile
-      DestroyIcon(hIco)
+      DestroyIcon( hIco )
+      DeleteObject( hBmp )
       DO EVENTS
    NEXT
 

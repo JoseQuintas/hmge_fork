@@ -58,14 +58,14 @@ FUNCTION Menu_Find(oWnd,ky,cn,oBrw)
       a12Scp[nMnth] := {}
       cRet += HB_NtoS(nJ) + " - " + cMenu + ";"
       FOR nI := 1 TO LEN(aMenu2)
-         IF nJ == aMenu2[nI,2]                // номер месяца 
+         IF nJ == aMenu2[nI,2]                // номер месяца
             AADD( a12Doc[nMnth], aMenu2[nI,1] )  // номер документа
             AADD( a12Scp[nMnth], aScop2[nI,1] )  // scope
          ENDIF
       NEXT
    NEXT
    //AlertInfo(cRet + ";" + ProcNL())
-   
+
    cAls  := oBrw:cAlias
    // координаты вывода окна
    nY    := GetProperty(cForm, "Row") + GetTitleHeight()
@@ -132,12 +132,13 @@ FUNCTION Menu_Find(oWnd,ky,cn,oBrw)
    END MENU
 
    DO EVENTS
+   ? ProcNL()
    ?? "nStatChoice=",nStatChoice // 20500001
    nI    := nStatChoice
    nMnth := 0
    cMenu := cScop := ""
    IF nStatChoice > 200000
-      nI := 2       
+      nI := 2
       nMnth := VAL(SUBST(HB_NtoS(nStatChoice),2,2))
       nJ    := VAL(SUBST(HB_NtoS(nStatChoice),4))
       aScp  := a12Scp[nMnth]
@@ -160,7 +161,7 @@ FUNCTION Menu_Find(oWnd,ky,cn,oBrw)
       SET WINDOW THIS TO
       IF nJ > 0
          IF App.Cargo:cLang == "RU"
-            cTitle := "Выборка: No документа оплаты = " + ALLTRIM(aScop1[nJ]) 
+            cTitle := "Выборка: No документа оплаты = " + ALLTRIM(aScop1[nJ])
          ELSE
             cTitle := "Selection: Payment document No. = " + ALLTRIM(aScop1[nJ])
          ENDIF
@@ -184,7 +185,7 @@ FUNCTION Menu_Find(oWnd,ky,cn,oBrw)
          oBrw:Reset()
          oBrw:Refresh()
          oBrw:GoTop()
-      ENDIF 
+      ENDIF
 
    ELSEIF nI == 2
       // список док. по месяцам года + ручной ввод оператора ( code = '22' )
@@ -328,7 +329,7 @@ STATIC FUNCTION myMenuButton2SuperHd(lOff,oWnd,oBrw,cTitle,aBClrSH)
    IF lOff
       SetProperty(cForm, cObj3, "Enabled", .F.)
       SetProperty(cForm, cObj4, "Enabled", .F.)
-      //  блокировать правку колонок 
+      //  блокировать правку колонок
       //AEval(oBrw:aColumns, {|oc,ni| oBrw:GetColumn(ni):lEdit := .F. })
       AEval(oBrw:aColumns, {|oc| oc:lEdit := .F. })
       // замена в таблице суперхидера
@@ -339,7 +340,7 @@ STATIC FUNCTION myMenuButton2SuperHd(lOff,oWnd,oBrw,cTitle,aBClrSH)
    ELSE
       SetProperty(cForm, cObj3, "Enabled", .T.)
       SetProperty(cForm, cObj4, "Enabled", .T.)
-      //  восстановить какие колонки можно редактировать 
+      //  восстановить какие колонки можно редактировать
       AEval(oBrw:aColumns, {|oc,ni| oc:lEdit := oBrw:Cargo:aEditOriginal[ni] })
       //FOR EACH oCol IN oBrw:aColumns
       //   nI := hb_EnumIndex(oCol)

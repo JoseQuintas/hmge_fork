@@ -191,7 +191,7 @@ Procedure SetTab_1( lBottomStyle, nG )
       VALUE 1                               ;
       HOTTRACK                              ;
       BACKCOLOR aColor                      ;
-      FONT "Tahona" SIZE 16                 ;
+      FONT "Tahoma" SIZE 16                 ;
       ON CHANGE _wSend(25,,This.Name)
 
       _HMG_ActiveTabBottom := lBottomStyle

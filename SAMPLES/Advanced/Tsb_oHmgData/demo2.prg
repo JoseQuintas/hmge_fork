@@ -15,7 +15,7 @@
  * Testing columns in Tsbrowse for a dbf file
  * Entering into a table. Check before and after input.
  * Totals for numeric fields, automatic recalculation when data in a column changes
- * Your own window for editing memo fields and text columns with CRLF 
+ * Your own window for editing memo fields and text columns with CRLF
  * Working out a mouse click (right/left) on a superheader/header/footer/table cell
  * Working with SCOPE.
  * Saving/restoring window sizes to an ini file.
@@ -29,9 +29,9 @@
 REQUEST HB_CODEPAGE_UTF8, HB_CODEPAGE_RU866, HB_CODEPAGE_RU1251
 REQUEST DBFNTX, DBFCDX, DBFFPT
 
-#define PROGRAM  "Testing columns in Tsbrowse for a dbf file (2)"
-#define PROGVER  "Version 0.1 (02.03.2024)"
-#define LANG_PRG "RU"  // "EN" English interface-lang
+#define PROGRAM  "Testing columns in Tsbrowse for a dbf file (3)"
+#define PROGVER  "Version 0.3 (01.07.2024)"
+#define LANG_PRG "EN"  // "EN" English interface-lang
 
 FUNCTION Main()
    LOCAL oBrw, oTsb, nY, nX, nH, nW, nG, o, owc, oWin, oMenu
@@ -65,7 +65,8 @@ FUNCTION Main()
 
    //SET WINDOW MAIN ON
    oWin   := CreateDataWin()     // параметры окна
-   cTitle := App.Cargo:cTitle + SPACE(5) + App.Cargo:cVersion + SPACE(5) + App.Cargo:cDisplayMode
+   cTitle := App.Cargo:cTitle + SPACE(5) + App.Cargo:cVersion
+   cTitle += SPACE(5) + App.Cargo:cDisplayMode
    Windows2Coordinat(oWin)       // считать параметры из ини-файла до построения окна
 
    DEFINE WINDOW &cForm AT oWin:nY, oWin:nX WIDTH oWin:nW HEIGHT oWin:nH ;
@@ -92,6 +93,7 @@ FUNCTION Main()
       owc:aFldSum  := {}               // список полей dbf для расчёта итого
       owc:nCount   := 0                // вывод в подвале таблицы
       owc:aItogo   := {0}              // вывод в подвале таблицы
+      owc:ahIcoDel := {}               // для удаления хендлов иконок с формы
       owc:cAls     := cAls
 
       nG := 10                         // отступ слева и между кнопками по ширине/высоте
@@ -114,7 +116,6 @@ FUNCTION Main()
       owc:cMsg     := oWin:cMsg
       owc:cMsgTitl := IIF( App.Cargo:cLang == "RU" ,;
                            "ВНИМАНИЕ ! ОЧЕНЬ ВАЖНО !", "ATTENTION! VERY IMPORTANT!" )
-
       owc:nXGIco    := owc:nWBtnEnd                 // отступ для иконок от начала формы по X
       Draw_Icon(owc)                                // иконки на форме -> demo2_menu.prg
       oMenu:nXGaps  := owc:nWIcoEnd + owc:nXGaps    // отступ кнопки от края окна по X
@@ -135,7 +136,7 @@ FUNCTION Main()
 
       //oBrw := _TBrowse( oTsb, cAls, cBrw, nY, nX, nW, nH )
       //////////// построение ТАБЛИЦЫ / building a TABLE /////////////////////////
-      aClmn      := Column_TSB( oTsb, cAls )              // список колонок таблицы  -> Column_TSB.prg
+      aClmn      := Column_TSB( oTsb, cAls, owc )         // список колонок таблицы  -> Column_TSB.prg
       owc:aClmn  := aClmn                                 // сохраним на окне массив колонок
       oBrw       := Draw_TSB( oTsb, This.Object, cBrw )   // таблица -> demo2_tsb.prg
       //_o2log(o:oBrw, 27, ProcNL() + "  o:oBrw => ", .T. ) ; ?
@@ -222,29 +223,35 @@ FUNCTION Main()
       o:Event({70,"_Print" }, {|ow,ky,cn,ob| ob := ow:Cargo:oBrw, Menu_Print(ow,ky,cn,ob),; // -> demo2_menu_Fxx.prg
                                              This.&(cn).Enabled := .T., ob:Setfocus()                         } )
       o:Event({89,"_Exit"  }, {|ow| _LogFile(.T., ProcNL(),">>> Exit button pressed! Window: "+ow:Name), _wSend(99) } )
-      o:Event(90, {|ow,ky|  // Release
-                        Local cMsg, aWin, oIni, i
-                        ow:Hide()
-                        DO EVENTS
-                        IF IsArray(ow:Cargo:ahIcoLogo)
-                           FOR i := 1 TO LEN(ow:Cargo:ahIcoLogo)
-                              DestroyIcon(ow:Cargo:ahIcoLogo[i])
-                           NEXT
-                        ENDIF
-                        ?  ( cMsg := ProcNL() )
-                        ?? "---[ "+ow:Name+":Event("+hb_ntos(ky)+") ]---"
-                        ?  Repl(".", Len(cMsg)), "=> RELEASE WINDOW <=", ow:Name
-                        ?? "... Program running time -", HMG_TimeMS( App.Cargo:tStart )
-                        // сохранить размеры окна
-                        aWin := { ow:Row, ow:Col, ow:Width, ow:Height }
-                        App.Cargo:oIni:MAIN:aWindow := aWin
-                        // запомнили последнюю МАСКУ ввода - не нужно
-                        // при изменениях этой переменной пишем сразу в этот ини
-                        // App.Cargo:oIni:MAIN:cMaska := "????"
-                        oIni := App.Cargo:oIni
-                        Save_Ini2File( oIni )
-                        Return Nil
-                        })
+      o:Event(90, {|ow,ky| // Release
+                           Local cMsg, aWin, oIni, i, ah
+                           ow:Hide()
+                           DO EVENTS
+                           IF IsArray(ow:Cargo:ahIcoLogo)
+                              FOR i := 1 TO LEN(ow:Cargo:ahIcoLogo)
+                                 DestroyIcon(ow:Cargo:ahIcoLogo[i])
+                              NEXT
+                           ENDIF
+                           ?  ( cMsg := ProcNL() )
+                           ?? "---[ "+ow:Name+":Event("+hb_ntos(ky)+") ]---"
+                           ah := ow:Cargo:ahIcoDel
+                           ? Repl(".", 10),"Delete handle icon - ow:Cargo:ahIcoDel="
+                           ?? ah, HB_ValToExp(ah)
+                           IF IsArray(ah)
+                              AEval(ah, {|h| DestroyIcon(h) })  // удалить хендлы иконок
+                           ENDIF
+                           // сохранить размеры окна
+                           aWin := { ow:Row, ow:Col, ow:Width, ow:Height }
+                           App.Cargo:oIni:MAIN:aWindow := aWin
+                           // запомнили последнюю МАСКУ ввода - не нужно
+                           // при изменениях этой переменной пишем сразу в этот ини
+                           // App.Cargo:oIni:MAIN:cMaska := "????"
+                           oIni := App.Cargo:oIni
+                           Save_Ini2File( oIni )
+                           ?  Repl(".", Len(cMsg)), "=> RELEASE WINDOW <=", ow:Name
+                           ?? "... Program running time -", HMG_TimeMS( App.Cargo:tStart )
+                           Return Nil
+                           })
       o:Event(99, {|ow| ow:Release()        })
 
    END WINDOW
@@ -346,6 +353,7 @@ INIT PROCEDURE Sets_ENV()
    SET NAVIGATION EXTENDED
    SET MENUSTYLE  EXTENDED
    Set ShowRedAlert On        // увеличить фонт для окна "Program Error"
+   SET AUTOSCROLL OFF
 
    // Проверка на запуск второй копии программы
    _HMG_MESSAGE[4] := "Попытка запуска второй копии программы:" + CRLF + ;
@@ -355,7 +363,7 @@ INIT PROCEDURE Sets_ENV()
 
    SetMenuBitmapHeight( o:nMenuBmpHeight )
 
-   PUBLIC nOperat, cOperator, nPubYear                      
+   PUBLIC nOperat, cOperator, nPubYear
    M->nOperat     := 111
    M->cOperator   := "Admin-Test"
    M->nPubYear    := YEAR(DATE())

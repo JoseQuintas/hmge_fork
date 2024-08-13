@@ -82,12 +82,12 @@ FUNCTION Form_Menu_Main(oMainWnd)
 
       @ 80, 120 LISTBOX List_1 OF &cForm WIDTH 180 HEIGHT 230 ;
         ITEMS M->aPubListFrom VALUE 1 NOTABSTOP               ;
-        FONT "Tahona" SIZE 11 BACKCOLOR {82,242,210}          ;
+        FONT "Tahoma" SIZE 11 BACKCOLOR {82,242,210}          ;
         ON CHANGE NIL ON DBLCLICK NIL
 
       @ 80, 500 LISTBOX List_2 OF &cForm WIDTH 180 HEIGHT 230 ;
         ITEMS M->aPubListTo VALUE 1     NOTABSTOP             ;
-        FONT "Tahona" SIZE 11 BACKCOLOR {82,242,210}          ;
+        FONT "Tahoma" SIZE 11 BACKCOLOR {82,242,210}          ;
         ON CHANGE NIL ON DBLCLICK NIL
 
       nWBtn := (nW - 64) / 2

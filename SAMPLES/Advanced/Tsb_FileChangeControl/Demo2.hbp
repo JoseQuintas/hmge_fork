@@ -17,5 +17,4 @@
 demo2.prg
 
 # Paths to main and additional *.lib
--lwinprocess
-# take library from folder - \samples\Advanced\ShellExec
+-lhmgaddon

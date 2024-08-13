@@ -398,6 +398,7 @@ STATIC FUNCTION myToolBar(oWC)
       HMG_SaveImage( hBmp, cFile, "bmp" )
       aImg1[i] := cFile
       DestroyIcon(hIco)
+      DeleteObject(hBmp)
       DO EVENTS
 
       hIco  := LoadIconByName( aImg[i], 48, 48 )
@@ -406,6 +407,7 @@ STATIC FUNCTION myToolBar(oWC)
       HMG_SaveImage( hBmp, cFile, "png" )
       aImg2[i] := cFile
       DestroyIcon(hIco)
+      DeleteObject(hBmp)
       DO EVENTS
 
       hIco  := LoadIconByName( aImg[i], nHImg, nHImg )
@@ -414,6 +416,7 @@ STATIC FUNCTION myToolBar(oWC)
       HMG_SaveImage( hBmp, cFile, "png" )
       aImg3[i] := cFile
       DestroyIcon(hIco)
+      DeleteObject(hBmp)
       DO EVENTS
 
    NEXT

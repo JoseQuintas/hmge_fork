@@ -214,7 +214,7 @@ STATIC FUNCTION Menu_ViewList(oWnd,oBrw)  // Список по № документов по всей базе
       cMaska := aRet[1]
       cScope := aRet[2]
       IF App.Cargo:cLang == "RU"
-         cTitle := "Выборка: No документа оплаты = " + ALLTRIM(cMaska) 
+         cTitle := "Выборка: No документа оплаты = " + ALLTRIM(cMaska)
       ELSE
          cTitle := "Selection: Payment document No. = " + ALLTRIM(cMaska)
       ENDIF

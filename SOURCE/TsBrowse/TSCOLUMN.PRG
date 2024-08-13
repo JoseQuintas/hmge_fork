@@ -1,6 +1,6 @@
-// ===========================================================================
-// TSColumn.PRG Version 9.0 Nov/01/2009
-// ===========================================================================
+* ===========================================================================
+* TSColumn.PRG Version 9.0 Nov/01/2009
+* ===========================================================================
 
 #ifdef __XHARBOUR__
 #define __SYSDATA__
@@ -246,9 +246,9 @@ CLASS TSColumn
 
 ENDCLASS
 
-// =============================================================================
-// METHOD TSColumn:New() Version 9.0 Nov/01/2009
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:New() Version 9.0 Nov/01/2009
+* =============================================================================
 
 METHOD New( cHeading, bData, cPicture, aColors, aAlign, nWidth, ;
       lBitMap, lEdit, bValid, lNoLite, cOrder, cFooting, ;
@@ -356,15 +356,11 @@ METHOD New( cHeading, bData, cPicture, aColors, aAlign, nWidth, ;
    ::lDefineColumn := ! Empty( DefineCol )
 
    IF ::lDefineColumn
-
       ::aColors := aTmpColor
       ::aColorsBack := aTmpColor
-
    ELSE
-
       ::DefColor( oBrw, aTmpColor )
       ::DefFont ( oBrw )
-
    ENDIF
 
    DEFAULT aTmp3D[ 1 ] := If( oBrw == NIL, .F., oBrw:l3DLook )
@@ -417,18 +413,15 @@ METHOD New( cHeading, bData, cPicture, aColors, aAlign, nWidth, ;
    ENDIF
 
    IF aList != NIL
-
       IF ValType( aList[ 1 ] ) == "A"
          ::aItems := aList[ 1 ]
          ::aData := aList[ 2 ]
       ELSE
          ::aItems := aList
       ENDIF
-
    ENDIF
 
    IF nWidth == NIL
-
       IF oBrw != NIL
          nWidth := SBGetHeight( oBrw:hWnd, If( ::hFont != NIL, ;
             ::hFont, 0 ), 1 )
@@ -444,77 +437,86 @@ METHOD New( cHeading, bData, cPicture, aColors, aAlign, nWidth, ;
             Transform( cValToChar( Eval( bData ) ), cPicture ) ) ) ) + ;
             1 ), 0 ), 16 ) )
       ENDIF
-
    ENDIF
 
-   ::cOrder = cOrder
-   ::lSeek = ! Empty( cOrder ) .AND. ! lEdit 
-   ::cHeading = cHeading
-   ::cFooting = cFooting
-   ::cSpcHeading = cSpcHeading
-   ::cPicture = cPicture
-   ::nAlign = aTmpAlign[ 1 ]
-   ::nHAlign = aTmpAlign[ 2 ]
-   ::nFAlign = aTmpAlign[ 3 ]
-   ::nSAlign = aTmpAlign[ 4 ]
-   ::nWidth = nWidth
-   ::lBitMap = lBitMap
-   ::lEdit = lEdit
-   ::lNoLite = lNoLite
-   ::lNoHilite = lNoLite
-   ::cMsg = cMsg
-   ::cToolTip = cToolTip 
-   ::cMsgEdit = cMsg
-   ::bValid = bValid
-   ::cError = cError
-   ::bPrevEdit = bPrevEdit
-   ::bPostEdit = bPostEdit
-   ::nEditMove = nEditMove
-   ::lFixLite = lFixLite
-   ::l3DLook = aTmp3D[ 1 ]
-   ::l3DLookHead = aTmp3D[ 2 ]
-   ::l3DLookFoot = aTmp3D[ 3 ]
-   ::bWhen = bWhen
-   ::lSpinner = lSpinner
-   ::bUp = bUp
-   ::bDown = bDown
-   ::bMin = bMin
-   ::bMax = bMax
-   ::nClr3DLCell = GetSysColor( COLOR_BTNHIGHLIGHT )
-   ::nClr3DLHead = GetSysColor( COLOR_BTNHIGHLIGHT )
-   ::nClr3DLFoot = GetSysColor( COLOR_BTNHIGHLIGHT )
-   ::nClr3DSCell = GetSysColor( COLOR_BTNSHADOW )
-   ::nClr3DSHead = GetSysColor( COLOR_BTNSHADOW )
-   ::nClr3DSFoot = GetSysColor( COLOR_BTNSHADOW )
-   ::lIndexCol = .F.
-   ::lAdjBmp = .F.
-   ::lAdjBmpHead = .F.
-   ::lAdjBmpFoot = .F.
-   ::cData = cData
-   ::cDefData = cDefData
-   ::cWhen = cWhen
-   ::cValid = cValid
-   ::cPrevEdit = cPrevEdit
-   ::cPostEdit = cPostEdit
-   ::lComboBox = lCombo
-   ::lCheckBox = lCheck
-   ::cDataType = ValType( Eval( ::bData ) )
-   ::lTotal := lTotal 
+   ::cOrder := cOrder
+   ::lSeek := ! Empty( cOrder ) .AND. ! lEdit 
+
+   ::cHeading := cHeading
+   ::cFooting := cFooting
+   ::cSpcHeading := cSpcHeading
+   ::cPicture := cPicture
+
+   ::nAlign := aTmpAlign[ 1 ]
+   ::nHAlign := aTmpAlign[ 2 ]
+   ::nFAlign := aTmpAlign[ 3 ]
+   ::nSAlign := aTmpAlign[ 4 ]
+   ::nWidth := nWidth
+
+   ::lBitMap := lBitMap
+   ::lEdit := lEdit
+   ::lNoLite := lNoLite
+   ::lNoHilite := lNoLite
+   ::cMsg := cMsg
+   ::cToolTip := cToolTip 
+   ::cMsgEdit := cMsg
+   ::bValid := bValid
+   ::cError := cError
+   ::bPrevEdit := bPrevEdit
+   ::bPostEdit := bPostEdit
+
+   ::nEditMove := nEditMove
+
+   ::lFixLite := lFixLite
+   ::l3DLook := aTmp3D[ 1 ]
+   ::l3DLookHead := aTmp3D[ 2 ]
+   ::l3DLookFoot := aTmp3D[ 3 ]
+
+   ::bWhen := bWhen
+   ::lSpinner := lSpinner
+   ::bUp := bUp
+   ::bDown := bDown
+   ::bMin := bMin
+   ::bMax := bMax
+
+   ::nClr3DLCell := GetSysColor( COLOR_BTNHIGHLIGHT )
+   ::nClr3DLHead := GetSysColor( COLOR_BTNHIGHLIGHT )
+   ::nClr3DLFoot := GetSysColor( COLOR_BTNHIGHLIGHT )
+   ::nClr3DSCell := GetSysColor( COLOR_BTNSHADOW )
+   ::nClr3DSHead := GetSysColor( COLOR_BTNSHADOW )
+   ::nClr3DSFoot := GetSysColor( COLOR_BTNSHADOW )
+
+   ::lIndexCol := .F.
+   IF ISOBJECT( oBrw ) .AND. oBrw:nDataType == DATATYPE_ARRAY
+      ::lIndexCol := .T.
+   ENDIF
+
+   ::lAdjBmp := .F.
+   ::lAdjBmpHead := .F.
+   ::lAdjBmpFoot := .F.
+
+   ::cData := cData
+   ::cDefData := cDefData
+   ::cDataType := ValType( Eval( ::bData ) )
    ::cName := cName
+   ::cWhen := cWhen
+   ::cValid := cValid
+   ::cPrevEdit := cPrevEdit
+   ::cPostEdit := cPostEdit
+   ::lComboBox := lCombo
+   ::lCheckBox := lCheck
+   ::lTotal := lTotal 
+
    ::oCellHead := TSBcell():New()
    ::oCellEnum := TSBcell():New()
    ::oCellFoot := TSBcell():New()
    ::oCell := TSBcell():New()
 
-   IF ! Empty( oBrw ) .AND. oBrw:lIsArr
-      ::lIndexCol := .T.
-   ENDIF
-
 RETURN Self
 
-// =============================================================================
-// METHOD TSColumn:Load() Version 9.0 Nov/01/2009
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:Load() Version 9.0 Nov/01/2009
+* =============================================================================
 
 METHOD Load( cInfo ) CLASS TSColumn
 
@@ -554,9 +556,9 @@ METHOD Load( cInfo ) CLASS TSColumn
 
 RETURN NIL
 
-// =============================================================================
-// METHOD TSColumn:Save() Version 9.0 Nov/01/2009
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:Save() Version 9.0 Nov/01/2009
+* =============================================================================
 
 METHOD Save() CLASS TSColumn
 
@@ -604,9 +606,9 @@ METHOD Save() CLASS TSColumn
 RETURN "O" + I2Bin( 2 + Len( ::ClassName() ) + 2 + Len( cInfo ) ) + ;
       I2Bin( Len( ::ClassName() ) ) + ::ClassName() + I2Bin( nProps ) + cInfo
 
-// =============================================================================
-// METHOD TSColumn:SaveColor() Version 7.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:SaveColor() Version 7.0 Adaption
+* =============================================================================
 
 METHOD SaveColor() CLASS TSColumn
 
@@ -632,9 +634,9 @@ METHOD SaveColor() CLASS TSColumn
 
 RETURN NIL
 
-// =============================================================================
-// METHOD TSColumn:RestColor() Version 7.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:RestColor() Version 7.0 Adaption
+* =============================================================================
 
 METHOD RestColor() CLASS TSColumn
 
@@ -660,9 +662,9 @@ METHOD RestColor() CLASS TSColumn
 
 RETURN NIL
 
-// =============================================================================
-// METHOD TSColumn:DefFont() Version 9.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:DefFont() Version 9.0 Adaption
+* =============================================================================
 
 METHOD DefFont( oBrw ) CLASS TSColumn
 
@@ -690,9 +692,9 @@ METHOD DefFont( oBrw ) CLASS TSColumn
 
 RETURN Self
 
-// =============================================================================
-// METHOD TSColumn:DefColor() Version 9.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:DefColor() Version 9.0 Adaption
+* =============================================================================
 
 METHOD DefColor( oBrw, aTmpColor ) CLASS TSColumn
 
@@ -705,9 +707,8 @@ METHOD DefColor( oBrw, aTmpColor ) CLASS TSColumn
          aTmpColor[ 3 ] := GetSysColor( COLOR_BTNTEXT ), ; // nClrHeadFore
          aTmpColor[ 4 ] := GetSysColor( COLOR_BTNFACE ), ; // nClrHeadBack
          aTmpColor[ 5 ] := GetSysColor( COLOR_HIGHLIGHTTEXT ), ; // nClrFocuFore
-         aTmpColor[ 6 ] := GetSysColor( COLOR_HIGHLIGHT ) // nClrFocuBack
-
-      DEFAULT aTmpColor[ 7 ] := GetSysColor( COLOR_WINDOWTEXT ), ; // nClrEditFore
+         aTmpColor[ 6 ] := GetSysColor( COLOR_HIGHLIGHT ), ; // nClrFocuBack
+         aTmpColor[ 7 ] := GetSysColor( COLOR_WINDOWTEXT ), ; // nClrEditFore
          aTmpColor[ 8 ] := GetSysColor( COLOR_WINDOW ), ; // nClrEditBack
          aTmpColor[ 9 ] := GetSysColor( COLOR_BTNTEXT ), ; // nClrFootFore
          aTmpColor[ 10 ] := GetSysColor( COLOR_BTNFACE ), ; // nClrFootBack
@@ -729,9 +730,8 @@ METHOD DefColor( oBrw, aTmpColor ) CLASS TSColumn
          aTmpColor[ 3 ] := oBrw:nClrHeadFore, ;
          aTmpColor[ 4 ] := oBrw:nClrHeadBack, ;
          aTmpColor[ 5 ] := oBrw:nClrFocuFore, ;
-         aTmpColor[ 6 ] := oBrw:nClrFocuBack
-
-      DEFAULT aTmpColor[ 7 ] := oBrw:nClrEditFore, ;
+         aTmpColor[ 6 ] := oBrw:nClrFocuBack, ;
+         aTmpColor[ 7 ] := oBrw:nClrEditFore, ;
          aTmpColor[ 8 ] := oBrw:nClrEditBack, ;
          aTmpColor[ 9 ] := oBrw:nClrFootFore, ;
          aTmpColor[ 10 ] := oBrw:nClrFootBack, ;
@@ -742,14 +742,13 @@ METHOD DefColor( oBrw, aTmpColor ) CLASS TSColumn
          aTmpColor[ 15 ] := oBrw:nClrLine, ;
          aTmpColor[ 16 ] := oBrw:nClrHeadFore, ;
          aTmpColor[ 17 ] := oBrw:nClrHeadBack, ;
+         aTmpColor[ 18 ] := oBrw:nClrSpcHdFore, ;
+         aTmpColor[ 19 ] := oBrw:nClrSpcHdBack, ;
          aTmpColor[ 20 ] := oBrw:nClrSpcHdActive
 
       IF oBrw:lEnum
          DEFAULT aTmpColor[ 18 ] := oBrw:nClrHeadFore, ;
             aTmpColor[ 19 ] := oBrw:nClrHeadBack
-      ELSE
-         DEFAULT aTmpColor[ 18 ] := oBrw:nClrEditFore, ;
-            aTmpColor[ 19 ] := oBrw:nClrEditBack
       ENDIF
 
    ENDIF
@@ -777,9 +776,9 @@ METHOD DefColor( oBrw, aTmpColor ) CLASS TSColumn
 
 RETURN Self
 
-// =============================================================================
-// METHOD TSColumn:SetKeyEvent() Version 9.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:SetKeyEvent() Version 9.0 Adaption
+* =============================================================================
 
 METHOD SetKeyEvent( nKey, bKey, lCtrl, lShift, lAlt ) CLASS TSColumn
 
@@ -787,9 +786,9 @@ METHOD SetKeyEvent( nKey, bKey, lCtrl, lShift, lAlt ) CLASS TSColumn
 
 RETURN NIL
 
-// =============================================================================
-// METHOD TSColumn:ToWidth() Version 9.0 Adaption
-// =============================================================================
+* =============================================================================
+* METHOD TSColumn:ToWidth() Version 9.0 Adaption
+* =============================================================================
 
 METHOD ToWidth( uLen, nKfc, lHeader ) CLASS TSColumn
 
@@ -843,9 +842,9 @@ METHOD ToWidth( uLen, nKfc, lHeader ) CLASS TSColumn
 
 RETURN nWidth
 
-// ============================================================================
-// FUNCTION ColClone() Version 9.0 Adaption
-// =============================================================================
+* ============================================================================
+* FUNCTION ColClone() Version 9.0 Adaption
+* =============================================================================
 
 FUNCTION ColClone( oColS, oBrw )
 
@@ -995,10 +994,10 @@ FUNCTION BiffRec( nOpCode, uData, nRow, nCol, lBorder, nAlign, nPic, nFont )
 
 RETURN cHead + cBody
 
-// ============================================================================
-// FUNCTION StrCharCount() Version 9.0 Nov/01/2009
+* ============================================================================
+* FUNCTION StrCharCount() Version 9.0 Nov/01/2009
 // This function does not exist in all versions of FW, so let's define it here
-// ============================================================================
+* ============================================================================
 
 FUNCTION StrCharCount( cStr, cChr )
 
@@ -1012,10 +1011,10 @@ FUNCTION StrCharCount( cStr, cChr )
 
 RETURN nCount
 
-// ============================================================================
-// FUNCTION StrWBlock() Version 9.0 Nov/01/2009
+* ============================================================================
+* FUNCTION StrWBlock() Version 9.0 Nov/01/2009
 // Creates a View/Edit code block for a numeric field with a character display
-// ============================================================================
+* ============================================================================
 
 FUNCTION StrWBlock( cField, nLen, nDec )
 
@@ -1025,10 +1024,10 @@ FUNCTION StrWBlock( cField, nLen, nDec )
 
 RETURN bBlock
 
-// ============================================================================
-// FUNCTION lIsFile() Version 9.0 Nov/01/2009
+* ============================================================================
+* FUNCTION lIsFile() Version 9.0 Nov/01/2009
 // Like Clipper's File() function for long file names
-// ============================================================================
+* ============================================================================
 
 FUNCTION lIsFile( cFile )
 
@@ -1041,20 +1040,20 @@ FUNCTION lIsFile( cFile )
 
 RETURN .F.
 
-// ============================================================================
-// FUNCTION ArrayWBlock() Version 9.0 Nov/01/2009
+* ============================================================================
+* FUNCTION ArrayWBlock() Version 9.0 Nov/01/2009
 // Creates a View/Edit code block for array
-// ============================================================================
+* ============================================================================
 
 FUNCTION ArrayWBlock( oBrw, nEle )
 
 RETURN {| x | If( PCount() > 0, oBrw:aArray[ oBrw:nAt, nEle ] := x, ;
       oBrw:aArray[ oBrw:nAt, nEle ] ) }
 
-// ============================================================================
-// FUNCTION ComboWBlock() Version 9.0 Nov/01/2009
+* ============================================================================
+* FUNCTION ComboWBlock() Version 9.0 Nov/01/2009
 // Creates a View/Edit code block for column combobox
-// ============================================================================
+* ============================================================================
 
 FUNCTION ComboWBlock( oBrw, uField, nCol, aList )
 

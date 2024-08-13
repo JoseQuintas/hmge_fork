@@ -27,7 +27,7 @@ FUNCTION myTsbInit( ob, oTsb )  // настройки
    WITH OBJECT ob
       :lNoKeyChar := .F.             // ввод в ячейки от букв, цифр
       :nHeightCell   := nHImg        // высота ячеек = высоте картинки
-      //:nHeightCell += 6
+      //:nHeightCell += 6            // добавка к высоте
       :nHeightSpecHd := 12           // высота спецхидера ENUMERATOR
       :lFooting      := .T.          // использовать подвал
       :lDrawFooters  := .T.          // рисовать  подвалы
@@ -44,16 +44,20 @@ FUNCTION myTsbInit( ob, oTsb )  // настройки
       :aColumns[1]:aBitMaps := oTsb:aBmp1[2]
       :aColumns[1]:uBmpCell := {|nc,ob| nc:=nil, iif( (ob:cAlias)->(Deleted()), ob:aBitMaps[2], ob:aBitMaps[1] ) }
 
-      :aColumns[2]:aBitMaps := oTsb:aBmp1[2]
-      :aColumns[2]:uBmpCell := oTsb:aBmp1[3]
+      :aColumns[2]:aBitMaps := {}
+      // -> oTsb:aBmp1[1] содержит имя-ресурса, создаём массив хендлов ресурса !!! ВОТ ТАК ПРАВИЛЬНО
+      AEval(oTsb:aBmp1[1], {|cn| AAdd(:aColumns[2]:aBitMaps, LoadImage(cn,,nHImg,nHImg))})
+      :aColumns[2]:uBmpCell := oTsb:aBmp1[2]   // блок-код смены картинок -> Column_TSB.prg
       :aColumns[2]:nAlign   := nMakeLong( DT_CENTER, DT_CENTER )
       :aColumns[2]:nHAlign  := DT_CENTER
 
       nI := :nColumn("KR1", .T.)
-      :aColumns[nI]:lBitMap  := .T.           // убрать показ значений поля из колонки
-      :aColumns[nI]:nWidth   := nHImg         // ширина колонки как у картинки
-      :aColumns[nI]:aBitMaps := oTsb:aBmp6[2]
-      :aColumns[nI]:uBmpCell := oTsb:aBmp6[3]
+      :aColumns[nI]:lBitMap  := .T.            // убрать показ значений поля из колонки
+      :aColumns[nI]:nWidth   := nHImg          // ширина колонки как у картинки
+      :aColumns[nI]:aBitMaps := {}
+      // -> oTsb:aBmp6[1] содержит имя-ресурса, создаём массив хендлов ресурса !!! ВОТ ТАК ПРАВИЛЬНО
+      AEval(oTsb:aBmp6[1], {|cn| AAdd(:aColumns[nI]:aBitMaps, LoadImage(cn,,nHImg,nHImg))})
+      :aColumns[nI]:uBmpCell := oTsb:aBmp6[2]  // блок-код смены картинок -> Column_TSB.prg
       :aColumns[nI]:nAlign   := nMakeLong( DT_CENTER, DT_CENTER )
       :aColumns[nI]:nHAlign  := DT_CENTER
       //:aColumns[nI]:bData    :=  {||Nil}
@@ -119,33 +123,37 @@ FUNCTION myTsbColor( oBrw )
       :nClr16All  := {:nHead1,CLR_HRED}                 // 16, фона спецхидер все записи
       :nClr16Del  := {:nHead1,CLR_BLUE}                 // 16, фона спецхидер удалённые записи
       :nClr16New  := {:nHead1,CLR_ORANGE}               // 16, фона спецхидер список по записям
-      //:nClrLine   := aStaticLineColorTsb              // строка с "------"
-      :aClrBrush  := aBClrBr                            // цвет фона под таблицей
+      //:nClrLine := aStaticLineColorTsb              // строка с "------"
+      :aClrBrush  := aBClrBr                            // цвет фона под таблицей - резерв
   END WITH
 
    WITH OBJECT oBrw
       O := :Cargo
-      :nClrLine              := RGB(186,85,211)                  // COLOR_GRID
+      :nClrLine := RGB(186,85,211)                               // COLOR_GRID
       :SetColor( {  1 }, { { || CLR_BLACK               } } )    // 1 , текста в ячейках таблицы
       :SetColor( {  2 }, { { || O:nClrBC                } } )    // 2 , фона в ячейках таблицы
       :SetColor( {  3 }, { { || CLR_WHITE               } } )    // 3 , текста шапки таблицы
       :SetColor( {  4 }, { { || { O:nHead2, O:nHead1 }  } } )    // 4 , фона шапка таблицы
       :SetColor( {  5 }, { { || RGB(0,0,0)              } } )    // 5 , текста курсора, текст в ячейках с фокусом
       :SetColor( {  6 }, { { |a,b,c| a:=nil, iif( c:nCell == b, -CLR_HRED, -RGB(1,1,1) ) } } )  // 6 , фона курсора
+      :SetColor( {  7 }, { { || CLR_ORANGE              } } )    // 7 , текста редактируемого поля
+      :SetColor( {  8 }, { { || CLR_GREEN               } } )    // 8 , фона редактируемого поля
       :SetColor( {  9 }, { { || CLR_WHITE               } } )    // 9 , текста подвала таблицы
       :SetColor( { 10 }, { { || { O:nHead2, O:nHead1 }  } } )    // 10, фона подвала таблицы
       :SetColor( { 11 }, { { || RGB(0,0,0)              } } )    // 11, текста неактивного курсора (selected cell no focused)
       :SetColor( { 12 }, { { |a,b,c| a:=nil, iif( c:nCell == b, -CLR_HRED, -RGB(9,57,16) ) } } ) // 12, фона неактивного курсора (selected cell no focused)
-      :hBrush  := CreateSolidBrush(o:aClrBrush[1], o:aClrBrush[2], o:aClrBrush[3])  // цвет фона под таблицей
-      // задать цвета суперхидеру
-      :SetColor( { 16 }, { { ||  O:nClr16  }  } ) // 16, фона спецхидер
-      :SetColor( { 17 }, { O:nClr17           } ) // 17, текста спецхидер
+      :SetColor( { 16 }, { { ||  O:nClr16  }  } )                // 16, фона суперхидер
+      :SetColor( { 17 }, { O:nClr17           } )                // 17, текста суперхидер
+      :SetColor( { 18 }, { { || CLR_RED }                 } )    // 18, текста спецхидер
+      :SetColor( { 19 }, { { || O:nBClrSpH }              } )    // 19, фона спецхидер
+      //:hBrush  := CreateSolidBrush(o:aClrBrush[1], o:aClrBrush[2], o:aClrBrush[3])  // цвет фона под таблицей - не надо
    END WITH
 
    // изменим цвет колонки - своя виртуальная колонка / own virtual column
    oBrw:GetColumn("ORDKEYNO"):nClrBack     := oBrw:Cargo:nBtnFace
+   oBrw:GetColumn("ORDKEYNO"):nClrFore     := CLR_RED
    oBrw:GetColumn("ORDKEYNO"):nClrFootBack := CLR_WHITE
-   oBrw:GetColumn("ORDKEYNO"):nClrFootFore := CLR_BLACK
+   oBrw:GetColumn("ORDKEYNO"):nClrFootFore := CLR_RED
    oBrw:GetColumn("KR2"     ):nClrBack     := CLR_WHITE   // колонка с картинками
    oBrw:GetColumn("KR1"     ):nClrBack     := CLR_WHITE   // колонка с картинками
    oBrw:GetColumn("PUSTO"   ):nClrBack     := CLR_YELLOW  // колонка по scope
@@ -158,6 +166,7 @@ FUNCTION myTsbColor( oBrw )
       ENDIF
       oCol:nClrEditFore := CLR_HBLUE                 // цвет фонта ячейки при редактировании
       oCol:nClrEditBack := HMG_RGB2n(239,247,152)    // цвет фона ячейки при редактировании
+      oCol:nFAlign      := DT_CENTER                 // в подвале текст по центру
    NEXT
 
    FOR nCol := 1 TO Len(oBrw:aColumns)
@@ -240,7 +249,8 @@ FUNCTION myTsbFont( oBrw )
 
    hFont := oBrw:aColumns[1]:hFontSpcHd  // 4-special header font
    // установить фонт для 1 колонки таблицы
-   oBrw:aColumns[1]:hFont := hFont     // 1-cells font
+   oBrw:aColumns[1]:hFont     := hFont     // 1-cells font
+   oBrw:aColumns[1]:hFontFoot := hFont     // 3-footer font
 
     // фонты для колонок 3-4 таблицы, остальные не надо
    For nI := 2 To 5  //oBrw:nColCount()
@@ -970,7 +980,7 @@ STATIC FUNCTION Cell_Clipboard(oBrw,cType,nCol,cNmCol,cField,cFldTp)
       ELSE
          cMsg := "Не соответствие типов данных при вставке !"
          cMsg += ";  Колонка: " + cNmCol + " тип: " + cType
-         cMsg += ";Поле в БД: " + cField + " тип: " + cFType 
+         cMsg += ";Поле в БД: " + cField + " тип: " + cFType
          cMsg += ";;Data type mismatch when inserting!"
          cMsg += "; Column: " + cNmCol + " type: " + cType
          cMsg += ";Field in the database: " + cField + " type: " + cFType
@@ -1290,11 +1300,11 @@ FUNCTION myTsbEnd( oBrw )
    IF IsString( oBrw:Cargo:cMaska )
       cMaska := oBrw:Cargo:cMaska
    ELSE
-      cMaska := App.Cargo:oIni:MAIN:cMaska 
+      cMaska := App.Cargo:oIni:MAIN:cMaska
    ENDIF
    cMaska  := ALLTRIM(cMaska)                             // № док.оплаты
    IF LEN(cMaska) == 0
-      cMaska := App.Cargo:oIni:MAIN:cMaska 
+      cMaska := App.Cargo:oIni:MAIN:cMaska
    ENDIF
    ? ProcNL(), "cMaska=", cMaska
    // --------- подключаем здесь SCOPE ---------
@@ -1335,7 +1345,7 @@ FUNCTION TitleSuperHider(cMaska,lSay)
    LOCAL cTtl
    DEFAULT lSay := .T.
 
-   IF lSay 
+   IF lSay
       IF App.Cargo:cLang == "RU"
          cTtl := "Выборка: No документа оплаты = " + cMaska + CRLF
          cTtl += "Редактирование колонок - разрешено" + CRLF

@@ -123,7 +123,7 @@ FUNCTION CreateBrowse( nY, nX, nW, nH )
    
    DEFINE TBROWSE oBrw OBJ oBrw AT nY, nX WIDTH nW HEIGHT nH ALIAS cAls GRID ;
           COLORS    { CLR_BLACK, CLR_BLUE }     ;
-          FONT      "Tahona"                    ; //"MS Sans Serif"
+          FONT      "Tahoma"                    ;
           SIZE      12                          ;
           COLUMNS   { "F2", "F1", "F3", "CODE" }
 
@@ -365,7 +365,7 @@ FUNCTION Show_Card(oBrw,aDim,lEditCard,nRecnoEdit)
    LOCAL aCargo, actpos := {0,0,0,0}
    LOCAL nCol, nRow, nWidth, nHeight, cMsgIndx
    LOCAL cMsg, aBackColor := { 242, 245, 204 }
-   LOCAL cFont := "Tahona", nFontSize := 14
+   LOCAL cFont := "Tahoma", nFontSize := 14
    LOCAL nI, nX, nY, nWLbl, nHF, nWGbx, cN, cN2
    LOCAL aCardName, aCardFld, aCardType, aCardFSpr, cRun
    LOCAL nG, nK, cVal, xVal, aObjGBox, nColButt, cNButt

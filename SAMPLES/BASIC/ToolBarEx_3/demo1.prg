@@ -15,7 +15,7 @@
 
 FUNCTION Main()
    LOCAL cForm := "wMain" , aBColor, aTsbBClr
-   LOCAL cTitle, nY, nX, nH, nW, nG, owc, o 
+   LOCAL cTitle, nY, nX, nH, nW, nG, owc, o
 
    nY := nX := 0  ;  nG  := 10  // отсупы по краям формы
    nW := Sys.ClientWidth
@@ -26,7 +26,7 @@ FUNCTION Main()
 
    DEFINE WINDOW &cForm AT nY, nX WIDTH nW HEIGHT nH TITLE cTitle ;
       MINWIDTH 600 MINHEIGHT 600                                  ; // блокировка уменьшения размеров окна
-      MAIN TOPMOST                                                ;            
+      MAIN TOPMOST                                                ;
       BACKCOLOR aBColor                                           ;
       ON MAXIMIZE ( ResizeForm( ThisWindow.Object ) )             ;
       ON SIZE     ( ResizeForm( ThisWindow.Object ) )             ;
@@ -40,13 +40,13 @@ FUNCTION Main()
       owc:nG       := nG               // отступы по краям формы
       owc:nHTBar   := 0                // высота ToolBar
 
-      myToolBar(owc)   
+      myToolBar(owc)
       nY  := owc:nHTBar + nG
       nX  := nG
       nW  := This.ClientWidth
       nH  := This.ClientHeight
 
-      @ nY, nX LABEL Label_Tsb VALUE "" WIDTH nW-nG*2 HEIGHT nH-nG*2-nY BACKCOLOR aTsbBClr BORDER 
+      @ nY, nX LABEL Label_Tsb VALUE "" WIDTH nW-nG*2 HEIGHT nH-nG*2-nY BACKCOLOR aTsbBClr BORDER
       owc:cObjSize1 := "Label_Tsb"         // запомним объект для изменения размеров
 
       ON KEY F1     ACTION NIL
@@ -189,13 +189,13 @@ INIT PROCEDURE Sets_ENV()
 
    Default o:oIni:MAIN := oHmgData()
    Default o:oIni:MAIN:aBClrMain    := {215, 166, 0}
-   Default o:oIni:MAIN:MainFont     := { o:cFontName2 , o:nFontSize+2 , .F., .F. } 
+   Default o:oIni:MAIN:MainFont     := { o:cFontName2 , o:nFontSize+2 , .F., .F. }
    Default o:oIni:MAIN:aWindow      := {0, 0, 0, 0}
 
    Default o:oIni:PATH := oHmgData()
-   Default o:oIni:PATH:PathTemp  := App.Cargo:cPathTemp 
-   Default o:oIni:PATH:PathDbf   := App.Cargo:cPathDbf  
-   Default o:oIni:PATH:PathRes   := App.Cargo:cPathRes  
+   Default o:oIni:PATH:PathTemp  := App.Cargo:cPathTemp
+   Default o:oIni:PATH:PathDbf   := App.Cargo:cPathDbf
+   Default o:oIni:PATH:PathRes   := App.Cargo:cPathRes
    Default o:oIni:PATH:PathStart := App.Cargo:cPathStart
 
    Save_Ini2File( o )
@@ -267,6 +267,7 @@ STATIC FUNCTION myToolBar(oWC)
       HMG_SaveImage( hBmp, cFile, "gif" )
       aImg3[i] := cFile
 
+      DeleteObject(hBmp)
       DestroyIcon(hIco)
       DO EVENTS
    NEXT
@@ -313,25 +314,25 @@ STATIC FUNCTION myToolBar(oWC)
    NEXT
    nWTxt := IIF(nWTxt < nHImg, nHImg, nWTxt )   // nHImg-высота bmp
    nW    := nWTxt + 5                           // ширина кнопки
-   nH    := nHImg + 5 + nFSize + 5              // высота кнопки  
+   nH    := nHImg + 5 + nFSize + 5              // высота кнопки
    ? "ToolBar: nW=",nW, "nH=",nH
 
    DEFINE SPLITBOX HANDLE hSpl
 
-      IF lBold 
+      IF lBold
          DEFINE TOOLBAREX ToolBar_1 CAPTION "Menu 1:" BUTTONSIZE nW, nH FLAT ;
-            FONT cFont SIZE nFSize BOLD TOOLTIP "Double Clik for customizing" CUSTOMIZE 
+            FONT cFont SIZE nFSize BOLD TOOLTIP "Double Clik for customizing" CUSTOMIZE
       ELSE
          DEFINE TOOLBAREX ToolBar_1 CAPTION "Menu 1:" BUTTONSIZE nW, nH FLAT ;
-            FONT cFont SIZE nFSize  TOOLTIP "Double Clik for customizing" CUSTOMIZE 
+            FONT cFont SIZE nFSize  TOOLTIP "Double Clik for customizing" CUSTOMIZE
       ENDIF
 
-         // так не надо делать ! 
+         // так не надо делать !
          // это просто в качестве примера показа различных форматов картинок
          // контролы на окне по именам, должны быть уникальными
-         FOR i := 1 TO LEN(aCap) 
+         FOR i := 1 TO LEN(aCap)
 
-             cObj := aObj[i]    // контрол на окне 
+             cObj := aObj[i]    // контрол на окне
              BUTTON &cObj CAPTION aCap[i] PICTURE aImg[i] TOOLTIP aImg[i]   ;
                ACTION _wPost(This.Name, ,This.Name) SEPARATOR  AUTOSIZE
 
@@ -342,7 +343,7 @@ STATIC FUNCTION myToolBar(oWC)
          NEXT
 
       END TOOLBAR
-      nH := This.ToolBar_1.Height 
+      nH := This.ToolBar_1.Height
 
    END SPLITBOX
 

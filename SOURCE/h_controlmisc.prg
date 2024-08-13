@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2023, https://harbour.github.io/
+    Copyright 1999-2024, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -1026,7 +1026,7 @@ FUNCTION _DeleteAllItems ( ControlName , ParentForm )
 #ifdef _TSBROWSE_
    CASE t == "TBROWSE"
       oGet := GetObjectByHandle( c )
-      IF ISOBJECT( oGet ) .AND. oGet:lIsArr
+      IF ISOBJECT( oGet ) .AND. oGet:nDataType == 2 /*DATATYPE_ARRAY*/
          oGet:DeleteRow( .T. )
       ENDIF
 #endif

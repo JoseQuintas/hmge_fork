@@ -64,7 +64,7 @@ FUNCTION UseBase(cAlsMain,cDbf)
    INDEX ON &cUsl  TAG V22LIST  TO (cInxTemp)  FOR  &cFor         // все записи ручного ввода
    //------------------------------------------------------------
 
-   IF App.Cargo:cLang == "RU" 
+   IF App.Cargo:cLang == "RU"
       aFile := { {"City.Dbf","City"} , {"Street.Dbf","Street"} , {"Operat.Dbf","Operat"},;
                {"firma.Dbf","firma"} , {"Bank.Dbf","Bank"} , {"Oplata.Dbf","Oplata"} }
    ELSE
@@ -149,18 +149,18 @@ FUNCTION DbfSelection(nVal,cAls)
       NEXT
 
    ELSEIF nVal == 2
-      IF App.Cargo:cLang # "RU" 
-         SET CODEPAGE TO ENGLISH       
-         SET LANGUAGE TO ENGLISH       
+      IF App.Cargo:cLang # "RU"
+         SET CODEPAGE TO ENGLISH
+         SET LANGUAGE TO ENGLISH
       ENDIF
       // список док. по мес€цам года + ручной ввод оператора ( code = '22' )
       OrdSetFocus("V22DATE")
       FOR nI := 1 TO ORDKEYCOUNT()  // общее кол-во записей по индексу
          ORDKEYGOTO(nI)
          dDate := (cAls)->DATEVVOD2
-         IF App.Cargo:cLang == "RU" 
+         IF App.Cargo:cLang == "RU"
             cStr := "список ручного ввода от"
-         ELSE                       
+         ELSE
             cStr := "manual input list from"
          ENDIF
          cStr += " " + DTOC(dDate)

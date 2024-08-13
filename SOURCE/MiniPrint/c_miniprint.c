@@ -536,7 +536,7 @@ HB_FUNC( _HMG_PRINTER_PRINTDIALOG )
       pDevMode = ( LPDEVMODE ) GlobalLock( pd.hDevMode );
 
       hb_reta( 4 );
-      HB_STORVNL( ( LONG_PTR ) pd.hDC, -1, 1 );
+      hmg_storvnl_HANDLE( pd.hDC, -1, 1 );
       #ifndef UNICODE
       HB_STORC( ( const char * ) pDevMode->dmDeviceName, -1, 2 );
       #else

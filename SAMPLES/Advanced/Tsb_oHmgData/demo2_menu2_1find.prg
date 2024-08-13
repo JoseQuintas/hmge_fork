@@ -130,17 +130,18 @@ STATIC FUNCTION TsbReport( oWnd, cAls, cTitle )
       ON INIT    _wPost( 0)                                      ;
       ON RELEASE _wSend(90)
 
-      This.Cargo  := oHmgData() ; owc := This.Cargo  // для окна создаем объект без переменных (условно пустой)
-      owc:oWin    := This.Object      // объект окна
-      owc:cForm   := This.Name        // имя окна
-      owc:aReturn := {}               // вернуть массив выбранных значений
-      owc:nHIco   := 48               // высота иконки на кнопке
-      owc:aFldSum := aFldSum          // для подвала таблицы - итого
-      owc:nCount  := aItogo[1]
-      owc:aItogo  := aItogo[2]
+      This.Cargo   := oHmgData() ; owc := This.Cargo  // для окна создаем объект без переменных (условно пустой)
+      owc:oWin     := This.Object      // объект окна
+      owc:cForm    := This.Name        // имя окна
+      owc:aReturn  := {}               // вернуть массив выбранных значений
+      owc:nHIco    := 58               // высота иконки на кнопке
+      owc:aFldSum  := aFldSum          // для подвала таблицы - итого
+      owc:nCount   := aItogo[1]
+      owc:aItogo   := aItogo[2]
+      owc:ahIcoDel := {}               // для удаления хендлов иконок с формы
 
       /////////////////////// кнопки вверху формы ///////////////////////////////////
-      aHW := myTopMenu( nY/2, nX, nG, owc:nHIco )
+      aHW := myTopMenu( nY/2, nX, nG, owc:nHIco, owc )
       nY  := aHW[1]
       nX  := nG
       nW  := This.ClientWidth
@@ -220,7 +221,22 @@ STATIC FUNCTION TsbReport( oWnd, cAls, cTitle )
       // Работа с таблицей
       o:Event( 22, {|ow| myTsbItogo(ow)                  } )    // итого refresh
 
-      o:Event( 90, {|  | aReturn := (This.Cargo):aReturn  } )    // возврат LOCAL aReturn
+      o:Event( 90, {|ow,ky| // Release
+                           Local cMsg, ah
+                           ow:Hide()
+                           ?  ( cMsg := ProcNL() )
+                           ?? "~~~[ "+ow:Name+":Event("+hb_ntos(ky)+") ]~~~"
+                           ?  Repl("~", Len(cMsg)), "=> RELEASE WINDOW <=", ow:Name
+                           ah := ow:Cargo:ahIcoDel
+                           ? Repl("~", Len(cMsg)),"Delete handle icon - ow:Cargo:ahIcoDel="
+                           ?? ah, HB_ValToExp(ah)
+                           IF IsArray(ah)
+                              AEval(ah, {|h| DestroyIcon(h) })  // удалить хендлы иконок
+                           ENDIF
+                           DO EVENTS
+                           aReturn := (This.Cargo):aReturn  // возврат LOCAL aReturn
+                           RETURN NIL
+                          } )
 
       o:Event( 98, {|ow|
                     Local oRpt := ow:Cargo:oRpt
@@ -342,6 +358,7 @@ STATIC FUNCTION myTsbColor(oRpt,oBrw)  // цвета изменить
       oRpt:SetColor( {  1 }, { { || CLR_BLUE     } } )    // 1 , текста в ячейках таблицы
       oRpt:SetColor( {  2 }, { { || nClrBC       } } )    // 2 , фона в ячейках таблицы
    NEXT
+   DeleteObject(oRpt:hBrush)
    oRpt:hBrush := CreateSolidBrush(aBClr[1], aBClr[2], aBClr[3])  // цвет фона под таблицей
    oRpt:GetColumn("ORDKEYNO"):nClrBack := oBrw:Cargo:nBtnFace
    oRpt:GetColumn("ORDKEYNO"):nClrFore := CLR_RED
@@ -534,12 +551,18 @@ STATIC FUNCTION New2Dbf(cDbf,cAls,aRpt)
 RETURN lUsed
 
 ///////////////////////////////////////////////////////////////////////////////////
-STATIC FUNCTION myTopMenu( nY, nX, nG, nHIco )
-   LOCAL nHeight, nWidth, i, y, x, w, h, nGaps, cObj, aObj, aCEng, nW, nH
-   LOCAL aIcon, aBClr, aPost, aCapt, cCap, nWBtn, aFont, nPosWin, nHAlign
+STATIC FUNCTION myTopMenu( nY, nX, nG, nHIco, owc )
+   LOCAL nHeight, nWidth, i, y, x, w, h, nGaps, cObj, aObj, aCEng, nW, nH, aRet
+   LOCAL aIcon, aBClr, aPost, aCapt, cCap, nWBtn, aFont, nPosWin, nHAlign, aHndl
    LOCAL aGrad, nHBtn, lIco, aBtnObj, aFntClr, aBlk, nWCap, nWTxt, lVert, lLeft
+   DEFAULT owc := NIL
 
-   ? ProcNL(), nY, nX, nG, nHIco
+   IF owc == NIL
+      owc := This.Cargo     // Cargo текущего окна
+      owc:ahIcoDel := {}    // для удаления хендлов иконок с формы
+   ENDIF
+
+   ? ProcNL(), nY, nX, nG, nHIco, owc:ahIcoDel
    nW      := This.ClientWidth
    nH      := This.ClientHeight
    nPosWin := 1         // 1-TopWindow // не делал: 2-BottomWindow, 3-LeftWindow, 4-RightWindow
@@ -594,8 +617,14 @@ STATIC FUNCTION myTopMenu( nY, nX, nG, nHIco )
       FOR i := 1 TO LEN(aCapt)
          cObj := "Btn" + aPost[i]  //StrZero(i, 2)
          cCap := StrTran( aCapt[i], ";" , CRLF )
-         my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
+         aRet := my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
          AADD( aBtnObj, { i, cObj, y, x, w, h, cCap, aBClr[i], aGrad[i], aIcon[i], aPost[i], aBlk[i] } )
+         aHndl := aRet[3]
+         IF LEN(aHndl) > 0
+            // для удаления хендлов иконок с формы
+            AADD( owc:ahIcoDel , aHndl[1] )
+            AADD( owc:ahIcoDel , aHndl[2] )
+         ENDIF
          x += This.&(cObj).Width + nGaps
          nWidth := x
       NEXT
@@ -606,8 +635,14 @@ STATIC FUNCTION myTopMenu( nY, nX, nG, nHIco )
       FOR i := LEN(aCapt) TO 1 STEP -1
          cObj := "Btn" + aPost[i]  //StrZero(i, 2)
          cCap := StrTran( aCapt[i], ";" , CRLF )
-         my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
+         aRet := my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
          AADD( aBtnObj, { i, cObj, y, x, w, h, cCap, aBClr[i], aGrad[i], aIcon[i], aPost[i], aBlk[i] } )
+         aHndl := aRet[3]
+         IF LEN(aHndl) > 0
+            // для удаления хендлов иконок с формы
+            AADD( owc:ahIcoDel , aHndl[1] )
+            AADD( owc:ahIcoDel , aHndl[2] )
+         ENDIF
          x -= (This.&(cObj).Width + nGaps )
          nWidth := x
       NEXT
@@ -619,8 +654,14 @@ STATIC FUNCTION myTopMenu( nY, nX, nG, nHIco )
       FOR i := 1 TO LEN(aCapt)
          cObj := "Btn" + aPost[i]  //StrZero(i, 2)
          cCap := StrTran( aCapt[i], ";" , CRLF )
-         my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
+         aRet := my2BUTTON(y, x, w, h, cObj, cCap, {aBClr[i], aGrad[i]}, , aIcon[i], aFntClr, aFont, aPost[i], aBlk[i], .F., lVert, lLeft )
          AADD( aBtnObj, { i, cObj, y, x, w, h, cCap, aBClr[i], aGrad[i], aIcon[i], aPost[i], aBlk[i] } )
+         aHndl := aRet[3]
+         IF LEN(aHndl) > 0
+            // для удаления хендлов иконок с формы
+            AADD( owc:ahIcoDel , aHndl[1] )
+            AADD( owc:ahIcoDel , aHndl[2] )
+         ENDIF
          x += This.&(cObj).Width + nGaps
          nWidth := x
       NEXT

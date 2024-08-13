@@ -7,6 +7,16 @@
 #include "hmg.ch"
 #include "dbinfo.ch"
 
+#xtranslate MiniGuiVersionChar()  => Substr( MiniGuiVersion(), At(".", MiniGuiVersion()) - 2, 8 )
+#xtranslate MiniGuiVersionNumba() => Int( Val( MiniGuiVersionChar() ) * 10000 + Val( Right(MiniGuiVersionChar(), 2) ) )
+////////////////////////////////////////////////////////////////////////
+FUNCTION MGVersChar()
+   RETURN MiniGuiVersionChar()
+
+////////////////////////////////////////////////////////////////////////
+FUNCTION MGVersNumba()
+   RETURN MiniGuiVersionNumba()
+
 ////////////////////////////////////////////////////////////////
 FUNCTION ProcNL(nVal, cMsg)
    Default cMsg := ">>> "
@@ -273,6 +283,7 @@ HICON hIcon = ( HICON ) hb_parnl( 1 );
 
 hb_retnl( ( LONG ) Icon2Bmp( hIcon ) );
 }
+
 
 #pragma ENDDUMP
 

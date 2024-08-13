@@ -901,12 +901,10 @@ STATIC FUNCTION myFont( lCreate, nFSDef )
       NEXT
    ELSE
       DEFINE FONT TsbNorm   FONTNAME "DejaVu Sans Mono"   SIZE nFSDef
-      //DEFINE FONT TsbNorm   FONTNAME "Arial"              SIZE nFSDef
-      DEFINE FONT TsbBold   FONTNAME "Tahona"             SIZE nFSDef BOLD
+      DEFINE FONT TsbBold   FONTNAME "Tahoma"             SIZE nFSDef BOLD
       DEFINE FONT TsbSpecH  FONTNAME _HMG_DefaultFontName SIZE nFSDef BOLD
       DEFINE FONT TsbSuperH FONTNAME "Comic Sans MS"      SIZE nFSDef + 2 BOLD
       DEFINE FONT TsbEdit   FONTNAME "DejaVu Sans Mono"   SIZE nFSDef BOLD
-      //DEFINE FONT TsbEdit   FONTNAME "Arial"              SIZE nFSDef BOLD
    ENDIF
 
 RETURN .T.

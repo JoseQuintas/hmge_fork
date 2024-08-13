@@ -61,7 +61,7 @@ FUNCTION CellEditMemo(uVal, oBrw)   // создать окно редактирования memo
       FONT cFont SIZE nFSize                                     ;
       ON SIZE {|| ResizeMemoForm( This.Cargo ) }                 ;
       ON INIT {|| _wPost(0) }                                    ;
-      ON RELEASE _wSend(90)                                      
+      ON RELEASE _wSend(90)
       //ON LOSTFOCUS _wSend(92)
 
       This.Cargo := oHmgData()
@@ -98,13 +98,13 @@ FUNCTION CellEditMemo(uVal, oBrw)   // создать окно редактирования memo
       ON KEY ESCAPE ACTION _wPost(99)
 
       o := This.Object
-      o:Event( 0, {|ow| // ON INIT 
+      o:Event( 0, {|ow| // ON INIT
                         Local nWDsk := Sys.ClientHeight
-                        Local nHWin := ow:Row + ow:Height 
+                        Local nHWin := ow:Row + ow:Height
                         IF nHWin > nWDsk
                            ow:Row := nWDsk - ow:Height
                         ENDIF
-                        This.Topmost := .F. 
+                        This.Topmost := .F.
                         ow:SetFocus('Edit_Memo')
                         Return Nil
                         } )
@@ -138,7 +138,7 @@ FUNCTION CellEditMemo(uVal, oBrw)   // создать окно редактирования memo
 
       o:Event(92, {|ow| // ON LOSTFOCUS
                         Local cVal := This.Edit_Memo.Value
-                        Local cOld := ow:Cargo:uVal    
+                        Local cOld := ow:Cargo:uVal
                         ? "Запрос на запись / Write request", cVal, cOld
                         _wPost(99, ow:Name)
                         Return Nil

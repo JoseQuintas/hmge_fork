@@ -28,9 +28,9 @@ CREATE CLASS frm_Class
    VAR lWithTab        INIT .T.
 
    VAR xDlg
-   VAR aControlList   INIT {}
-   VAR aAllSetup      INIT {}
-   VAR aDlgKeyDown    INIT {}
+   VAR aControlList    INIT {}
+   VAR aAllSetup       INIT {}
+   VAR aDlgKeyDown     INIT {}
 
    METHOD First()
    METHOD Last()
@@ -194,7 +194,7 @@ METHOD EditKeyOn() CLASS frm_Class
 
    // search key field
    FOR EACH aItem IN ::aControlList
-      IF aItem[ CFG_CTLTYPE ] == TYPE_HWGUIBUG
+      IF aItem[ CFG_CTLTYPE ] == TYPE_BUG_HWGUI
             gui_ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
       ELSEIF aItem[ CFG_CTLTYPE ] == TYPE_TEXT .AND. aItem[ CFG_ISKEY ] .AND. ! aItem[ CFG_SAVEONLY ]
          gui_ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
@@ -220,7 +220,7 @@ METHOD EditOn() CLASS frm_Class
       TYPE_DATEPICKER, TYPE_SPINNER, TYPE_BROWSE }
 
    FOR EACH aItem IN ::aControlList
-      IF aItem[ CFG_CTLTYPE ] == TYPE_HWGUIBUG
+      IF aItem[ CFG_CTLTYPE ] == TYPE_BUG_HWGUI
             gui_ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
       ELSEIF gui_LibName() == "HMGE" .AND. aItem[ CFG_CTLTYPE ] == TYPE_BUTTON ;
          .AND. Left( aItem[ CFG_FCONTROL ], 6 ) == "BTNBRW"
@@ -245,8 +245,9 @@ METHOD EditOn() CLASS frm_Class
 METHOD EditOff() CLASS frm_Class
 
    LOCAL aItem
-   LOCAL aDisableList := { TYPE_TEXT, TYPE_MLTEXT, TYPE_HWGUIBUG , TYPE_COMBOBOX, ;
-      TYPE_CHECKBOX, TYPE_DATEPICKER, TYPE_SPINNER, TYPE_BROWSE }
+   LOCAL aDisableList := { TYPE_TEXT, TYPE_MLTEXT, TYPE_COMBOBOX, ;
+      TYPE_CHECKBOX, TYPE_DATEPICKER, TYPE_SPINNER, TYPE_BROWSE, ;
+      TYPE_BUG_HWGUI, TYPE_BUG_HMGE }
 
    FOR EACH aItem IN ::aControlList
       IF hb_AScan( aDisableList, { | e | e == aItem[ CFG_CTLTYPE ] } ) != 0
@@ -291,7 +292,7 @@ METHOD Delete() CLASS frm_Class
             SKIP -1
             IF ! Bof()
                SKIP
-         ENDIF
+            ENDIF
             IF Eof()
                SKIP -1
             ENDIF
@@ -347,7 +348,7 @@ METHOD DataLoad() CLASS frm_Class
          CASE aItem[ CFG_FTYPE ] == "C"
             xValue := ( xValue == "Y" )
          ENDCASE
-         gui_LabelSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
+         gui_ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
 
       CASE ! Empty( aItem[ CFG_FNAME ] ) .AND. aItem[ CFG_CTLTYPE ] == TYPE_COMBOBOX
          xValue := FieldGet( FieldNum( aItem[ CFG_FNAME ] ) )

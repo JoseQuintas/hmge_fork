@@ -9,28 +9,10 @@
  * Adapted for MiniGUI Extended Edition by Grigory Filatov - 2008-2012
 */
 
-#include <minigui.ch>
-
-
-#command COMPRESS [ FILES ] <afiles> ;
-      TO <zipfile> ;
-      BLOCK <block>  ;
-      [ <ovr: OVERWRITE> ] ;
-      [ <srp: STOREPATH> ] ;
-      [ PASSWORD <password> ] ;
-   => ;
-      COMPRESSFILES ( <zipfile>, <afiles>, <block>, <.ovr.>, <.srp.>, <password> )
-
-
-#command UNCOMPRESS [ FILE ] <zipfile> ;
-      [ BLOCK <block> ] ;
-      [ PASSWORD <password> ] ;
-   => ;
-      UNCOMPRESSFILES ( <zipfile>, <block>, <password> )
-
+#include <hmg.ch>
 
 *------------------------------------------------------------------------------*
-PROCEDURE MAIN
+PROCEDURE Main
 *------------------------------------------------------------------------------*
 
    DEFINE WINDOW Form_1 ;
@@ -69,7 +51,6 @@ PROCEDURE MAIN
          RANGEMAX 10
          VALUE 0
          FORECOLOR { 0, 130, 0 }
-         BACKCOLOR { 201, 201, 201 }
       END PROGRESSBAR
 
       DEFINE LABEL Label_1
@@ -143,13 +124,13 @@ RETURN NIL
 FUNCTION ProgressUpdate( nPos, cFile, lShowFileName )
 *------------------------------------------------------------------------------*
 
-DEFAULT lShowFileName := .F.
+   DEFAULT lShowFileName := .F.
 
    Form_1.ProgressBar_1.Value := nPos
    Form_1.Label_1.Value := cFileNoPath( cFile )
 
    IF lShowFileName
-      InkeyGUI( 200 )
+      InkeyGUI( 100 )
    ENDIF
 
 RETURN NIL
@@ -197,73 +178,3 @@ FUNCTION FillFiles( aFiles, cDir, cPath )
    NEXT
 
 RETURN aFiles
-
-#define HB_ZIP_OPEN_ADDINZIP            2
-*------------------------------------------------------------------------------*
-PROCEDURE COMPRESSFILES ( cFileName, aDir, bBlock, lOverwrite, lStorePath, cPassword )
-*------------------------------------------------------------------------------*
-   LOCAL hZip, cZipFile, i
-
-   DEFAULT lOverwrite TO .T.
-
-   IF lOverwrite == .T.
-
-      IF File ( cFileName )
-         DELETE FILE ( cFileName )
-      ENDIF
-
-   ENDIF
-
-   hZip := hb_ZipOpen( cFileName, iif( ! lOverwrite .AND. hb_FileExists( cFileName ), HB_ZIP_OPEN_ADDINZIP, NIL ) )
-
-   IF ! Empty( hZip )
-
-      FOR i := 1 TO Len ( aDir )
-
-         IF ValType ( bBlock ) == 'B'
-            Eval ( bBlock, aDir[ i ], i )
-         ENDIF
-
-         cZipFile := iif( lStorePath, aDir[ i ], cFileNoPath( aDir[ i ] ) )
-
-         hb_ZipStoreFile( hZip, aDir[ i ], cZipFile, cPassword )
-
-      NEXT
-
-      hb_ZipClose( hZip )
-
-   ENDIF
-
-RETURN
-
-*------------------------------------------------------------------------------*
-PROCEDURE UNCOMPRESSFILES ( cFileName, bBlock, cPassword )
-*------------------------------------------------------------------------------*
-   LOCAL i := 0, hUnzip, nErr
-   LOCAL cFile, dDate, cTime, nSize, nCompSize, lCrypted, cComment, cStorePath
-
-   hUnzip := hb_UnZipOpen( cFileName )
-
-   nErr := hb_UnZipFileFirst( hUnzip )
-
-   DO WHILE nErr == 0
-
-      HB_UnzipFileInfo( hUnzip, @cFile, @dDate, @cTime,,,, @nSize, @nCompSize, @lCrypted, @cComment )
-
-      IF ! Empty( ( cStorePath := cFilePath( cFile ) ) ) .AND. ! hb_DirExists( hb_DirSepAdd( cStorePath ) )
-         hb_DirBuild( hb_DirSepAdd( cStorePath ) )
-      ENDIF
-
-      IF ValType ( bBlock ) == 'B'
-         Eval ( bBlock, cFile, ++i )
-      ENDIF
-
-      HB_UnzipExtractCurrentFile( hUnzip, NIL, iif( lCrypted, cPassword, NIL ) )
-
-      nErr := hb_UnZipFileNext( hUnzip )
-
-   ENDDO
-
-   hb_UnZipClose( hUnzip )
-
-RETURN

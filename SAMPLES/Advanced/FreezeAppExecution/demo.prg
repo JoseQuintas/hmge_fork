@@ -35,7 +35,7 @@ PROCEDURE Main
       TITLE PRG_NAME ICON "1_MAIN" ;
       MAIN NOMAXIMIZE NOSIZE       ;
       BACKCOLOR  aBackcolor        ;
-      FONT "Tahona" SIZE 14        ;
+      FONT "Tahoma" SIZE 14        ;
       ;//ON RELEASE {|| _LogFile(.T., REPL("=",20) + " End", ;
       ;//               HB_DATETIME() ), DoEvents()      }   ;  // executed before destroying the window
       ON INTERACTIVECLOSE {|lRet| lRet := myQuit() }         // NO exit while there is a window ShellExecuteEx()

@@ -438,6 +438,7 @@ METHOD End() CLASS TControl
 RETURN ::EndCtrl()
 
 // ---------------------------------------------------------------------------- //
+
 METHOD EraseBkGnd( hDC ) CLASS TControl
 
    LOCAL aRect
@@ -626,6 +627,7 @@ METHOD KillFocus( hCtlFocus ) CLASS TControl
 RETURN ::LostFocus()
 
 // ---------------------------------------------------------------------------- //
+
 METHOD LButtonDown( nRow, nCol, nKeyFlags ) CLASS TControl
 
    ::lMouseDown := .T.
@@ -790,7 +792,7 @@ METHOD SetColor( nClrFore, nClrBack, hBrush ) CLASS TControl
 
 RETURN NIL
 
-// ==========From TWindow ===============================
+// ========== From TWindow ==============================
 
 METHOD SuperKeyDown( nKey, nFlags, xObj ) CLASS TControl
 

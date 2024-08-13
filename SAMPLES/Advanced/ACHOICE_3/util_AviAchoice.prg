@@ -31,7 +31,7 @@ FUNCTION MenuAviAchoice(aMenu, aParWin, aParMenu, aParAvi, aIcoWin)
    DEFAULT aMenu    := { "No menu array" }
    DEFAULT aParWin  := { "Form_Achoice", "Menu-Achoice", App.Cargo:cIconDef, MYBACK, 0, 0, 0, 0 }
    // параметры меню
-   DEFAULT aParMenu := { 40, 20, "Tahona", "Arial", 20, MY_LBLFONT, MY_LBLBACK, .F., .T., nTxtAlignDef }
+   DEFAULT aParMenu := { 40, 20, "Tahoma", "Arial", 20, MY_LBLFONT, MY_LBLBACK, .F., .T., nTxtAlignDef }
    // параметры Avi   // 1-Left Align Avi, 2-Right Align Avi
    DEFAULT aParAvi  := { 1, .F. }   // { nAviAlign, lAviShow } F-нет показа avi на форме
    DEFAULT aIcoWin  := {}           // нет иконки на форме

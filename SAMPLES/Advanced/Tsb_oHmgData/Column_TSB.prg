@@ -11,11 +11,16 @@
 #include "hmg.ch"
 #include "tsbrowse.ch"
 ///////////////////////////////////////////////////////////////////////////////////////////
-FUNCTION Column_TSB( oTsb, cAls )   // список колонок таблицы
+FUNCTION Column_TSB( oTsb, cAls, owc )   // список колонок таблицы
    LOCAL aDim[29], a, i, n, j, oDlu, cFld, cType, bBlock, lEdit, c8Col, aIconDel, aFldSum
    LOCAL aKey[10], cMsg, cErr, lFind, aImgColumn, nHImage, aDcd, aIcon, aField, aName
+   DEFAULT owc := NIL
 
-   IF App.Cargo:cLang == "RU"   
+   IF owc == NIL
+      owc := This.Cargo  // Cargo текущего окна
+   ENDIF
+
+   IF App.Cargo:cLang == "RU"
    // ВНИМАНИЕ ! В базе должно быть поле PUSTO,KR2 которое не используется, это нужно для :LoadFields()
    //            1    2    3            4                  5               6                7             8            9              10
    //         ИТОГО|Edit| тип | название колонок      | поле бд/функц.| ширина поля  | формат поля |блок кода | *F функция1    |  **F функция2
@@ -133,12 +138,12 @@ FUNCTION Column_TSB( oTsb, cAls )   // список колонок таблицы
    oTsb:nHBmp  := nHImage          // запомним для таблицы
 
    // колонка с картинками
-   aImgColumn  := myLoadBmpTsb(1,nHImage)
-   oTsb:aBmp1  := { aImgColumn[1], aImgColumn[2], aImgColumn[3], aImgColumn[4] }
+   aImgColumn  := myLoadBmpTsb( 1, owc )
+   oTsb:aBmp1  := { aImgColumn[1], aImgColumn[2], aImgColumn[3] }
 
    // колонка с картинками
-   aImgColumn  := myLoadBmpTsb(6,nHImage)
-   oTsb:aBmp6  := { aImgColumn[1], aImgColumn[2], aImgColumn[3], aImgColumn[4] }
+   aImgColumn  := myLoadBmpTsb( 6, owc )
+   oTsb:aBmp6  := { aImgColumn[1], aImgColumn[2], aImgColumn[3] }
 
    oTsb:cAls      := cAls
    //                    cell     Head   foot    SpecHider  SuperHider   Edit
@@ -233,20 +238,20 @@ FUNCTION Column_TSB( oTsb, cAls )   // список колонок таблицы
 RETURN aDim
 
 //////////////////////////////////////////////////////////////////
-FUNCTION myLoadBmpTsb(nCol,nHImg)
-   LOCAL aRet, aBmp, aHandle, bBmpCell, nI, nK
+FUNCTION myLoadBmpTsb(nCol, owc)
+   LOCAL aRet, aBmp, bBmpCell
    LOCAL aBmp1 := {"bMinus32", "bZero32", "bPlus32"}
    LOCAL aBmp6 := {"bFWord32","bFExcel32","bFCalc32","bFText32","bFCSV32","bFZero32"}
    LOCAL aMsg6 := {"File MS Word", "File MS Excel", "File OO Calc", "File *.txt",;
                    "File *.csv", "Delete value" }
+
+   IF owc:ahIcoDel == NIL // не объявлена в окне
+      owc:ahIcoDel := {}
+   ENDIF
+
    IF nCol == 1
-      //Логика - правка другого поля/колонки
-      aBmp    := aBmp1
-      nK      := LEN(aBmp)
-      aHandle := ARRAY(nK)
-      FOR nI := 1 TO nK
-         aHandle[nI] := LoadImage(aBmp[nI],,nHImg,nHImg)
-      NEXT
+      // Логика - правка другого поля/колонки
+      aBmp     := aBmp1
       bBmpCell := {|nc,ob| // показ картинки в зависимости от суммы поля PRIXOD
                           Local ocol := ob:aColumns[nc]
                           Local ni   := 0
@@ -263,15 +268,10 @@ FUNCTION myLoadBmpTsb(nCol,nHImg)
                           ENDIF
                           Return ocol:aBitMaps[ni]  // картинку с позиции массива
                           }
-      aRet := { aBmp, aHandle, bBmpCell, {} }
+      aRet := { aBmp, bBmpCell, {} }
    ELSEIF nCol == 6
       // Логика - правка этого поля/колонки KR1
-      aBmp    := aBmp6
-      nK      := LEN(aBmp)
-      aHandle := ARRAY(nK)
-      FOR nI := 1 TO nK
-         aHandle[nI] := LoadImage(aBmp[nI],,nHImg,nHImg)
-      NEXT
+      aBmp     := aBmp6
       bBmpCell := {|nc,ob| // показ картинки в зависимости от поля KR1
                           Local ocol  := ob:aColumns[nc]
                           Local ni    := 0                      // bFZero32
@@ -289,7 +289,7 @@ FUNCTION myLoadBmpTsb(nCol,nHImg)
                           ENDIF
                           Return ocol:aBitMaps[ni]  // картинку с позиции массива
                           }
-      aRet := { aBmp, aHandle, bBmpCell, aMsg6 }
+      aRet := { aBmp, bBmpCell, aMsg6 }
    ELSE
       AlertStop("Нет такой колонки !; nCol="+ HB_NtoS(nCol)+";"+ ProcNL())
       aRet := {}

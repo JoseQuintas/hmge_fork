@@ -78,7 +78,7 @@ PROCEDURE Main
       TITLE PRG_NAME               ;
       MAIN NOMAXIMIZE NOSIZE       ;
       BACKCOLOR  aBackcolor        ;
-      FONT "Tahona" SIZE 14        ;
+      FONT "Tahoma" SIZE 14        ;
       ON INIT {|| _wPost(0) }      ;   // вывод текста в LABEL из контейнера / displaying text in LABEL from container
       ON INTERACTIVECLOSE {|lRet| lRet := myQuit(), This.Label_0.Setfocus } ; // NO exit while there is a window ShellExecuteEx()
       ON RELEASE {|| 
