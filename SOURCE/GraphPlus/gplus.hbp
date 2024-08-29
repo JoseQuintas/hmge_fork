@@ -1,0 +1,19 @@
+#
+# gplus.hbp
+#
+
+#{bcc}-env:DEBUG=yes
+
+-hblib
+-inc
+-o../../lib/GraphPlus
+
+-I../../include;./
+
+-w2 -es2 -ko -q0
+
+{!DEBUG&bcc|mingw}-l
+
+-hbx=../../include/GraphPlus.hbx
+
+GraphPlus.Prg
