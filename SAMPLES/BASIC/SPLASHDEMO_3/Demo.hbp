@@ -11,9 +11,3 @@
 main.prg
 main_check.prg
 main_forms.prg
-
-# Resources for the project
-main.rc
-
-#Path to the main and the auxiliary libraries (*.lib)
--lminigui

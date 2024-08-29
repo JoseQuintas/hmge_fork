@@ -1458,27 +1458,45 @@ STATIC PROCEDURE _SetGetBoxCaret( hWnd )
    LOCAL aMetr
    LOCAL nEnd
    LOCAL cChar
-   LOCAL nWidth
+   LOCAL nDefHeight
+   LOCAL nDefWidth
    LOCAL nHeight
+   LOCAL nWidth
 
-   HideCaret( hWnd )
-   DestroyCaret()
+   IF IsWindowHandle( hWnd )
 
-   IF ! IsWindowHasStyle( hWnd, ES_READONLY )
-      nEnd  := HiWord( SendMessage( hWnd, EM_GETSEL, 0, 0 ) )
-      cChar := HMG_EditControlGetChar( hWnd, nEnd )
+      HideCaret( hWnd )
+      DestroyCaret()
 
-      hDC   := GetDC( hWnd )
-      aMetr := GetTextMetric( hDC )
-      ReleaseDC( hWnd, hDC )
-      nHeight := aMetr[ 1 ]
-      nHeight := Max( nHeight, .85 * GetWindowHeight( hWnd ) )
-      nWidth  := aMetr[ 2 ]
-      nWidth  := Max( nWidth, .75 * HMG_GetCharWidth( hWnd, cChar ) )
+      IF ! IsWindowHasStyle( hWnd, ES_READONLY )
 
-      #define SM_CXBORDER  5
-      CreateCaret( hWnd, 0, iif( lInsert, GetSystemMetrics( SM_CXBORDER ), Int( nWidth ) ), nHeight )
-      ShowCaret( hWnd )
+         nEnd  := HiWord( SendMessage( hWnd, EM_GETSEL, 0, 0 ) )
+         cChar := HMG_EditControlGetChar( hWnd, nEnd )
+
+         nDefHeight := .85 * GetWindowHeight( hWnd )
+         nDefWidth  := .75 * HMG_GetCharWidth( hWnd, cChar )
+
+         hDC   := GetDC( hWnd )
+         aMetr := GetTextMetric( hDC )
+         ReleaseDC( hWnd, hDC )
+         IF aMetr[ 1 ] != NIL
+            nHeight := aMetr[ 1 ]
+            nHeight := Max( nHeight, nDefHeight )
+         ELSE
+            nHeight := nDefHeight
+         ENDIF
+         IF aMetr[ 2 ] != NIL
+            nWidth := aMetr[ 2 ]
+            nWidth := Max( nWidth, nDefWidth )
+         ELSE
+            nWidth := nDefWidth
+         ENDIF
+
+         CreateCaret( hWnd, 0, iif( lInsert, GetSystemMetrics( SM_CXBORDER ), Int( nWidth ) ), nHeight )
+         ShowCaret( hWnd )
+
+      ENDIF
+
    ENDIF
 
 RETURN
@@ -1686,7 +1704,6 @@ STATIC FUNCTION _Input( cChar , nID )
    ENDIF
 
    IF ! Empty( cPicMask )
-
       cPic := hb_USubStr( cPicMask, oGet:pos, 1 )
 #ifdef __XHARBOUR__
       IF ! Empty( cPic )

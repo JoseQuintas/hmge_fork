@@ -49,7 +49,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
-
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Edit Class Name
+#define WC_EDIT                "Edit"
+#endif
 #include "hbvm.h"
 
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 ) || defined( __XCC__ )
@@ -69,8 +72,6 @@ HB_FUNC( INITSPINNER )
    INITCOMMONCONTROLSEX i;
 
    i.dwSize = sizeof( INITCOMMONCONTROLSEX );
-   i.dwICC  = ICC_STANDARD_CLASSES;
-   InitCommonControlsEx( &i );
 
    if( ! hb_parl( 11 ) )
    {
@@ -98,11 +99,15 @@ HB_FUNC( INITSPINNER )
       Style2 |= UDS_HORZ | UDS_ALIGNRIGHT;   /* P.Ch. 10.16. */
    }
 
+   // Create the Buddy Window
+   i.dwICC  = ICC_STANDARD_CLASSES;
+   InitCommonControlsEx( &i );
+
    hedit = CreateWindowEx
            (
       WS_EX_CLIENTEDGE,
       WC_EDIT,
-      TEXT( "" ),
+      NULL,
       Style1,
       hb_parni( 3 ),
       hb_parni( 4 ),
@@ -114,6 +119,7 @@ HB_FUNC( INITSPINNER )
       NULL
            );
 
+   // Create the Up-Down Control
    i.dwICC = ICC_UPDOWN_CLASS;               /* P.Ch. 10.16. */
    InitCommonControlsEx( &i );
 
@@ -121,14 +127,14 @@ HB_FUNC( INITSPINNER )
              (
       WS_EX_CLIENTEDGE,
       UPDOWN_CLASS,
-      TEXT( "" ),
+      NULL,
       Style2,
-      hb_parni( 3 ) + hb_parni( 5 ),
-      hb_parni( 4 ),
-      15,
-      hb_parni( 10 ),
+      0,
+      0,
+      0,
+      0,    // Set to zero to automatically size to fit the buddy window.
       hwnd,
-      ( HMENU ) 0,
+      ( HMENU ) NULL,
       GetInstance(),
       NULL
              );

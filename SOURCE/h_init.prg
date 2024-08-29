@@ -82,6 +82,7 @@ PROCEDURE Init
 
    _HMG_GlobalHotkeys := .F.
    _HMG_ProgrammaticChange := .T.
+   _HMG_OwnerModalHandle := .F.
    _HMG_ListBoxDragNotification := 0
 
    _hmg_UserWindowHandle := 0

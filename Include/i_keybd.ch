@@ -211,10 +211,10 @@ _HMG_ExtendedNavigation := .F.
 #define VK_RMENU	165
 #define VK_PROCESSKEY	229
 
-#define MOD_ALT	1
-#define MOD_CONTROL	2
-#define MOD_SHIFT	4
-#define MOD_WIN	8
+#define MOD_ALT         0x0001
+#define MOD_CONTROL     0x0002
+#define MOD_SHIFT       0x0004
+#define MOD_WIN         0x0008
 
 // End
 

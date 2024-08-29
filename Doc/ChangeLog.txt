@@ -1,3 +1,306 @@
+2023/09/26: HMG Extended Edition version 23.09 (Update 2).
+  * Modified: Adaptation of MiniGUI core is completed for compatibility with
+           Borland/Embarcadero C++ 7.60 32-bit compiler.
+           This is a Clang-enhanced compiler and comes with free C++Builder 11
+           Community Edition (just similar to MS Visual C++ CE) at
+           https://www.embarcadero.com/products/cbuilder/starter
+           Contributed by Grigory Filatov
+  * Updated: Internal function _LogFile() has been improved to get first
+           parameter as a two-dimensional array (with backward compatible).
+           Suggested and contributed by Sergej Kiselev
+           (see demo3.prg in folder \samples\Advanced\APP_OOPREPORT)
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - improved error message for missing image resource.
+           Requested and contributed by Verchenko Andrey.
+  * New: 'Five GUI libraries for testing' sample:
+           - HWGUI, HMGE, OOHG, GTWVG and HMG3 wrappers for controls: BUTTON,
+             EDIT, TAB, TABPAGE, PANEL (no yet), BROWSE, LABEL and DIALOG.
+           Contribution of Jose Quintas.
+           Revised for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Advanced\FiveLibsTest)
+  * Updated: 'Menu with DISABLED clause' sample:
+           - added an example of using of a detached local variable
+             in the menu creation cycle.
+           Contributed by Grigory Filatov
+           (see demo2.prg in folder \samples\Basic\Menu_2)
+  * Updated: 'Using OOP events for creation of the reports' sample:
+           - improved objects error logging with a new function
+             o2Log( o, nLen, cMsg, lExt, cLog ).
+           Contributed by Sergej Kiselev
+           (see demo3.prg in folder \samples\Advanced\APP_OOPREPORT)
+  * Updated: 'Sumatra PDF Viewer' utility:
+           - fixed use of the SetMinMaxTrackSize() function in the main
+             event handler.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\PdfView)
+  * Updated: 'TSBrowse Viewer' sample is based upon the function _TBrowse().
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_Viewer)
+  * Updated: 'UPX shell' sample: updated to use the latest UPX 4.1.0.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\UPXshell)
+
+2023/09/12: HMG Extended Edition version 23.09 (Update 1).
+  * New: Added the useful C-function SetStandby() to prevent
+           the computer from entering sleep or turning off the display
+           while the application is running.
+           Syntax:
+             SetStandby( .T. | [ .F. ] ) => nPrevState
+           Based upon a code borrowed from public Fivewin forum.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - fixed an incorrect call of the Events() function when changing
+           of the main event listener with the SET EVENTS FUNCTION TO <name>
+           command.
+           The bug was reported by Verchenko Andrey
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.43.1 (from 3.43.0).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2023-07-07 00:07):
+           * Updated zlib library to 1.3.0 (from 1.2.13).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (look at ReadMe.txt in folder \harbour)
+  * Updated: 'Show Password without the asterisks and vice versa' sample:
+           - simplified code for getting the properties of a textbox.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\ShowPassword)
+  * Updated: 'Open Table InSpector' sample:
+           - updated the source code for the Otis library version 1.40 b01;
+           - updated documentation (look at \Doc folder).
+             Contributed by Hans Marc
+           (see in folder \samples\Advanced\OTIS)
+
+2023/08/28: HMG Extended Edition version 23.09.
+  * Fixed: GETBOX: Possible program crash when GetTextMetric() function
+           fails at runtime.
+           The issue was reported by Sergej Kiselev.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Fixed: TEXTBOX: Possible program crash in the oEditEvents() function
+           at runtime on rare occasion.
+           The issue was reported by Sergej Kiselev.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - fixed incorrect edit field position after changing TBROWSE
+             position (when row/col properties were changed at runtime).
+           The bug was reported by Hans Mark on the Minigui forum.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.43.0 (from 3.42.0).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2023-07-07 00:07):
+           * Updated libpng library to 1.6.40 (from 1.6.39).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (look at ReadMe.txt in folder \harbour)
+  * New: 'Owner buttons demo' sample by HMG user KDJ.
+           Requested by Sylvain Larche.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Advanced\OwnButton)
+  * Updated: 'Draw Box and Panel Gradient' sample by Petr Chornyj.
+           Based upon a contribution of Pierpaolo Martinello
+           (see in folder \samples\Advanced\DrawGradient)
+  * Updated: 'File Manager v.0.52' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\FileMan)
+  * Updated: UnRar sample and HbUnrar library:
+           - updated unrar.dll to the current version 6.23 (from 6.22).
+             Version 6.23 fixes a crictical bug in unrar.dll.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\UnRar)
+
+2023/07/31: HMG Extended Edition version 23.07.
+  * Fixed: Removed unnecessary assignments from DATEPICKER C-code.
+           Based upon a contribution of Claudio Soto.
+           Adapted for Minigui Extended by Grigory Filatov
+  * Fixed: Resource leak detected in C-function IsHIcon( hIcon )
+           (introduced in the build 23.02 Update 4).
+           Revised using of C-function GetIconInfo() in kernel C-code.
+           Contributed by Grigory Filatov
+  * Modified: The definition of the SPINNER control has been changed at
+           the C level to comply with the current WinAPI specification.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\SPINNER)
+  * Modified: Internal function nOr( <x,...> ) is replaced by [x]Harbour
+           function hb_BitOr().
+           Contributed by Grigory Filatov
+           (see i_pseudofunc.ch in folder Include\)
+  * Enhanced: 'This' object now supports reference to control events.
+           You can set/get these events at runtime with
+             This.<Control>.Event.Action := bAction
+             This.<Control>.Event.Action -> bAction
+             This.<Control>.Event.OnChange := bOnChange
+             This.<Control>.Event.OnChange -> bOnChange
+           Suggested and contributed by Sergej Kiselev
+           (see demo in folder \samples\Basic\AlertBoxes)
+  * Updated: Code cleaning for compatibility with outdated BCC 5.5 compiler
+           (regression was introduced in the build 23.04 Update 4).
+           Warning: You should recompile the MiniGUI library with BCC 5.5
+           compiler for correct use.
+           Contributed by Grigory Filatov
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2023-07-07 00:07):
+           - fixed GPF when object item variable is passed by reference but
+             the object is neither instance of standard class nor scalar class.
+           Contributed by Przemyslaw Czerpak <druzus/at/priv.onet.pl>
+           (look at ReadMe.txt in folder \harbour)
+  * New: 'Freeze/block program execution when external application starts' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\FreezeAppExecution)
+  * Updated: 'Alert Boxes usage' sample:
+           - added sample OwnerDraw message box with gradient filled buttons.
+           Requested by Verchenko Andrey.
+           Based upon a contribution of Sergej Kiselev
+           (see in folder \samples\Basic\AlertBoxes)
+  * Updated: 'Color selection' sample by CAS: added useful function
+           ContrastClr( nClr ) -> nContrastClr
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\Color_2)
+  * Updated: 'Show of icons from the system DLL libraries' sample:
+           - added missing descriptions for some DLLs.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\DLLICONS)
+  * Updated: 'Combo Color' sample by Janusz Pora: added the Win10 colors.
+           Based upon a contribution of Verchenko Andrey
+           (see in folder \samples\Advanced\ComboColor)
+  * Updated: 'File Manager v.0.52' sample: fixed detection of COM ports using
+           hbwin contrib library instead local implementation.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\FileMan)
+  * Updated: 'TSBrowse Viewer Demo' sample:
+           - updated TsbViewer library to version 0.7.
+           Based upon a contribution of Sergej Kiselev
+           (see in folder \samples\Advanced\Tsb_Viewer)
+  * Updated: UnRar sample and HbUnrar library:
+           - updated UnRar.Dll to the current version 6.22 (from 6.0).
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\UnRar)
+
+2023/06/28: HMG Extended Edition version 23.04 (Update 4).
+  * New: Added a new command for managing of the parent handle of Modal form
+           at runtime:
+             SET WINDOW MODAL [ PARENT ] HANDLE <ON | OFF>
+           This can be useful when calling one modal window from another.
+           Note. The default parent form for a modal form is the Main
+           Application Window.
+           Suggested and contributed by Sergej Kiselev
+  * Enhanced: The optional clause IMAGESIZE <w>, <h> respects ICON property
+           in the ButtonEx control. Note that the alternative syntax is
+           IMAGEWIDTH <w> and IMAGEHEIGHT <h>.
+           Requested by Verchenko Andrey.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo in folder \samples\Basic\ButtonEx_3)
+  * Modified: The C-function SwitchToThisWindow( hWnd, [lRestore] ) has been
+           moved from the sample to the MiniGUI core.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo in folder \samples\Advanced\GetFonts)
+  * Updated: Unneeded casting of the C-code was removed in some places.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * New: 'Rendering multi-colored text on the form' sample.
+           It was a pending user request.
+           Based on code borrowed from the Fivewin public forum.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Advanced\COLORFUL_TEXT)
+  * Updated: 'Custom Button' user component sample:
+           - improved code to use native HMG button (picture and text).
+           Contributed by Grigory Filatov
+           (see hmgbutton.prg in folder \samples\Basic\USER_COMPONENTS)
+  * Updated: 'System Idle Detection' sample: minor modifications.
+           Contributed by Grigory Filatov
+           (see demo2.prg in folder \samples\Advanced\SysIdle)
+
+2023/06/12: HMG Extended Edition version 23.04 (Update 3).
+  * New: Added SET MULTIPLE QUIT [WARNING] command to prevent starting
+           a second copy of the application.
+           Based upon a contribution of Sergej Kiselev
+  * Updated: Unneeded casting of the C-code was removed in some places.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Internal OOP class TWndData: added method Enabler().
+           Suggested and contributed by Sergej Kiselev
+  * Updated: 'MiniGUI Extended Edition Common Commands' list:
+           - added the recent entered commands.
+           (look at commands.txt in folder \Doc)
+  * New: 'Control file changes in another program with MT' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_FileChangeControl)
+  * Updated: 'hb_DirScan() function usage' sample: minor modifications.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\DirSelect)
+  * Updated: 'Example assembled from three parts (modules)' sample.
+           Contributed by Verchenko Andrey
+           (see in folder \samples\Basic\SPLASHDEMO_3)
+  * Updated: 'Custom Button' user component sample:
+           - modified code to use native HMG button (picture and text).
+           Contributed by Grigory Filatov
+           (see hmgbutton.prg in folder \samples\Basic\USER_COMPONENTS)
+  * Updated: 'ShellExecuteEx() and WaitForSingleObject() usage' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see demo3.prg in folder \samples\Advanced\ShellExec)
+
+2023/05/30: HMG Extended Edition version 23.04 (Update 2).
+  * Enhanced: Added the OOP class TThrData for managing objects
+           in the thread.
+           Suggested and contributed by Sergej Kiselev
+           (see demo3.prg in folder \samples\Advanced\ShellExec)
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2023-05-19 16:29):
+           * Fixed: do not generate warnings for undeclared methods
+             when -w[12] is used.
+           Contributed by Przemyslaw Czerpak <druzus/at/priv.onet.pl>
+           (look at ReadMe.txt in folder \harbour)
+  * New: 'FTP Navigator' sample based upon CURL library.
+           Note: this example requires curl.dll.
+           Based upon a contribution of HMG user Edward.
+           Adapted for Minigui Extended by Jozef Rudnicki
+           (see in folder \samples\Advanced\FtpNavigator)
+  * New: 'Read xlsx files without using OLE, libraries, etc' sample.
+           Don't miss this very interesting example!
+           Based upon a contribution of HMG user Edward
+           (see in folder \samples\Advanced\ReadXLSX)
+  * Updated: 'Horizontal radio group with variable items width' sample:
+           - updated with the latest changes in the Minigui core.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see in folder \samples\Basic\RadioGroup_nofixed)
+  * Updated: 'ShellExecuteEx() and WaitForSingleObject() usage' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\ShellExec)
+  * Updated: 'Monthly calendar with date stamp at runtime' sample:
+           - changed color theme.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo2.prg in folder \samples\Advanced\Tsb_calendar)
+
+2023/05/16: HMG Extended Edition version 23.04 (Update 1).
+  * Enhanced: New GetCPUInfo() function was used in the Error logging
+           routine.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo in folder \samples\Basic\ShowDetailError)
+  * Enhanced: Added a new optional clause HOTKEY <KeyName> to the
+           CREATE LINK FILE command.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo in folder \samples\Basic\CreateLink)
+  * Updated: Unneeded casting of the C-code was removed in some places.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Added use of low-level resource management system to C code
+           of CreateGradientBrush() function.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see demo in folder \samples\Advanced\SetThemes)
+  * Updated: HBPrinter library:
+           - further parameter substitution in C-code using macros from
+             the header file mgdefs.h.
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (see source in folder \Source\HBPrinter)
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.42.0 (from 3.41.2).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2023-05-12 18:13).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (look at ReadMe.txt in folder \harbour)
+  * Updated: 'Tree Menu' sample: added useful function
+           TreeItemGetPathValue ( ControlName, ParentForm, nItem ).
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Basic\TreeMenu_2)
+  * Updated: 'PageScript 32 test' sample:
+           - update external app Viewer.exe to version 1.2 (from 1.0).
+           Contribution of Richard Visscher <richard/at/irvis.com>
+           (see in folder \samples\Advanced\PageScript)
+
 2023/04/27: HMG Extended Edition version 23.04.
   * Fixed: Revised a releasing of the COMBOBOXEX control
            (a bug has been introduced since the first implementation

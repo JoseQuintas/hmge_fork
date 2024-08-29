@@ -306,6 +306,9 @@ FUNCTION _DefineChildMDIWindow ( FormName, x, y, w, h, nominimize, nomaximize, ;
 *-----------------------------------------------------------------------------*
    LOCAL i , htooltip , mVar , ParentForm , k , aRGB := { -1 , -1 , -1 }
    LOCAL FormHandle , ChildIndex
+#ifdef _OBJECT_
+   LOCAL o
+#endif
 
    IF ValType( FormName ) == "U"
       FormName := _HMG_TempWindowName
@@ -513,6 +516,14 @@ FUNCTION _DefineChildMDIWindow ( FormName, x, y, w, h, nominimize, nomaximize, ;
 
    IF _HMG_lOOPEnabled
       Eval ( _HMG_bOnFormInit, k, mVar )
+#ifdef _OBJECT_
+      o := _WindowObj( FormHandle )
+      IF HB_ISOBJECT( o )
+         o:cProcFile := ProcFile( 1 )
+         o:cProcName := ProcName( 1 )
+         o:nProcLine := ProcLine( 1 )
+      ENDIF
+#endif
    ENDIF
 
 RETURN ( FormHandle )
@@ -698,6 +709,7 @@ RETURN Nil
 FUNCTION _MdiWindowsTile( lVert )
 *-----------------------------------------------------------------------------*
    LOCAL Style := iif( lVert, MDITILE_VERTICAL, MDITILE_HORIZONTAL )
+
    SendMessage( _HMG_MainClientMDIHandle, WM_MDITILE, Style, 0 )
 
 RETURN Nil

@@ -48,6 +48,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Button Class Name
+#define WC_BUTTON              "Button"
+#endif
 #include "hbapierr.h"
 
 #ifdef UNICODE
@@ -63,7 +67,7 @@ HB_FUNC( INITFRAME )
    if( IsWindow( hwnd ) )
    {
       HMENU hmenu     = hmg_par_raw_HMENU( 2 );
-      DWORD dwExStyle = hb_parl( 10 ) ? 0 : WS_EX_TRANSPARENT;    /* opaque | transparent */
+      DWORD dwExStyle = hb_parl( 10 ) ? 0 : WS_EX_TRANSPARENT;
 #ifndef UNICODE
       LPCSTR lpWindowName = hb_parc( 7 );
 #else

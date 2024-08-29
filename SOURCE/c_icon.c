@@ -175,6 +175,16 @@ HB_FUNC( ISHICON )
    if( bTrue )
    {
       bTrue = iconinfo.fIcon;
+
+      if( iconinfo.hbmMask )
+      {
+         DeleteObject( iconinfo.hbmMask );
+      }
+
+      if( iconinfo.hbmColor )
+      {
+         DeleteObject( iconinfo.hbmColor );
+      }
    }
 
    hb_retl( bTrue );

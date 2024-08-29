@@ -668,10 +668,6 @@ Function WriteIni( cSection, cEntry, cValue, cFile )
 *--------------------------------------------------------*
 RETURN( WritePrivateProfileString( cSection, cEntry, cValue, cFile ) )
 
-*--------------------------------------------------------*
-DECLARE DLL_TYPE_BOOL SwitchToThisWindow( DLL_TYPE_LONG hWnd, DLL_TYPE_BOOL lRestore ) ;
-	IN USER32.DLL
-
 
 #pragma BEGINDUMP
 

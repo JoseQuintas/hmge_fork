@@ -39,8 +39,8 @@
 //****************************************************************************************************************
 
 // Version info
-#define  Version        "V1.30"
-#define  Versiondate    "01/04/2022"
+#define  Version        "V1.40"
+#define  Versiondate    "01/09/2023"
 #define  Versionbuild   "B01"
 
 // aOtables array offsets   (array used in tbrowse in main form)
@@ -182,7 +182,7 @@ MEMVAR ini_lOpen_Exclusive, ;          // default is open files in shared mode.
        ini_default_mem, ;
        ini_dbf_codepage
 
-// set version vars, set by freadline but init with #defines (see above) after it.
+// set version vars, set by freadini but init with #defines (see above) after it.
 MEMVAR ini_version, ;
        ini_versiondate, ;
        ini_versionbuild
@@ -256,6 +256,9 @@ MEMVAR aDatasets
 MEMVAR o_Dsmng_browse
 
 MEMVAR HMG_ModalDialogReturn
+
+MEMVAR cInfo
+MEMVAR BRW_2, aStruct
 
 //******************************************************************************
 
@@ -570,6 +573,9 @@ Function OTIS()
 
       // default icon
       SET DEFAULT ICON TO "MAINICON"
+
+      // set
+      SET WINDOW MODAL PARENT HANDLE ON
 
    //
    // PLUGIN mode, otis.prg or otis.lib intergrated in your prg
@@ -1196,7 +1202,7 @@ Return nil
 static function otis_endi_menus(lState)
 
    // -w2
-   HB_SYMBOL_UNUSED( lState )
+   lState := lState
 
    /* NOT USED, I DON'T LIKE IT
    setproperty( "form_otis", "bt_ot_br" , "Enabled", lState)
@@ -1483,7 +1489,7 @@ static function otis_rem_table(oBrowse)
 
          // refresh tbrowse array
          tb_Otis:SetArray( aOtables )
-         oBrowse:Refresh()
+         oBrowse:refresh()
 
          // Reset area counter if no more tables in dataset
          if len(aOtables) == 0 .or. empty(aOtables[ 1, ATI_ALIAS ])
@@ -1588,7 +1594,7 @@ static function otis_add_index(oBrowse)
 
       // refresh tbrowse array
       tb_Otis:SetArray( aOtables )
-      oBrowse:Refresh()
+      oBrowse:refresh()
 
    endif
 
@@ -1825,7 +1831,7 @@ static function otis_rem_index2()
 
          // refresh tbrowse array
          tb_Otis:SetArray( aOtables )
-         tb_Otis:Refresh()
+         tb_Otis:refresh()
 
       endif
 
@@ -1848,7 +1854,7 @@ static function otis_rem_index_resize()
    setproperty(ThisWindow.name, "bt_Delete","Col", getproperty(ThisWindow.name,"ClientWidth") - ( th_bt_width + th_w_ctrlgap ) * 2 )
 
    // refresh
-   tb_delindex:Refresh()
+   tb_delindex:refresh()
 
 return nil
 
@@ -3155,7 +3161,6 @@ return nil
 // display selected dbf current active index info
 static function show_Active_index_info(cAlias, nCurrentIndexNbr)
 
-   local cinfo
    local aIndexInfo
    local cTablename := alltrim((cAlias)->(Sx_Tablename()))
 
@@ -4064,7 +4069,7 @@ static function index_ds_update(cWinname, cAlias, nValue )
    //   set new order focus if changed
    tb_Otis:aArray[tb_Otis:nAt, ATI_CURIND ] := str( (cAlias)->(IndexOrd()), 3)
    //   refresh display
-   tb_Otis:Refresh()
+   tb_Otis:refresh()
 
    // update dv label ORDER (xx)
    setproperty(cWinname, "lb_sel_index", "value", ' Orders   (' + hb_ntos(DBORDERINFO(DBOI_ORDERCOUNT)) + ')' )
@@ -5057,7 +5062,7 @@ static function ds_manager_del( ds_name )
          o_Dsmng_browse:SetDeleteMode( .T., .F.)
          //  delete row
          o_Dsmng_browse:DeleteRow()
-         o_Dsmng_browse:Refresh()
+         o_Dsmng_browse:refresh()
          //  enable "keyboard del key" function in browse table
          //o_Dsmng_browse:SetDeleteMode( .T., .F., { || ds_manager_del( getproperty(ThisWindow.name, "gb_ds_name","value") ) } )
          o_Dsmng_browse:SetDeleteMode( .F., .F.)
@@ -5152,7 +5157,7 @@ static function ds_save_if_changed()
       PlayExclamation()
       if MsgYesNo("Warning" + crlf + crlf + ;
                   "The current dataset has been modified." + crlf + ;
-                  "Do you want to save it ?";
+                  "Do you want to save it.";
                  )
 
       // save current dataset
@@ -5286,10 +5291,11 @@ static function dv_viewer(nSelect)
    // define window
    define window &cDvWinname ;
       AT GetDesktopHeight()/2 - int(GetDesktopHeight() * 0.85)/2, GetDesktopWidth()/2 - int(GetDesktopWidth() * 0.70)/2 ;
-      clientarea int(GetDesktopWidth() * 0.80), int(GetDesktopHeight() * 0.80) ;
+      CLIENTAREA max(1168, int(GetDesktopWidth() * 0.80)), max(668, int(GetDesktopHeight() * 0.80)) ;
       TITLE 'OTIS - Open Table InSpector         File : ' + alltrim(Sx_Tablename()) + "         Alias : "+ Alias() + "         Area : "+hb_ntos(select()) ;
       BACKCOLOR th_w_bgcolor ;
       WINDOWTYPE STANDARD ;
+      ;//ON GOTFOCUS dv_F5Refresh(cDvWinname) ;
       ON SIZE     dv_mw_resize( cDvWinname ) ;
       ON MAXIMIZE dv_mw_resize( cDvWinname ) ;
       ON MINIMIZE dv_mw_resize( cDvWinname ) ;
@@ -5350,7 +5356,23 @@ static function dv_viewer(nSelect)
          TOOLTIP "Index info"
          VCENTERALIGN .T.
          CENTERALIGN .T.
-         Action show_Active_index_info(cAlias, getproperty(ThisWindow.name, "cb_sel_index","VALUE") )
+         Action show_Active_index_info(cAlias, getproperty(ThisWindow.name, "cb_sel_index","VALUE"))
+      END label
+
+     // tbrowse refresh button (same as F5)
+      DEFINE LABEL lb_refresh
+         ROW r
+         COL getproperty(ThisWindow.name, "lb_info_index","col") + getproperty(ThisWindow.name, "lb_info_index","width") + th_w_ctrlgap - 2
+         WIDTH 60 - getproperty(ThisWindow.name, "lb_info_index","width") - 2
+         HEIGHT 23
+         FONTBOLD .T.
+         FONTCOLOR th_bt_ohfontcol
+         BACKCOLOR th_bt_ohbgcol
+         Value '  F5  '
+         TOOLTIP "Refresh browse"
+         VCENTERALIGN .T.
+         CENTERALIGN .T.
+         Action dv_F5Refresh(cDvWinname)
       END label
 
       // Filter button (label), checkbox, editbox
@@ -5514,7 +5536,7 @@ static function dv_viewer(nSelect)
          //FONTBOLD .T.
          FONTCOLOR th_bt_ohfontcol
          BACKCOLOR th_bt_ohbgcol
-         Caption ' Allow Edit'
+         Caption ' F2 Allow Edit'
          ToolTip "Allow edit of a field with 'Enter' or a 'Double click'."
          LEFTJUSTIFY .T.
          ON CHANGE dv_cb_edit_yn(cDvWinname)
@@ -5617,8 +5639,8 @@ static function dv_viewer(nSelect)
       // Tbrowse
       DEFINE TBROWSE tb_Dv_Browse  ;
          AT getproperty(ThisWindow.name, "lb_filter","row")+getproperty(ThisWindow.name, "lb_filter","height")+th_w_ctrlgap, th_bt_width * 1 + th_w_ctrlgap * 2 ;
-         WIDTH getproperty(ThisWindow.name,"ClientWidth") - th_bt_width * 1 -  th_w_ctrlgap * 3 ;
-         HEIGHT getproperty(ThisWindow.name,"ClientHeight") - ( getproperty(ThisWindow.name, "lb_filter","row")+getproperty(ThisWindow.name, "lb_filter","height")) - th_w_ctrlgap*2  + 2 ;
+         WIDTH getproperty(ThisWindow.name,"ClientWidth") - th_bt_width * 1 - th_w_ctrlgap * 3 ;
+         HEIGHT getproperty(ThisWindow.name,"ClientHeight") - (getproperty(ThisWindow.name, "lb_filter","row")+getproperty(ThisWindow.name, "lb_filter","height")) - th_w_ctrlgap*2 + 2 ;
          COLORS {CLR_BLACK, CLR_WHITE} ;
          SIZE 10 ;
          ALIAS cAlias ;
@@ -5713,7 +5735,7 @@ static function dv_viewer(nSelect)
       // goto recno stored in the Cargo
       (cAlias)->( DBGOTO(getproperty(cDvWinname,"CARGO")[dvc_recno]) )
       tb_Dv_Browse:GoToRec( (cAlias)->( RecNo() ) )
-      tb_Dv_Browse:ReFresh()
+      tb_Dv_Browse:refresh()
 
       //msgstop((cAlias)->(indexord()))
 
@@ -5722,7 +5744,7 @@ static function dv_viewer(nSelect)
       aButtons := { ;
                      { "-"                             , ""      } , ;
                      { "Seek wizard"                   , "dv_sk" } , ;
-                     { "Search/Repl.|>"                , "dv_sr", "dv_srext" } , ;
+                     { "Search|Repl."                  , "dv_sr", "dv_srext" } , ;
                      { "Goto record"                   , "dv_go" } , ;
                      { "-"                             , ""      } , ;
                      { "Copy|Paste"                    , "dv_cp", "dv_pa" } , ;
@@ -5732,13 +5754,14 @@ static function dv_viewer(nSelect)
                      { "Delete|Recall"                 , "dv_dr", "dv_dr" } , ;
                      { "-"                             , ""      } , ;
                      { "Pack|Zap"                      , "dv_pack", "dv_zap" } , ;
-                     { "-"                             , ""      } , ;
                      { "Append file"                   , "dv_af" } , ;
-                     { "Save as"                       , "dv_save" } , ;
                      { "-"                             , ""      } , ;
                      { "Index manager"                 , "dv_im" } , ;
                      { "Prop. / Struct."               , "dv_st" } , ;
                      { "Struct. Editor"                , "ot_dvse" } , ;
+                     { "-"                             , ""      } , ;
+                     { "Export xlsx / csv"             , "dv_export" } , ;
+                     { "Save (as)"                     , "dv_save" } , ;
                      { "-"                             , ""      } ;
                    }
 
@@ -5784,9 +5807,30 @@ static function dv_viewer(nSelect)
 
    END WINDOW
 
+   // F2 toggle Edit checkbox
+   ON KEY F2 OF &cDvWinname ACTION { || setproperty(cDvWinname, "cb_edit_yn", "value", !getproperty(cDvWinname, "cb_edit_yn", "value")), ;
+                                        dv_cb_edit_yn(cDvWinname) }
+
+   // Key "F5" set to refresh tbrowse
+   ON KEY F5 OF &cDvWinname ACTION dv_F5Refresh(cDvWinname)
+
    domethod(cDvWinname, "tb_Dv_Browse", "setfocus")
-   //domethod( cDvWinname, "CENTER")     // does not work and i don't know why ???
+   domethod( cDvWinname, "CENTER")
    domethod( cDvWinname, "ACTIVATE")
+
+return nil
+
+
+// F5 Refresh browse
+// Needed if a external process outside of Otis change table size
+// Without it display of new records is incorrect
+// because tbrowse is not aware of those new records and still draws records in function of old reccount
+function dv_F5Refresh(cWinname)
+
+   // get tbrowse object from caller form (remember we can open multiple viewers)
+   local o_Browse := GetBrowseObj( "tb_Dv_Browse", cWinname )
+
+   o_browse:refresh()
 
 return nil
 
@@ -5866,7 +5910,7 @@ static function dv_mw_resize( cWinname )
 
    // height and width browse table
    setproperty(ThisWindow.name, "tb_Dv_Browse", "Width", getproperty(ThisWindow.name,"ClientWidth") - th_bt_width * 1 - th_w_ctrlgap * 3 )
-   setproperty(ThisWindow.name, "tb_Dv_Browse", "Height", getproperty(ThisWindow.name,"ClientHeight") - th_bt_height * 2 - th_w_ctrlgap * 3 )
+   setproperty(ThisWindow.name, "tb_Dv_Browse", "Height", getproperty(ThisWindow.name,"ClientHeight") - th_bt_height * 2 - th_w_ctrlgap * 4 )
 
    // repos menu & Ds mng button
    setproperty(ThisWindow.name, "mb_Quit","Row", getproperty(ThisWindow.name,"ClientHeight") - th_bt_height - th_w_ctrlgap * 1 )
@@ -5899,7 +5943,7 @@ static function dv_change_order( cWinname )
 
    // get orderscope if any
    //   it could be set when you selected this order before and defined a scope for it.
-   //   so when you reselect this order to scope must be reinitialized.
+   //   so when you reselect this order the scope must be reinitialized.
    cTopExpr    := DBORDERINFO(DBOI_SCOPETOP)
    cBottomExpr := DBORDERINFO(DBOI_SCOPEBOTTOM)
    // save it in the tbrowse 'cargo'
@@ -5928,7 +5972,7 @@ static function dv_change_order( cWinname )
    o_Browse:GoPos( (cAlias)->(DBGOTOP()) )
 
    // refresh browse and setfocus
-   o_Browse:Refresh()
+   o_Browse:refresh()
    o_Browse:setfocus()
    o_Browse:ResetVScroll( .T. )
    // and set min max range
@@ -5960,7 +6004,7 @@ static function dv_change_lockcols(cWinname, cType)
    endif
 
    // refresh browse
-   o_Browse:Refresh()
+   o_Browse:refresh()
    o_Browse:setfocus()
 
 return nil
@@ -5998,16 +6042,22 @@ static function dv_cb_hide_deleted_yn(cWinname)
       //  ask confirmation to change status
       if lNewstat <> lOldstat
 
-         PlayExclamation()
-         IF !msgYesNo("WARNING :" + crlf + crlf + ;
-                         "SET DELETED ON/OFF is A GLOBAL PROGRAM SETTING." + crlf + crlf + ;
-                         "It changes the record visibility of all opened" + crlf + ;
-                         "tables and also the tables opened by your program" + crlf + ;
-                         "if you are in plugin mode."+ crlf + ;
-                         "Be carefull." + crlf + crlf + ;
-                         "Do you want to change this setting ?" ;
-                         )
-            lNewstat := !lNewstat
+         // ask for confirmation only in plugin mode
+         if !lStandalone
+
+            PlayExclamation()
+            IF !msgYesNo("WARNING :" + crlf + crlf + ;
+                            "SET DELETED ON/OFF is A GLOBAL PROGRAM SETTING." + crlf + crlf + ;
+                            "It changes the record visibility of all opened" + crlf + ;
+                            "tables and also the tables opened by your program" + crlf + ;
+                            "if you are in plugin mode."+ crlf + ;
+                            "Be carefull." + crlf + crlf + ;
+                            "Do you want to change this setting ?" ;
+                            )
+               // Answer was NO thus reset flag to the previous state
+               lNewstat := !lNewstat
+            endif
+
          endif
 
          // set deleted() on/off
@@ -6020,7 +6070,7 @@ static function dv_cb_hide_deleted_yn(cWinname)
 
          // refresh tbrowse and setfocus to it
          //o_Browse:gotop()
-         o_Browse:Refresh()
+         o_Browse:refresh()
          o_Browse:setfocus()
 
       endif
@@ -6093,7 +6143,7 @@ return nil
 // set / clear filter
 static function dv_setfilter(cWinname, lNowarning)
 
-   local cFilter := ""
+   local nRecno := 1, cFilter := ""
 
    // get tbrowse object from caller form (remember we can open multiple viewers)
    local o_Browse := GetBrowseObj( "tb_Dv_Browse", cWinname )
@@ -6125,7 +6175,8 @@ static function dv_setfilter(cWinname, lNowarning)
          // activate filter with error trapping
          try
             if ( ValType( &cFilter ) == "L" )
-               (cAlias)->(DbSetFilter( &("{||" + cFilter + "}"), cFilter ))
+               o_browse:FilterData(cFilter)
+               o_browse:ResetVscroll()
             endif
 
          Catch oError
@@ -6140,16 +6191,18 @@ static function dv_setfilter(cWinname, lNowarning)
 
    // OFF : clear filter
    else
+      // get current pos dbf
+      nRecno := recno()
+      // clear filter and browse filter
       cFilter := ""
-      (cAlias)->(DBCLEARFILTER())
-      goto top
+      o_browse:FilterData("")
+      // position on the same record as filtered
+      o_browse:GoPos(nRecno)
+
    endif
 
    // refresh browse
-   o_Browse:ReFresh()
-   o_browse:SetNoHoles()
    o_browse:SetFocus()
-   o_browse:ResetVScroll( .T. )
 
 return nil
 
@@ -6609,7 +6662,7 @@ static function dv_seek2( cWinname, cWinSeek, cKey, aFields, aColVis, lFirstLast
                   ErrorMessage(oError) )
       end
       // refresh browse
-      o_browse:Refresh()
+      o_browse:refresh()
 
       // bring browse to the front
       //o_browse:SetFocus()
@@ -7147,7 +7200,7 @@ static function dv_goto(cWinname)
          //Value " First"
          VCENTERALIGN .T.
          //CENTERALIGN .T.
-         ACTION { || o_Browse:GoTop(), o_Browse:ReFresh(),;
+         ACTION { || o_Browse:GoTop(), o_Browse:refresh(),;
                      ThisWindow.release,;
                      o_Browse:SetFocus() }
          FONTCOLOR th_bt_fontcol
@@ -7200,7 +7253,7 @@ static function dv_goto(cWinname)
          //Value " Last"
          VCENTERALIGN .T.
          //CENTERALIGN .T.
-         ACTION { || o_Browse:GoBottom(), o_Browse:ReFresh(),;
+         ACTION { || o_Browse:GoBottom(), o_Browse:refresh(),;
                      ThisWindow.release,;
                      o_Browse:SetFocus() }
          FONTCOLOR th_bt_fontcol
@@ -7324,7 +7377,7 @@ static function dv_ai_rec(cWinname)
          //CENTERALIGN .T.
          ACTION {|| db_insert(cWinname, cAlias, getproperty(f_ai, "sp_nbrrec", "Value")),;
                     db_reindexall(cWinname, cAlias), ;
-                    o_Browse:Refresh(), o_Browse:SetFocus() }
+                    o_Browse:refresh(), o_Browse:SetFocus() }
          // (cAlias)->(dbInsert( , getproperty(f_ai, "sp_nbrrec", "Value") )), ;
          FONTCOLOR th_bt_fontcol
          BACKCOLOR th_bt_bgcol
@@ -7483,7 +7536,7 @@ static function dv_clrec(cWinname)
          // clear data in record
          db_clrrec(cAlias)
          // refresh tbrowse
-         o_Browse:Refresh()
+         o_Browse:refresh()
 
          // unlock table only if we did not place a temporary filelock before
          if !getproperty(cWinname, "cb_filelock_yn","Value")
@@ -7805,7 +7858,7 @@ static function dv_dr_rec(cWinname)
          //CENTERALIGN .T.
          VISIBLE .T.
          ACTION { || dv_dr_2('D', cWinname, cFor, cWhile, nScope, nNextRecords ), ;
-                     o_Browse:ReFresh() }
+                     o_Browse:refresh() }
          FONTCOLOR th_bt_fontcol
          BACKCOLOR th_bt_bgcol
          ONMOUSEHOVER { || setproperty(ThisWindow.name, This.name, "BACKCOLOR", th_bt_ohbgcol),;
@@ -7827,7 +7880,7 @@ static function dv_dr_rec(cWinname)
          //CENTERALIGN .T.
          VISIBLE .T.
          ACTION { || dv_dr_2( 'R', cWinname, cFor, cWhile, nScope, nNextRecords ), ;
-                     o_Browse:ReFresh() }
+                     o_Browse:refresh() }
          FONTCOLOR th_bt_fontcol
          BACKCOLOR th_bt_bgcol
          ONMOUSEHOVER { || setproperty(ThisWindow.name, This.name, "BACKCOLOR", th_bt_ohbgcol),;
@@ -8021,7 +8074,7 @@ static function dv_pack_zap(cWinname, cAction)
 
          // refresh browse
          o_Browse:GoTop()
-         o_Browse:Refresh()
+         o_Browse:refresh()
          o_Browse:SetFocus()
 
       endif
@@ -8052,7 +8105,7 @@ static function dv_append_file(cWinname)
 
       // append (with error trapping)
       TRY
-         // save pos
+         // save position
          nRecno := (cAlias)->(RECNO())
 
          // append file
@@ -8070,13 +8123,17 @@ static function dv_append_file(cWinname)
          // set focus back to tbrowse because WAIT WINDOW set the focus the main window
          domethod(cWinname, "SETFOCUS")
 
-         // repos
+         // reposition
          (cAlias)->(dbGoTo(nRecno))
 
          // refresh browse
          o_Browse:GoToRec(nRecNo)
+         o_Browse:setfocus()
          o_Browse:Refresh()
-         o_Browse:SetFocus()
+         o_Browse:ResetVScroll( .T. )
+         // and set min max range
+         o_Browse:oVScroll:SetRange( 1, ordKeyCount())
+
 
       CATCH oError
          MsgStop("OTIS can not append table <"+ alltrim(cFilename) +">."+ crlf + crlf + ;
@@ -8721,7 +8778,7 @@ Static function dv_sr_FindNext(cWinname, cString, nField, lCase, lWhole )
 
    // update tbrowse
    o_Browse:GoToRec( (cAlias)->( RecNo() ) )
-   o_Browse:ReFresh()
+   o_Browse:refresh()
    //o_Browse:SetFocus()
 
 Return Nil
@@ -9037,7 +9094,7 @@ Static function dv_sr_DoReplace(cWinname, cString, cReplace, nField, lCase, lWho
 
    // update tbrowse
    o_Browse:GoToRec( (cAlias)->( RecNo() ) )
-   o_Browse:ReFresh()
+   o_Browse:refresh()
    //o_Browse:SetFocus()
 
 Return NIL
@@ -9286,7 +9343,7 @@ static function dv_repl_ext(cWinname)
          //CENTERALIGN .T.
          VISIBLE .T.
          ACTION { || dv_repl_ext2( cWinname, cField, cFor, cWhile, cValue, cExpr, nScope, nNextRecords ), ;
-                     o_Browse:ReFresh() }
+                     o_Browse:refresh() }
          FONTCOLOR th_bt_fontcol
          BACKCOLOR th_bt_bgcol
          ONMOUSEHOVER { || setproperty(ThisWindow.name, This.name, "BACKCOLOR", th_bt_ohbgcol),;
@@ -9848,11 +9905,13 @@ static function dv_reopen_excl( cWinname )
             goto nRecno
             // restore filter
             if !empty(cFilter)
-               DbSetFilter( &("{||" + cFilter + "}" ), cFilter )
+               //DbSetFilter( &("{||" + cFilter + "}" ), cFilter )
+               o_browse:FilterData(cFilter)
+               o_browse:ResetVscroll()
             endif
 
             // refresh tbrowse
-            o_Browse:Refresh()
+            o_Browse:refresh()
 
             // set checkbox 'filelock'
             setproperty( cWinname, "cb_filelock_yn", "Value", .T.)
@@ -10008,8 +10067,6 @@ return nil
 //         In that case the structure of the current table under edit is loaded in the structure editor
 //
 Static function Struct_Editor(mode)
-
-   MEMVAR BRW_2, aStruct
 
    Local aButtons, r, c, i
    LOCAL aNames := { "Field Name", "Type", "Len", "Dec" }
@@ -10169,7 +10226,7 @@ Static function Struct_Editor(mode)
             Value "Save (as)"
             VCENTERALIGN .T.
             CENTERALIGN .T.
-            ACTION se_saveas(aStruct, mode)
+            ACTION se_saveas(BRW_2:aArray)
             // font and background color when onhover / onleave
             ONMOUSEHOVER { || setproperty( ThisWindow.name, This.name, "BACKCOLOR", th_bt_ohbgcol ),;
                               setproperty( ThisWindow.name, This.name, "FONTCOLOR", th_bt_ohfontcol ) }
@@ -10224,13 +10281,11 @@ RETURN NIL
 
 
 // 'Save as' structure
-static function se_saveas(aStruct, mode)
+static function se_saveas(aStruct)
 
-   MEMVAR BRW_2
-
-   local i
+   local i, cTemp
    local lOk := .T.
-   local cSaveToDbf, cTempFn, cTemp
+   local cSaveToDbf, cTempFn
    local nArea, cUnderEditDbfName
 
    local cHasFocus := FocusedWindow.Name
@@ -10245,7 +10300,6 @@ static function se_saveas(aStruct, mode)
    // save autopen status and active it for cdx management
    local lAutopen := Set( _SET_AUTOPEN, .T. )
 
-   HB_SYMBOL_UNUSED( mode )
    // debug
    //msgdebug(aStruct)
 
@@ -10423,9 +10477,11 @@ static function se_saveas(aStruct, mode)
             if lOk
 
                // convert fieldtype full word to a single char
+               //msgdebug(aStruct)
                AEval( aStruct, { |a, i| aStruct[i][2] := Left( a[2], 1 ) } )
 
                // create dbf
+               //msgdebug(cSaveToDbf, aStruct, rddSetDefault())
                DBCreate( cSaveToDbf, aStruct, rddSetDefault() )
 
                // reset flag changes are saved
@@ -10446,8 +10502,6 @@ return nil
 
 // Structure editor release
 static function se_release()
-
-   MEMVAR BRW_2
 
    local lReturn := .T.
 
@@ -10861,7 +10915,7 @@ static function se_AddUpdateFld( nMode, cField, cType, nLen, nDec, cFormName )
   // Modify
   ELSEIF nMode == se_modify
    oBrw:aArray[oBrw:nAt] := { cField, cType, nLen, nDec }
-   oBrw:Refresh()
+   oBrw:refresh()
   ENDIF
 
   oBrw:lHasChanged := .T.
@@ -10945,8 +10999,6 @@ static function se_load_struct(cFormName)
 
    local cFn, nOldsel, cRdd
    LOCAL oBrw := GetBrowseObj( "BRW_2", cFormName )
-
-   MEMVAR aStruct
 
    // Select a table
    cFn := Getfile( { {'Dbf Files','*.DBF'}, {'All Files','*.*'} } , 'Open DBF file(s)')
@@ -11059,7 +11111,7 @@ static function se_init_browse(aStruct)
    oBrw := GetBrowseObj( "BRW_2", "frmTableNew" )
    oBrw:lHasChanged := .F.
    oBrw:SetArray(aStruct)
-   oBrw:Refresh()
+   oBrw:refresh()
    oBrw:Gotop()
 
 return nil
@@ -11452,7 +11504,7 @@ static function Leto_getDirNames( cPath )
    Endif
 
    // Process the resulting directory listing. In this case, recursive
-   // call the procedure to scan deeper levels
+   // call the procedure to scan dir levels below
    If !Empty( aDir )
 
       For each xItem in aDir
@@ -11473,6 +11525,7 @@ static function Leto_getDirNames( cPath )
 RETURN nil
 
 
+//
 ****************************************************************
 static function Leto_getfiles(cPath, cMask, cCallId)
 ****************************************************************
@@ -11481,9 +11534,8 @@ static function Leto_getfiles(cPath, cMask, cCallId)
 
    Default cPath := "\"
 
-   HB_SYMBOL_UNUSED( cCallId ) // to prevent -w2 warnings
-
    // debug
+   cCallId := cCallId      // to prevent -w2 warnings
    // msgstop(cPath + crlf + cMask + crlf + cCallId)
 
    // display path
@@ -11849,7 +11901,7 @@ static function show_info(cTablename, cInfo, lModal)
    local form_tii := 'form_tii_' + hb_ntos(int(seconds()*100))
 
    // default non modal window
-   default lModal := .F.
+   default lModal := .T.
 
    // show index info in a form
    if lModal
@@ -11953,7 +12005,7 @@ static function show_info_resize()
 
 return nil
 
-// empty all fields in a record
+// clear all fields in a record
 static FUNCTION db_clrrec( cAlias )
    *
    LOCAL i, temp, cTtype, cFldnm
@@ -12091,13 +12143,31 @@ static function set_theme(cThemeId)
 
    do case
 
+      case cThemeId == "3"
+
+         th_w_width      := 1000                     // OTIS main window width
+         th_w_height     := 500                      // OTIS main window height
+         th_w_ctrlgap    := 08                       // OTIS main window border and controls gap
+         th_bt_width     := 100                      // menu button width
+         th_bt_height    := 24                       // menu button height
+
+         // colors settings for all windows
+         th_w_fontcolor  := {255, 255, 255}          // window font color
+         th_w_bgcolor    := {195, 235, 255}          // window bg color
+
+         // colors settings for menu buttons and some controls
+         th_bt_fontcol   := {255,255,255}            // font color
+         th_bt_bgcol     := {000,085,130}            // bg color
+         th_bt_ohfontcol := {000,000,000}            // on hover font color
+         th_bt_ohbgcol   := {083,184,225}            // on hover bg color
+
       case cThemeId == "2"
 
          th_w_width      := 1000                     // OTIS main window width
          th_w_height     := 500                      // OTIS main window height
          th_w_ctrlgap    := 08                       // OTIS main window border and controls gap
          th_bt_width     := 100                      // menu button width
-         th_bt_height    := 26                       // menu button height
+         th_bt_height    := 24                       // menu button height
 
          // colors settings for all windows
          th_w_fontcolor  := {255, 255, 255}          // window font color
@@ -12116,7 +12186,7 @@ static function set_theme(cThemeId)
          th_w_height    := 500                     // OTIS main window height
          th_w_ctrlgap   := 08                      // OTIS main window border and control gap
          th_bt_width    := 100                     // menu button width
-         th_bt_height   := 26                      // menu button height
+         th_bt_height   := 24                      // menu button height
 
          // colors settings for all windows
          th_w_fontcolor  :=  {255, 255, 255}         // window font color

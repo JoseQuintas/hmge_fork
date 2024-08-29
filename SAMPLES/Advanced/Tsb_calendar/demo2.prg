@@ -51,7 +51,7 @@ FUNCTION Main()
       WIDTH  GetProperty( "Win_1", 'Width' ) - 38 ;
       HEIGHT GetProperty( "Win_1", 'Height' ) - 68 ;
       FONT   "Arial" ;
-      SIZE   12 ;
+      SIZE   18 BOLD ;
       GRID
 
    END TBROWSE
@@ -93,34 +93,37 @@ FUNCTION Main()
    oBrw:cToolTip     := {|oBr, nCol, nRow| if( nRow > 0, ( dFirst := oBr:aDate[ nRow ][ nCol ], ;
                         CDoW( dFirst ) + ", " + CMonth( dFirst ) + " " + PadL( Day( dFirst ), 2, " " ) ), ) }
 
-   oBrw:SetColor( { 3 }, { {|| RGB( 255, 242, 0 )  } },   )
-   oBrw:SetColor( { 4 }, { {|| { RGB( 43, 189, 198 ), RGB( 3, 113, 160 ) } } },   )
+   oBrw:SetColor( { CLR_HEADF }, { {|| RGB( 240, 255, 255 ) } },  )
 
-   oBrw:SetColor( { 6 },  { -RGB( 220, 0, 0 ) },   )
+   oBrw:SetColor( { CLR_HEADB }, { {|| RGB( 130, 130, 65 )  } },  )
 
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 1 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 1 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 2 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 2 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 3 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 3 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 4 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 4 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 5 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 5 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 6 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 6 )
-   oBrw:SetColor( { 2 }, { {|| IF( IsMark( 7 ),  RGB( 200, 255, 200 ),  RGB( 240, 255, 240 ) ) } }, 7 )
+   oBrw:SetColor( { CLR_FOCUSB }, { {|| -RGB( 130, 130, 65 ) } },  )
 
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 1 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 1 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 2 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 2 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 3 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 3 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 4 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 4 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 5 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 5 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 6 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 6 )
-   oBrw:SetColor( { 1 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 7 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 7 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 1 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 1 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 2 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 2 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 3 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 3 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 4 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 4 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 5 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 5 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 6 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 6 )
+   oBrw:SetColor( { CLR_PANE }, { {|| IF( IsMark( 7 ),  RGB( 255, 255, 0 ),  RGB( 205, 205, 155 ) ) } }, 7 )
 
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 1 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 1 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 2 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 2 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 3 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 3 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 4 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 4 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 5 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 5 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 6 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 6 )
-   oBrw:SetColor( { 5 }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 7 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 200, 200, 200 ) ) } }, 7 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 1 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 1 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 2 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 2 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 3 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 3 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 4 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 4 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 5 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 5 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 6 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 6 )
+   oBrw:SetColor( { CLR_TEXT }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 7 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 7 )
+
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 1 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 1 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 2 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 2 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 3 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 3 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 4 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 4 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 5 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 5 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 6 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 6 )
+   oBrw:SetColor( { CLR_FOCUSF }, { {|| IF( Month( oBrw:aDate[ oBrw:nAt ][ 7 ] ) == Month( Date() ),  RGB( 0, 0, 0 ),  RGB( 128, 128, 128 ) ) } }, 7 )
+
+   oBrw:SetColor( { CLR_LINE }, { {|| RGB( 150, 150, 75 )  } },   )
 
    FOR i := 1 TO 7
       oBrw:aColumns[ i ]:cHeading := aDay[ i ]

@@ -1260,68 +1260,72 @@ FUNCTION OEDITEVENTS( hWnd, nMsg, wParam, lParam )
 
    i := AScan ( _HMG_aControlHandles , hWnd )
 
-   SWITCH nMsg
+   IF i > 0
 
-   CASE WM_CHAR
+      SWITCH nMsg
 
-      hEdit := _HMG_aControlHandles [i]
-      icp  := HiWord ( SendMessage( hEdit , EM_GETSEL , 0 , 0 ) )
-      icpe := LoWord ( SendMessage( hEdit , EM_GETSEL , 0 , 0 ) )
-      inBuffer := GetWindowText ( hEdit )
+      CASE WM_CHAR
 
-      // simulate overwrite mode
-      IF ! IsInsertActive() .AND. wParam <> VK_RETURN .AND. wParam <> VK_BACK .AND. ;
-         hb_USubStr( inBuffer, icp + 1, 1 ) <> Chr( 13 )
+         hEdit := _HMG_aControlHandles [i]
+         icp  := HiWord ( SendMessage( hEdit , EM_GETSEL , 0 , 0 ) )
+         icpe := LoWord ( SendMessage( hEdit , EM_GETSEL , 0 , 0 ) )
+         inBuffer := GetWindowText ( hEdit )
+
+         // simulate overwrite mode
+         IF ! IsInsertActive() .AND. wParam <> VK_RETURN .AND. wParam <> VK_BACK .AND. ;
+            hb_USubStr( inBuffer, icp + 1, 1 ) <> Chr( 13 )
 
 #ifdef UNICODE
-         IF hmg_IsAlpha( hb_UChar( wParam ) ) .OR. hmg_IsDigit( hb_UChar( wParam ) )
+            IF hmg_IsAlpha( hb_UChar( wParam ) ) .OR. hmg_IsDigit( hb_UChar( wParam ) )
 #else
-         IF hmg_IsAlpha( Chr( wParam ) ) .OR. hmg_IsDigit( Chr( wParam ) )
+            IF hmg_IsAlpha( Chr( wParam ) ) .OR. hmg_IsDigit( Chr( wParam ) )
 #endif
-            IF icp <> icpe
-               SendMessage( hEdit , WM_CLEAR , 0 , 0 )
-               SendMessage( hEdit , EM_SETSEL , icpe , icpe )
+               IF icp <> icpe
+                  SendMessage ( hEdit , WM_CLEAR , 0 , 0 )
+                  SendMessage ( hEdit , EM_SETSEL , icpe , icpe )
+               ELSE
+                  SendMessage ( hEdit , EM_SETSEL , icp , icp + 1 )
+                  SendMessage ( hEdit , WM_CLEAR , 0 , 0 )
+                  SendMessage ( hEdit , EM_SETSEL , icp , icp )
+               ENDIF
+
             ELSE
-               SendMessage( hEdit , EM_SETSEL , icp , icp + 1 )
-               SendMessage( hEdit , WM_CLEAR , 0 , 0 )
-               SendMessage( hEdit , EM_SETSEL , icp , icp )
+
+               IF wParam == VK_LBUTTON
+                  SendMessage ( hEdit , EM_SETSEL , 0 , -1 )
+               ENDIF
+
             ENDIF
 
          ELSE
 
             IF wParam == VK_LBUTTON
-               SendMessage( hEdit , EM_SETSEL , 0 , -1 )
+               SendMessage ( hEdit , EM_SETSEL , 0 , -1 )
             ENDIF
 
          ENDIF
+         EXIT
 
-      ELSE
+      CASE WM_CONTEXTMENU
 
-         IF wParam == VK_LBUTTON
-            SendMessage( hEdit , EM_SETSEL , 0 , -1 )
+         ParentForm := _HMG_aControlParentHandles [i]
+
+         IF ( i := AScan ( _HMG_aControlsContextMenu , {|x| x [1] == hWnd } ) ) > 0
+
+            IF _HMG_aControlsContextMenu [i][4] == .T.
+
+               setfocus ( wParam )
+               _HMG_xControlsContextMenuID := _HMG_aControlsContextMenu [i][3]
+               TrackPopupMenu ( _HMG_aControlsContextMenu [i][2] , LOWORD( lParam ) , HIWORD( lParam ) , ParentForm )
+               RETURN 1
+
+            ENDIF
+
          ENDIF
+         EXIT
 
-      ENDIF
-      EXIT
+      ENDSWITCH
 
-   CASE WM_CONTEXTMENU
-
-      ParentForm := _HMG_aControlParentHandles [i]
-
-      IF ( i := AScan( _HMG_aControlsContextMenu , {|x| x [1] == hWnd } ) ) > 0
-
-         IF _HMG_aControlsContextMenu [i][4] == .T.
-            setfocus( wParam )
-
-            _HMG_xControlsContextMenuID := _HMG_aControlsContextMenu [i][3]
-
-            TrackPopupMenu ( _HMG_aControlsContextMenu [i][2] , LOWORD( lParam ) , HIWORD( lParam ) , ParentForm )
-
-            RETURN 1
-         ENDIF
-
-      ENDIF
-
-   ENDSWITCH
+   ENDIF
 
 RETURN 0

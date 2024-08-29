@@ -256,20 +256,17 @@ RETURN
 STATIC FUNCTION LaunchDropdownMenu( nHwnd )
 *------------------------------------------------------------------------------*
    LOCAL aPos := {0, 0, 0, 0}
-   LOCAL nIdx
+   LOCAL i
 
-   nIdx := AScan ( _HMG_aControlHandles, nHwnd )
+   IF ( i := AScan ( _HMG_aControlHandles, nHwnd ) ) > 0
 
-   IF nIdx > 0
+      GetWindowRect( nHwnd, /*@*/aPos )
 
-      GetWindowRect( nHwnd, aPos )
-
-      TrackPopupMenu( _HMG_aControlRangeMax[ nIdx ], aPos[ 1 ] + 1, ;
-      	aPos[ 2 ] + _HMG_aControlHeight[ nIdx ], _HMG_aControlParentHandles[ nIdx ] )
+      TrackPopupMenu( _HMG_aControlRangeMax[ i ], aPos[ 1 ] + 1, aPos[ 2 ] + _HMG_aControlHeight[ i ], _HMG_aControlParentHandles[ i ] )
 
    ENDIF
 
-RETURN Nil
+RETURN NIL
 
 *------------------------------------------------------------------------------*
 * Low Level C Routines
@@ -282,6 +279,10 @@ RETURN Nil
 
 #include <mgdefs.h>
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Button Class Name
+#define WC_BUTTON              "Button"
+#endif
 
 #ifdef UNICODE
 LPWSTR AnsiToWide( LPCSTR );

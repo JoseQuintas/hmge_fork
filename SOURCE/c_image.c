@@ -54,6 +54,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Static Class Name
+#define WC_STATIC              "Static"
+#endif
 
 #if defined( _MSC_VER )
 #pragma warning( push )

@@ -286,7 +286,7 @@ Local cFile := Form_1.Text_1.Value, ;
 
 	cParam += "-" + IF(nLevel <= 9, NTRIM(nLevel), Form_1.Combo_1.Item(nLevel)) + " "
 	cParam += IF(nMethod == 1, "", "-" + Form_1.Combo_2.Item(nMethod) + " ")
-	cParam += IF(nMethod < 4, "--crp-ms=" + Form_1.Combo_3.Item(nMemUse) + " ", "")
+	//cParam += IF(nMethod < 4, "--crp-ms=" + Form_1.Combo_3.Item(nMemUse) + " ", "")
 	cParam += IF(Empty(cUser), "", cUser + " ")
 	IF !lExports
 		cParam += "--compress-exports=0 "

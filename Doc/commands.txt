@@ -8,7 +8,8 @@ CLEAN MEMORY | RELEASE MEMORY
 // Application related commands
 ///////////////////////////////
 
-SET MULTIPLE [ON | OFF]
+SET MULTIPLE [ON | OFF] [WARNING]
+SET MULTIPLE QUIT [WARNING]
 
 SET EVENTS FUNCTION TO <FuncName>
 
@@ -51,6 +52,8 @@ RELEASE WINDOWPROPERTY <name> ;
   [ VALUE <value> ] ;
   [ NOFREE ]
 
+SET WINDOW MODAL [PARENT] HANDLE [ON | OFF]
+
 SET WINDOW THIS TO [<FormName>]
 
 RESET MINMAXINFO [OF | WINDOW] <FormName> TO DEFAULT
@@ -71,8 +74,7 @@ SET DIALOGBOX [POSITION] ROW <nRow> COL <nCol>
 SET DIALOGBOX [POSITION] CENTER OF [PARENT | <hWnd> | DESKTOP]
 SET DIALOGBOX [POSITION] DISABLE
 
-DISABLE [WINDOW] EVENT OF <FormName>
-ENABLE  [WINDOW] EVENT OF <FormName>
+[DISABLE | ENABLE] [WINDOW] EVENT OF <FormName>
 
 ON APPEVENT [ID] <nId> ACTION <bAction> OF <window> [NOACTIVE] [ONCE] [RESULT] TO <lResult>
 EMIT [EVENT] [ID] <nId> OF <window>
@@ -215,8 +217,7 @@ SET MSGALERT FONTCOLOR TO <aFontColor> [STOREIN <aPrev>]
 
 SET ALERT EOL [NORMAL | STANDARD]
 
-DISABLE [CONTROL] EVENT <ControlName> OF <FormName>
-ENABLE  [CONTROL] EVENT <ControlName> OF <FormName>
+[DISABLE | ENABLE] [CONTROL] EVENT <ControlName> OF <FormName>
 
 SET CONTROL <ControlName> OF <FormName> ;
   [CLIENTEDGE | STATICEDGE | WINDOWEDGE | NOTEDGE]
@@ -245,14 +246,15 @@ EXECUTE					;
   [ DEFAULT <default> ]			;
   [ MAXIMIZE | MINIMIZE | HIDE ]
 
-CREATE LINK FILE <Linkfile>             ;
-  TARGETFILE <Targetfile>               ;
-  [ TARGETARGS <Targetargs> ]           ;
+CREATE LINK FILE <LinkFile>             ;
+  TARGETFILE <TargetFile>               ;
+  [ TARGETARGS <TargetArgs> ]           ;
   [ DESCRIPTION <Description> ]         ;
-  [ SHOWMODE <Showmode> ]               ;
-  [ [ WORKING ] DIRECTORY <Curdir> ]    ;
-  [ ICON [ LOCATION ] <Iconfile> ]      ;
-  [ ICONINDEX <Iconindex> ]             ;
+  [ SHOWMODE <ShowMode> ]               ;
+  [ [ WORKING ] DIRECTORY <CurDir> ]    ;
+  [ ICON [ LOCATION ] <IconFile> ]      ;
+  [ ICONINDEX <IconIndex> ]             ;
+  [ HOTKEY <KeyName> ]                  ;
   [ RESULT [ TO ] <nSuccess> ]
 
 TREESORT <tree> OF <form> [ITEM nItem]	;

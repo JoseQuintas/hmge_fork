@@ -60,6 +60,7 @@ extern HFONT   PrepareFont( TCHAR *, int, int, int, int, int, int, int );
 #ifdef __cplusplus
 }
 #endif
+
 HB_FUNC( TEXTDRAW )
 {
    HWND hWnd = hmg_par_raw_HWND( 1 );

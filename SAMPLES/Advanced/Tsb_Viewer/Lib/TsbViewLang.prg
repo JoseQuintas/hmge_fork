@@ -34,6 +34,7 @@ FUNCTION myLangeRes(nI, cPrgCP)
                    "Структура этой базы"       , "SEPARATOR"             ,;
                    "Выгрузить CSV"             , "Какой язык в окне ?"   ,;
                    "Инфо о фонтах в программе" , "Инфо о фонтах таблицы" ,;
+                   "Список открытых окон" ,; 
                    "SEPARATOR"                 , "О программе"              }
       ELSEIF cLang == "UA1251"
          xRet := { "Список відкритих БД "      , "Індекси цієї бази"     ,;
@@ -42,6 +43,7 @@ FUNCTION myLangeRes(nI, cPrgCP)
                    "Структура цієї бази "      , "SEPARATOR"             ,;
                    "Вивантажити CSV"           , "Яка мова у вікні ?"    ,;
                    "Інфо про фонти у програмі" , "Інфо про фонти таблиці",;
+                   "Список відкритих вікон",;
                    "SEPARATOR"                 , "Про програму" }
       ELSE
          xRet := { "List of open databases"         , "Indexes of this database"         ,;
@@ -50,6 +52,7 @@ FUNCTION myLangeRes(nI, cPrgCP)
                    "Structure of this base"         , "SEPARATOR"                        ,;
                    "Upload CSV"                     , "What language is in the window ?" ,;
                    "Info about fonts in the program", "Info about table fonts"           ,;
+                   "List of open windows" ,;
                    "SEPARATOR"                      , "About the program"}
       ENDIF
 

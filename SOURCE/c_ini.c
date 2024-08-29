@@ -43,13 +43,14 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #ifdef UNICODE
 LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
+
 HB_FUNC( GETPRIVATEPROFILESTRING )
 {
    DWORD   nSize = 256;
@@ -96,6 +97,7 @@ HB_FUNC( GETPRIVATEPROFILESTRING )
       pStr = WideToAnsi( ( LPWSTR ) lpDefault );
       hb_retc( pStr );
       hb_xfree( pStr );
+      hb_xfree( ( TCHAR * ) lpFileName );
       hb_xfree( ( TCHAR * ) lpDefault );
 #endif
    }
@@ -117,6 +119,10 @@ HB_FUNC( WRITEPRIVATEPROFILESTRING )
    LPCWSTR lpFileName = AnsiToWide( ( char * ) hb_parc( 4 ) );
 #endif
    hb_retl( WritePrivateProfileString( lpSection, lpEntry, lpData, lpFileName ) );
+#ifdef UNICODE
+   hb_xfree( ( TCHAR * ) lpSection );
+   hb_xfree( ( TCHAR * ) lpFileName );
+#endif
 }
 
 HB_FUNC( DELINIENTRY )
@@ -134,6 +140,11 @@ HB_FUNC( DELINIENTRY )
                                        lpEntry,        // Entry
                                        NULL,           // String
                                        lpFileName ) ); // INI File
+#ifdef UNICODE
+   hb_xfree( ( TCHAR * ) lpSection );
+   hb_xfree( ( TCHAR * ) lpEntry );
+   hb_xfree( ( TCHAR * ) lpFileName );
+#endif
 }
 
 HB_FUNC( DELINISECTION )
@@ -149,6 +160,10 @@ HB_FUNC( DELINISECTION )
                                        NULL,           // Entry
                                        TEXT( "" ),     // String
                                        lpFileName ) ); // INI File
+#ifdef UNICODE
+   hb_xfree( ( TCHAR * ) lpSection );
+   hb_xfree( ( TCHAR * ) lpFileName );
+#endif
 }
 
 static TCHAR * FindFirstSubString( TCHAR * Strings )
@@ -229,6 +244,7 @@ HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
       }
 
       hb_xfree( pStr );
+      hb_xfree( ( TCHAR * ) lpFileName );
 #endif
    }
 }
@@ -273,6 +289,8 @@ HB_FUNC( _GETPRIVATEPROFILESECTION )
       }
 
       hb_xfree( pStr );
+      hb_xfree( ( TCHAR * ) lpSectionName );
+      hb_xfree( ( TCHAR * ) lpFileName );
 #endif
    }
 }

@@ -47,6 +47,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Listbox Class Name
+#define WC_LISTBOX             "ListBox"
+#endif
 
 #if ! defined( __XHARBOUR__ ) && ( __HARBOUR__ - 0 > 0x030000 )
 #include "hbwinuni.h"

@@ -53,10 +53,11 @@
    [ [ WORKING ] DIRECTORY <curdir> ] ;
    [ ICON [ LOCATION ] <iconfile> ] ;
    [ ICONINDEX <iconidx> ] ;
+   [ HOTKEY <key> ] ;
    [ RESULT [ TO ] <nSuccess> ] ;
 => ;
-   [ <nSuccess> := ] CreateLink( <target>, <args>, <fname>, <desc>, ;
-                                 <nMode>, <curdir>, <iconfile>, <iconidx> )
+   [ <nSuccess> := ] HMG_CreateLink( <target>, <args>, <fname>, <desc>, ;
+                                 <nMode>, <curdir>, <iconfile>, <iconidx>, <"key"> )
 
 #command INSERT BEFORE           => dbInsert()
 #command INSERT BLANK            => dbInsert( RecNo() + 1 )

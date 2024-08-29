@@ -1,3 +1,10 @@
+2023/04/14: 4.0.1.157 (Stable)
+2023/04/14: 3.0.4.178 (Stable)
+
+Updated: PDF signing for new and existing PDF files
+Updated: PDF printing from code and new preview window
+Updated: New preview window which can be used separate or used non-modal from PS (Version 4)
+
 2022/01/08: 4.0.1.144 (Beta)
 
 New: PSSetImageQuality - Sets images quality in PDF files

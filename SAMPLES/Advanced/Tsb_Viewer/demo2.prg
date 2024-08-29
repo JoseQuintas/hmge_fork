@@ -158,17 +158,22 @@ FUNCTION CreateDataWin(nScreen)
 
    oWin := oHmgData()
    oWin:lWait      := .F.
-   oWin:lCenter    := .F.
    oWin:nPosY      := 0
    oWin:nPosX      := 0
    oWin:nPosW      := System.ClientWidth
    oWin:nPosH      := System.ClientHeight/2
    oWin:aBackcolor := {183,221,232}
+   oWin:cTitle     := ""
+   oWin:lCenter    := .F.
+   oWin:lTopmost   := .F.
+   oWin:bOnInit    := Nil
+   oWin:bOnRelease := {||Nil}
+   oWin:bIAClose   := {||Nil}
 
    IF nScreen == 2
       oWin:lWait := .T.
-      oWin:nPosY := System.ClientHeight/2 + GetBorderHeight()
-      oWin:nPosH := System.ClientHeight/2 - GetBorderHeight()
+      oWin:nPosY := System.ClientHeight/2 
+      oWin:nPosH := System.ClientHeight/2 - 1
       oWin:aBackcolor := {250,236,158}
    ENDIF
 
@@ -730,9 +735,9 @@ FUNCTION myBtn4(ow,ky,xp)
       ENDIF
    NEXT
    ? Repl("-",60)
-   oCargo := oWnd:Cargo:oTsbW
+   oCargo := oWnd:Cargo:oTsb
    cTxt   := ""
-   ? "Берём данные с формы - oWnd:Cargo:oTsbW"
+   ? "Берём данные с формы - oWnd:Cargo:oTsb"
    a2Dim  := oCargo:GetAll(.F.)   // получить с ключём массив
    FOR nI := 1 TO Len(a2Dim)
       ? "  oCargo:", nI, "Key =", a2Dim[nI][1], "Val =", a2Dim[nI][2]

@@ -134,8 +134,8 @@
    ;   // RichEditEx
    #xtranslate <w>. \<c\> . \<p:FontName,FontSize,FontBold,FontItalic,FontUnderline,FontStrikeOut,FontColor,FontBackColor,FontScript,Link\>          => GetProperty ( <"w">, \<"c"\> , \<"p"\> ) ;;
    #xtranslate <w>. \<c\> . \<p:FontName,FontSize,FontBold,FontItalic,FontUnderline,FontStrikeOut,FontColor,FontBackColor,FontScript,Link\> := \<n\> => SetProperty ( <"w">, \<"c"\> , \<"p"\> , \<n\> ) ;;
-   #xtranslate <w>. \<c\> . \<p:RTFTextMode,AutoURLDetect,Zoom,SelectRange,CaretPos,Value,GetSelectText,GetTextLength,ViewRect\> => GetProperty ( <"w">, \<"c"\> , \<"p"\> ) ;;
-   #xtranslate <w>. \<c\> . \<p:RTFTextMode,AutoURLDetect,Zoom,SelectRange,CaretPos,Value,ViewRect\> := \<n\>      => SetProperty ( <"w">, \<"c"\> , \<"p"\> , \<n\> ) ;;
+   #xtranslate <w>. \<c\> . \<p:RTFTextMode,AutoURLDetect,Zoom,SelectRange,CaretPos,GetSelectText,GetTextLength,ViewRect\> => GetProperty ( <"w">, \<"c"\> , \<"p"\> ) ;;
+   #xtranslate <w>. \<c\> . \<p:RTFTextMode,AutoURLDetect,Zoom,SelectRange,CaretPos,ViewRect\> := \<n\> => SetProperty ( <"w">, \<"c"\> , \<"p"\> , \<n\> ) ;;
    #xtranslate <w>. \<c\> . \<p:BackGroundColor\> := \<n\> => SetProperty ( <"w">, \<"c"\> , \<"p"\> , \<n\> ) ;;
    #xtranslate <w>. \<c\> . \<p:SelectAll,UnSelectAll\> \[()\] => DoMethod ( <"w">, \<"c"\> , \<"p"\> ) ;;
    #xtranslate <w>. \<c\> . \<p:AddText,AddTextAndSelect\> (\<arg\>) := \<n\> => SetProperty ( <"w">, \<"c"\> , \<"p"\> , \<arg\> , \<n\> ) ;;
@@ -412,11 +412,9 @@
 
 #translate IsCenterWindowRelativeParent => _SetCenterWindowStyle ()
 
-
 #command SET DEFAULT ICON TO <iconname> ;
    => ;
    _HMG_DefaultIconName := <iconname>
-
 
 #command MAXIMIZE WINDOW <name> ;
    => ;

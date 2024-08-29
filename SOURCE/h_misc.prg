@@ -378,6 +378,17 @@ FUNCTION HMG_FileCopy( cSourceFile, cTargetFile, nBuffer, bEval )
 RETURN lSuccess
 
 *-----------------------------------------------------------------------------*
+FUNCTION HMG_CreateLink ( target, args, fname, desc, nMode, curdir, iconfile, iconidx, cKey )
+*-----------------------------------------------------------------------------*
+   LOCAL aKey := { 0, 0 }
+
+   IF ! Empty ( cKey ) .AND. ISCHARACTER ( cKey )
+      aKey := _DetermineKey ( cKey )
+   ENDIF
+
+RETURN C_CreateLink ( target, args, fname, desc, nMode, curdir, iconfile, iconidx, aKey[ 1 ], aKey[ 2 ] )
+
+*-----------------------------------------------------------------------------*
 FUNCTION uCharToVal( cText, cType )
 *-----------------------------------------------------------------------------*
    LOCAL uVal

@@ -52,6 +52,12 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Scrollbar Class Name
+#define WC_SCROLLBAR           "ScrollBar"
+// Static Class Name
+#define WC_STATIC              "Static"
+#endif
 
 LRESULT APIENTRY  SubClassFunc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 static WNDPROC lpfnOldWndProc;
@@ -145,7 +151,7 @@ HB_FUNC( INITVSCROLLBAR )
       hb_parni( 4 ),
       hb_parni( 5 ),
       hmg_par_raw_HWND( 1 ),
-      ( HMENU ) 0,
+      ( HMENU ) NULL,
       GetInstance(),
       NULL
                 );

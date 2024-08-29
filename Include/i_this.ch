@@ -74,6 +74,8 @@
 #xtranslate This . <c> . <p:AddItem,AddColumn,AddControl,AddPage> (<a1> , <a2> , <a3> , <a4> ) => Domethod ( _HMG_THISFORMNAME, <(c)> , <"p"> , <a1> , <a2> , <a3> , <a4> )
 #xtranslate This . <c> . <p:ReadOnly,DisableEdit,Options,Spacing,Length> => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> )
 #xtranslate This . <c> . <p:ReadOnly,DisableEdit,Options,Spacing,Speed,Volume,Zoom,Action,OnClick,OnGotFocus,OnLostFocus,OnChange,OnDblClick,OnEnter> := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <n> )
+#xtranslate This . <c> . Event . <p:Action,OnClick,OnGotFocus,OnLostFocus,OnChange,OnDblClick,OnEnter> => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> )
+#xtranslate This . <c> . Event . <p:Action,OnClick,OnGotFocus,OnLostFocus,OnChange,OnDblClick,OnEnter> := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <n> )
 #xtranslate This . <x> . <c> . <p:Caption,Enabled,Value> => GetProperty ( _HMG_THISFORMNAME , <(x)> , <(c)> , <"p"> )
 #xtranslate This . <x> . <c> . <p:Caption,Enabled,Value> := <n> => SetProperty ( _HMG_THISFORMNAME , <(x)> , <(c)> , <"p"> , <n> )
 #xtranslate This . <x> (<k>) . <c> . <p:Value,Name,Address,BackColor,FontColor,Picture,ToolTip,FontName,FontSize,FontBold,FontItalic,FontUnderline,FontStrikeOut,Caption,Row,DisplayValue,Col,Width,Height,Visible,Enabled,Checked,ItemCount,RangeMin,RangeMax,Cargo> => GetProperty ( _HMG_THISFORMNAME, <(x)> , <k> , <(c)> , <"p"> )

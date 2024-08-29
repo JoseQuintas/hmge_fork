@@ -9,7 +9,7 @@ rem Builds MiniGui library sevenzip.lib.
 
 :BUILD
   if exist %MV_BUILD%\sevenzip.lib del %MV_BUILD%\sevenzip.lib
-  %MV_HRB%\bin\harbour t7zip -n -w -es2 -gc0 /i%MV_HRB%\include;%MG_ROOT%\include
+  %MV_HRB%\bin\harbour t7zip -n -w3 -es2 -gc0 /i%MV_HRB%\include;%MG_ROOT%\include
   %MG_BCC%\bin\bcc32 -c -tWM -O2 -d -6 -OS -I%MV_HRB%\include;%MG_ROOT%\include t7zip.c
   %MG_BCC%\bin\bcc32 -c -tWM -O2 -d -6 -OS -I.;%MV_HRB%\include;%MG_ROOT%\include -L%MV_HRB%\lib;%MG_BCC%\lib sevenzip.c
   %MG_BCC%\bin\tlib %MV_BUILD%\sevenzip.lib +sevenzip +t7zip

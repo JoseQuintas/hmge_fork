@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  * (c) 2021 Grigory Filatov <gfilatov@inbox.ru>
-*/
+ */
 
 #include <hmg.ch>
 
@@ -40,9 +40,9 @@ RETURN NIL
 PROCEDURE Img_center( cImage )
 *----------------------------------------------------------------------------*
 
-   this.&( cImage ).Hide
-   this.&( cImage ).row := ( thiswindow.clientheight - this.&( cImage ).height ) / 2
-   this.&( cImage ).col := ( thiswindow.clientwidth - this.&( cImage ).width ) / 2
-   this.&( cImage ).Show
+   this.( cImage ).Hide
+   this.( cImage ).row := ( thiswindow.clientheight - this.( cImage ).height ) / 2
+   this.( cImage ).col := ( thiswindow.clientwidth - this.( cImage ).width ) / 2
+   this.( cImage ).Show
 
 RETURN

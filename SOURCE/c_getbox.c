@@ -51,6 +51,12 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Button Class Name
+#define WC_BUTTON              "Button"
+// Edit Class Name
+#define WC_EDIT                "Edit"
+#endif
 #if defined( _MSC_VER )
 #pragma warning( push )
 #pragma warning( disable : 4201 )
@@ -160,7 +166,7 @@ HB_FUNC( INITGETBOX )
    SetProp( ( HWND ) hedit, TEXT( "OldWndProc" ), ( HWND ) GetWindowLongPtr( ( HWND ) hedit, GWLP_WNDPROC ) );
    SubclassWindow2( hedit, OwnGetProc );
 
-   SendMessage( hedit, ( UINT ) EM_LIMITTEXT, hmg_par_WPARAM( 9 ), ( LPARAM ) 0 );
+   SendMessage( hedit, EM_LIMITTEXT, hmg_par_WPARAM( 9 ), ( LPARAM ) 0 );
 
    if( hb_parc( 18 ) != NULL )
    {
@@ -323,12 +329,12 @@ HB_FUNC( INITGETBOX )
 
    if( himage != NULL )
    {
-      SendMessage( hBtn1, ( UINT ) BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
+      SendMessage( hBtn1, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
    }
 
    if( himage2 != NULL )
    {
-      SendMessage( hBtn2, ( UINT ) BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage2 );
+      SendMessage( hBtn2, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage2 );
    }
 
    SendMessage( hedit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELONG( 0, BtnWidth + BtnWidth2 + 2 ) );

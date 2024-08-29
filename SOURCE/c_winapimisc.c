@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #if defined( _MSC_VER )
@@ -298,14 +298,14 @@ HB_FUNC( RETRIEVETEXTFROMCLIPBOARD )
       }
       else
       {
-         hb_retc( NULL );
+         hb_retc_null();
       }
 
       CloseClipboard();
    }
    else
    {
-      hb_retc( NULL );
+      hb_retc_null();
    }
 }
 
@@ -1989,22 +1989,25 @@ HB_FUNC( HMG_GETLOCALEINFO )
    iIconindex       - Index of the icon in the icon file. If this is
                      < 0 the icon is not set.
 
+   wHotKey          - The virtual key code is in the low-order byte,
+                     and the modifier flags are in the high-order byte.
+
    Returns:
    HRESULT value >= 0 for success, < 0 for failure.
    --------------------------------------------------------------------------------
  */
 #ifndef UNICODE
 static HRESULT CreateShortCut
-   ( LPSTR pszTargetfile, LPSTR pszTargetargs, LPSTR pszLinkfile, LPSTR pszDescription, int iShowmode, LPSTR pszCurdir, LPSTR pszIconfile, int iIconindex )
+   ( LPSTR pszTargetfile, LPSTR pszTargetargs, LPSTR pszLinkfile, LPSTR pszDescription, int iShowmode, LPSTR pszCurdir, LPSTR pszIconfile, int iIconindex, WORD wHotKey )
 #else
 static HRESULT CreateShortCut
-   ( LPWSTR pszTargetfile, LPWSTR pszTargetargs, LPWSTR pszLinkfile, LPWSTR pszDescription, int iShowmode, LPWSTR pszCurdir, LPWSTR pszIconfile, int iIconindex )
+   ( LPWSTR pszTargetfile, LPWSTR pszTargetargs, LPWSTR pszLinkfile, LPWSTR pszDescription, int iShowmode, LPWSTR pszCurdir, LPWSTR pszIconfile, int iIconindex, WORD wHotKey )
 #endif
 {
-   HRESULT        hRes;          /* Returned COM result code */
-   IShellLink *   pShellLink;    /* IShellLink object pointer */
-   IPersistFile * pPersistFile;  /* IPersistFile object pointer */
-   WORD wszLinkfile[ MAX_PATH ]; /* pszLinkfile as Unicode string */
+   HRESULT        hRes;           /* Returned COM result code */
+   IShellLink *   pShellLink;     /* IShellLink object pointer */
+   IPersistFile * pPersistFile;   /* IPersistFile object pointer */
+   WORD wszLinkfile[ MAX_PATH ];  /* pszLinkfile as Unicode string */
 
    hRes = E_INVALIDARG;
    if
@@ -2023,10 +2026,12 @@ static HRESULT CreateShortCut
    {
       hRes = CoCreateInstance
              (
-         &CLSID_ShellLink, /* pre-defined CLSID of the IShellLink object */ NULL,                /* pointer to parent interface if part of aggregate */
-         CLSCTX_INPROC_SERVER, /* caller and called code are in same process */ &IID_IShellLink, /* pre-defined interface of the IShellLink object */
-         ( LPVOID * ) &pShellLink
-             );                                                                                  /* Returns a pointer to the IShellLink object */
+         &CLSID_ShellLink,        /* pre-defined CLSID of the IShellLink object */
+         NULL,                    /* pointer to parent interface if part of aggregate */
+         CLSCTX_INPROC_SERVER,    /* caller and called code are in same process */
+         &IID_IShellLink,         /* pre-defined interface of the IShellLink object */
+         ( LPVOID * ) &pShellLink /* Returns a pointer to the IShellLink object */
+             );
       if( SUCCEEDED( hRes ) )
       {
          /* Set the fields in the IShellLink object */
@@ -2048,9 +2053,15 @@ static HRESULT CreateShortCut
          {
             pShellLink->lpVtbl->SetIconLocation( pShellLink, pszIconfile, iIconindex );
          }
+         if( wHotKey != 0 )
+         {
+            pShellLink->lpVtbl->SetHotkey( pShellLink, wHotKey );
+         }
 
          /* Use the IPersistFile object to save the shell link */
-         hRes = pShellLink->lpVtbl->QueryInterface( pShellLink, /* existing IShellLink object */ &IID_IPersistFile, /* pre-defined interface of the IPersistFile object */ ( LPVOID * ) &pPersistFile ); /* returns a pointer to the IPersistFile object */
+         hRes = pShellLink->lpVtbl->QueryInterface( pShellLink, /* existing IShellLink object */
+                                             &IID_IPersistFile, /* pre-defined interface of the IPersistFile object */
+                                  ( LPVOID * ) &pPersistFile ); /* returns a pointer to the IPersistFile object */
          if( SUCCEEDED( hRes ) )
          {
 #ifndef UNICODE
@@ -2068,10 +2079,17 @@ static HRESULT CreateShortCut
 }
 
 /***************************************************************************/
-HB_FUNC( CREATELINK )
+#if defined( __BORLANDC__ )
+#pragma warn -prc /* suggest parentheses to clarify precedence */
+#endif
+
+HB_FUNC( C_CREATELINK )
 {
    int     iShowmode;      /* <Showmode> (optional) */
    int     iIconindex;     /* <Iconindex> (optional) */
+   WORD    wHotKey;        /* Virtual key code (optional) */
+   BYTE    uVirtualKeyCode;
+   BYTE    uModifiers;     /* modifier flags */
    HRESULT hRes;           /* result of calling COM functions */
 
 #ifndef UNICODE
@@ -2101,8 +2119,11 @@ HB_FUNC( CREATELINK )
    szCurdir      = HB_ISCHAR( 6 ) ? AnsiToWide( ( char * ) hb_parc( 6 ) ) : TEXT( "" );
    szIconfile    = HB_ISCHAR( 7 ) ? AnsiToWide( ( char * ) hb_parc( 7 ) ) : TEXT( "" );
 #endif
-   iShowmode  = hb_parnidef( 5, 0 );
-   iIconindex = hb_parnidef( 8, 0 );
+   iShowmode       = hb_parnidef( 5, 0 );
+   iIconindex      = hb_parnidef( 8, 0 );
+   uVirtualKeyCode = hmg_par_BYTE( 9 );
+   uModifiers      = hmg_par_BYTE( 10 );
+   wHotKey         = MAKEWORD( uVirtualKeyCode, uModifiers );
 
    /* Call CoInitialize() and create the link if OK. */
    hRes = CoInitialize( NULL );
@@ -2110,15 +2131,16 @@ HB_FUNC( CREATELINK )
    {
       hRes = CreateShortCut
              (
-         szTargetfile,     /* Targetfile */
+         szTargetfile,     /* Target file */
          szTargetargs,     /* Target arguments */
          szLinkfile,       /* Short-cut filename */
          szDescription,    /* Short-cut description */
          iShowmode,        /* Showmode constant */
          szCurdir,         /* Working directory for linked file */
          szIconfile,       /* Icon file shown for the link */
-         iIconindex
-             );            /* Index of icon in the file */
+         iIconindex,       /* Index of icon in the file */
+         wHotKey           /* Virtual key code */
+             );
       if( SUCCEEDED( hRes ) )
       {
          hmg_ret_HRESULT( hRes );

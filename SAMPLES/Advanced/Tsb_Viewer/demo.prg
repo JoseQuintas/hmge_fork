@@ -95,7 +95,7 @@ RETURN NIL
 ////////////////////////////////////////////////////////////////////////////////
 FUNCTION EventZero()
    LOCAL cDbf, cAls, cFltr, cInd, cCodePage, nY, nX, nW, nH, lCntr
-   LOCAL aTsbPar, aWinPar
+   LOCAL aTsbPar, aWinPar, cMsg
 
    nY        := App.Cargo:nHMain + GetBorderHeight()  // считаем высоту окна Main
    nX        := 0
@@ -110,17 +110,22 @@ FUNCTION EventZero()
    SET CODEPAGE TO ENGLISH
    SET LANGUAGE TO ENGLISH
    cCodePage := hb_SetCodepage()
-   USE (cDbf) ALIAS (cAls) NEW EXCLUSIVE
+   //USE (cDbf) ALIAS (cAls) NEW EXCLUSIVE
+   IF ! myUseArea( cDbf, cAls, .F., , , )   // ==>> TsbViewMisc.prg
+      cMsg := "ERROR opening database!;;" 
+      cMsg += cDbf
+      AlertStop( cMsg, "Result", "ZZZ_B_STOP64", 64 )
+      Quit
+   ENDIF
    SET FILTER TO &cFltr
    SET FONT TO "Times New Roman", 14  // фонты построения в таблице берутся от этого фонта
 
    aTsbPar := { cAls, cCodePage, "Checkpoint (1) !" }
-   aWinPar := { "NOWAIT", "", nY, nX, nW, nH, lCntr }
-   TsbViewer( aTsbPar, aWinPar)  // окно с таблицей
-   // TsbViewer()  // можно без параметров
+   aWinPar := { "NOWAIT", "", nY, nX, nW, nH, lCntr, { 0,176,240 } }
+   //TsbViewer( aTsbPar, aWinPar)  // окно с таблицей
+   TsbViewer()  // можно без параметров
 
    ? ProcNL(), Hb_LangSelect(), cCodePage
-
 
    nY        := 0 ; nX := 0
    nW        := System.ClientWidth / 2

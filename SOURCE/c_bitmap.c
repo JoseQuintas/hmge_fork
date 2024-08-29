@@ -465,7 +465,7 @@ HBITMAP Icon2Bmp( HICON hIcon )
    HBITMAP  hBmp;
    HBITMAP  hOldBmp;
 
-   GetIconInfo( ( HICON ) hIcon, &icon );
+   GetIconInfo( hIcon, &icon );
    GetObject( icon.hbmColor, sizeof( BITMAP ), ( LPVOID ) &bitmap );
    hBmp    = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
    hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBmp );
@@ -494,7 +494,7 @@ HBITMAP IconMask2Bmp( HICON hIcon )
    HBITMAP  hBmp;
    HBITMAP  hOldBmp;
 
-   GetIconInfo( ( HICON ) hIcon, &icon );
+   GetIconInfo( hIcon, &icon );
    GetObject( icon.hbmColor, sizeof( BITMAP ), ( LPVOID ) &bitmap );
    hBmp    = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
    hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBmp );
@@ -720,7 +720,7 @@ HB_FUNC( DRAWGLYPHMASK )
    // handle to bitmaped button mask
    if( hwnd != NULL )
    {
-      SendMessage( hwnd, ( UINT ) BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) hBmpTransMask );
+      SendMessage( hwnd, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) hBmpTransMask );
    }
 
    SelectObject( hDCMem, hBmpDefault );
@@ -1150,8 +1150,15 @@ HB_FUNC( GETICONSIZE )
             _arraySet( pResult, bm.bmWidth, bm.bmHeight, bm.bmBitsPixel );
          }
 
-         DeleteObject( sIconInfo.hbmMask );
-         DeleteObject( sIconInfo.hbmColor );
+         if( sIconInfo.hbmMask )
+         {
+            DeleteObject( sIconInfo.hbmMask );
+         }
+
+         if( sIconInfo.hbmColor )
+         {
+            DeleteObject( sIconInfo.hbmColor );
+         }
       }
    }
 

@@ -9,10 +9,10 @@ ANNOUNCE RDDSYS
 PROCEDURE Main()
 
    DEFINE WINDOW Form_1 ;
-      WIDTH 410 ;
-      HEIGHT 290 ;
-      TITLE 'ANIMATE Switch Test' ;
-      MAIN
+         WIDTH 410 ;
+         HEIGHT 290 ;
+         TITLE 'ANIMATE Switch Test' ;
+         MAIN
 
       @ 160, 20 BUTTON Button_D1 ;
          CAPTION "Change animation file" ;
@@ -21,8 +21,8 @@ PROCEDURE Main()
 
       @ 205, 20 BUTTON Button_D2 ;
          CAPTION "Exit" ;
-         ACTION ThisWindow.Release ;
-         WIDTH 355 HEIGHT 35 
+         ACTION ThisWindow.RELEASE ;
+         WIDTH 355 HEIGHT 35
 
    END WINDOW
 
@@ -30,7 +30,7 @@ PROCEDURE Main()
 
    ACTIVATE WINDOW Form_1 ON INIT SetAni()
 
-   RETURN
+RETURN
 
 
 PROCEDURE SetAni()
@@ -73,20 +73,20 @@ PROCEDURE SetAni()
       DEFINE ANIGIF ANIM_1
          ROW 20
          COL 20
-         WIDTH  hb_GetImageSize( cFile ) [1]
-         HEIGHT hb_GetImageSize( cFile ) [2]
+         WIDTH hb_GetImageSize( cFile ) [ 1 ]
+         HEIGHT hb_GetImageSize( cFile ) [ 2 ]
          PARENT Form_1
          PICTURE cFile
          DELAY 90
       END ANIGIF
 
-      r := Form_1.ANIM_1.Row
-      c := Form_1.ANIM_1.Col
+      r := Form_1.ANIM_1.ROW
+      c := Form_1.ANIM_1.COL
 
       DRAW RECTANGLE IN WINDOW Form_1 ;
-         AT r - 1, c - 1 TO r + Form_1.ANIM_1.Height + 2, c + Form_1.ANIM_1.Width + 2 ;
+         AT r - 1, c - 1 TO r + Form_1.ANIM_1.HEIGHT + 2, c + Form_1.ANIM_1.WIDTH + 2 ;
          PENCOLOR { 100, 100, 100 }
 
    ENDIF
 
-   RETURN
+RETURN

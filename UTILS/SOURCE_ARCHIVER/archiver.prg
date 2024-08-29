@@ -12,7 +12,6 @@
 // Revised 20/03/12 by Bicahi Esgici <esgici@gmail.com>
 //
 // Adapted for Minigui Extended Edition by Grigory Filatov <gfilatov@gmail.com>
-//
 // --------------------
 
 #include <minigui.ch>
@@ -190,22 +189,22 @@ PROCEDURE COMPRESSFILES ( cFileName, aDir, bBlock, lOvr, lStorePath, cPassword )
    IF ValType ( lOvr ) == 'L'
       IF lOvr == .T.
          IF File ( cFileName )
-            DELETE File ( cFileName )
+            DELETE FILE ( cFileName )
          ENDIF
       ENDIF
    ENDIF
 
-   hZip := HB_ZIPOPEN( cFileName )
+   hZip := hb_ZipOpen ( cFileName )
    IF ! Empty( hZip )
       FOR i := 1 TO Len ( aDir )
          IF ValType ( bBlock ) == 'B'
             Eval ( bBlock, aDir[ i ], i )
          ENDIF
          cZipFile := iif( lStorePath, aDir[ i ], cFileNoPath( aDir[ i ] ) )
-         HB_ZipStoreFile( hZip, aDir[ i ], cZipFile, cPassword )
+         hb_ZipStoreFile ( hZip, aDir[ i ], cZipFile, cPassword )
       NEXT
    ENDIF
 
-   HB_ZIPCLOSE( hZip )
+   hb_ZipClose ( hZip )
 
 RETURN

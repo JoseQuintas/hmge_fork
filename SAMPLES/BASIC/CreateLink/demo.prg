@@ -52,6 +52,7 @@ PROCEDURE CreateShortcut( cLink )
       DESCRIPTION "Classic arithmetic tasks with an on-screen calculator." ;
       WORKING DIRECTORY cFilePath( cFileName ) ;
       ICON LOCATION cFileName ;
+      HOTKEY CTRL+ALT+Z ;
       RESULT nSuccess
 
    IF nSuccess == S_OK

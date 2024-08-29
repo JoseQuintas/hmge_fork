@@ -1,17 +1,21 @@
 /*
    MINIGUI - Harbour Win32 GUI library Demo
 
-   Purpose is to test the function hb_DirScan() which allows scanning of a whole dir with subdirs.
-   Also some other interesting HB_* functions to split filename from directory name.
+   Purpose is to test the hb_DirScan() function which
+   allows you to scan an entire directory with subdirectories
+   and some other interesting hb_* functions to split filename from directory name.
 */
 
 #include "minigui.ch"
+#include "directry.ch"
 
 FUNCTION Main()
 
    LOCAL cSMsg := ""
    LOCAL aHeaders := { 'Select', 'Path', 'Name', 'Bytes', 'Date', 'Time', 'Attr' }
    LOCAL aLijst := {}
+
+   SET DATE FORMAT TO "dd.mm.yy"
 
    DEFINE WINDOW MainForm ;
       AT 90, 90 ;
@@ -91,8 +95,9 @@ RETURN
 PROCEDURE SelectAll()
 
    LOCAL i
+   LOCAL nCnt := MainForm.Grid_1.ItemCount
 
-   FOR i:=1 TO MainForm.Grid_1.ItemCount
+   FOR i:=1 TO nCnt
       MainForm.Grid_1.Item( i ) := { "x" }
    NEXT
 
@@ -138,14 +143,14 @@ PROCEDURE DoFolder( cNewDir )
 
       IF !( DirChange( cFolder ) == 0 )    // changing to the directory in question to read it
          MsgStop( "Error Changing to " + cFolder )
-         RETURN // get outta here - there's nothing left to do 4 u.
+         RETURN  // get outta here - there's nothing left to do 4 u.
       ENDIF
 
       WAIT WINDOW "Scanning Directories" NOWAIT
 
       aDir := hb_DirScan( cFolder, "*.prg" )
 
-      MainForm.StatusBar.Item( 1 ) := cFolder + " folder have " + hb_ntos( k := Len( aDir ) ) + " files"
+      MainForm.StatusBar.Item( 1 ) := "Folder " + cFolder + " contains " + hb_ntos( k := Len( aDir ) ) + " files."
 
       InkeyGUI( 100 )
 
@@ -154,10 +159,10 @@ PROCEDURE DoFolder( cNewDir )
       FOR EACH aItem IN aDir
 
          MainForm.Grid_1.Additem( { " ", ;
-            hb_DirSepAdd( cFolder) + hb_FNameDir( aItem[1] ), ;
-            hb_FNameNameExt( aItem[1] ), ;
-            Transform( aItem[2], "999,999,999" ), ;
-            DToC( aItem[3] ), aItem[4], aItem[5] } )
+            hb_DirSepAdd( cFolder ) + hb_FNameDir( aItem[ F_NAME ] ), ;
+            hb_FNameNameExt( aItem[ F_NAME ] ), ;
+            Transform( aItem[ F_SIZE ], "999,999,999" ), ;
+            DToC( aItem[ F_DATE ] ), aItem [F_TIME ], aItem[ F_ATTR ] } )
 
          cMsg := "Reading " + hb_ntos( Int( hb_enumIndex( aItem ) / k * 100 ) ) + "%"
 

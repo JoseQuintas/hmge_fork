@@ -43,10 +43,15 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Button Class Name
+#define WC_BUTTON              "Button"
+#define BUTTON_IMAGELIST_ALIGN_CENTER   4
+#endif
 
 HBITMAP     HMG_LoadPicture
 (
@@ -70,15 +75,6 @@ LPWSTR      AnsiToWide( LPCSTR );
 HINSTANCE   GetInstance( void );
 HINSTANCE   GetResources( void );
 
-#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 ) || ( defined( __MINGW32__ ) && defined( __MINGW32_VERSION ) ) || defined( __XCC__ )
-typedef struct
-{
-   HIMAGELIST himl;
-   RECT       margin;
-   UINT       uAlign;
-}
-BUTTON_IMAGELIST, * PBUTTON_IMAGELIST;
-#endif
 HB_FUNC( INITCHECKBOX )
 {
 #ifndef UNICODE
@@ -218,7 +214,7 @@ HB_FUNC( INITIMAGECHECKBUTTON )
    {
       himage = ( HWND ) HMG_LoadPicture( hb_parc( 8 ), -1, -1, hwnd, 0, hb_parl( 7 ) ? 0 : 1, -1, 0, HB_FALSE, 255 );
 
-      SendMessage( hbutton, ( UINT ) BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
+      SendMessage( hbutton, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
 
       hb_reta( 2 );
       hmg_storvnl_HANDLE( hbutton, -1, 1 );

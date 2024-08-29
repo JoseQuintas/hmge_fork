@@ -4,7 +4,7 @@
  * Copyright 2002-10 Roberto Lopez <harbourminigui@gmail.com>
  * http://harbourminigui.googlepages.com/
  *
- * Copyright 2003-2012 Grigory Filatov <gfilatov@inbox.ru>
+ * Copyright 2003-2012 Grigory Filatov <gfilatov@gmail.com>
 */
 
 ANNOUNCE RDDSYS
@@ -13,11 +13,12 @@ ANNOUNCE RDDSYS
 #include "fileio.ch"
 
 #define PROGRAM 'File Manager'
-#define VERSION ' 0.51'
+#define VERSION ' 0.52'
 #define COPYRIGHT ' 2003-2012 Grigory Filatov'
 
 #define MsgAlert( c )   MsgExclamation( c, PROGRAM, , .f. )
 
+#define WM_SYSCOMMAND 274       // &H112
 #define SC_SCREENSAVE 61760     // &HF140
 
 #ifdef __XHARBOUR__
@@ -276,7 +277,7 @@ LOCAL aDriveBmps := { "FLOPPY", "REMOVE", "HARD", "REMOTE", "CDROM", "RAMDISK" }
 
 			ON KEY TAB ACTION Domethod( "SplitChild_2", "Grid_2", "SetFocus" )
 
-			ON KEY DELETE ACTION DeleteFile()
+			ON KEY DELETE ACTION Delete_File()
 
 		END WINDOW 
 
@@ -303,7 +304,7 @@ LOCAL aDriveBmps := { "FLOPPY", "REMOVE", "HARD", "REMOTE", "CDROM", "RAMDISK" }
 
 			ON KEY TAB ACTION SplitChild_1.Grid_1.SetFocus
 
-			ON KEY DELETE ACTION DeleteFile()
+			ON KEY DELETE ACTION Delete_File()
 
 		END WINDOW 
 
@@ -370,7 +371,7 @@ LOCAL aDriveBmps := { "FLOPPY", "REMOVE", "HARD", "REMOTE", "CDROM", "RAMDISK" }
 
 		BUTTON TB4_Button_6 ;
 			CAPTION 'F&8 Delete' ;
-			ACTION DeleteFile() SEPARATOR
+			ACTION Delete_File() SEPARATOR
 
 		BUTTON TB4_Button_7 ;
 			CAPTION 'Alt+F4 E&xit' ;
@@ -445,7 +446,7 @@ Static Function SetHotKey()
 
 	ON KEY F7 ACTION NewFolder()
 
-	ON KEY F8 ACTION DeleteFile()
+	ON KEY F8 ACTION Delete_File()
 
 	ON KEY BACK ACTION StepBack()
 
@@ -726,7 +727,7 @@ Local aLabel := {}, cLabel, aText := {}, cText, ;
 				GetRegVar( HKEY_CURRENT_CONFIG, "System\CurrentControlSet\Control\Print\Printers", "Default" ))
 			Aadd(aText, IF(Empty(cText), "none", cText))
 			Aadd(aText, ltrim(str(ComPortCount())))
-			Aadd(aText, ltrim(transform(MemoryStatus(1),"999 999 999")) + " kB")
+			Aadd(aText, ltrim(transform(MemoryStatus(1),"999 999 999")) + " MB (" + ltrim(transform(MemoryStatus(1)/1024,"999 999")) + " GB)")
 
 			@ 40, 14 FRAME SI_Frame_1 WIDTH 286 HEIGHT 234 //OPAQUE
 
@@ -758,10 +759,10 @@ Local aLabel := {}, cLabel, aText := {}, cText, ;
 			Aadd(aText2, IF("95" $ aWinVer[1], "7.0", IF("98" $ aWinVer[1], "7.1", "-")))
 			Aadd(aText2, alltrim(aWinVer[2]) + " (" +  aWinVer[3] + ")")
 			Aadd(aText2, alltrim(aWinVer[1]))
-			Aadd(aText2, "temp., " + ltrim(transform(MemoryStatus(3),"999 999 999")) + " kB max")
-			Aadd(aText2, ltrim(transform(MemoryStatus(2),"999 999 999")) + " kB (" + ;
-				ltrim(str( 100 - MemoryStatus(5) )) + " %)")
-			Aadd(aText2, ltrim(transform(MemoryStatus(4),"999 999 999")) + " kB")
+			Aadd(aText2, "temp., " + ltrim(transform(MemoryStatus(3),"999 999 999")) + " MB max")
+			Aadd(aText2, ltrim(transform(MemoryStatus(2),"999 999 999")) + " MB (" + ;
+				ltrim(str( MemoryStatus(2)/MemoryStatus(1) * 100, 2, 0 )) + " %)")
+			Aadd(aText2, ltrim(transform(MemoryStatus(4),"999 999 999")) + " MB")
 			Aadd(aText2, WinUpTime())
 			Aadd(aText2, lower(GetTempFolder()))
 
@@ -873,7 +874,7 @@ Function MsgAbout()
 *--------------------------------------------------------*
 return MsgInfo( PROGRAM + " version" + VERSION + " - FREEWARE" + CRLF + ;
 	"Copyright " + Chr(169) + COPYRIGHT + CRLF + CRLF + ;
-	padc("eMail: gfilatov@inbox.ru", 40) + CRLF + CRLF + ;
+	padc("eMail: gfilatov@gmail.com", 40) + CRLF + CRLF + ;
 	padc("This program is Freeware!", 40) + CRLF + ;
 	padc("Copying is allowed!", 44), "About " + PROGRAM )
 
@@ -1069,7 +1070,7 @@ LOCAL cPath := GetFull(), cName := ""
 RETURN NIL
 
 *--------------------------------------------------------*
-FUNCTION DeleteFile()
+FUNCTION Delete_File()
 *--------------------------------------------------------*
 LOCAL cPath := GetFull(), cName := GetName()
 LOCAL cDelete := cPath +'\'+ cName, cType, cMsgConfirm, aDir, i
@@ -1605,14 +1606,12 @@ Return lcheck
 *--------------------------------------------------------*
 Static Function CPUName()
 *--------------------------------------------------------*
-Local cName, n
+Local cName := "", n
 
 IF IsWinNT()
 	cName := GetRegVar( HKEY_LOCAL_MACHINE, "HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString" )
 	cName := IF(( n := At("processor", cName) ) > 0, Left(cName, n-1), cName)
 	cName := IF(( n := At("CPU", cName) ) > 0, Left(cName, n-1), cName)
-ELSE
-	cName := GetCPU()
 ENDIF
 
 return lTrim(cName)
@@ -1638,7 +1637,9 @@ Static Function VideoName()
 Local cName := "", oReg, cReg := "", oKey, nId := 0
 
 IF IsWinNT()
-	cName := GetRegVar( HKEY_LOCAL_MACHINE, "SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}\0000", "DriverDesc" )
+	WHILE EMPTY(cName) .AND. nId < 10
+		cName := GetRegVar( HKEY_LOCAL_MACHINE, "SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}\" + StrZero( nId++, 4 ), "DriverDesc" )
+	ENDDO
 ELSE
 	oReg := TReg32():New( HKEY_LOCAL_MACHINE, "System\CurrentControlSet\Services\Class\Display" )
 
@@ -1675,14 +1676,13 @@ Static Function ComPortCount()
 *--------------------------------------------------------*
 Local nCount := 0, i
 
-	for i = 1 to 9
-		IF ComConnect('COM'+ltrim(str(i)), '4800,E,7,1')
-			nCount++
-			ComDisConnect()
-		ELSE
-			EXIT
-		ENDIF
-	next
+   for i := 0 to 8
+      win_comOpen( i )
+      if .not. win_comError( i ) == 2
+         nCount++
+//         win_comClose( i, 0 )
+      endif
+   next
 
 Return nCount
 
@@ -1825,89 +1825,19 @@ Return ( RetVal )
 
 #pragma BEGINDUMP
 
-#include <windows.h>
-#include "hbapi.h"
+#define NO_LEAN_AND_MEAN
+
+#include <mgdefs.h>
+#include "commctrl.h"
 #include "hbapiitm.h"
 #include "commctrl.h"
 
-static HANDLE  ComNum;
 
-HB_FUNC( COMCONNECT )
-{
-   static DCB BarDCB;
 
-   static  long  retval;
 
-   static  COMMTIMEOUTS  CtimeOut;
 
-   static  char  Msg[2048];
-   static  const char *ComNumber;
-   static  const char *Comsettings;
 
-   ComNumber = hb_parc(1);
-   Comsettings = hb_parc(2);
 
-   // Open the communications port for read/write (&HC0000000).
-   // Must specify existing file (3).
-   ComNum=CreateFile(ComNumber,GENERIC_READ|GENERIC_WRITE,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
-   if(ComNum==INVALID_HANDLE_VALUE)
-   {
-//      strcat(Msg,"Com Port ");
-//      strcat(Msg,ComNumber);
-//      strcat(Msg," not available.");
-//      MessageBox (GetActiveWindow(),Msg,"TestCom",MB_ICONWARNING);
-      hb_retl(FALSE);
-      return;
-   }
-   // Setup Time Outs for com port
-   CtimeOut.ReadIntervalTimeout=10;
-   CtimeOut.ReadTotalTimeoutConstant=1;
-   CtimeOut.ReadTotalTimeoutMultiplier=1;
-   CtimeOut.WriteTotalTimeoutConstant=10;
-   CtimeOut.WriteTotalTimeoutMultiplier=1;
-   retval=SetCommTimeouts(ComNum,&CtimeOut);
-   if(retval==-1)
-   {
-      retval=GetLastError();
-      strcat(Msg,"Unable to set timeouts for port ");
-      strcat(Msg,ComNumber);
-      strcat(Msg," Error: ");
-      strcat(Msg,(char *)(retval));
-      MessageBox (GetActiveWindow(),Msg,"TestCom",MB_ICONWARNING);
-      CloseHandle(ComNum);
-      hb_retl(FALSE);
-   }
-   retval=BuildCommDCB(Comsettings,&BarDCB);
-   if(retval==-1)
-   {
-      retval=GetLastError();
-      strcat(Msg,"Unable to build Comm DCB");
-      strcat(Msg,Comsettings);
-      strcat(Msg," Error: ");
-      strcat(Msg,(char *)(retval));
-      MessageBox (GetActiveWindow(),Msg,"TestCom",MB_ICONWARNING);
-      CloseHandle(ComNum);
-      hb_retl(FALSE);
-   }
-   retval=SetCommState(ComNum,&BarDCB);
-   if(retval==-1)
-   {
-      retval=GetLastError();
-      strcat(Msg,"Unable to set Comm DCB");
-      strcat(Msg,Comsettings);
-      strcat(Msg," Error: ");
-      strcat(Msg,(char *)(retval));
-      MessageBox (GetActiveWindow(),Msg,"TestCom",MB_ICONWARNING);
-      CloseHandle(ComNum);
-      hb_retl(FALSE);
-   }
-   hb_retl(TRUE);
-}
-
-HB_FUNC( COMDISCONNECT )
-{
-   CloseHandle(ComNum) ;
-}
 
 /* Returns one of these:
 #define DRIVE_UNKNOWN     0
@@ -1960,57 +1890,28 @@ HB_FUNC(GETVOLUMEINFORMATION)
    hb_xfree( FileSystemNameBuffer );
 }
 
-HB_FUNC( GETDEFAULTPRINTER )
-{
-	char PrinterDefault[128] ;
-	OSVERSIONINFO osvi;
-	DWORD BuffSize = 256;
-	char* p;
-
-	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	GetVersionEx(&osvi);
-
-	if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-	{
-		if (osvi.dwMajorVersion >= 5) 
-		{
-			GetDefaultPrinter(PrinterDefault,&BuffSize);
-		}
-		else 
-		{
-			GetProfileString("windows","device","",PrinterDefault,BuffSize);
-			p = PrinterDefault;
-			while (*p != '0' && *p != ',')
-				++p;
-			*p = '0';
-		}
-	}
-
-	hb_retc(PrinterDefault);
-}
-
 HB_FUNC ( REGENUMKEY )
 {
    char buffer[ 128 ];
 
-   hb_retnl( RegEnumKey( ( HKEY ) hb_parnl( 1 ), hb_parnl( 2 ), buffer, 128 ) );
+   HB_RETNL( RegEnumKey( ( HKEY ) HB_PARNL( 1 ), hb_parnl( 2 ), buffer, 128 ) );
    hb_storc( buffer, 3 );
 }
 
 HB_FUNC( COPYFILE )
 {
-   hb_retnl( (LONG) CopyFile( (LPCSTR) hb_parc(1), (LPCSTR) hb_parc(2), ISNIL(3) ? FALSE : (BOOL) hb_parl(3) ) );
+   HB_RETNL( (LONG_PTR) CopyFile( (LPCSTR) hb_parc(1), (LPCSTR) hb_parc(2), ISNIL(3) ? FALSE : (BOOL) hb_parl(3) ) );
 }
 
 HB_FUNC ( COMBOBOXSHOWLIST )
 {
-   SendMessage( (HWND) hb_parnl( 1 ), CB_SHOWDROPDOWN, 1, 0 );
+   SendMessage( (HWND) HB_PARNL( 1 ), CB_SHOWDROPDOWN, 1, 0 );
 }
 
 HB_FUNC( HB_ISOEM )
 {
    LPBYTE pString = ( LPBYTE ) hb_parc( 1 );
-   INT  w = 0, wLen = hb_parclen( 1 );
+   WORD  w = 0, wLen = hb_parclen( 1 );
    BOOL  bOem = FALSE;
 
    while( w < wLen && ! bOem )
@@ -2024,12 +1925,12 @@ HB_FUNC( HB_ISOEM )
 
 HB_FUNC( CREATEDC )
 {
-   hb_retnl( ( LONG ) CreateDC( hb_parc( 1 ), hb_parc( 2 ), hb_parc( 3 ), 0 ) );
+   HB_RETNL( ( LONG_PTR ) CreateDC( hb_parc( 1 ), hb_parc( 2 ), hb_parc( 3 ), 0 ) );
 }
 
 HB_FUNC( DELETEDC )
 {
-   hb_retl( DeleteDC( ( HDC ) hb_parnl( 1 ) ) );
+   hb_retl( DeleteDC( ( HDC ) HB_PARNL( 1 ) ) );
 }
 
 HB_FUNC( GETDISPLAYCOLORS )
@@ -2068,7 +1969,7 @@ HB_FUNC ( ZAPDIRECTORY )
 
 HB_FUNC ( SHOWFILEPROPERTIES )
 {
-	SHELLEXECUTEINFO ShExecInfo;
+	SHELLEXECUTEINFO ShExecInfo = {0};
 
 	ShExecInfo.cbSize       = sizeof(SHELLEXECUTEINFO);
 	ShExecInfo.fMask        = SEE_MASK_INVOKEIDLIST;
@@ -2081,25 +1982,6 @@ HB_FUNC ( SHOWFILEPROPERTIES )
 	ShExecInfo.hInstApp     = NULL; 
 
 	ShellExecuteEx(&ShExecInfo);
-}
-
-HB_FUNC( MEMORYSTATUS )
-{
-      MEMORYSTATUS mst;
-      long n = hb_parnl(1);
-
-      mst.dwLength = sizeof( MEMORYSTATUS );
-      GlobalMemoryStatus( &mst );
-
-      switch( n )
-      {
-         case 1:  hb_retnl( mst.dwTotalPhys / 1024 ) ; break;
-         case 2:  hb_retnl( mst.dwAvailPhys / 1024 ) ; break;
-         case 3:  hb_retnl( mst.dwTotalPageFile / 1024 ) ; break;
-         case 4:  hb_retnl( mst.dwAvailPageFile / 1024 ) ; break;
-         case 5:  hb_retnl( mst.dwMemoryLoad ) ; break;
-         default: hb_retnl( 0 ) ;
-      }
 }
 
 #pragma ENDDUMP

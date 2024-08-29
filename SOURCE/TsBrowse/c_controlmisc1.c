@@ -107,7 +107,7 @@ static far HCURSOR hHand  = NULL;
 static far HCURSOR hStop  = NULL;
 static far HCURSOR hCatch = NULL;
 static far HCURSOR hDrag  = NULL;
-
+/*
 HB_FUNC( NOR )
 {
    int p = hb_pcount();
@@ -120,7 +120,7 @@ HB_FUNC( NOR )
 
    hb_retni( ret );
 }
-
+*/
 HB_FUNC( CREATEPEN )
 {
    int      fnPenStyle = hb_parni( 1 );         // pen style

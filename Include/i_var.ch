@@ -43,7 +43,7 @@
 	"HWGUI"
   	Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 /*
  * Public Variables Used By MiniGUI Modules
@@ -54,7 +54,7 @@
   MEMVAR _HMG_SYSDATA
 #endif
 
-#define _HMG_SYSDATA_SIZE			458
+#define _HMG_SYSDATA_SIZE			460
 
 #xtranslate _HMG_ErrorLogFile			=> _HMG_SYSDATA\[1]
 #xtranslate _HMG_CreateErrorlog			=> _HMG_SYSDATA\[2]
@@ -379,7 +379,7 @@
 
 #xtranslate _hmg_DelayedSetFocus		=> _HMG_SYSDATA\[274]
 
-#xtranslate _hmg_activemodalhandle		=> _HMG_SYSDATA\[275]
+#xtranslate _hmg_ActiveModalHandle		=> _HMG_SYSDATA\[275]
 
 #xtranslate _hmg_UserWindowHandle		=> _HMG_SYSDATA\[276]
 
@@ -609,8 +609,10 @@ Memvariables
 #xtranslate _HMG_lOnErrorStop				=> _HMG_aErrorBlocks\[3]
 
 #xtranslate _HMG_GridInplaceEdit			=> _HMG_SYSDATA\[457]
-#xtranslate _HMG_GridInplaceEdit_StageEvent	=> _HMG_GridInplaceEdit\[1]
-#xtranslate _HMG_GridInplaceEdit_ControlHandle => _HMG_GridInplaceEdit\[2]
-#xtranslate _HMG_GridInplaceEdit_GridIndex	=> _HMG_GridInplaceEdit\[3]
+#xtranslate _HMG_GridInplaceEdit_StageEvent		=> _HMG_GridInplaceEdit\[1]
+#xtranslate _HMG_GridInplaceEdit_ControlHandle 		=> _HMG_GridInplaceEdit\[2]
+#xtranslate _HMG_GridInplaceEdit_GridIndex		=> _HMG_GridInplaceEdit\[3]
 
-#xtranslate _HMG_ProceedEachRadioButtonEvent => _HMG_SYSDATA\[458]
+#xtranslate _HMG_ProceedEachRadioButtonEvent 		=> _HMG_SYSDATA\[458]
+#xtranslate _hmg_OwnerModalHandle			=> _HMG_SYSDATA\[459]
+#xtranslate _hmg_Reserved				=> _HMG_SYSDATA\[460]

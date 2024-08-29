@@ -47,6 +47,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Edit Class Name
+#define WC_EDIT                "Edit"
+#endif
 
 extern LRESULT CALLBACK OwnEditProc( HWND hbutton, UINT msg, WPARAM wParam, LPARAM lParam );
 
@@ -103,7 +107,7 @@ HB_FUNC( INITEDITBOX )
       NULL
              );
 
-   SendMessage( hbutton, ( UINT ) EM_LIMITTEXT, hmg_par_WPARAM( 9 ), ( LPARAM ) 0 );
+   SendMessage( hbutton, EM_LIMITTEXT, hmg_par_WPARAM( 9 ), ( LPARAM ) 0 );
 
    SetProp( ( HWND ) hbutton, TEXT( "oldeditproc" ), ( HWND ) GetWindowLongPtr( ( HWND ) hbutton, GWLP_WNDPROC ) );
    SubclassWindow2( hbutton, OwnEditProc );

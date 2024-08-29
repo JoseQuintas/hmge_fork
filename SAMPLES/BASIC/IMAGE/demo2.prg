@@ -1,5 +1,4 @@
 #include "hmg.ch"
-#include "BosTaurus.CH"
 
 STATIC hBitmap1, hBitmap2
 STATIC hBitmap
@@ -31,20 +30,25 @@ RETURN NIL
 
 
 PROCEDURE Proc_ON_INIT
+
    BT_BitmapRelease (hBitmap1)
    BT_BitmapRelease (hBitmap2)
 
    hBitmap := BT_BitmapLoadFile (cImageFile)
+
 RETURN
 
 
 PROCEDURE Proc_ON_RELEASE
+
    BT_BitmapRelease (hBitmap)
    FErase (cImageFile)
+
 RETURN
 
 
 PROCEDURE Proc_ON_PAINT
+
    LOCAL hDC, BTstruct
    LOCAL w, h
 
@@ -54,10 +58,12 @@ PROCEDURE Proc_ON_PAINT
    hDC := BT_CreateDC ("Form_1", BT_HDC_INVALIDCLIENTAREA, @BTstruct)
       BT_DrawBitmap (hDC, 0, 0, w, h, BT_STRETCH, hBitmap)
    BT_DeleteDC (BTstruct)
+
 RETURN
 
 
 PROCEDURE MakeBitmap
+
    LOCAL hBitmap := BT_BitmapClone (hBitmap1)
    LOCAL t, l, w1, h1, w2, h2
 
@@ -72,4 +78,5 @@ PROCEDURE MakeBitmap
    BT_BitmapPasteTransparent (hBitmap, t, l, w2, h2, BT_STRETCH, hBitmap2, NIL) 
    BT_BitmapSaveFile (hBitmap, cImageFile, BT_FILEFORMAT_PNG) 
    BT_BitmapRelease (hBitmap)
+
 RETURN

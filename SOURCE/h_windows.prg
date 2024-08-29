@@ -72,6 +72,9 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
    LOCAL mVar
    LOCAL vscroll, hscroll
    LOCAL k
+#ifdef _OBJECT_
+   LOCAL o
+#endif
 
    hb_default( @panel, .F. )
 
@@ -247,7 +250,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       hscroll := .T.
    ENDIF
 
-   IF MSC_VER() > 0
+   IF MSC_VER() > 0 .OR. "7.60" $ hb_Ccompiler()
       IF nosize .AND. _HMG_IsThemed
          w += 10
          h += 10
@@ -454,7 +457,15 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
 
    IF _HMG_lOOPEnabled
       Eval ( _HMG_bOnFormInit, k, mVar )
-   ENDIF
+#ifdef _OBJECT_
+      o := _WindowObj( FormHandle )
+      IF HB_ISOBJECT( o )
+         o:cProcFile := ProcFile( 1 )
+         o:cProcName := ProcName( 1 )
+         o:nProcLine := ProcLine( 1 )
+      ENDIF
+#endif
+	ENDIF
 
    IF !mdi  // JP MDI
       InitDummy ( FormHandle )
@@ -489,6 +500,9 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
    LOCAL mVar
    LOCAL vscroll, hscroll
    LOCAL k
+#ifdef _OBJECT_
+   LOCAL o
+#endif
 
    IF FormName == NIL
       FormName := _HMG_TempWindowName
@@ -571,7 +585,7 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
       hscroll := .T.
    ENDIF
 
-   IF MSC_VER() > 0
+   IF MSC_VER() > 0 .OR. "7.60" $ hb_Ccompiler()
       IF nosize .AND. !nocaption .AND. _HMG_IsThemed
          w += 10
          h += 10
@@ -584,6 +598,10 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
 
    IF icon == NIL .AND. _HMG_DefaultIconName != NIL
       icon := _HMG_DefaultIconName
+   ENDIF
+
+   IF _HMG_OwnerModalHandle
+      _HMG_InplaceParentHandle := iif( _HMG_BeginWindowMDIActive, GetActiveMdiHandle(), GetActiveWindow() )
    ENDIF
 
    IF _HMG_InplaceParentHandle <> 0
@@ -749,7 +767,15 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
 
    IF _HMG_lOOPEnabled
       Eval ( _HMG_bOnFormInit, k, mVar )
-   ENDIF
+#ifdef _OBJECT_
+      o := _WindowObj( FormHandle )
+      IF HB_ISOBJECT( o )
+         o:cProcFile := ProcFile( 1 )
+         o:cProcName := ProcName( 1 )
+         o:nProcLine := ProcLine( 1 )
+      ENDIF
+#endif
+	ENDIF
 
    InitDummy ( FormHandle )
 
@@ -767,6 +793,10 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
       iif( aMax[ 2 ] == NIL, NIL, _HMG_aFormMinMaxInfo[ k ] [ 8 ] := aMax[ 2 ] )
    ENDIF
 
+   IF _HMG_OwnerModalHandle
+      _HMG_InplaceParentHandle := 0
+   ENDIF
+
 RETURN ( FormHandle )
 
 *-----------------------------------------------------------------------------*
@@ -782,6 +812,9 @@ FUNCTION _DefineSplitChildWindow ( FormName, w, h, break, grippertext, nocaption
    LOCAL nBand := 0
    LOCAL k
    LOCAL i
+#ifdef _OBJECT_
+   LOCAL o
+#endif
 
    IF FormName == NIL
       FormName := _HMG_TempWindowName
@@ -1009,6 +1042,14 @@ FUNCTION _DefineSplitChildWindow ( FormName, w, h, break, grippertext, nocaption
 
    IF _HMG_lOOPEnabled
       Eval ( _HMG_bOnFormInit, k, mVar )
+#ifdef _OBJECT_
+      o := _WindowObj( FormHandle )
+      IF HB_ISOBJECT( o )
+         o:cProcFile := ProcFile( 1 )
+         o:cProcName := ProcName( 1 )
+         o:nProcLine := ProcLine( 1 )
+      ENDIF
+#endif
    ENDIF
 
    InitDummy ( FormHandle )
@@ -1928,7 +1969,7 @@ PROCEDURE _hmg_OnHideFocusManagement ( i )
 
             EnableWindow ( _HMG_aFormParenthandle [ i ] )
 
-            SetFocus ( _HMG_aFormParenthandle [ i ] )
+            SwitchToThisWindow ( _HMG_aFormParenthandle [ i ] )
 
          ELSE
 
@@ -1939,7 +1980,7 @@ PROCEDURE _hmg_OnHideFocusManagement ( i )
 
             AEval ( _HMG_aFormHandles, bEnableWindow )
 
-            SetFocus ( _HMG_aFormParenthandle [ i ] )
+            SwitchToThisWindow ( _HMG_aFormParenthandle [ i ] )
 
          ENDIF
 

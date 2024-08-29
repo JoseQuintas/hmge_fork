@@ -57,19 +57,19 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
 		lCenter := .T.
 
 	SWITCH Valtype( lModal )
-        CASE 'L'
-           nWinType := iif( lModal, 1, 2 )
-           EXIT
-        CASE 'N'
-           nWinType := iif( lModal > Len( aWinType ), Len( aWinType ), lModal )
-           EXIT
-        CASE 'C'
-           lModal	:= Upper( Left( lModal, 1 ) )
-           nWinType := aScan( aWinType, lModal )
-           nWinType := iif( nWinType == 0, 2, nWinType )
-           EXIT
-        DEFAULT
-           nWinType := 2
+		  CASE 'L'
+			  nWinType := iif( lModal, 1, 2 )
+			  EXIT
+		  CASE 'N'
+			  nWinType := iif( lModal > Len( aWinType ), Len( aWinType ), lModal )
+			  EXIT
+		  CASE 'C'
+			  lModal	:= Upper( Left( lModal, 1 ) )
+			  nWinType := aScan( aWinType, lModal )
+			  nWinType := iif( nWinType == 0, 2, nWinType )
+			  EXIT
+		  DEFAULT
+			  nWinType := 2
 	END
 	cWinType := aWinType[ nWinType ]
 	lModal:= ( cWinType =="M" )
@@ -532,6 +532,10 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 		TOOLTIP		oParam:cToolTip										  ;
 		BACKCOLOR	 oParam:aBColor											;
 		FONTCOLOR	 oParam:aFColor											;
+		ON GOTFOCUS  oParam:bOnGotFocus									  ;
+		ON CHANGE	 oParam:bOnChange										 ;
+		ON LOSTFOCUS oParam:bOnLostFocus									 ;
+		ON DBLCLICK  oParam:bOnDblClick									  ;
 		COLORS		 aColor													  ;
 		BRUSH		  aBrush													  ;
 		ON HEADCLICK oParam:aHeadClick										;
@@ -574,10 +578,12 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 		IF HB_ISBLOCK( oParam:bBody ) ; EVal( oParam:bBody, oBrw, oParam )	// 2. call your customization functions
 		ENDIF
 
-		IF HB_ISLOGICAL( oParam:bDblClick )
+		IF HB_ISLOGICAL( oParam:bLDblClick ) .or. HB_ISLOGICAL( oParam:bDblClick )
 			:bLDblClick := {|p1, p2, p3, ob| p1:=p2:=p3, ob:PostMsg( WM_KEYDOWN, VK_RETURN, 0 ) }
-		ELSEIF HB_ISBLOCK( oParam:bDblClick )
-			:bLDblClick := oParam:bDblClick	  // :bLDblClick := {|p1,p2,p3,ob| ... }
+		ELSEIF HB_ISBLOCK( oParam:bLDblClick )	// :bLDblClick := {|p1,p2,p3,ob| ... }
+			:bLDblClick := oParam:bLDblClick
+		ELSEIF HB_ISBLOCK( oParam:bDblClick )	// :bLDblClick := {|p1,p2,p3,ob| ... }
+			:bLDblClick := oParam:bDblClick
 		ENDIF
 
 		IF HB_ISBLOCK( oParam:bRClicked )
@@ -592,12 +598,16 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 			:bGotFocus := oParam:bGotFocus		// :bGotFocus := {|ob,hCtlLost| ... }
 		ENDIF
 
+		IF HB_ISBLOCK( oParam:bLostFocus )
+			:bGotFocus := oParam:bLostFocus		// :bLostFocus := {|hCtlFocus,ob| ... }
+		ENDIF
+
 		IF HB_ISBLOCK( oParam:bChange )
-			:bChange := oParam:bChange			 // :bChange := {|ob| ... }
+			:bChange := oParam:bChange			// :bChange := {|ob| ... }
 		ENDIF
 
 		IF HB_ISBLOCK( oParam:bKeyDown )
-			:bKeyDown := oParam:bKeyDown		  // :bKeyDown := { |nKey,nFalgs,ob| ... }
+			:bKeyDown := oParam:bKeyDown		// :bKeyDown := { |nKey,nFalgs,ob| ... }
 		ENDIF
 
 		IF HB_ISNUMERIC( oParam:nFireKey )

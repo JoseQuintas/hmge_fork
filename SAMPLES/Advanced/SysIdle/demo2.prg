@@ -67,26 +67,24 @@ Static Function Notification( lLogOff )
 
    ENDIF
 
-   Win_1.StatusBar.Item(1) := "Idle time elapsed: " + hb_ntos( SysIdleSecs() )
+   Win_1.StatusBar.Item( 1 ) := "Idle time elapsed: " + hb_ntos( SysIdleSecs() )
 
 Return Nil
 
-*---------------------------------------
-*---------------------------------------
 
 #pragma BEGINDUMP
 
 #include "windows.h"
 #include "hbapi.h"
+#include "winuser.h"
 
-WINUSERAPI BOOL WINAPI GetLastInputInfo(PLASTINPUTINFO);
-typedef BOOL (WINAPI *GETLASTINPUTINFO_)(PLASTINPUTINFO);
+typedef BOOL ( WINAPI *GETLASTINPUTINFO_ ) ( PLASTINPUTINFO );
 
-HB_FUNC( SYSIDLESECS ) 
+HB_FUNC( SYSIDLESECS )
 {
-   HINSTANCE handle = LoadLibrary("user32.dll");
+   HINSTANCE   handle = LoadLibrary( "user32.dll" );
 
-   if (handle)
+   if( handle )
    {
       GETLASTINPUTINFO_ pFunc;
 
@@ -94,25 +92,29 @@ HB_FUNC( SYSIDLESECS )
 
       if( pFunc )
       {
-         LASTINPUTINFO lpi;
-  
-         lpi.cbSize = sizeof(LASTINPUTINFO);
+         LASTINPUTINFO  lpi;
 
-         if (!pFunc(&lpi))
+         lpi.cbSize = sizeof( LASTINPUTINFO );
+
+         if( !pFunc( &lpi ) )
          {
-            hb_retni(0);
+            hb_retni( 0 );
          }
          else
          {
-            hb_retni( ( GetTickCount() - lpi.dwTime ) / 1000 ); 
+            hb_retni( ( GetTickCount() - lpi.dwTime ) / 1000 );
          }
       }
-   else
-      hb_retni(0);
+      else
+      {
+         hb_retni( 0 );
+      }
    }
 
    if( handle )
+   {
       FreeLibrary( handle );
+   }
 }
 
 #pragma ENDDUMP

@@ -4,62 +4,69 @@
  * The idea of 2013 Verchenko Andrey <verchenkoag@gmail.com>
 */
 
-/////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 // Эта функция заготовка (сделать самостоятельно)
 // This function is blank (do it yourself)
-Function MyStart(xVal)
-	INKEY(xVal)
-Return .t.
+FUNCTION MyStart( xVal )
+   Inkey( xVal )
 
-/////////////////////////////////////////////////////////////////////
+RETURN .T.
+
+///////////////////////////////////////////////////////////////////
 // Эта функция заготовка (сделать самостоятельно)
 // This function is blank (do it yourself)
-Function Dummy_1(xVal)
-	INKEY(xVal)
-Return .t.
+FUNCTION Dummy_1( xVal )
+   Inkey( xVal )
 
-/////////////////////////////////////////////////////////////////////
+RETURN .T.
+
+///////////////////////////////////////////////////////////////////
 // Эта функция заготовка (сделать самостоятельно)
 // This function is blank (do it yourself)
-Function Dummy_2(xVal)
-	INKEY(xVal)
-Return .t.
+FUNCTION Dummy_2( xVal )
+   Inkey( xVal )
 
-/////////////////////////////////////////////////////////////////////
+RETURN .T.
+
+///////////////////////////////////////////////////////////////////
 // Эта функция заготовка (сделать самостоятельно)
 // This function is blank (do it yourself)
-Function MyOpenDbf(xVal)
-Local aFilesDbf := {}, nI, cVal
+FUNCTION MyOpenDbf( xVal )
 
-      AADD ( aFilesDbf, "Base01.dbf" )
-      AADD ( aFilesDbf, "Base02.dbf" )
-      AADD ( aFilesDbf, "Base03.dbf" )
-      AADD ( aFilesDbf, "Base04.dbf" )
+   LOCAL aFilesDbf := {}, nI, cVal
 
-      cVal := GetProperty("Form_Splash","Label_1","Value") 
-      For nI := 1 TO LEN(aFilesDbf)  
-          SetProperty("Form_Splash","Label_1","Value",cVal + "->" + aFilesDbf[nI])
-          INKEY(xVal)
-      NEXT
+   AAdd ( aFilesDbf, "Base01.dbf" )
+   AAdd ( aFilesDbf, "Base02.dbf" )
+   AAdd ( aFilesDbf, "Base03.dbf" )
+   AAdd ( aFilesDbf, "Base04.dbf" )
 
-      INKEY(1)
-Return .T.
+   cVal := GetProperty( "Form_Splash", "Label_1", "Value" )
+   FOR nI := 1 TO Len( aFilesDbf )
+      SetProperty( "Form_Splash", "Label_1", "Value", cVal + "->" + aFilesDbf[ nI ] )
+      Inkey( xVal )
+   NEXT
 
-/////////////////////////////////////////////////////////////////////
+   Inkey( 1 )
+
+RETURN .T.
+
+///////////////////////////////////////////////////////////////////
 // Эта функция заготовка (сделать самостоятельно)
 // This function is blank (do it yourself)
-Function MyCopyFiles(xVal)
-Local aFiles := {}, nI, cVal, cMask := "Rep-"
+FUNCTION MyCopyFiles( xVal )
 
-      For nI := 1 TO 5
-          AADD ( aFiles, cMask + StrZero(nI,6) + ".txt" )
-      NEXT
+   LOCAL aFiles := {}, nI, cVal, cMask := "Rep-"
 
-      cVal := GetProperty("Form_Splash","Label_1","Value") 
-      For nI := 1 TO LEN(aFiles)
-          SetProperty("Form_Splash","Label_1","Value",cVal + "->" + aFiles[nI])
-          INKEY(0.1)
-      NEXT
- 
-      INKEY(xVal)
-Return .T.
+   FOR nI := 1 TO 5
+      AAdd ( aFiles, cMask + StrZero( nI, 6 ) + ".txt" )
+   NEXT
+
+   cVal := GetProperty( "Form_Splash", "Label_1", "Value" )
+   FOR nI := 1 TO Len( aFiles )
+      SetProperty( "Form_Splash", "Label_1", "Value", cVal + "->" + aFiles[ nI ] )
+      Inkey( 0.1 )
+   NEXT
+
+   Inkey( xVal )
+
+RETURN .T.

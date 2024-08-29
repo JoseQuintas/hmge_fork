@@ -46,7 +46,7 @@ static DEVMODE *        pDevMode2 = NULL;
 static DEVNAMES *       pDevNames = NULL;
 static HANDLE           hPrinter  = NULL;
 static PRINTER_INFO_2 * pi2       = NULL;
-static PRINTER_INFO_2 * pi22      = NULL; // to restore printer dev mode after print.
+static PRINTER_INFO_2 * pi22      = NULL;  // to restore printer dev mode after print.
 static PRINTER_DEFAULTS pd;
 static PRINTDLG         pdlg;
 static DOCINFO          di;
@@ -105,7 +105,6 @@ HB_FUNC( RR_PRINTERNAME )
    #ifndef UNICODE
    hb_retc( PrinterName );
    #else
-
    LPSTR pStr = WideToAnsi( PrinterName );
    hb_retc( pStr );
    hb_xfree( pStr );
@@ -186,7 +185,6 @@ HB_FUNC( RR_PRINTDIALOG )
 HB_FUNC( RR_GETDC )
 {
    #ifdef UNICODE
-
    LPWSTR pwszDevice = AnsiToWide( ( char * ) hb_parc( 1 ) );
 
    if( osvi.dwPlatformId == VER_PLATFORM_WIN32_NT )
@@ -197,7 +195,6 @@ HB_FUNC( RR_GETDC )
    {
       hDC = CreateDC( NULL, pwszDevice, NULL, NULL );
    }
-
    #else
    if( osvi.dwPlatformId == VER_PLATFORM_WIN32_NT )
    {
@@ -817,7 +814,6 @@ HB_FUNC( RR_DELETEIMAGELISTS )
 HB_FUNC( RR_SAVEMETAFILE )
 {
    #ifndef UNICODE
-
    LPSTR FileName = ( LPSTR ) hb_parc( 2 );
    #else
    LPWSTR FileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
@@ -912,9 +908,10 @@ HB_FUNC( RR_CREATEBRUSH )
 {
    LOGBRUSH pbr;
 
-   pbr.lbStyle = hb_parni( 1 );
+   pbr.lbStyle = hmg_par_UINT( 1 );
    pbr.lbColor = hmg_par_COLORREF( 2 );
-   pbr.lbHatch = ( LONG ) hb_parnl( 3 );
+   pbr.lbHatch = hmg_par_LONG( 3 );
+
    hmg_ret_raw_HBRUSH( CreateBrushIndirect( &pbr ) );
 }
 
@@ -940,7 +937,7 @@ HB_FUNC( RR_MODIFYBRUSH )
 
       if( hb_parnl( 4 ) >= 0 )
       {
-         ppn.lbHatch = hb_parnl( 4 );
+         ppn.lbHatch = hmg_par_LONG( 4 );
       }
 
       hb = CreateBrushIndirect( &ppn );
@@ -969,7 +966,6 @@ HB_FUNC( RR_SELECTBRUSH )
 HB_FUNC( RR_CREATEFONT )
 {
    #ifndef UNICODE
-
    TCHAR * FontName = ( TCHAR * ) hb_parc( 1 );
    #else
    TCHAR * FontName = AnsiToWide( ( char * ) hb_parc( 1 ) );
@@ -1146,7 +1142,6 @@ HB_FUNC( RR_SETCHARSET )
 HB_FUNC( RR_TEXTOUT )
 {
    #ifndef UNICODE
-
    LPTSTR lpText = ( LPTSTR ) hb_parc( 1 );
    #else
    LPWSTR lpText = AnsiToWide( ( char * ) hb_parc( 1 ) );
@@ -1192,7 +1187,6 @@ HB_FUNC( RR_TEXTOUT )
 HB_FUNC( RR_DRAWTEXT )
 {
    #ifndef UNICODE
-
    LPCSTR pszData = hb_parc( 3 );
    #else
    LPCWSTR pszData = AnsiToWide( ( char * ) hb_parc( 3 ) );
@@ -1204,7 +1198,7 @@ HB_FUNC( RR_DRAWTEXT )
    UINT    uFormat;
 
    SIZE sSize;
-   int  iStyle = hb_parni( 4 );
+   UINT iStyle = hmg_par_UINT( 4 );
    LONG w, h;
 
    SetRect( &rect, HB_PARNI( 1, 2 ), HB_PARNI( 1, 1 ), HB_PARNI( 2, 2 ), HB_PARNI( 2, 1 ) );
@@ -1290,7 +1284,6 @@ HB_FUNC( RR_CLOSEMFILE )
 HB_FUNC( RR_CREATEMFILE )
 {
    #ifndef UNICODE
-
    LPSTR FileName = ( LPSTR ) hb_parc( 1 );
    #else
    LPWSTR FileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
@@ -1652,7 +1645,6 @@ LPVOID rr_loadfromhbitmap( HBITMAP hbmpx, LONG * lwidth, LONG * lheight )
 HB_FUNC( RR_DRAWPICTURE )
 {
    #ifndef UNICODE
-
    LPSTR cFileName = ( LPSTR ) hb_parc( 1 );
    #else
    LPWSTR cFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
@@ -1751,7 +1743,6 @@ HB_FUNC( RR_DRAWPICTURE )
 HB_FUNC( RR_CREATEIMAGELIST )
 {
    #ifndef UNICODE
-
    LPSTR cFileName = ( LPSTR ) hb_parc( 1 );
    #else
    LPWSTR cFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
@@ -1927,7 +1918,6 @@ HB_FUNC( RR_POLYBEZIERTO )
 HB_FUNC( RR_GETTEXTEXTENT )
 {
    #ifndef UNICODE
-
    LPTSTR lpText = ( LPTSTR ) hb_parc( 1 );
    #else
    LPWSTR lpText = AnsiToWide( ( char * ) hb_parc( 1 ) );

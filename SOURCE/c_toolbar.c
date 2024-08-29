@@ -262,7 +262,7 @@ HB_FUNC( INITTOOLBUTTON )
 
    ShowWindow( hwndTB, SW_SHOW );
 
-   hmg_ret_raw_HWND( himage );
+   hmg_ret_raw_HANDLE( himage );
 }
 
 LONG WidestBtn( LPCTSTR pszStr, HWND hwnd )
@@ -592,7 +592,7 @@ HB_FUNC( INITTOOLBUTTONEX )
 
    ShowWindow( hwndTB, SW_SHOW );
 
-   hmg_ret_raw_HWND( himage );
+   hmg_ret_raw_HANDLE( himage );
 }
 
 HB_FUNC( GETSIZETOOLBAR )
@@ -819,7 +819,7 @@ HB_FUNC( SETROWSBUTTON )
 {
    RECT rc;
 
-   SendMessage( hmg_par_raw_HWND( 1 ), ( UINT ) TB_SETROWS, ( WPARAM ) MAKEWPARAM( hb_parni( 2 ), hb_parl( 3 ) ), ( LPARAM ) &rc );
+   SendMessage( hmg_par_raw_HWND( 1 ), TB_SETROWS, ( WPARAM ) MAKEWPARAM( hb_parni( 2 ), hb_parl( 3 ) ), ( LPARAM ) &rc );
 
    hb_reta( 2 );
    HB_STORVNL( rc.right - rc.left, -1, 1 );
@@ -925,7 +925,7 @@ HB_FUNC( CREATEPOPUPCHEVRON )
    uBand = lpRB->uBand;
    rcCvr = lpRB->rc;
 
-   SendMessage( hwnd, ( UINT ) RB_GETRECT, ( WPARAM ) uBand, ( LPARAM ) &rcRb );
+   SendMessage( hwnd, RB_GETRECT, ( WPARAM ) uBand, ( LPARAM ) &rcRb );
 
    rcRb.right -= ( rcCvr.right - rcCvr.left );
    rbbi.cbSize = sizeof( REBARBANDINFO );

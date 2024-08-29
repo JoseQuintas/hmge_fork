@@ -73,7 +73,7 @@
 #xtranslate PICTALIGNMENT TOP => _HMG_ActiveControlUpText := .F. ; _HMG_ActiveControlVertical := .T.
 #xtranslate PICTALIGNMENT LEFT => LEFTTEXT .F.
 #xtranslate PICTALIGNMENT RIGHT => LEFTTEXT .T.
-#xtranslate PICTALIGNMENT BOTTOM => UPPERTEXT .T.
+#xtranslate PICTALIGNMENT BOTTOM => _HMG_ActiveControlUpText := .T. ; _HMG_ActiveControlVertical := .T.
 
 #xcommand MEMVAR _HMG_SYSDATA =>
 

@@ -57,6 +57,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Static Class Name
+#define WC_STATIC              "Static"
+#endif
 #include "hbapiitm.h"
 #include "hbvm.h"
 
@@ -160,8 +164,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 extern HWND g_hWndMain;
 extern HACCEL g_hAccel;
 
-// static variables
-static PHB_DYNS g_ListenerDyns = NULL;
+// global variable
+PHB_DYNS g_ListenerDyns = NULL;
 
 #ifdef __XHARBOUR__
 static HB_CRITICAL_T s_lst_mtx;
@@ -1061,7 +1065,7 @@ HB_FUNC( INITMESSAGEONLYWINDOW )
 /* Modified by P.Ch. 17.06. */
 HB_FUNC( INITDUMMY )
 {
-   hmg_ret_raw_HWND( CreateWindowEx( 0, WC_STATIC, TEXT( "" ), WS_CHILD, 0, 0, 0, 0, hmg_par_raw_HWND( 1 ), ( HMENU ) 0, GetInstance(), NULL ) );
+   hmg_ret_raw_HWND( CreateWindowEx( 0, WC_STATIC, TEXT( "" ), WS_CHILD, 0, 0, 0, 0, hmg_par_raw_HWND( 1 ), ( HMENU ) NULL, GetInstance(), NULL ) );
 }
 
 /* Modified by P.Ch. 17.06. */
@@ -1686,7 +1690,7 @@ HB_FUNC( HMG_LOWER )
 
    if( Text == NULL )
    {
-      hb_retc( NULL );
+      hb_retc_null();
       return;
    }
 
@@ -1703,7 +1707,7 @@ HB_FUNC( HMG_LOWER )
    }
    else
    {
-      hb_retc( NULL );
+      hb_retc_null();
    }
 
    hb_xfree( Text );
@@ -1719,7 +1723,7 @@ HB_FUNC( HMG_UPPER )
 
    if( Text == NULL )
    {
-      hb_retc( NULL );
+      hb_retc_null();
       return;
    }
 
@@ -1736,7 +1740,7 @@ HB_FUNC( HMG_UPPER )
    }
    else
    {
-      hb_retc( NULL );
+      hb_retc_null();
    }
 
    hb_xfree( Text );

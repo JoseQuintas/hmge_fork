@@ -343,7 +343,7 @@ STATIC FUNCTION FillDlg( cMsg, aOptions, nLineas, cIcoFile, nIcoSize, aBtnColors
    nHeightCli := ( Min( nMaxLines, nLineas ) + iif( nLineas == 1, 4, 3 ) ) * nChrHeight + nVMARGIN_BUTTON + nHeightBtn + GetBorderHeight()
    nHeightDlg := nHeightCli + GetTitleHeight() + SEP_BUTTON + GetBorderHeight() / iif( lIsWin10, 2.5, 1 )
 
-   IF MSC_VER() > 0 .AND. _HMG_IsThemed
+   IF ( MSC_VER() > 0 .OR. "7.60" $ hb_Ccompiler() ) .AND. _HMG_IsThemed
       nWidthDlg += 10
       nHeightDlg += 10
    ENDIF

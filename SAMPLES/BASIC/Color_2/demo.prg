@@ -87,14 +87,14 @@ FUNCTION Main()
 
       FOR n = 1 TO Len( a_cor )
 
-         x_var := 'lb_c' + AllTrim( Str( n ) )
+         x_var := 'lb_c' + hb_ntos( n )
 
          v_val := 'Color {' + ;
             StrZero( a_cor[ n, 1 ], 3 ) + ',' + ;
             StrZero( a_cor[ n, 2 ], 3 ) + ',' + ;
             StrZero( a_cor[ n, 3 ], 3 ) + '}'
 
-         f_action := 'f_cor( a_cor[' + AllTrim( Str( n ) ) + '] )'
+         f_action := 'f_cor( a_cor[' + hb_ntos( n ) + '] )'
 
          @ 20 * n - 6, 270 LABEL &x_var ;
             VALUE v_val ;
@@ -102,9 +102,8 @@ FUNCTION Main()
             ACTION &f_action ;
             HEIGHT 18
 
-         IF a_cor[ n, 1 ] == 0 .AND. a_cor[ n, 2 ] == 0 .AND. a_cor[ n, 3 ] == 0
-            SetProperty ( 'form_1', x_var, 'FONTCOLOR', { 255, 255, 255 } )
-         ENDIF
+         SetProperty ( 'form_1', x_var, 'FONTCOLOR', HMG_n2RGB( ContrastClr( HMG_RGB2n( a_cor[ n ] ) ) ) )
+
       NEXT
 
    END WINDOW
@@ -138,12 +137,7 @@ PROCEDURE f_cor( m_cor )
    SetProperty ( m_form, 'sld_2', 'value', c2 )
    SetProperty ( m_form, 'sld_3', 'value', c3 )
 
-   IF c1 == 0 .AND. c2 == 0 .AND. c3 == 0
-      SetProperty ( 'form_1', 'label_1', 'FONTCOLOR', { 255, 255, 255 } )
-   ELSE
-      SetProperty ( 'form_1', 'label_1', 'FONTCOLOR', { 0, 0, 0 } )
-   ENDIF
-
+   SetProperty ( m_form, 'label_1', 'FONTCOLOR', HMG_n2RGB( ContrastClr( HMG_RGB2n( { c1, c2, c3 } ) ) ) )
    SetProperty ( m_form, 'label_1', 'BACKCOLOR', { c1, c2, c3 } )
 
 RETURN
@@ -171,12 +165,7 @@ PROCEDURE f_cor2( m_cor )
    SetProperty ( m_form, 'spn_2', 'VALUE', c2 )
    SetProperty ( m_form, 'spn_3', 'VALUE', c3 )
 
-   IF c1 == 0 .AND. c2 == 0 .AND. c3 == 0
-      SetProperty ( 'form_1', 'label_1', 'FONTCOLOR', { 255, 255, 255 } )
-   ELSE
-      SetProperty ( 'form_1', 'label_1', 'FONTCOLOR', { 0, 0, 0 } )
-   ENDIF
-
+   SetProperty ( m_form, 'label_1', 'FONTCOLOR', HMG_n2RGB( ContrastClr( HMG_RGB2n( { c1, c2, c3 } ) ) ) )
    SetProperty ( m_form, 'label_1', 'BACKCOLOR', { c1, c2, c3 } )
 
 RETURN
@@ -209,3 +198,15 @@ PROCEDURE f_GetColor
 RETURN
 
 *______________________________________________________________________________________*
+
+FUNCTION ContrastClr( nClr )
+
+   LOCAL nLuma
+
+   IF HB_ISNUMERIC( nClr ) .and. nClr >= 0 .and. nClr <= 0x00ffffff
+      nLuma := ( 0.299 * GetRed( nClr ) + 0.587 * GetGreen( nClr ) + 0.114 * GetBlue( nClr ) )
+   ELSE
+      RETURN CLR_WHITE
+   ENDIF
+
+RETURN iif( nLuma < 128, CLR_WHITE, CLR_BLACK )

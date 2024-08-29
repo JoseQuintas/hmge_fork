@@ -22,7 +22,11 @@ static void DrawCheck( HDC, LPRECT, HPEN, int, BOOL );
 static void GoToPoint( HDC, int, int );
 static void DegradColor( HDC, RECT *, COLORREF, signed long );
 
+// static variable
 static HWND hwndMDIClient;
+
+// global variable
+extern PHB_DYNS g_ListenerDyns;
 
 LRESULT CALLBACK WndProcBrw( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
@@ -30,7 +34,7 @@ LRESULT CALLBACK WndProcBrw( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
    long int        r;
 
    if( ! pSymbol )
-      pSymbol = hb_dynsymSymbol( hb_dynsymGet( "EVENTS" ) );
+      pSymbol = hb_dynsymSymbol( hb_dynsymGet( hb_dynsymName( g_ListenerDyns ) ) );
 
    if( pSymbol )
    {
@@ -57,7 +61,7 @@ LRESULT CALLBACK WndProcMDI( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
    long int        r;
 
    if( ! pSymbol )
-      pSymbol = hb_dynsymSymbol( hb_dynsymGet( "EVENTS" ) );
+      pSymbol = hb_dynsymSymbol( hb_dynsymGet( hb_dynsymName( g_ListenerDyns ) ) );
 
    if( pSymbol )
    {

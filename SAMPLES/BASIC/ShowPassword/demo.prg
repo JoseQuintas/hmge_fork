@@ -74,6 +74,7 @@ RETURN NIL
 #define EM_SETPASSWORDCHAR      0x00CC
 
 FUNCTION ShowPassword( cTextBox, lShowPass )
+
   LOCAL cParent
   LOCAL nRow
   LOCAL nCol
@@ -81,21 +82,21 @@ FUNCTION ShowPassword( cTextBox, lShowPass )
   LOCAL nHeight
   LOCAL cPass
 
-  cParent := GetParentFormName( This.(cTextBox).INDEX )
-  DECLARE WINDOW &(cParent)
+  //cParent := GetParentFormName( This.(cTextBox).INDEX )
+  cParent := ThisWindow.NAME
 
   If lShowPass
-     ChangeStyle( &(cParent).(cTextBox).HANDLE, , ES_PASSWORD )
-     SendMessage( &(cParent).(cTextBox).HANDLE, EM_SETPASSWORDCHAR, 0, 0 )
-     &(cParent).(cTextBox).REFRESH
+     ChangeStyle( This.(cTextBox).HANDLE, , ES_PASSWORD )
+     SendMessage( This.(cTextBox).HANDLE, EM_SETPASSWORDCHAR, 0, 0 )
+     This.(cTextBox).REFRESH
   Else
-     nRow := &(cParent).(cTextBox).ROW
-     nCol := &(cParent).(cTextBox).COL
-     nWidth := &(cParent).(cTextBox).WIDTH
-     nHeight := &(cParent).(cTextBox).HEIGHT
-     cPass := &(cParent).(cTextBox).VALUE
+     nRow := This.(cTextBox).ROW
+     nCol := This.(cTextBox).COL
+     nWidth := This.(cTextBox).WIDTH
+     nHeight := This.(cTextBox).HEIGHT
+     cPass := This.(cTextBox).VALUE
 
-     &(cParent).(cTextBox).RELEASE
+     This.(cTextBox).RELEASE
      DoEvents()
 
      DEFINE TEXTBOX (cTextBox)

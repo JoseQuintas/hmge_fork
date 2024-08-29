@@ -105,6 +105,7 @@ static void hmg_init( void * cargo )
       hmg_ErrorExit( TEXT( "GdiplusInit( void )" ), 0, TRUE );
    }
 }
+
 #ifdef __XHARBOUR__
 HB_CALL_ON_STARTUP_BEGIN( _hmg_init_ )
 hmg_init();
@@ -120,6 +121,7 @@ HB_CALL_ON_STARTUP_END( _hmg_init_ )
 #define HB_DATASEG_BODY  HB_DATASEG_FUNC( _hmg_init_ )
 #include "hbiniseg.h"
 #endif
+
 HINSTANCE GetInstance( void )
 {
    if( ! g_hInstance )

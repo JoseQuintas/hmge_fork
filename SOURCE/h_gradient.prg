@@ -162,6 +162,9 @@ RETURN NIL
 
 extern HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName );
 
+// Minigui Resources control system
+void    RegisterResource( HANDLE hResource, LPCSTR szType );
+
 BOOL    EnabledGradient( void );
 BOOL    FillGradient( HDC hDC, RECT * rect, BOOL vertical, COLORREF crFrom, COLORREF crTo );
 HBRUSH  LinearGradientBrush( HDC pDC, long cx, long cy, COLORREF cFrom, COLORREF cTo, BOOL bVert );
@@ -178,7 +181,7 @@ static TransparentBltPtr f_TransparentBlt = NULL;
 
 BOOL EnabledGradient( void )
 {
-   return s_hDLL != NULL ? TRUE : FALSE;
+   return s_hDLL != NULL ? HB_TRUE : HB_FALSE;
 }
 
 HB_FUNC( ISENABLEDGRADIENT )
@@ -237,7 +240,7 @@ HB_FUNC( _EXITGRADIENTFUNC )
 
 HB_FUNC( ALPHABLEND )
 {
-   BOOL bRes = FALSE;
+   BOOL bRes = HB_FALSE;
    HDC  hdc1 = hmg_par_raw_HDC( 1 );
    HDC  hdc2 = hmg_par_raw_HDC( 6 );
 
@@ -265,7 +268,7 @@ HB_FUNC( ALPHABLEND )
 
 HB_FUNC( TRANSPARENTBLT )
 {
-   BOOL bRes = FALSE;
+   BOOL bRes = HB_FALSE;
    HDC  hdc1 = hmg_par_raw_HDC( 1 );
    HDC  hdc2 = hmg_par_raw_HDC( 6 );
 
@@ -298,7 +301,7 @@ HB_FUNC( TRANSPARENTBLT )
 
 HB_FUNC( FILLGRADIENT )
 {
-   BOOL bRes = FALSE;
+   BOOL bRes = HB_FALSE;
    HDC  hdc  = hmg_par_raw_HDC( 1 );
 
    if( GetObjectType( hdc ) & ( OBJ_DC | OBJ_MEMDC ) )
@@ -319,7 +322,7 @@ HB_FUNC( FILLGRADIENT )
 
 BOOL FillGradient( HDC hDC, RECT * rect, BOOL vertical, COLORREF crFrom, COLORREF crTo )
 {
-   BOOL bRes = FALSE;
+   BOOL bRes = HB_FALSE;
 
    if( ( s_hDLL != NULL ) && ( f_GradientFill != NULL ) )
    {
@@ -352,17 +355,22 @@ BOOL FillGradient( HDC hDC, RECT * rect, BOOL vertical, COLORREF crFrom, COLORRE
 
 HB_FUNC( CREATEGRADIENTBRUSH )
 {
-   HWND hwnd = hmg_par_raw_HWND( 1 );
-   HDC  hdc;
+   HWND   hwnd = hmg_par_raw_HWND( 1 );
+   HDC    hdc;
+   HBRUSH hBrush;
 
    if( ! IsWindow( hwnd ) )
       hwnd = GetDesktopWindow();
 
    hdc = GetDC( hwnd );
 
-   hmg_ret_raw_HBRUSH( LinearGradientBrush( hdc, hb_parnl( 2 ), hb_parnl( 3 ),
-                                               hmg_par_COLORREF( 4 ), hmg_par_COLORREF( 5 ),
-                                               hb_parl( 6 ) ) );
+   hBrush = LinearGradientBrush( hdc, hb_parnl( 2 ), hb_parnl( 3 ),
+                                 hmg_par_COLORREF( 4 ), hmg_par_COLORREF( 5 ),
+                                 hb_parl( 6 ) );
+
+   RegisterResource( hBrush, "BRUSH" );
+   hmg_ret_raw_HBRUSH( hBrush );
+
    ReleaseDC( hwnd, hdc );
 }
 

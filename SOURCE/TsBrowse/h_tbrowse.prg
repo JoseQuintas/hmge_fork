@@ -1,10 +1,11 @@
 /*---------------------------------------------------------------------------
  MINIGUI - Harbour Win32 GUI library source code
  Adaptation FiveWin Class TSBrowse 9.0
- ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 #include "hbclass.ch"
+#include "dbinfo.ch"
 #include "TSBrowse.ch"
 
 // 03.10.2012
@@ -51,8 +52,8 @@ EXTERN OrdKeyNo, OrdKeyCount, OrdKeyGoto
 #define MAX_POS                         65535
 
 #define xlWorkbookNormal                -4143
-#define xlContinuous                        1
-#define xlHAlignCenterAcrossSelection       7
+#define xlContinuous                    1
+#define xlHAlignCenterAcrossSelection   7
 
 #ifdef __XHARBOUR__
 #include "hbcompat.ch"
@@ -273,7 +274,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
             ENDIF
          ENDIF
          blInit := {| x, y, z | InitDialogBrowse( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, ControlName, nStyle, 0, nCol, nRow, nWidth, nHeight, "", HelpId, TOOLTIP, FONTNAME, FONTSIZE, BOLD, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
+         AAdd( _HMG_aDialogItems, { nId, k, ControlName, nStyle, 0, nCol, nRow, nWidth, nHeight, "", HelpId, tooltip, fontname, fontsize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
          IF _HMG_aDialogTemplate[ 3 ] // Modal
             RETURN NIL
          ENDIF
@@ -535,7 +536,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
          IF ValType( fontsize ) == "U"
             FONTSIZE := _HMG_DefaultFontSize
          ENDIF
-         oBrw:hFont := _SetFont( ControlHandle, FONTNAME, FONTSIZE, BOLD, italic, underline, strikeout )
+         oBrw:hFont := _SetFont( ControlHandle, fontname, fontsize, bold, italic, underline, strikeout )
       ENDIF
 
    ENDIF
@@ -557,7 +558,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
    _HMG_aControlInputMask[ k ] := Lock
    _HMG_aControllostFocusProcedure[ k ] := lostfocus
    _HMG_aControlGotFocusProcedure[ k ] := gotfocus
-   _HMG_aControlChangeProcedure[ k ] := CHANGE
+   _HMG_aControlChangeProcedure[ k ] := change
    _HMG_aControlDeleted[ k ] := .F.
    _HMG_aControlBkColor[ k ] := aImages
    _HMG_aControlFontColor[ k ] := NIL
@@ -570,12 +571,12 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
    _HMG_aControlSpacing[ k ] := uAlias
    _HMG_aControlContainerRow[ k ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
    _HMG_aControlContainerCol[ k ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
-   _HMG_aControlPicture[ k ] := DELETE
+   _HMG_aControlPicture[ k ] := delete
    _HMG_aControlContainerHandle[ k ] := 0
-   _HMG_aControlFontName[ k ] := FONTNAME
-   _HMG_aControlFontSize[ k ] := FONTSIZE
-   _HMG_aControlFontAttributes[ k ] := { BOLD, italic, underline, strikeout }
-   _HMG_aControlToolTip[ k ] := TOOLTIP
+   _HMG_aControlFontName[ k ] := fontname
+   _HMG_aControlFontSize[ k ] := fontsize
+   _HMG_aControlFontAttributes[ k ] := { bold, italic, underline, strikeout }
+   _HMG_aControlToolTip[ k ] := tooltip
    _HMG_aControlRangeMin[ k ] := 0
    _HMG_aControlRangeMax[ k ] := {}
    _HMG_aControlCaption[ k ] := aHeaders
@@ -777,6 +778,7 @@ CLASS TSBrowse FROM TControl
    DATA aPostList // used by ComboWBlock function
    DATA aRowPosAtRec // array with recno or nat of a current showed page   //SergKis
    DATA lRowPosAtRec AS LOGICAL INIT .F. // flag to activate a filling of aRowPosAtRec array
+   DATA lShared AS LOGICAL INIT .F. // dbf file opened shared at .T.
    DATA aSelected // selected items in select mode
    DATA aSortBmp // stock bitmaps for sort in headers
    DATA aSuperHead // array with SuperHeads properties
@@ -865,9 +867,9 @@ CLASS TSBrowse FROM TControl
    DATA cOrderType // index key type for seeking
    DATA cPrefix // used by TSBrowse search feature
    DATA cSeek // used by TSBrowse search feature
-   DATA cFont // new
-   DATA cChildControl // new
-   DATA cArray // new
+   DATA cFont
+   DATA cChildControl
+   DATA cArray
    DATA cToolTip // tooltip when mouse is over Cells
    DATA nToolTip AS NUMERIC INIT 0
    DATA nToolTipRow AS NUMERIC INIT 0
@@ -1180,11 +1182,14 @@ CLASS TSBrowse FROM TControl
 
    METHOD IsEditable( nCol ) INLINE ::lCellBrw .AND. ::aColumns[ nCol ]:lEdit .AND. ;
       ( ::aColumns[ nCol ]:bWhen == NIL .OR. Eval( ::aColumns[ nCol ]:bWhen, Self ) )
+
    METHOD TSDrawCell( oCol, oCell )
 
-   ACCESS IsEdit INLINE ! Empty( ::aColumns[ ::nCell ]:oEdit ) // SergKis addition
+   // SergKis addition
+   ACCESS IsEdit INLINE ! Empty( ::aColumns[ ::nCell ]:oEdit )
    ACCESS Tsb    INLINE ::oWnd
    ACCESS nAtPos INLINE iif( ::lIsDbf, ( ::cAlias )->( RecNo() ), ::nAt )
+   ACCESS IsRowPosAtRec INLINE ( ::nLen > 0 .AND. ::lRowPosAtRec .AND. HB_ISARRAY( ::aRowPosAtRec ) .AND. Len( ::aRowPosAtRec ) > 0 )
 
    METHOD KeyChar( nKey, nFlags )
 
@@ -2502,7 +2507,7 @@ METHOD AddSuperHead( nFromCol, nToCol, uHead, nHeight, aColors, l3dLook, uFont, 
       cHeading := iif( ValType( uBitMap ) == "B", Eval( uBitMap ), uBitMap )
       cHeading := iif( ValType( cHeading ) == "O", Eval( ::bBitMapH, cHeading ), cHeading )
       IF Empty( cHeading )
-         MsgStop( "Image is not found!", "Error" )
+         MsgStop( "The resource could not be found for TBROWSE !" + CRLF + CRLF + ProcNL(0) + CRLF + ProcNL(1), "Error" )
          RETURN NIL
       ENDIF
       nLHeight := SBmpHeight( cHeading )
@@ -2703,7 +2708,6 @@ METHOD ChangeFont( hFont, nColumn, nLevel ) CLASS TSBrowse
       ELSE
 
          DO CASE
-
          CASE nLevel == 1 // nLevel 1 = Cells
             ::aColumns[ nColumn ]:hFont := hFont
          CASE nLevel == 2 .AND. ::lDrawHeaders // nLevel 2 = Headers
@@ -3236,6 +3240,7 @@ METHOD DeleteRow( lAll, lUpStable ) CLASS TSBrowse
       DO CASE
 
       CASE ::lIsDbf
+
          lEval := .T.
 
          IF ::bDelete != NIL
@@ -3302,6 +3307,7 @@ METHOD DeleteRow( lAll, lUpStable ) CLASS TSBrowse
          ENDIF
 
          ::lHasChanged := .T.
+         ::DrawSelect()
 
       CASE ::lIsArr
 
@@ -5681,6 +5687,7 @@ METHOD Edit( uVar, nCell, nKey, nKeyFlags, cPicture, bValid, nClrFore, nClrBack 
 
       oCol:oEdit:bKeyDown := {| nKey, nFlags, lExit | iif( lExit != NIL .AND. lExit, ;
          ::EditExit( nCell, nKey, uValue, bValid ), Nil ), HB_SYMBOL_UNUSED( nFlags ) }
+
       DO CASE
       CASE "TBTNBOX" $ Upper( oCol:oEdit:ClassName() )
          oCol:oEdit:bLostFocus := NIL
@@ -9428,6 +9435,10 @@ METHOD LoadFields( lEditable, aColSel, cAlsSel, aNameSel, aHeadSel ) CLASS TSBro
       ATail( ::aColumns ):nFieldLen := aStru[ nE, 3 ] // 18.07.2018
       ATail( ::aColumns ):nFieldDec := aStru[ nE, 4 ] // 18.07.2018
 
+      IF aStru[ nE, 2 ] $ "=@T^+"
+         ATail( ::aColumns ):lEdit := .F.
+      ENDIF
+
       IF HB_ISARRAY( aNameSel ) .AND. Len( aNameSel ) > 0 .AND. n <= Len( aNameSel )
          IF HB_ISCHAR( aNameSel[ n ] ) .AND. ! Empty( aNameSel[ n ] )
             cName := aNameSel[ n ]
@@ -10477,7 +10488,7 @@ METHOD LostFocus( hCtlFocus ) CLASS TSBrowse
    ::lFocused := .F.
 
    IF ! Empty( ::bLostFocus )
-      Eval( ::bLostFocus, hCtlFocus )
+      Eval( ::bLostFocus, hCtlFocus, Self )
    ENDIF
 
    IF ::nLen > 0 .AND. ! EmptyAlias( ::cAlias ) .AND. ! ::lIconView
@@ -12087,6 +12098,8 @@ RETURN 0
 
 METHOD Refresh( lPaint, lRecount, lClearHash ) CLASS TSBrowse
 
+   LOCAL nOldRec
+
    DEFAULT lPaint := .T., ;
       lRecount := .F., ;
       lClearHash := ::lFastDrawClear
@@ -12104,6 +12117,14 @@ METHOD Refresh( lPaint, lRecount, lClearHash ) CLASS TSBrowse
    ENDIF
 
    ::lNoPaint := .F.
+
+   IF ::lIsDbf .AND. ::lShared .AND. ::IsRowPosAtRec
+      nOldRec := ( ::cAlias )->( RecNo() )
+      ( ::cAlias )->( dbGoto( ::aRowPosAtRec[ 1 ] ) )
+      IF nOldRec != ::aRowPosAtRec[ 1 ]
+         ( ::cAlias )->( dbGoto( nOldRec ) )
+      ENDIF
+   ENDIF
 
 RETURN ::Super:Refresh( lPaint )
 
@@ -13361,10 +13382,10 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
    ENDIF
 
    FOR nEle := 1 TO Len( xColor1 )
+
       DO CASE
 
       CASE xColor1[ nEle ] == 1
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13380,7 +13401,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 2
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13396,7 +13416,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 3
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13412,7 +13431,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 4
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13428,7 +13446,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 5
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13444,7 +13461,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 6
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13460,7 +13476,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 7
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13476,7 +13491,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 8
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13492,7 +13506,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 9
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13508,7 +13521,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 10
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13524,7 +13536,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 11
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13540,7 +13551,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 12
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13556,7 +13566,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 13
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13572,7 +13581,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 14
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13588,7 +13596,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 16
-
          IF nColumn == 0
             FOR nI := 1 TO Len( ::aSuperHead )
                ::aSuperHead[ nI, 5 ] := xColor2[ nEle ]
@@ -13610,7 +13617,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 18
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13625,7 +13631,6 @@ METHOD SetColor( xColor1, xColor2, nColumn ) CLASS TSBrowse
          ENDIF
 
       CASE xColor1[ nEle ] == 19
-
          IF nColumn == 0
 
             FOR nI := 1 TO Len( ::aColumns )
@@ -13785,7 +13790,7 @@ METHOD SetDbf( cAlias ) CLASS TSBrowse
    ENDIF
 
    cAlias := ::cAlias
-   ::cDriver := ( ::cAlias )->( rddName() )
+   ::cDriver := ( cAlias )->( rddName() )
 
    DEFAULT ::bGoTop := {|| ( cAlias )->( dbGoTop() ) }, ;
       ::bGoBottom := {|| ( cAlias )->( dbGoBottom() ) }, ;
@@ -13811,6 +13816,7 @@ METHOD SetDbf( cAlias ) CLASS TSBrowse
          ::bLogicLen := {|| ( cAlias )->( iif( IndexOrd() == 0, LastRec(), ordKeyCount() ) ) }, ;
          ::bTagOrder := {| uTag | ( cAlias )->( ordSetFocus( uTag ) ) }, ;
          ::bGoToPos := {| n | Eval( ::bKeyNo, n ) }
+      ::lShared := ( cAlias )->( dbInfo( DBI_SHARED ) ) /* is the file opened shared ? */
    ENDIF
 
    nTags := ( cAlias )->( ordCount() )
@@ -16837,7 +16843,7 @@ FUNCTION _nColumn( oBrw, cName, lPos )
 
 RETURN iif( Empty( lPos ), Max( nPos, 1 ), nPos )
 
-// --------------------------------------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 STATIC FUNCTION HeadXls( nCol )
 
@@ -16864,3 +16870,12 @@ FUNCTION hb_HGetDef( hHash, xKey, xDef )
 RETURN iif( nPos > 0, HGetValueAt( hHash, nPos ), xDef )
 
 #endif
+
+//--------------------------------------------------------------------------------------------------------------------//
+
+STATIC FUNCTION ProcNL( nVal )
+
+   DEFAULT nVal := 0
+   nVal++
+
+RETURN "Called from: " + ProcName( nVal ) + "(" + hb_ntos( ProcLine( nVal ) ) + ") --> " + ProcFile( nVal )

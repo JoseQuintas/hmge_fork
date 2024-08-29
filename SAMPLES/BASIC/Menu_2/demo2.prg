@@ -2,6 +2,8 @@
 
 FUNCTION Main()
 
+   LOCAL n
+
    DEFINE WINDOW Form_1 ;
          AT 0, 0 ;
          WIDTH 400 ;
@@ -38,12 +40,13 @@ FUNCTION Main()
 
                   POPUP 'Item 3.3.3'
 
-                     ITEM 'Item 3.3.3.1' ACTION MsgInfo ( 'Item 3.3.3.1' )
-                     ITEM 'Item 3.3.3.2' ACTION MsgInfo ( 'Item 3.3.3.2' )
-                     ITEM 'Item 3.3.3.3' ACTION MsgInfo ( 'Item 3.3.3.3' ) DISABLED
-                     ITEM 'Item 3.3.3.4' ACTION MsgInfo ( 'Item 3.3.3.4' ) DISABLED
-                     ITEM 'Item 3.3.3.5' ACTION MsgInfo ( 'Item 3.3.3.5' )
-                     ITEM 'Item 3.3.3.6' ACTION MsgInfo ( 'Item 3.3.3.6' )
+                     FOR n := 1 TO 6
+                        ITEM "Item 3.3.3.&" + hb_ntos( n ) ACTION ShowNoNext( This.Cargo ) NAME (hb_ntos( n ))
+                        Form_1.(hb_ntos( n )).Cargo := n
+                        IF n == 3 .OR. n == 4
+                           Form_1.(hb_ntos( n )).Enabled := .F.
+                        ENDIF
+                     NEXT
 
                   END POPUP
 
@@ -59,7 +62,7 @@ FUNCTION Main()
 
          POPUP 'Help'
 
-            ITEM 'About' ACTION MsgInfo ( 'Help:ABout' )
+            ITEM 'About' ACTION MsgInfo ( 'Help:About' )
 
          END POPUP
 
@@ -79,5 +82,12 @@ FUNCTION Main()
    CENTER WINDOW Form_1
 
    ACTIVATE WINDOW Form_1
+
+RETURN NIL
+
+
+STATIC FUNCTION ShowNoNext( n )
+
+   MsgInfo( "Item 3.3.3." + hb_ntos( n ) )
 
 RETURN NIL

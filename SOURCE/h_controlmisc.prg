@@ -2091,6 +2091,9 @@ FUNCTION _SetControlSizePos ( ControlName, ParentForm, row, col, width, height )
 #ifdef _DBFBROWSE_
    LOCAL b , hws
 #endif
+#ifdef _TSBROWSE_
+   LOCAL oGet
+#endif
    LOCAL DelTaRow, DelTaCol, DelTaWidth, SpinW
    LOCAL tCol, tRow, tWidth, tHeight
 
@@ -2495,6 +2498,15 @@ FUNCTION _SetControlSizePos ( ControlName, ParentForm, row, col, width, height )
          _HMG_aControlWidth  [ x ] := Width
          _HMG_aControlHeight [ x ] := Height
 
+#ifdef _TSBROWSE_
+         IF T == "TBROWSE"
+            oGet := GetObjectByHandle( c )
+            IF ISOBJECT( oGet )
+               oGet:nTop := Row
+               oGet:nLeft := Col
+            ENDIF
+         ENDIF
+#endif
          MoveWindow ( c , col - sx , row - sy , width , height , .T. )
 
       ELSE
@@ -2820,7 +2832,7 @@ FUNCTION _SetPicture ( ControlName , ParentForm , FileName )
                ReDrawWindow ( c )
             ELSE
                IF ISCHARACTER ( cImage )
-                  _HMG_aControlBrushHandle [i] := _SetBtnIcon ( c , cImage )
+                  _HMG_aControlBrushHandle [i] := _SetBtnIcon ( c , cImage , _HMG_aControlHeadClick [i][1] , _HMG_aControlHeadClick [i][2] )
                ELSE
                   _HMG_aControlBrushHandle [i] := Filename
                   SendMessage ( c , STM_SETIMAGE , IMAGE_ICON , Filename )
@@ -3426,7 +3438,6 @@ FUNCTION _SetMultiCaption ( ControlName , ParentForm , Column , Value  )
       t := GetControlType ( ControlName , ParentForm )
 
       Assign nColumn := Column
-      _HMG_aControlCaption [i] [nColumn] := Value
 
       DO CASE
 
@@ -3447,6 +3458,10 @@ FUNCTION _SetMultiCaption ( ControlName , ParentForm , Column , Value  )
          UpdateTab ( i )
 
       ENDCASE
+
+      IF ISARRAY( _HMG_aControlCaption [i] )
+         _HMG_aControlCaption [i] [nColumn] := Value
+      ENDIF
 
    ENDIF
 
@@ -8563,34 +8578,35 @@ RETURN CharRem ( Chr( 34 ) + Chr( 39 ), cStr )
 *-----------------------------------------------------------------------------*
 FUNCTION HMG_GetForms( cTyp, lObj )
 *-----------------------------------------------------------------------------*
-   LOCAL i, lTyp, lHand, aNames := {}
+   LOCAL aNames := {}
+   LOCAL lHand
+   LOCAL i
 #ifdef _OBJECT_
    LOCAL o
 #endif
 
-   cTyp := iif( HB_ISCHAR( cTyp ), Upper( cTyp ), '' )
-   lHand := iif( HB_ISLOGICAL( lObj ), ! lObj, .F. )
-   lObj := _HMG_lOOPEnabled .AND. ! Empty( lObj )
+   cTyp := iif( HB_ISCHAR ( cTyp ), Upper ( cTyp ), '' )
+   lHand := iif( HB_ISLOGICAL ( lObj ), ! lObj, .F. )
+   lObj := ( _HMG_lOOPEnabled .AND. ! Empty( lObj ) )
 
-   FOR i := 1 TO Len( _HMG_aFormNames )
+   FOR i := 1 TO Len ( _HMG_aFormNames )
 
       IF _HMG_aFormDeleted[ i ] ; LOOP
       ENDIF
 
-      lTyp := iif( Empty( cTyp ), .T., _HMG_aFormType[ i ] $ cTyp )
-      IF lTyp
+      IF Empty( cTyp ) .OR. _HMG_aFormType[ i ] $ cTyp
 
          IF lHand
-            AAdd( aNames, _HMG_aFormHandles[ i ] )
+            AAdd ( aNames, _HMG_aFormHandles[ i ] )
 #ifdef _OBJECT_
          ELSEIF lObj
-            o := do_obj( _HMG_aFormHandles[ i ] )
-            IF HB_ISOBJECT( o )
-               AAdd( aNames, o )
+            o := do_obj ( _HMG_aFormHandles[ i ] )
+            IF HB_ISOBJECT ( o )
+               AAdd ( aNames, o )
             ENDIF
 #endif
          ELSE
-            AAdd( aNames, _HMG_aFormNames[ i ] )
+            AAdd ( aNames, _HMG_aFormNames[ i ] )
          ENDIF
 
       ENDIF

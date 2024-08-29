@@ -50,6 +50,10 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Combobox Class Name
+#define WC_COMBOBOX            "ComboBox"
+#endif
 
 HIMAGELIST  HMG_ImageListLoadFirst( const char * FileName, int cGrow, int Transparent, int * nWidth, int * nHeight );
 void        HMG_ImageListAdd( HIMAGELIST himl, char * FileName, int Transparent );
@@ -195,14 +199,14 @@ HB_FUNC( INITCOMBOBOXEX )
    // set imagelist for created ComboEx
    if( himl != NULL )
    {
-      SendMessage( ( HWND ) hCombo, CBEM_SETIMAGELIST, 0, ( LPARAM ) himl );
+      SendMessage( hCombo, CBEM_SETIMAGELIST, 0, ( LPARAM ) himl );
    }
    else
    {                                     // extend combo without images
       SendMessage
          (                               // returns LRESULT in lResult
-         ( HWND ) hCombo,                // handle to destination control
-         ( UINT ) CBEM_SETEXTENDEDSTYLE, // message ID
+         hCombo,                         // handle to destination control
+         CBEM_SETEXTENDEDSTYLE,          // message ID
          ( WPARAM ) 0,                   // = (WPARAM) (DWORD) dwExMask;
          ( LPARAM ) CBES_EX_NOEDITIMAGE  // = (LPARAM) (DWORD) dwExStyle;
          );

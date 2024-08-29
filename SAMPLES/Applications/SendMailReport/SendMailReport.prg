@@ -1352,12 +1352,6 @@ Return lres
 * End of Patch Pierpaolo 2018
 */
 
-/*
-*/
-*-----------------------------------------------------------------------------*
-DECLARE DLL_TYPE_BOOL SwitchToThisWindow( DLL_TYPE_LONG hWnd, DLL_TYPE_BOOL lRestore ) ;
-    IN USER32.DLL
-
 #pragma BEGINDUMP
 
 #define HB_OS_WIN_USED

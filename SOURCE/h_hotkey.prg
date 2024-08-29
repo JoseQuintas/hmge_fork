@@ -275,10 +275,16 @@ FUNCTION _DetermineKey ( cKey )
          DO CASE
          CASE cText == "ALT"
             nAlt := MOD_ALT
+            IF nCtrl != 0
+               nAlt := MOD_SHIFT
+            ENDIF
          CASE cText == "CTRL" .OR. cText == "CONTROL"
             nCtrl := MOD_CONTROL
          CASE cText == "SHIFT" .OR. cText == "SHFT"
             nShift := MOD_SHIFT
+            IF nCtrl != 0
+               nShift := MOD_ALT
+            ENDIF
          CASE cText == "WIN"
             nWin := MOD_WIN
          OTHERWISE

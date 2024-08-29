@@ -190,6 +190,7 @@ LVGROUP, *PLVGROUP;
 #define LVM_GETGROUPCOUNT                             ( LVM_FIRST + 152 )
 #define ListView_GetGroupCount( hwnd )                SNDMSG( ( hwnd ), LVM_GETGROUPCOUNT, ( WPARAM ) 0, ( LPARAM ) 0 )
 #endif
+
 HB_FUNC( INITLISTVIEW )
 {
    HWND                 hbutton;

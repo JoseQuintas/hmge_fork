@@ -2021,6 +2021,7 @@ FUNCTION MainEventHandler(nHWnd, nMsg, nWParam, nLParam)
     SWITCH nMsg
       CASE 36 /*WM_GETMINMAXINFO*/
         SetMinMaxTrackSize(nLParam, 550, 300)
+        RETURN 1
         EXIT
 
       CASE 274 /*WM_SYSCOMMAND*/
@@ -2125,6 +2126,7 @@ FUNCTION MainEventHandler(nHWnd, nMsg, nWParam, nLParam)
       CASE 36 /*WM_GETMINMAXINFO*/
         nMaxY := GetProperty("PdfView", "CLIENTAREAHEIGHT") - If(PdfView.Tabs.VISIBLE, PdfView.Tabs.HEIGHT, 0) - GetWindowHeight(PdfView.STATUSBAR.HANDLE)
         SetMinMaxTrackSize(nLParam, 200, nMaxY, GetProperty("PdfView", "CLIENTAREAWIDTH") - 100, nMaxY)
+        RETURN 1
         EXIT
 
       CASE 532 /*WM_SIZING*/
@@ -2163,6 +2165,7 @@ FUNCTION MainEventHandler(nHWnd, nMsg, nWParam, nLParam)
     SWITCH nMsg
       CASE 36 /*WM_GETMINMAXINFO*/
         SetMinMaxTrackSize(nLParam, 380, 250)
+        RETURN 1
         EXIT
 
       CASE 78 /*WM_NOTIFY*/

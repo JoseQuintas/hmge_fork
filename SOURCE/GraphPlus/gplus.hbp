@@ -8,9 +8,9 @@
 -inc
 -o../../lib/GraphPlus
 
--I../../include;./
+-I../../include;${hb_curdir}
 
--w2 -es2 -ko -q0
+-w3 -es2 -ko -q0
 
 {!DEBUG&bcc|mingw}-l
 

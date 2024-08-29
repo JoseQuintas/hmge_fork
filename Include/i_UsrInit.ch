@@ -1,13 +1,71 @@
-#define BASEDEF_MYBUTTON 
+#define BASEDEF_HMGBUTTON
 
-#xcommand @ <row>,<col> MYBUTTON <name> ;
-		OF <parent> ;
+#xcommand @ <row>,<col> HMGBUTTON <name> ;
+		[ <dummy1: OF, PARENT> <parent> ] ;
 		CAPTION <caption> ;
-		ACTION <action> ;
+		PICTURE <bitmap> ;
+		[ <alignment:LEFT,RIGHT,TOP,BOTTOM> ] ;
+		[ <dummy2: ACTION,ON CLICK,ONCLICK> <action> ];
+		[ WIDTH <w> ] ;
+		[ HEIGHT <h> ] ;
+		[ FONT <font> ] ;
+		[ SIZE <size> ] ;
+		[ <bold : BOLD> ] ;
+		[ <italic : ITALIC> ] ;
+		[ <underline : UNDERLINE> ] ;
+		[ <strikeout : STRIKEOUT> ] ;
+		[ TOOLTIP <tooltip> ] ;
+		[ <flat: FLAT> ] ;
+		[ ON GOTFOCUS <gotfocus> ] ;
+		[ ON LOSTFOCUS <lostfocus> ] ;
+		[ <notabstop: NOTABSTOP> ] ;
+		[ HELPID <helpid> ] 		;
+		[ <invisible: INVISIBLE> ] ;
+		[ <multiline: MULTILINE> ] ;
+		[ <notrans: NOTRANSPARENT> ] ;
 	=>;
-	_DefineMyButton(<(name)>,<row>,<col>,<caption>,<{action}>,<(parent)>)
+	_DefineMixedButton ( <"name">, <"parent">, <col>, <row>, <caption>, <{action}>, <w>, <h>, ;
+		<font>, <size>, <tooltip>, <{gotfocus}>, <{lostfocus}>, <.flat.>, <.notabstop.>, <helpid>, ;
+ 		<.invisible.>, <.bold.>, <.italic.>, <.underline.>, <.strikeout.>, <bitmap>, <"alignment">, <.multiline.>, <.notrans.> ) 
 
-#undef BASEDEF_MYBUTTON
+#ifdef PICTALIGNMENT
+#undef PICTALIGNMENT
+#endif
+
+#xcommand PICTALIGNMENT <alignment:LEFT,RIGHT,TOP,BOTTOM> ;
+	=> ;
+	_HMG_ActiveControlFormat := <"alignment">
+
+#xcommand END HMGBUTTON ;
+	=>;
+	_DefineMixedButton ( ;
+          _HMG_ActiveControlName,;
+          _HMG_ActiveControlOf,;
+          _HMG_ActiveControlCol,;
+          _HMG_ActiveControlRow,;
+          _HMG_ActiveControlCaption ,;
+          _HMG_ActiveControlAction ,;
+          _HMG_ActiveControlWidth ,;
+          _HMG_ActiveControlHeight ,;
+          _HMG_ActiveControlFont ,;
+          _HMG_ActiveControlSize ,;
+          _HMG_ActiveControlTooltip ,;
+          _HMG_ActiveControlOnGotfocus ,;
+          _HMG_ActiveControlOnLostfocus ,;
+          _HMG_ActiveControlFlat ,;
+          _HMG_ActiveControlNoTabStop ,;
+          _HMG_ActiveControlHelpId ,;
+          _HMG_ActiveControlInvisible ,;
+          _HMG_ActiveControlFontBold , ;
+          _HMG_ActiveControlFontItalic , ;
+          _HMG_ActiveControlFontUnderLine ,;
+          _HMG_ActiveControlFontStrikeOut ,;
+          _HMG_ActiveControlPicture ,;
+          _HMG_ActiveControlFormat ,;
+          _HMG_ActiveControlBorder ,;
+           .not. _HMG_ActiveControlTransparent ) 
+
+#undef BASEDEF_HMGBUTTON
 
 
 #define BASEDEF_CLBUTTON
@@ -158,8 +216,8 @@
 	_HMG_ActiveControlCol		:= 0		;;
 	_HMG_ActiveControlWidth		:= 0		;;
 	_HMG_ActiveControlHeight	:= 0		;;
-	_HMG_ActiveControlValue         := Nil		;;
-	_HMG_ActiveControlClientEdge	:= .f.		;;
+	_HMG_ActiveControlValue		:= Nil		;;
+	_HMG_ActiveControlClientEdge:= .f.		;;
 	_HMG_ActiveControlBorder	:= 0
 
 #xcommand END ACTIVEX ;

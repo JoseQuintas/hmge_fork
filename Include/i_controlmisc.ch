@@ -171,6 +171,8 @@ SetResCursor( LoadCursor( NIL, IDC_UPARROW ) )
 #define SM_CXVSCROLL            2
 #define SM_CYHSCROLL            3
 #define SM_CYCAPTION            4
+#define SM_CXBORDER             5
+#define SM_CYBORDER             6
 #define SM_CYMENU               15
 
 #define SM_CXFRAME              32
@@ -270,11 +272,18 @@ SetProperty ( <"Arg1"> , <"Arg2"> , <"Arg3"> , .F. )
 => ;
 SetProperty ( <"Arg1"> , <"Arg2"> , <"Arg3"> , \{<Arg4>\} )
 
+
 #xtranslate SET WINDOW MAIN [ FIRST ] <x:ON,OFF> => _HMG_MainWindowFirst := ( Upper(<(x)>) == "ON" )
+
+#xtranslate SET WINDOW MODAL [ PARENT ] HANDLE <x:ON,OFF> => _HMG_OwnerModalHandle := ( Upper(<(x)>) == "ON" ) 
 
 #translate SET MULTIPLE <x:ON,OFF> [ <warning: WARNING> ] ;
 => ;
-_HMG_lMultiple := ( Upper(<(x)>) == "ON" ) ; iif ( _HMG_lMultiple == .F. .AND. _HMG_IsMultiple == .T. , ( iif ( <.warning.> , MsgStop( _HMG_MESSAGE\[4\] ) , ) , ExitProcess() ) , )
+_HMG_lMultiple := ( Upper(<(x)>) == "ON" ) ; iif ( _HMG_lMultiple == .F. .AND. _HMG_IsMultiple == .T. , ( iif ( <.warning.> , MsgStop( _HMG_MESSAGE\[4] ) , ) , ExitProcess() ) , )
+
+#translate SET MULTIPLE QUIT [ <warning: WARNING> ] ;
+=> ;
+iif ( _HMG_IsMultiple , ( iif ( <.warning.> , AlertStop( _HMG_MESSAGE\[4] ) , ) , ExitProcess() ) , )
 
 #ifndef __XHARBOUR__
   #translate CRLF => hb_eol()

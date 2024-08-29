@@ -85,6 +85,34 @@ FUNCTION _LogFile( ... )
 #ifdef __XHARBOUR__
    LOCAL lCrLf
 #endif
+   IF nParams > 0
+      IF HB_ISCHAR( aParams[ 1 ] )
+         aParams[ 1 ] := { .T., aParams[ 1 ] }
+      ENDIF
+      IF HB_ISARRAY( aParams[ 1 ] )
+         IF Len( aParams[ 1 ] ) > 1
+            IF HB_ISLOGICAL( aParams[ 1 ][ 1 ] )     // { .T.\.F. , cFile }
+               cTp := aParams[ 1 ][ 2 ]
+               aParams[ 1 ] := aParams[ 1 ][ 1 ]
+            ELSEIF HB_ISLOGICAL( aParams[ 1 ][ 2 ] ) // { cFile , .T.\.F. }
+               cTp := aParams[ 1 ][ 1 ]
+               aParams[ 1 ] := aParams[ 1 ][ 2 ]
+            ELSE                // errors
+               aParams[ 1 ] := .T.
+            ENDIF
+            IF !Empty( cTp )
+               IF !hb_ps() $ cTp
+                  cTp := GetStartUpFolder() + hb_ps() + cTp
+               ENDIF
+               cFile := cTp
+            ENDIF
+         ELSE                   // errors
+            aParams[ 1 ] := .T.
+         ENDIF
+         cTp := NIL
+         lCrlf := aParams[ 1 ]
+      ENDIF
+   ENDIF
    IF !Empty( cFile )
       hFile := iif( File( cFile ), FOpen( cFile, FO_READWRITE ), FCreate( cFile, FC_NORMAL ) )
       IF hFile == F_ERROR

@@ -56,7 +56,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 INIT PROCEDURE ClipInit()
 *-----------------------------------------------------------------------------*
 
-   IF os_isWin95()
+   IF os_isWin95() .OR. os_isWin98()
       MsgExclamation( "The " + hb_ArgV( 0 ) + " file" + CRLF + ;
          "expects a newer version of Windows." + CRLF + ;
          "Upgrade your Windows version.", "Error Starting Program", , .F., .T. )
@@ -112,7 +112,7 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 23.04.0 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 23.09.2 ("
 *-----------------------------------------------------------------------------*
 FUNCTION MiniGuiVersion( nVer )
 *-----------------------------------------------------------------------------*

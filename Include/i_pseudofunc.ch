@@ -686,7 +686,8 @@ SendMessageStringW( <h> , <n> , <wp> , <lp> )
 
 #xtranslate ProcessMessages() => DoEvents()
 
-#translate And( <p1> , <p2> ) => hb_BitAnd( <p1> , <p2> )
+#xtranslate And( [<x,...>] )  => hb_BitAnd( <x> )
+#xtranslate nOr( [<x,...>] )  => hb_bitOr( <x> )
 
 #xtranslate Random( <nMax> )  => hb_RandomInt( IFNUMERIC( <nMax>, <nMax>, 65535 ) )
 

@@ -239,10 +239,10 @@ RETURN
 Static proc OnTextChange()
 *--------------------------------------------------------*
 Local cItem := This.Name
-Local nItem := Val( SubStr( cItem, At("_", cItem) + 1 ) )
+Local nItem := Val( SubStr( cItem, At( "_", cItem ) + 1 ) )
 Local cText := 'Text_' + NTRIM( nItem )
 
-aValue[nItem] := GetProperty( "Form_1", cText, "Value" )
+	aValue[nItem] := GetProperty( "Form_1", cText, "Value" )
 
 RETURN
 
@@ -421,7 +421,9 @@ Function VideoName()
 Local cName := "", oReg, cReg := "", oKey, nId := 0
 
 IF lWinNT
-	cName := GetRegVar( HKEY_LOCAL_MACHINE, "SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}\0000", "DriverDesc" )
+	WHILE EMPTY(cName) .AND. nId < 10
+		cName := GetRegVar( HKEY_LOCAL_MACHINE, "SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}\" + StrZero( nId++, 4 ), "DriverDesc" )
+	ENDDO
 ELSE
 	oReg := TReg32():New( HKEY_LOCAL_MACHINE, "System\CurrentControlSet\Services\Class\Display" )
 
@@ -440,7 +442,7 @@ ELSE
 	nId := 0
 
 	WHILE EMPTY(cName) .OR. AT( "VGA", cName ) > 0
-		cName := GetRegVar( HKEY_LOCAL_MACHINE, "System\CurrentControlSet\Services\Class\Display\" + StrZero(nId++, 4), "DriverDesc" )
+		cName := GetRegVar( HKEY_LOCAL_MACHINE, "System\CurrentControlSet\Services\Class\Display\" + StrZero( nId++, 4 ), "DriverDesc" )
 		IF nId > 99
 			EXIT
 		ENDIF

@@ -49,21 +49,21 @@
 #define MG_VER_H_
 
 #ifdef __HMG__
-# undef __HMG__
+#undef __HMG__
 #endif
 
 #define MG_VER_MAJOR    3        /* Major version number */
 #define MG_VER_MINOR    2        /* Minor version number */
-#define MG_VER_RELEASE  6        /* Release number */
+#define MG_VER_RELEASE  8        /* Release number */
 
-#define __HMG__         0x030206 /* Three bytes: Major + Minor + Build. */
+#define __HMG__         0x030208 /* Three bytes: Major + Minor + Build. */
 
 #define __RELEASE__
 
 #if defined(__RELEASE__)
-# define MG_VER_STATUS "stable"  /* Build status (all lowercase) */
+#define MG_VER_STATUS "stable"   /* Build status (all lowercase) */
 #else
-# define MG_VER_STATUS "beta"
+#define MG_VER_STATUS "beta"
 #endif
 
 #endif /* MG_VER_H_ */

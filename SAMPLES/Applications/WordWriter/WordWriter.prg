@@ -1930,8 +1930,7 @@ ELSE
   END
 END
 
-cNewFileName := PUTFILE(aWriteFilter, 'Save As', cFileFolder, ;
-  NIL, cFileName, @cFileExt, @nWriteFilter)
+cNewFileName := PUTFILE(aWriteFilter, 'Save As', cFileFolder, NIL, cFileName, @nWriteFilter)
 
 IF !EMPTY(cNewFileName) .AND. (!lUnicode .OR. nWriteFilter != 2 .OR. ;
   MSGYESNO('This document contains Unicode characters, which will be lost if you save to an ANSI file.  Proceed?', cTitle))

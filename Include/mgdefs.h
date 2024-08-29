@@ -195,12 +195,11 @@ extern HB_PTRUINT wapi_GetProcAddress( HMODULE hmodule, LPCSTR lpProcName );
 
 // macros for parameters
 
-#define hmg_par_WPARAM( n )              ( ( WPARAM     ) hb_parnl( n ) )
-#define hmg_par_LPARAM( n )              ( ( LPARAM     ) hb_parnl( n ) )
+#define hmg_par_WPARAM( n )              ( ( WPARAM     ) hb_parnint( n ) )
+#define hmg_par_LPARAM( n )              ( ( LPARAM     ) hb_parnint( n ) )
 #define hmg_par_LRESULT( n )             ( ( LRESULT    ) hb_parnint( n ) )
 
-#define hmg_par_raw_WPARAM( n )          ( ( WPARAM     ) HB_PARNL( n ) )
-#define hmg_par_raw_LPARAM( n )          ( ( LPARAM     ) HB_PARNL( n ) )
+#define hmg_par_raw_LPARAM( n )          HB_PARNL( n )
 
 #define hmg_par_raw_HWND( n )            ( ( HWND       ) HB_PARNL( n ) )
 #define hmg_par_raw_HDC( n )             ( ( HDC        ) HB_PARNL( n ) )

@@ -51,7 +51,7 @@
         "HWGUI"
         Copyright 2001-2008 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 #include <commdlg.h>
 #include <commctrl.h>
@@ -63,6 +63,9 @@
 #include <richedit.h>
 #if defined( _MSC_VER )
 #pragma warning( pop )
+#endif
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+#define PFNS_NEWNUMBER	0x8000	    // Start new number with wNumberingStart
 #endif
 #include <shlwapi.h>
 
@@ -142,7 +145,7 @@ HB_FUNC( INITRICHEDITBOXEX )
          hWndControl,
          EM_SETEVENTMASK,
          ( WPARAM ) 0,
-         ( LPARAM ) ( ENM_CHANGE | ENM_SELCHANGE | ENM_PROTECTED | ENM_SCROLL | ENM_LINK | ENM_KEYEVENTS | ENM_REQUESTRESIZE | ENM_MOUSEEVENTS )
+         ( LPARAM ) ENM_CHANGE | ENM_SELCHANGE | ENM_PROTECTED | ENM_SCROLL | ENM_LINK | ENM_KEYEVENTS | ENM_REQUESTRESIZE | ENM_MOUSEEVENTS
       );
 
       SendMessage( hWndControl, EM_SETTYPOGRAPHYOPTIONS, TO_ADVANCEDTYPOGRAPHY, TO_ADVANCEDTYPOGRAPHY );
@@ -222,7 +225,7 @@ HB_FUNC( RICHEDITBOX_STREAMIN )
 
    if( lSelection )
    {
-      Format = Format | SFF_SELECTION;
+      Format |= SFF_SELECTION;
    }
 
    if( ( hFile = CreateFile( cFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL ) ) == INVALID_HANDLE_VALUE )
@@ -314,7 +317,7 @@ HB_FUNC( RICHEDITBOX_STREAMOUT )
 
    if( lSelection )
    {
-      Format = Format | SFF_SELECTION;
+      Format |= SFF_SELECTION;
    }
 
    if( ( hFile = CreateFile( cFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL ) ) == INVALID_HANDLE_VALUE )
@@ -704,7 +707,7 @@ HB_FUNC( RICHEDITBOX_REPLACESEL )
 #else
    LPCTSTR cBuffer = ( LPCTSTR ) AnsiToWide( hb_parc( 2 ) );
 #endif
-   SendMessage( hmg_par_raw_HWND( 1 ), EM_REPLACESEL, ( WPARAM ) ( BOOL ) TRUE, ( LPARAM ) cBuffer );
+   SendMessage( hmg_par_raw_HWND( 1 ), EM_REPLACESEL, ( WPARAM ) TRUE, ( LPARAM ) cBuffer );
 }
 
 //        RichEditBox_SetText ( hWndControl , lSelect , cText )
@@ -1299,7 +1302,7 @@ HB_FUNC( RICHEDITBOX_SETMARGINS )
    WORD LeftMargin  = hmg_par_WORD( 2 );  // in pixels
    WORD RightMargin = hmg_par_WORD( 3 );  // in pixels
 
-   SendMessage( hWndControl, EM_SETMARGINS, EC_USEFONTINFO, ( LPARAM ) MAKELPARAM( LeftMargin, RightMargin ) );
+   SendMessage( hWndControl, EM_SETMARGINS, EC_USEFONTINFO, MAKELPARAM( LeftMargin, RightMargin ) );
 }
 
 //        RichEditBox_FormatRange ( hWndControl, hDCPrinter, nLeft, nTop, nRight, nBottom, { cpMin , cpMax } )

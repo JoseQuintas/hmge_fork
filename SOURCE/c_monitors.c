@@ -56,8 +56,6 @@ extern HB_EXPORT BOOL   Array2Point( PHB_ITEM aPoint, POINT * pt );
 #ifndef __XHARBOUR__
 HB_EXPORT PHB_ITEM      Rect2Hash( RECT * rc );
 BOOL CALLBACK           _MonitorEnumProc0( HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData );
-
-//BOOL CALLBACK _MonitorEnumProc1( HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData );
 #endif
 static void             ClipOrCenterRectToMonitor( LPRECT prc, HMONITOR hMonitor, UINT flags );
 

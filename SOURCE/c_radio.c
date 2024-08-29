@@ -47,6 +47,10 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+// Button Class Name
+#define WC_BUTTON              "Button"
+#endif
 
 #ifdef UNICODE
 LPWSTR      AnsiToWide( LPCSTR );

@@ -29,4 +29,9 @@
 #define __HBEXTERN__HMG__REQUEST
 #include "hmg.hbx"
 
+#include "winprint.hbx"
+#include "miniprint.hbx"
+#include "bostaurus.hbx"
+#include "hbvpdf.hbx"
+
 #endif /* MG_EXTERN_CH_ */

@@ -71,6 +71,23 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
   #xtranslate hb_USubStr( <c>, <n> [, <e>] ) => SubStr( <c>, <n> [, <e>] )
 #endif
 
+#ifdef _OBJECT_
+
+STATIC s_bEvents, s_lEvents := .F.
+
+*-----------------------------------------------------------------------------*
+FUNCTION Set_bEvents ( bBlock )
+*-----------------------------------------------------------------------------*
+
+   IF HB_ISCHAR( bBlock ) .AND. "(" $ bBlock
+      bBlock := hb_ULeft( bBlock, hb_UAt( "(", bBlock ) - 1 )
+   ENDIF
+   s_lEvents := !Empty( bBlock )
+
+RETURN ( s_bEvents := bBlock )
+
+#endif
+
 *-----------------------------------------------------------------------------*
 FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
@@ -103,9 +120,23 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
    STATIC s_Global := { .F., .F., .F., .F., NIL, NIL, 0, 0 }
 
+#ifdef _OBJECT_
+   IF s_lEvents
+      IF HB_ISBLOCK( s_bEvents )     // could be a static function
+         IF !Empty( Eval( s_bEvents, hWnd, nMsg, wParam, lParam ) )
+            RETURN 1
+         ENDIF
+      ELSEIF HB_ISCHAR( s_bEvents )  // Can't be a static function
+         IF !Empty( hb_ExecFromArray( s_bEvents, { hWnd, nMsg, wParam, lParam } ) )
+            RETURN 1
+         ENDIF
+      ENDIF
+   ENDIF
+#endif
+
 #ifdef _TSBROWSE_
-   oGet := GetObjectByHandle( hWnd )
-   IF ISOBJECT( oGet )
+   oGet := GetObjectByHandle ( hWnd )
+   IF ISOBJECT ( oGet )
 
       r := oGet:HandleEvent ( nMsg, wParam, lParam )
 
@@ -1971,7 +2002,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
             ENDIF
 
             IF _HMG_DateTextBoxActive == .T.
- 
+
               _HMG_DateTextBoxActive := .F.
 
             ELSE

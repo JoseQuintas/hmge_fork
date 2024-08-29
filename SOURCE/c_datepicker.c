@@ -67,6 +67,7 @@ LRESULT CALLBACK        OwnPickProc( HWND hbutton, UINT msg, WPARAM wParam, LPAR
 #else
 extern HB_EXPORT double hb_timeStampPack( int iYear, int iMonth, int iDay, int iHour, int iMinutes, int iSeconds, int iMSec );
 #endif
+
 HB_FUNC( INITDATEPICK )
 {
    HWND  hbutton;
@@ -280,10 +281,6 @@ HB_FUNC( GETDATEPICKDATE )
 {
    SYSTEMTIME st;
 
-   st.wYear  = 0;
-   st.wMonth = 0;
-   st.wDay   = 0;
-
    SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st );
 
    hb_retd( st.wYear, st.wMonth, st.wDay );
@@ -292,8 +289,6 @@ HB_FUNC( GETDATEPICKDATE )
 HB_FUNC( GETDATEPICKYEAR )
 {
    SYSTEMTIME st;
-
-   st.wYear = 0;
 
    SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st );
 
@@ -304,8 +299,6 @@ HB_FUNC( GETDATEPICKMONTH )
 {
    SYSTEMTIME st;
 
-   st.wMonth = 0;
-
    SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st );
 
    hmg_ret_WORD( st.wMonth );
@@ -315,8 +308,6 @@ HB_FUNC( GETDATEPICKDAY )
 {
    SYSTEMTIME st;
 
-   st.wDay = 0;
-
    SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st );
 
    hmg_ret_WORD( st.wDay );
@@ -325,8 +316,6 @@ HB_FUNC( GETDATEPICKDAY )
 HB_FUNC( GETDATEPICKHOUR )
 {
    SYSTEMTIME st;
-
-   st.wHour = 0;
 
    if( SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st ) == GDT_VALID )
    {
@@ -342,8 +331,6 @@ HB_FUNC( GETDATEPICKMINUTE )
 {
    SYSTEMTIME st;
 
-   st.wMinute = 0;
-
    if( SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st ) == GDT_VALID )
    {
       hmg_ret_WORD( st.wMinute );
@@ -357,8 +344,6 @@ HB_FUNC( GETDATEPICKMINUTE )
 HB_FUNC( GETDATEPICKSECOND )
 {
    SYSTEMTIME st;
-
-   st.wSecond = 0;
 
    if( SendMessage( hmg_par_raw_HWND( 1 ), DTM_GETSYSTEMTIME, 0, ( LPARAM ) &st ) == GDT_VALID )
    {
@@ -464,7 +449,7 @@ HB_FUNC( DTP_GETDATETIME )
 
 HB_FUNC( SETDATEPICKNULL )
 {
-   SendMessage( hmg_par_raw_HWND( 1 ), DTM_SETSYSTEMTIME, GDT_NONE, ( LPARAM ) 0 );
+   hb_retl( ( BOOL ) SendMessage( hmg_par_raw_HWND( 1 ), DTM_SETSYSTEMTIME, GDT_NONE, ( LPARAM ) 0 ) );
 }
 
 HB_FUNC( SETDATEPICKRANGE )

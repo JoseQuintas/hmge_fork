@@ -3072,23 +3072,23 @@ RETURN NIL
 METHOD LayoutStrip( aBox, nIndex ) CLASS GraphPlus
 
    LOCAL nNumItems := 0
-   LOCAL nPrevAR
-   LOCAL nAR := 2 ^ 20
-   LOCAL nWidth
-   nPrevAr := nAR
+   LOCAL nPrevAR := 2 ^ 20
+   LOCAL nAR
+   //LOCAL nWidth
+   //nPrevAr := nAR
    nNumItems := nNumItems + 1
-   nWidth := ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
+   ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
    nAR := ::ComputeAverageAspectRatio( nIndex, nNumItems )
    DO WHILE ( nAR < nPrevAR ) .AND. ( ( nIndex + nNumItems ) <= hmg_len( ::aTreeMapData ) )
       nPrevAr := nAR
       nNumItems := nNumItems + 1
-      nWidth := ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
+      ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
       nAR := ::ComputeAverageAspectRatio( nIndex, nNumItems )
    ENDDO
    IF nAR >= nPrevAR
       nNumItems := nNumItems - 1
-      nWidth = ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
-      nAR = ::ComputeAverageAspectRatio( nIndex, nNumItems )
+      ::ComputeHorizontalBoxLayout( aBox, nIndex, nNumItems )
+      ::ComputeAverageAspectRatio( nIndex, nNumItems )
       // debug("L.2: backup: numItems="+numItems);
    ENDIF
 

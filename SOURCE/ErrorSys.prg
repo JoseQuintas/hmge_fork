@@ -110,7 +110,7 @@ STATIC FUNCTION DefError( oError )
    ENDIF
 
    HtmArch := Html_ErrorLog()
-   cText   := ErrorMessage( oError )
+   cText := ErrorMessage( oError )
 
    Html_RawText( HtmArch, '<div class="record">' )
    Html_RawText( HtmArch, '<p class="updated">' )
@@ -274,11 +274,10 @@ RETURN
 STATIC PROCEDURE ErrorLog( nHandle, oErr )
 *-----------------------------------------------------------------------------*
    STATIC _lAddError := .T.
-#ifdef __XHARBOUR__
-   LOCAL nCount
-#else
-   LOCAL nScope, nCount, tmp, cName, xValue
+#ifndef __XHARBOUR__
+   LOCAL nScope, tmp, cName
 #endif
+   LOCAL nCount, xValue
 
    IF _lAddError
 
@@ -477,11 +476,11 @@ STATIC PROCEDURE ErrorLog( nHandle, oErr )
       ENDIF
 
 #ifdef __XHARBOUR__
-#ifdef HB_THREAD_SUPPORT
+   #ifdef HB_THREAD_SUPPORT
       Html_LineText( nHandle, "Running threads ...: " + strvalue( oErr:RunningThreads() ) )
       Html_LineText( nHandle, "VM thread ID ......: " + strvalue( oErr:VmThreadId() ) )
       Html_LineText( nHandle, "OS thread ID ......: " + strvalue( oErr:OsThreadId() ) )
-#endif
+   #endif
       HTML_RawText( nHandle, "</details>" )
 #else
       HTML_RawText( nHandle, "</details>" )
@@ -548,7 +547,7 @@ RETURN lOldValue
 *-Author: Antonio Novo
 *-Create/Open the ErrorLog.Htm file
 *-----------------------------------------------------------------------------*
-FUNCTION HTML_ERRORLOG
+FUNCTION HTML_ERRORLOG()
 *-----------------------------------------------------------------------------*
    LOCAL HtmArch
    LOCAL cErrorLogFile := _GetErrorlogFile()
@@ -682,7 +681,7 @@ RETURN
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION __HTML_INSERT_OFFSET()
 *-----------------------------------------------------------------------------*
-RETURN ( ( -1 ) * Len( "</BODY></HTML>" ) )
+RETURN ( -1 ) * Len( "</BODY></HTML>" )
 
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION __HTML_BODY_TEMPLATE()

@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #define _WIN32_IE  0x0501
 
 #include <mgdefs.h>
@@ -244,18 +244,17 @@ HB_FUNC( TREEVIEW_GETSELECTION )
 
    ItemHandle = TreeView_GetSelection( hmg_par_raw_HWND( 1 ) );
 
-   if( ItemHandle != NULL )
+   if( ItemHandle == NULL )
    {
-      hmg_ret_raw_HANDLE( ItemHandle );
+      return;
    }
+
+   hmg_ret_raw_HANDLE( ItemHandle );
 }
 
 HB_FUNC( TREEVIEW_SELECTITEM )
 {
-   HWND      TreeHandle = hmg_par_raw_HWND( 1 );
-   HTREEITEM ItemHandle = hmg_par_raw_TREEITEM( 2 );
-
-   TreeView_SelectItem( TreeHandle, ItemHandle );
+   TreeView_SelectItem( hmg_par_raw_HWND( 1 ), hmg_par_raw_TREEITEM( 2 ) );
 }
 
 void TreeView_FreeMemoryLPARAMRecursive( HWND hWndTV, HTREEITEM ItemHandle )

@@ -3039,7 +3039,7 @@ Static Procedure TileWnd()
 
    DO EVENTS
    IF !Empty( nWndOpened )
-	SwitchToThisWindow( GetFormHandle( Atail(aForms) ) )
+		SwitchToThisWindow( GetFormHandle( Atail(aForms) ) )
    ENDIF
 
 Return
@@ -3053,9 +3053,6 @@ Static Procedure SetThisWindow( nActiveWnd )
    IF _IsControlDefined( "Browse_1", cForm )
 	IF !IsWindowVisible( hWnd )
 		DoMethod( cForm, 'Show' )
-	ENDIF
-	IF IsIconic( hWnd )
-		_Restore( hWnd )
 	ENDIF
 	SwitchToThisWindow( hWnd, .T. )
    ENDIF

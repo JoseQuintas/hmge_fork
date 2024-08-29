@@ -33,10 +33,6 @@ Procedure SaveParameter(cSection, cEntry, uValue)
 return
 
 *-----------------------------------------------------------------------------*
-DECLARE DLL_TYPE_BOOL SwitchToThisWindow( DLL_TYPE_LONG hWnd, DLL_TYPE_BOOL lRestore ) ;
-	IN USER32.DLL
-
-*-----------------------------------------------------------------------------*
 Function _GetIniSections()
 *-----------------------------------------------------------------------------*
 

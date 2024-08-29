@@ -62,6 +62,7 @@ typedef wchar_t HB_WCHAR;
 #endif
 #define EM_GETCUEBANNER  ( ECM_FIRST + 2 )
 #endif
+
 HB_FUNC( GETCUEBANNERTEXT )
 {
    HWND hwnd = hmg_par_raw_HWND( 1 );

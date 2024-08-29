@@ -72,6 +72,12 @@ PROCEDURE Main()
                          "Spinner_2 Wrap style: " + cValToChar( Form_Main.Spinner_2.Wrap ) + CRLF + ;
                          "Spinner_2 Horizontal style: " + cValToChar( Form_Main.Spinner_2.Horizontal ) )
 
+      @ 290,10 BUTTON Button_8 ;
+         CAPTION "Move spinners" ;
+         ACTION ( Form_Main.Spinner_1.Col := (Form_Main.Spinner_1.Col) + 30, ;
+                  Form_Main.Spinner_2.Col := (Form_Main.Spinner_1.Col), ;
+                  Form_Main.Spinner_1.ReDraw, Form_Main.Spinner_2.ReDraw )
+
    END WINDOW
 
    CENTER WINDOW Form_Main
