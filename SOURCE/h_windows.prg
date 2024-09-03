@@ -2746,15 +2746,46 @@ RETURN iif( i > 0, _HMG_aFormNames [ i ], "" )
 *-----------------------------------------------------------------------------*
 FUNCTION MsgDebug ( ... )
 *-----------------------------------------------------------------------------*
-   LOCAL aParams := hb_AParams()
-   LOCAL nCnt := Len( aParams )
-   LOCAL cMsg
+   LOCAL nCnt := PCount()
+   LOCAL cMsg, xVal
+   LOCAL i
 
    cMsg := "Called from: " + ProcName( 1 ) + "(" + hb_ntos( ProcLine( 1 ) ) + ") --> " + ProcFile( 1 ) + CRLF + CRLF
 
-   AEval( aParams, {| e, i | cMsg += hb_ValToExp( e ) + iif( i < nCnt, ", ", "" ) } )
+   FOR i := 1 TO nCnt
+      xVal := PValue( i )
+      IF ISOBJECT( xVal )
+#ifdef _OBJECT_
+         IF _HMG_lOOPEnabled
+            xVal := _o2log( xVal, , '>>> ', .T., .T. ) + CRLF
+         ELSE
+#endif
+            xVal := "O:" + xVal:ClassName
+#ifdef _OBJECT_
+         ENDIF
+#endif
+      ELSE
+         xVal := hb_ValToExp( xVal )
+      ENDIF
+      cMsg += xVal + iif( i < nCnt, ", ", "" )
+   NEXT
 
-   MsgInfo( cMsg, "DEBUG INFO" )
+   IF _HMG_lOnErrorStop
+      IF _HMG_BeginWindowActive
+         i := _HMG_ActiveFormName
+      ENDIF
+      xVal := GetActiveWindow()
+
+      AlertInfo( cMsg, "DEBUG INFO", "_dbgicon" )
+
+      SetFocus( xVal )
+      IF ISCHAR( i )
+         _HMG_BeginWindowActive := .T.
+         _HMG_ActiveFormName := i
+      ENDIF
+   ELSE
+      MsgInfo( cMsg, "DEBUG INFO", 32001 )
+   ENDIF
 
 RETURN cMsg
 
@@ -3045,7 +3076,6 @@ STATIC PROCEDURE EfeitoLabel ( cTxt )
 
 RETURN
 
-#ifdef _HMG_COMPAT_
 *-----------------------------------------------------------------------------*
 FUNCTION _HMG_DialogBoxProperty ( nRow, nCol, lCenter, Form, lSet, hIcon )
 *-----------------------------------------------------------------------------*
@@ -3075,6 +3105,7 @@ FUNCTION _HMG_DialogBoxProperty ( nRow, nCol, lCenter, Form, lSet, hIcon )
 
 RETURN NIL
 
+#ifdef _HMG_COMPAT_
 *-----------------------------------------------------------------------------*
 FUNCTION _HMG_DialogBoxProcedure()
 *-----------------------------------------------------------------------------*

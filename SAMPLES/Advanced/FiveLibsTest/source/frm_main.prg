@@ -7,13 +7,13 @@ frm_main - dialog for each data and main use of class
 #include "frm_class.ch"
 #include "inkey.ch"
 
-FUNCTION frm_main( cDBF, aAllSetup, lModal )
+FUNCTION frm_main( cDBF, aAllSetup, lModal, xParent )
 
    LOCAL oFrm, nPos
 
    hb_Default( @lModal, .F. )
+
 #ifdef HBMK_HAS_GTWVG
-   hb_gtReload( "WVG" )  // do not use WGU
    SetMode(30,100)
    SetColor("W/B")
    CLS
@@ -21,10 +21,11 @@ FUNCTION frm_main( cDBF, aAllSetup, lModal )
 
    oFrm := frm_Class():New()
    oFrm:cFileDBF   := cDBF
+   oFrm:xParent    := xParent
 #ifdef HBMK_HAS_GTWVG
    oFrm:xDlg := wvgSetAppWindow()
 #endif
-   oFrm:cTitle     := gui_LibName() + " - " + cDBF
+   oFrm:cTitle     := cDBF
    oFrm:cOptions   := "IEDP"
    oFrm:aAllSetup  := aAllSetup
    oFrm:lModal     := lModal

@@ -200,13 +200,16 @@ FUNCTION SIDInfo( cUserAccount )
 
    LOCAL oWmi, oProc
    LOCAL cInfo
-   LOCAL cUname := Myuser()
+   LOCAL cFullName := Myuser(.T.)
 
    oWmi := WmiService()
 
    FOR EACH oProc IN oWmi:ExecQuery( "SELECT * FROM Win32_Account WHERE Name = '" + cUserAccount + "'" )
       cInfo := ""
-      cInfo += "UserName: " + if( Len( oProc:Name ) < Len( cUname ), cUname, oProc:Name ) + CRLF
+      cInfo += "UserName: " + oProc:Name + CRLF
+      if !empty( cFullname )
+         cInfo += "Full UserName: "+  cFullName + CRLF
+      Endif
       cInfo += "SID: " + oProc:SID + CRLF
       cInfo += "SIDtype: " + TRIM_NUMBER( oProc:SIDtype ) + CRLF
       cInfo += "Domain: " + oProc:Domain + CRLF
@@ -219,6 +222,7 @@ FUNCTION SIDInfo( cUserAccount )
    NEXT
 
 RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION WMIService()
@@ -244,22 +248,24 @@ STATIC FUNCTION IsWinXPHome()
 RETURN "Home" $ AVER[ 4 ]
 
 *-----------------------------------------------------------------------------*
-FUNCTION MyUser()
+FUNCTION MyUser( lOnlyfull )
 *-----------------------------------------------------------------------------*
-   LOCAL hResult, cResult, aRtv
-   LOCAL cCommand := "WMIC.EXE USERACCOUNT GET NAME"
-   LOCAL cUserName := GetUsername()
+   LOCAL hResult, cResult, npos
+   LOCAL cUserName := GetUserName()
+   LOCAL cCommand := "wmic.exe useraccount where name='" + cUserName + "' get fullname"
+
+   DEFAULT lOnlyfull to .F.
 
    hResult := SysCmd( cCommand, @cResult )
 
    IF hResult != -1
-      aRtv := hb_ATokens( cResult, " " )
-      IF Len ( artv ) > 6
-         IF Len( cUsername ) < Len ( aRtv[ 6 ] )
-            cUsername := Artv[ 6 ]
-         ENDIF
-      ENDIF
-   ENDIF
+      npos := At( " ", cResult ) + 1
+      IF npos > 1     // the full name is there
+         cUsername := SubStr( cResult, npos )
+      Else
+         cUsername := iif( lOnlyFull, "", cUserName )
+      Endif
+   Endif
 
 RETURN cUsername
 

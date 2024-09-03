@@ -6,8 +6,6 @@ lib_hmge - HMG Extended source selected by lib.prg
 #include "hmg.ch"
 #include "i_winuser.ch"
 
-STATIC nWindow := 0
-
 FUNCTION gui_Init()
 
 #ifdef DLGAUTO_AS_LIB
@@ -56,14 +54,14 @@ FUNCTION gui_DlgMenu( xDlg, aMenuList, aAllSetup, cTitle )
 
    RETURN Nil
 
-FUNCTION gui_ButtonCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, cCaption, cResName, bAction )
+FUNCTION gui_ButtonCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, cCaption, cResName, bAction )
 
    IF Empty( xControl )
       xControl := gui_NewName( "BTN" )
    ENDIF
 
    DEFINE BUTTONEX ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       ROW         nRow
       COL         nCol
       WIDTH       nWidth
@@ -82,6 +80,8 @@ FUNCTION gui_ButtonCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, cCaption
       FLAT       .T.
       NOXPSTYLE  .T.
    END BUTTONEX
+
+   (xDlg)
 
    RETURN Nil
 
@@ -131,9 +131,9 @@ FUNCTION gui_Browse( xDlg, xParent, xControl, nRow, nCol, nWidth, ;
    IF Len( aKeyDownList ) != 0
       FOR EACH aThisKey IN aKeyDownList
          AAdd( ::aControlList, EmptyFrmClassItem() )
-         Atail( ::aControlList )[ CFG_CTLTYPE ] := TYPE_BUTTON
+         Atail( ::aControlList )[ CFG_CTLTYPE ] := TYPE_BUTTON_BRW
          Atail( ::aControlList )[ CFG_FCONTROL ] := gui_NewName( "BTNBRW" )
-         gui_ButtonCreate( xDlg, @Atail( ::aControlList )[ CFG_FCONTROL ], ;
+         gui_ButtonCreate( xDlg, xParent, @Atail( ::aControlList )[ CFG_FCONTROL ], ;
          nRow - APP_LINE_SPACING, 200 + aThisKey:__EnumIndex() * APP_LINE_HEIGHT, APP_LINE_HEIGHT - 2, APP_LINE_HEIGHT - 2, "", ;
          iif( aThisKey[1] == VK_INSERT, "ICOPLUS", ;
          iif( aThisKey[1] == VK_DELETE, "ICOTRASH", ;
@@ -192,14 +192,14 @@ FUNCTION gui_BrowseRefresh( xDlg, xControl )
 
    RETURN Nil
 
-FUNCTION gui_CheckboxCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight )
+FUNCTION gui_CheckboxCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight )
 
    IF Empty( xControl )
       xControl := gui_NewName( "CHK" )
    ENDIF
 
    DEFINE CHECKBOX ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       Row nRow
       COL nCol
       WIDTH nWidth
@@ -207,37 +207,39 @@ FUNCTION gui_CheckboxCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight )
       CAPTION ""
    END CHECKBOX
 
+   (xDlg)
+
    RETURN Nil
 
-FUNCTION gui_ComboCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, aList )
+FUNCTION gui_ComboCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, aList, xValue )
 
    IF Empty( xControl )
       xControl := gui_NewName( "CBO" )
    ENDIF
 
    DEFINE COMBOBOX ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       ROW nRow
       COL nCol
-      VALUE 1
+      VALUE xValue
       WIDTH nWidth
       // do not define height, it can limit list size to zero
       // HEIGHT nHeight
       ITEMS aList
    END COMBOBOX
 
-   ( nHeight )
+   (nHeight); (xDlg)
 
    RETURN Nil
 
-FUNCTION gui_SpinnerCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, nValue, aList )
+FUNCTION gui_SpinnerCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, nValue, aList, Self )
 
    IF Empty( xControl )
       xControl := gui_NewName( "SPI" )
    ENDIF
 
    DEFINE SPINNER ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       ROW nRow
       COL nCol
       VALUE nValue
@@ -247,11 +249,12 @@ FUNCTION gui_SpinnerCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, nValue,
       RANGEMIN aList[ 1 ]
       RANGEMAX aList[ 2 ]
    END SPINNER
-   ( nHeight )
+
+   ( nHeight );(Self);(xDlg)
 
    RETURN Nil
 
-FUNCTION gui_DatePickerCreate( xDlg, xControl, ;
+FUNCTION gui_DatePickerCreate( xDlg, xParent, xControl, ;
             nRow, nCol, nWidth, nHeight, dValue )
 
    IF Empty( xControl )
@@ -259,7 +262,7 @@ FUNCTION gui_DatePickerCreate( xDlg, xControl, ;
    ENDIF
 
    DEFINE DATEPICKER ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       ROW	nRow
       COL	nCol
       VALUE dValue
@@ -274,7 +277,7 @@ FUNCTION gui_DatePickerCreate( xDlg, xControl, ;
       TRAILINGFONTCOLOR PURPLE
    END DATEPICKER
 
-   (nWidth);(nHeight)
+   (nWidth);(nHeight);(xDlg)
 
    RETURN Nil
 
@@ -294,7 +297,7 @@ FUNCTION gui_DialogClose( xDlg )
 
    RETURN Nil
 
-FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lModal )
+FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lModal, lMain )
 
    IF Empty( xDlg )
       xDlg := gui_NewName( "DLG" )
@@ -305,8 +308,10 @@ FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lMo
    ENDIF
 
    hb_Default( @lModal, .T. )
+   hb_Default( @lMain, .F. )
+   cTitle += " (" + gui_LibName() + ")"
 
-   IF ++nWindow == 1
+   IF lMain
       DEFINE WINDOW ( xDlg ) ;
          AT nCol, nRow ;
          WIDTH nWidth ;
@@ -357,7 +362,7 @@ FUNCTION gui_IsCurrentFocus( xDlg, xControl )
 
    RETURN lOk
 
-FUNCTION gui_LabelCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue, lBorder, nFontSize )
+FUNCTION gui_LabelCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, xValue, lBorder, nFontSize )
 
    IF Empty( xControl )
       xControl := gui_NewName( "LBL" )
@@ -367,7 +372,7 @@ FUNCTION gui_LabelCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue, l
    hb_Default( @nFontSize, APP_FONTSIZE_NORMAL )
 
    DEFINE LABEL ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       COL nCol
       ROW nRow
       WIDTH nWidth
@@ -381,11 +386,7 @@ FUNCTION gui_LabelCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue, l
       ENDIF
    END LABEL
 
-   RETURN Nil
-
-FUNCTION gui_LabelSetValue( xDlg, xControl, xValue )
-
-   SetProperty( xDlg, xControl, "VALUE", xValue )
+   (xDlg)
 
    RETURN Nil
 
@@ -393,14 +394,14 @@ FUNCTION gui_LibName()
 
    RETURN "HMGE"
 
-FUNCTION gui_MLTextCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue )
+FUNCTION gui_MLTextCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, xValue )
 
    IF Empty( xControl )
       xControl := gui_NewName( "MLTXT" )
    ENDIF
 
    DEFINE EDITBOX ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       COL nCol
       ROW nRow
       WIDTH nWidth - 30 /* scrollbar */
@@ -409,6 +410,8 @@ FUNCTION gui_MLTextCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, xValue )
       FONTNAME PREVIEW_FONTNAME
       TOOLTIP 'EditBox'
    END EDITBOX
+
+   (xDlg)
 
    RETURN Nil
 
@@ -445,19 +448,21 @@ FUNCTION gui_Statusbar( xDlg, xControl )
 
    RETURN Nil
 
-FUNCTION gui_TabCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight )
+FUNCTION gui_TabCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight )
 
    IF Empty( xControl )
       xControl := gui_NewName( "TAB" )
    ENDIF
 
    DEFINE TAB ( xControl ) ;
-      PARENT ( xDlg ) ;
+      PARENT ( xParent ) ;
       AT nRow, nCol;
       WIDTH nWidth ;
       HEIGHT nHeight ;
       HOTTRACK
       // BACKCOLOR { 226, 220, 213 }
+
+   (xDlg)
 
    RETURN Nil
 
@@ -473,12 +478,12 @@ FUNCTION gui_TabNavigate( xDlg, xTab, aList )
 
    RETURN Nil
 
-FUNCTION gui_TabPageBegin( xDlg, xControl, xPage, nPageCount, cText )
+FUNCTION gui_TabPageBegin( xDlg, xParent, xControl, xPage, nPageCount, cText )
 
    PAGE ( cText ) IMAGE "bmpfolder"
 
    xPage := xDlg
-   (xDlg); (xControl); (cText); (nPageCount)
+   (xDlg); (xControl); (cText); (nPageCount); (xParent)
 
    RETURN Nil
 
@@ -490,7 +495,7 @@ FUNCTION gui_TabPageEnd( xDlg, xControl )
 
    RETURN Nil
 
-FUNCTION gui_TextCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, ;
+FUNCTION gui_TextCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, ;
             xValue, cPicture, nMaxLength, bValid, bAction, cImage, ;
             aItem, Self, lPassword )
 
@@ -501,7 +506,7 @@ FUNCTION gui_TextCreate( xDlg, xControl, nRow, nCol, nWidth, nHeight, ;
    hb_Default( @lPassword, .F. )
 
    DEFINE GETBOX ( xControl )
-      PARENT ( xDlg )
+      PARENT ( xParent )
       ROW nRow
       COL nCol
       HEIGHT nHeight

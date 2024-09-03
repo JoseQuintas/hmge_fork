@@ -249,6 +249,10 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       MsgMiniGuiError( "Window: " + ParentFormName + " is not defined." )
    ENDIF
 
+   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+      ControlName := HMG_GetUniqueName()
+   ENDIF
+
    IF _IsControlDefined( ControlName, ParentFormName ) .AND. .NOT. _HMG_DialogInMemory
       MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentFormName + " already defined." )
    ENDIF
@@ -983,8 +987,11 @@ CLASS TSBrowse FROM TControl
    DATA nClrSeleBack, nClrSeleFore // selected cell no focused
    DATA nClrOrdeBack, nClrOrdeFore // order control column colors
    DATA nClrSpcHdBack, nClrSpcHdFore, nClrSpcHdActive // special headers colors
+
    DATA nClrSelectorHdBack // special selector header background color
    DATA nClrSelectorFtBack // special selector footer background color
+   DATA lClrSelectorHdBack AS LOGICAL INIT .T.
+
    DATA nClrLine // grid line color
    DATA nColOrder AS NUMERIC // compatibility with TCBrowse
    DATA nColPos AS NUMERIC INIT 0 // grid column position
@@ -3659,8 +3666,12 @@ METHOD DrawHeaders( lFooters, lDrawCell ) CLASS TSBrowse
             IF ( nClrBack := iif( ::nColOrder == nI, oColumn:nClrOrdeBack, oColumn:nClrHeadBack ) ) == NIL
                nClrBack := iif( ::nColOrder == nI, nClrOrdeBack, nClrHeadBack )
             ENDIF
-         ELSE
-            nClrBack := iif( ::nClrSelectorHdBack == NIL, ATail( ::aColumns ):nClrHeadBack, ::nClrSelectorHdBack )
+          ELSEIF ! ::lClrSelectorHdBack
+             nClrBack := oColumn:nClrHeadBack
+          ELSEIF ::nClrSelectorHdBack != NIL
+             nClrBack := ::nClrSelectorHdBack
+          ELSE
+             nClrBack := ATail( ::aColumns ):nClrHeadBack
          ENDIF
 
          nClrBack := ::GetValProp( nClrBack, nClrBack, nJ )
@@ -3788,7 +3799,13 @@ METHOD DrawHeaders( lFooters, lDrawCell ) CLASS TSBrowse
          nClrFore := ::GetValProp( nClrFore, nClrFore, nJ )
 
          IF nI == nBegin .AND. ::lSelector
-            nClrBacks := iif( ::lDrawSpecHd, ::nClrSpcHdBack, nClrHeadBack )
+            IF ! ::lClrSelectorHdBack
+               nClrBacks := oColumn:nClrSpcHdBack
+            ELSEIF ::nClrSelectorHdBack != NIL
+               nClrBacks := ::nClrSelectorHdBack
+            ELSE
+               nClrBacks := nClrHeadBack
+            ENDIF
          ELSE
             nClrBacks := iif( ::nPhantom == -1, ATail( ::aColumns ):nClrSpcHdBack, nClrPane )
          ENDIF
@@ -3925,8 +3942,12 @@ METHOD DrawHeaders( lFooters, lDrawCell ) CLASS TSBrowse
 
          IF !( nJ == 1 .AND. ::lSelector ) // JP
             nClrBack := iif( oColumn:nClrFootBack != NIL, oColumn:nClrFootBack, nClrFootBack )
+         ELSEIF ! ::lClrSelectorHdBack
+            nClrBack := oColumn:nClrFootBack
          ELSEIF ::nClrSelectorFtBack != NIL
             nClrBack := ::nClrSelectorFtBack
+         ELSEIF ::nClrSelectorHdBack != NIL
+            nClrBack := ::nClrSelectorHdBack
          ELSE
             nClrBack := ATail( ::aColumns ):nClrFootBack
          ENDIF

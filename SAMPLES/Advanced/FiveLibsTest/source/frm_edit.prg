@@ -1,5 +1,6 @@
 /*
 frm_Edit - Create textbox/label on dialog
+called from frmclass
 */
 
 #include "hbclass.ch"
@@ -24,7 +25,7 @@ FUNCTION frm_Edit( Self )
    /* create tab, if use tab */
    IF ::lWithTab
 
-      gui_TabCreate( ::xDlg, @xTab, 70, 5, APP_DLG_WIDTH - 19, APP_DLG_HEIGHT - 75 )
+      gui_TabCreate( ::xDlg, ::xDlg, @xTab, 70, 5, APP_DLG_WIDTH - 19, APP_DLG_HEIGHT - 75 )
 
       AAdd( ::aControlList, EmptyFrmClassItem() )
       Atail( ::aControlList )[ CFG_CTLTYPE ]  := TYPE_TAB
@@ -41,7 +42,7 @@ FUNCTION frm_Edit( Self )
       nHeight := 1
       DO CASE
       CASE hb_AScan( { TYPE_TAB, TYPE_TABPAGE, TYPE_BUTTON, TYPE_ADDBUTTON, ;
-         TYPE_BUG_HWGUI, TYPE_BUG_HMGE }, { | e | e == aItem[ CFG_CTLTYPE ] } ) != 0
+         TYPE_BUG_GET, TYPE_BUTTON_BRW }, { | e | e == aItem[ CFG_CTLTYPE ] } ) != 0
          /* these controls do not need additional code */
          LOOP
 
@@ -65,9 +66,9 @@ FUNCTION frm_Edit( Self )
 
       CASE aItem[ CFG_CTLTYPE ] == TYPE_SPINNER .OR. aItem[ CFG_CTLTYPE ] == TYPE_DATEPICKER
          IF ::nLayout == 1 .OR. ::nLayout == 2
-            nLen := ( Max( 15, Len( aItem[ CFG_CAPTION ] ) ) + Max( 6, aItem[ CFG_FLEN ] + 3 ) ) * 12
+            nLen := ( Max( 5, Len( aItem[ CFG_CAPTION ] ) ) + Max( 15, aItem[ CFG_FLEN ] + 3 ) ) * 12
          ELSE
-            nLen := ( Max( 6, Max( Len( aItem[ CFG_CAPTION ] ), aItem[ CFG_FLEN ] ) ) + 3 ) * 12
+            nLen := ( Max( 5, Max( Len( aItem[ CFG_CAPTION ] ), Max( 15, aItem[ CFG_FLEN ] ) ) ) + 3 ) * 12
          ENDIF
 
       CASE aItem[ CFG_CTLTYPE ] == TYPE_TEXT
@@ -106,7 +107,7 @@ FUNCTION frm_Edit( Self )
          ENDIF
          nPageCount += 1
 
-         gui_TabPageBegin( ::xDlg, xTab, @xTabPage, nPageCount, "Page" + Str( nPageCount, 2 ) )
+         gui_TabPageBegin( ::xDlg, ::xDlg, xTab, @xTabPage, nPageCount, "Page" + Str( nPageCount, 2 ) )
 
          AAdd( ::aControlList, EmptyFrmClassItem() )
          Atail( ::aControlList )[ CFG_CTLTYPE ]  := TYPE_TABPAGE
@@ -135,15 +136,15 @@ FUNCTION frm_Edit( Self )
          /* if editable browse, keys to do that */
          IF aItem[ CFG_BRWEDIT ]
             aKeyDownList := { ;
-               { VK_INSERT, { || ::BrowseAction( aItem, VK_INSERT ) } }, ;
-               { VK_DELETE, { || ::BrowseAction( aItem, VK_DELETE ) } }, ;
-               { VK_RETURN, { || ::BrowseAction( aItem, VK_RETURN ) } } }
+               { VK_INSERT, { || ::BrowseClick( aItem, VK_INSERT ) } }, ;
+               { VK_DELETE, { || ::BrowseClick( aItem, VK_DELETE ) } }, ;
+               { VK_RETURN, { || ::BrowseClick( aItem, VK_RETURN ) } } }
          ELSE
             aKeyDownList := {}
          ENDIF
          nRow2 := nRow + APP_LINE_SPACING
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
             nRow + 2, nCol, nLen * 12, APP_LINE_HEIGHT, aItem[ CFG_BRWTITLE ], .F., APP_FONTSIZE_SMALL )
 
          gui_Browse( ::xDlg, xTabPage, @aItem[ CFG_FCONTROL ], nRow2, 5, ;
@@ -162,11 +163,11 @@ FUNCTION frm_Edit( Self )
             nCol2 := nCol
          ENDIF
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
             nRow + 2, nCol, Len( aItem[ CFG_CAPTION ] ) * 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
-         gui_ComboCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
-            nRow2, nCol2, Max( 10, Len( aItem[ CFG_CAPTION ] ) ) * 12, APP_LINE_HEIGHT, ( aItem[ CFG_COMBOLIST ] ) )
+         gui_ComboCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+            nRow2, nCol2, Max( 10, Len( aItem[ CFG_CAPTION ] ) ) * 12, APP_LINE_HEIGHT, aItem[ CFG_COMBOLIST ], aItem[ CFG_VALUE ] )
 
          nCol += nLen
 
@@ -179,11 +180,11 @@ FUNCTION frm_Edit( Self )
             nCol2 := nCol
          ENDIF
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
-            nRow + 2, nCol, nLen * 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+            nRow + 2, nCol, Len( aItem[ CFG_CAPTION ] ) * 12 + 30, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
-         gui_CheckboxCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
-            nRow2, nCol2, nLen, APP_LINE_HEIGHT )
+         gui_CheckboxCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+            nRow2, nCol2, 5 * 12, APP_LINE_HEIGHT )
 
          nCol += nLen
 
@@ -196,11 +197,11 @@ FUNCTION frm_Edit( Self )
             nCol2 := nCol
          ENDIF
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
-            nRow + 2, nCol, nLen * 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+            nRow + 2, nCol, Len( aItem[ CFG_CAPTION ] ) * 12 + 30, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
-         gui_DatePickerCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
-            nRow2, nCol2, nLen, APP_LINE_HEIGHT, aItem[ CFG_VALUE ] ) // aItem[ CFG_FPICTURE ] )
+         gui_DatePickerCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+            nRow2, nCol2, 10 * 12, APP_LINE_HEIGHT, aItem[ CFG_VALUE ] ) // aItem[ CFG_FPICTURE ] )
 
          nCol += nLen
 
@@ -213,21 +214,22 @@ FUNCTION frm_Edit( Self )
             nCol2 := nCol
          ENDIF
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
             nRow + 2, nCol, Len( aItem[ CFG_CAPTION ] ) * 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
-         gui_SpinnerCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
-            nRow2, nCol2, Max( 6, Len( aItem[ CFG_CAPTION ] ) ) * 12, APP_LINE_HEIGHT, @aItem[ CFG_VALUE ], aItem[ CFG_SPINNER ] )
+         gui_SpinnerCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+            nRow2, nCol2, Max( 6, Len( aItem[ CFG_CAPTION ] ) ) * 12, APP_LINE_HEIGHT, @aItem[ CFG_VALUE ], ;
+            aItem[ CFG_SPINNER ], Self )
 
          nCol += nLen
 
       CASE aItem[ CFG_CTLTYPE ] == TYPE_MLTEXT // multiline
          nRow2 := nRow + APP_LINE_SPACING
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
             nRow + 2, nCol, nLen * 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
-         gui_MLTextCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+         gui_MLTextCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
             nRow2, 5, APP_DLG_WIDTH - 30, nHeight * APP_LINE_HEIGHT, @aItem[ CFG_VALUE ] )
 
          nRow += ( ( nHeight + iif( ::nLayout < 3, 1, 2 ) ) * APP_LINE_SPACING  )
@@ -241,11 +243,11 @@ FUNCTION frm_Edit( Self )
             nCol2 := nCol
          ENDIF
 
-         gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
+         gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_CCONTROL ], ;
             nRow + 2, nCol, Len( aItem[ CFG_CAPTION ] ) * 12 + 12, APP_LINE_HEIGHT, aItem[ CFG_CAPTION ], .F., APP_FONTSIZE_SMALL )
 
          aItem[ CFG_ACTION ] := { || ::Browse( ::xDlg, @aItem[ CFG_FCONTROL ], iif( aItem[ CFG_ISKEY ], ::cFileDbf, aItem[ CFG_VTABLE ] ) ) }
-         gui_TextCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
+         gui_TextCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
             nRow2, nCol2, Max( aItem[ CFG_FLEN ], 5 ) * 12 + 12, APP_LINE_HEIGHT, ;
             @aItem[ CFG_VALUE ], aItem[ CFG_FPICTURE ], aitem[ CFG_FLEN ], ;
             { || ::Validate( aItem ) }, ;
@@ -255,7 +257,7 @@ FUNCTION frm_Edit( Self )
 
          IF ! Empty( aItem[ CFG_VTABLE ] ) .AND. ! Empty( aItem[ CFG_VSHOW ] )
 
-            gui_LabelCreate( iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_VCONTROL ], ;
+            gui_LabelCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_VCONTROL ], ;
                nRow2, nCol2 + ( Max( aItem[ CFG_FLEN ], 5 ) * 12 + 42 ), aItem[ CFG_VLEN ] * 12, ;
                APP_LINE_HEIGHT, Space( aItem[ CFG_VLEN ] ), .T., APP_FONTSIZE_NORMAL )
 
@@ -271,13 +273,13 @@ FUNCTION frm_Edit( Self )
       ENDIF
       lFirst := .F.
    NEXT
-   IF gui_LibName() == "HWGUI"
+   IF gui_LibName() $ "FIVEWIN,HWGUI"
       /* dummy textbox to works last valid */
       AAdd( ::aControlList, EmptyFrmClassItem() )
-      Atail( ::aControlList )[ CFG_CTLTYPE ] := TYPE_BUG_HWGUI
+      Atail( ::aControlList )[ CFG_CTLTYPE ] := TYPE_BUG_GET
 
-      gui_TextCreate( ::xDlg, @Atail( ::aControlList )[ CFG_FCONTROL ], ;
-         nRow, nCol, 0, 0, "", "", 0, { || .T. },,,@::aControlList[ CFG_FCONTROL ], Self )
+      gui_TextCreate( ::xDlg, ::xDlg, @Atail( ::aControlList )[ CFG_FCONTROL ], ;
+         nRow, nCol, 0, 0, " ", "", 0, { || .T. },,,@Atail( ::aControlList )[ CFG_FCONTROL ], Self )
 
    ENDIF
    IF ::lWithTab
@@ -286,7 +288,7 @@ FUNCTION frm_Edit( Self )
 
       gui_TabNavigate( ::xDlg, xTab, aList )
 
-      gui_TabEnd( xTab, nPageCount )
+      gui_TabEnd( ::xDlg, xTab, nPageCount )
 
    ENDIF
 

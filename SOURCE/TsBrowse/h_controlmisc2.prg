@@ -347,11 +347,16 @@ RETURN NIL
 FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 
    LOCAL oBrw, aTmp, aBrush, aHead, aField, aFoot, aColor
-   LOCAL cForm := _HMG_ThisFormName, lSpecHd, bInit, bEnd
-   LOCAL hForm := GetFormHandle( cForm )
+   LOCAL cForm, hForm, lSpecHd, bInit, bEnd
    LOCAL i, j
 
    DEFAULT oParam := oHmgData()
+   DEFAULT oParam:cForm := oParam:cFormName
+   DEFAULT oParam:cForm := _HMG_ThisFormName
+
+   cForm := oParam:cForm
+   hForm := GetFormHandle( cForm )
+
    DEFAULT oParam:lRowPosAtRec := .T.
    DEFAULT cBrw := oParam:cBrw, uAlias := oParam:uAlias
    DEFAULT cBrw := "oBrw", uAlias := Alias()
@@ -362,7 +367,12 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DEFAULT lSpecHd := oParam:lDrawSpecHd
    DEFAULT lSpecHd := .F.
 
-   IF HB_ISCHAR( uAlias ) ; dbSelectArea( uAlias )
+   DEFAULT oParam:bDblClick  := oParam:bOnDblClick
+   DEFAULT oParam:bGotFocus  := oParam:bOnGotFocus
+   DEFAULT oParam:bLostFocus := oParam:bOnLostFocus
+   DEFAULT oParam:bChange    := oParam:bOnChange
+
+   IF HB_ISCHAR( uAlias ) .AND. ! "." $ uAlias ; dbSelectArea( uAlias )
    ENDIF
 
    IF HB_ISARRAY( oParam:aFont )
@@ -515,33 +525,30 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 #endif
 
    DEFINE TBROWSE &cBrw OBJ oBrw AT nY, nX WIDTH nW HEIGHT nH CELL ;
-         HEADERS aHead ;
-         COLSIZES oParam:aSize ;
-         PICTURE oParam:aPict ;
-         ALIAS uAlias ;
-         JUSTIFY oParam:aAlign ;
-         SELECTOR oParam:uSelector ;
-         COLUMNS aField ;
-         COLNAMES oParam:aName ;
-         FOOTERS aFoot ;
-         COLNUMBER oParam:aNumber ;
-         COLEDIT oParam:aEdit ;
-         COLADJUST oParam:lAdjust ;
-         VALUE oParam:nValue ;
-         FONT oParam:aFont ;
-         TOOLTIP oParam:cToolTip ;
-         BACKCOLOR oParam:aBColor ;
-         FONTCOLOR oParam:aFColor ;
-         ON GOTFOCUS oParam:bOnGotFocus ;
-         ON CHANGE oParam:bOnChange ;
-         ON LOSTFOCUS oParam:bOnLostFocus ;
-         ON DBLCLICK oParam:bOnDblClick ;
-         COLORS aColor ;
-         BRUSH aBrush ;
-         ON HEADCLICK oParam:aHeadClick ;
-         LOADFIELDS ;
-         FIXED COLSEMPTY GOTFOCUSSELECT LOCK ;
-         ON INIT {| ob | ob:Cargo := oHmgData(), ;
+      PARENT &(cForm) ;
+      HEADERS aHead ;
+      COLSIZES oParam:aSize ;
+      PICTURE oParam:aPict ;
+      ALIAS uAlias ;
+      JUSTIFY oParam:aAlign ;
+      SELECTOR oParam:uSelector ;
+      COLUMNS aField ;
+      COLNAMES oParam:aName ;
+      FOOTERS aFoot ;
+      COLNUMBER oParam:aNumber ;
+      COLEDIT oParam:aEdit ;
+      COLADJUST oParam:lAdjust ;
+      VALUE oParam:nValue ;
+      FONT oParam:aFont ;
+      TOOLTIP oParam:cToolTip ;
+      BACKCOLOR oParam:aBColor ;
+      FONTCOLOR oParam:aFColor ;
+      COLORS aColor ;
+      BRUSH aBrush ;
+      ON HEADCLICK oParam:aHeadClick ;
+      LOADFIELDS ;
+      FIXED COLSEMPTY GOTFOCUSSELECT LOCK ;
+      ON INIT {| ob | ob:Cargo := oHmgData(), ;
          ob:nColOrder := 0, ;
          ob:lNoHScroll := .T., ;
          ob:lNoGrayBar := .F., ;
@@ -583,32 +590,20 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
          :bLDblClick := {| p1, p2, p3, ob | p1 := p2 := p3, ob:PostMsg( WM_KEYDOWN, VK_RETURN, 0 ) }
       ELSEIF HB_ISBLOCK( oParam:bLDblClick ) // :bLDblClick := {|p1,p2,p3,ob| ... }
          :bLDblClick := oParam:bLDblClick
-      ELSEIF HB_ISBLOCK( oParam:bDblClick ) // :bLDblClick := {|p1,p2,p3,ob| ... }
+      ELSEIF HB_ISBLOCK( oParam:bDblClick )  // :bLDblClick := {|p1,p2,p3,ob| ... }
          :bLDblClick := oParam:bDblClick
       ENDIF
 
       IF HB_ISBLOCK( oParam:bRClicked )
-         :bRClicked := oParam:bRClicked // :bRClicked := {|p1,p2,p3,ob| ... }
+         :bRClicked := oParam:bRClicked      // :bRClicked := {|p1,p2,p3,ob| ... }
       ENDIF
 
       IF HB_ISBLOCK( oParam:bLClicked )
-         :bLClicked := oParam:bLClicked // :bLClicked := {|p1,p2,p3,ob| ... }
-      ENDIF
-
-      IF HB_ISBLOCK( oParam:bGotFocus )
-         :bGotFocus := oParam:bGotFocus // :bGotFocus := {|ob,hCtlLost| ... }
-      ENDIF
-
-      IF HB_ISBLOCK( oParam:bLostFocus )
-         :bGotFocus := oParam:bLostFocus // :bLostFocus := {|hCtlFocus,ob| ... }
-      ENDIF
-
-      IF HB_ISBLOCK( oParam:bChange )
-         :bChange := oParam:bChange // :bChange := {|ob| ... }
+         :bLClicked := oParam:bLClicked      // :bLClicked := {|p1,p2,p3,ob| ... }
       ENDIF
 
       IF HB_ISBLOCK( oParam:bKeyDown )
-         :bKeyDown := oParam:bKeyDown // :bKeyDown := { |nKey,nFalgs,ob| ... }
+         :bKeyDown := oParam:bKeyDown        // :bKeyDown := { |nKey,nFalgs,ob| ... }
       ENDIF
 
       IF HB_ISNUMERIC( oParam:nFireKey )
@@ -641,6 +636,21 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       :oHScroll:SetRange( 0, 0 )
 
    END TBROWSE
+
+   IF HB_ISBLOCK( oParam:bGotFocus )
+      oBrw:bGotFocus := oParam:bGotFocus     // :bGotFocus := {|ob,hCtlLost| ... }
+   ENDIF
+
+   IF HB_ISBLOCK( oParam:bLostFocus )
+      oBrw:bLostFocus := oParam:bLostFocus   // :bLostFocus := {|hCtlFocus,ob| ... }
+   ENDIF
+
+   IF HB_ISBLOCK( oParam:bChange )
+      oBrw:bChange := oParam:bChange         // :bChange := {|ob| ... }
+   ENDIF
+
+   IF HB_ISBLOCK( oParam:bAfter ) ; EVal( oParam:bAfter, oBrw, oParam )
+   ENDIF
 
    IF HB_ISBLOCK( bEnd ) ; Eval( bEnd, oBrw, oParam )
    ENDIF

@@ -49,8 +49,9 @@
          [ <dummy1: OF, PARENT> <parent> ] ;
          [ INTERVAL <interval> ] ;
          [ ACTION <action> ] [ <lOnce: ONCE> ] ;
+         [ ON INIT <bInit> ] ;
    => ;
-   _DefineTimer ( <(name)>, <(parent)>, <interval>, <{action}>, <.lOnce.> )
+   _DefineTimer ( <(name)>, <(parent)>, <interval>, <{action}>, <.lOnce.>, <bInit> )
 
 
 #xtranslate ACTIVATE TIMER <name> OF <parent> => SetProperty ( <(parent)>, <(name)>, "Enabled", .T. )

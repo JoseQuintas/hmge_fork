@@ -108,14 +108,14 @@ METHOD Get( xKey, xDef, lJson ) CLASS THmgData
 
    IF xKey == NIL
       RETURN ::a_a_Key
-   ELSEIF HB_ISLOGICAL( xKey ) .or. xKey == NIL
+   ELSEIF HB_ISLOGICAL( xKey ) .OR. xKey == NIL
       DEFAULT xDef := xKey
       RETURN ::Json( ::a_a_Key, xDef )
    ENDIF
 
-   IF !Empty(lJson) .and. ::Pos( xKey ) > 0
+   IF !Empty( lJson ) .AND. ::Pos( xKey ) > 0
       x := hb_HGetDef( ::a_a_Key, ::Upp( xKey ), NIL )
-      IF HB_ISOBJECT( x ) .and. ","+x:ClassName+"," $ ",THMGDATA,TKEYDATA,"
+      IF HB_ISOBJECT( x ) .AND. ","+x:ClassName+"," $ ",THMGDATA,TKEYDATA,"
          RETURN ::Json( x, xDef )
       ENDIF
    ENDIF
@@ -124,7 +124,7 @@ RETURN hb_HGetDef( ::a_a_Key, ::Upp( xKey ), xDef )
 
 METHOD Json( cJson, lMode ) CLASS THmgData
 
-   IF cJson == NIL .or. HB_ISLOGICAL( cJson ) 
+   IF cJson == NIL .OR. HB_ISLOGICAL( cJson ) 
       lMode := !Empty( cJson )
       RETURN hb_jsonEncode( ::a_a_Key, lMode )
 
@@ -158,7 +158,7 @@ METHOD Do( xKey, xVal ) CLASS THmgData
    IF HB_ISBLOCK( b )
       x := EVal( b, xVal )
    ELSEIF HB_ISCHAR( b )  // Can't be a static function
-      IF !Empty( b ) .and. hb_IsFunction( b )
+      IF !Empty( b ) .AND. hb_IsFunction( b )
          x := hb_ExecFromArray( b, xVal )
       ELSE
          x := "#@" + b
@@ -176,7 +176,7 @@ METHOD GetAll( lAll ) CLASS THmgData
    IF HB_ISLOGICAL( lAll ) .AND. lAll
       ::Eval( {| val | AAdd( aRet, val ) } )
    ELSE
-      ::Eval( {| val, KEY | AAdd( aRet, { KEY, val } ) } )
+      ::Eval( {| val, key | AAdd( aRet, { key, val } ) } )
    ENDIF
 
 RETURN aRet
@@ -308,7 +308,7 @@ METHOD Def( cIni, lMacro, lUtf8, cChar, cData, cSrcChar, cOutChar ) CLASS TIniDa
    ::lUtf   := ( Set( _SET_CODEPAGE ) == "UTF8" )
    ::cCommentChar := hb_defaultValue( cChar, ::cCommentChar )
 
-   IF HB_ISCHAR( cSrcChar ) .and. HB_ISCHAR( cOutChar )
+   IF HB_ISCHAR( cSrcChar ) .AND. HB_ISCHAR( cOutChar )
       ::cSrcReplChar := cSrcChar
       ::cOutReplChar := cOutChar
    ENDIF
@@ -463,11 +463,11 @@ METHOD ToValue( cStr ) CLASS TIniData
       cStr := StrTran( cStr, ::cSrcReplChar, ::cOutReplChar )
    ENDIF
 
-   IF Left(cStr, 1) == "{"  .AND. Right(cStr, 1) == "}" .or. ;
-      Left(cStr, 1) == "'"  .AND. Right(cStr, 1) == "'" .or. ;
-      Left(cStr, 1) == '"'  .AND. Right(cStr, 1) == '"' .or. ;
-      Left(cStr, 2) == 'e"' .AND. Right(cStr, 1) == '"' .or. ;
-      Left(cStr, 2) == 't"' .AND. Right(cStr, 1) == '"' .or. ;
+   IF Left(cStr, 1) == "{"  .AND. Right(cStr, 1) == "}" .OR. ;
+      Left(cStr, 1) == "'"  .AND. Right(cStr, 1) == "'" .OR. ;
+      Left(cStr, 1) == '"'  .AND. Right(cStr, 1) == '"' .OR. ;
+      Left(cStr, 2) == 'e"' .AND. Right(cStr, 1) == '"' .OR. ;
+      Left(cStr, 2) == 't"' .AND. Right(cStr, 1) == '"' .OR. ;
       Left(cStr, 4) == '0d20' .AND. Len(cStr) == 10
       BEGIN SEQUENCE WITH { |e|break(e) }
          xVal := &(cStr)
@@ -477,7 +477,7 @@ METHOD ToValue( cStr ) CLASS TIniData
          xVal := hb_TtoD( xVal )
       ENDIF
    ELSEIF Left(cStr, 2) $ "j{J{" .AND. Right(cStr, 1) == "}" // json
-      IF "<" $ cStr .and. ">" $ cStr
+      IF "<" $ cStr .AND. ">" $ cStr
          cStr := StrTran(cStr, "<", "[")
          cStr := StrTran(cStr, ">", "]")
       ENDIF
@@ -525,7 +525,7 @@ METHOD ToString( xVal ) CLASS TIniData
    ELSEIF HB_ISOBJECT( xVal )
       IF "," + xVal:ClassName + "," $ ",THMGDATA,TKEYDATA,"
          cStr := "j" + xVal:Get(.F.)
-         IF "[" $ cStr .and. "]" $ cStr
+         IF "[" $ cStr .AND. "]" $ cStr
             cStr := StrTran(cStr, "[", "<")
             cStr := StrTran(cStr, "]", ">")
          ENDIF
@@ -646,6 +646,10 @@ FUNCTION oDlu4Font( nFontSize, lDlu2Pix, nPrcW, nPrcH )
                      { 25, 205, 170}, ;
                      { 26, 210, 180}  ;
                    }
+
+   IF HB_ISCHAR( nFontSize )
+      nFontSize := _GetFontSize( nFontSize, "Main" )
+   ENDIF
 
    DEFAULT lDlu2Pix := .T., nFontSize := 11
 
@@ -1272,7 +1276,9 @@ CLASS TWndData
    METHOD Release() INLINE iif( ::IsWindow, ;
       iif( ::lAction, PostMessage( ::nHandle, WM_CLOSE, 0, 0 ), Nil ), Nil )
 
-   METHOD Restore() INLINE ShowWindow( ::nHandle, SW_RESTORE )
+   METHOD Maximize() INLINE ShowWindow( ::nHandle, SW_MAXIMIZE )
+   METHOD Minimize() INLINE ShowWindow( ::nHandle, SW_MINIMIZE )
+   METHOD Restore()  INLINE ShowWindow( ::nHandle, SW_RESTORE )
    METHOD Show() INLINE _ShowWindow( ::cName )
    METHOD Hide() INLINE _HideWindow( ::cName )
    METHOD SetFocus( xName ) INLINE iif( Empty( xName ), SetFocus( ::nHandle ), ;
@@ -1325,7 +1331,7 @@ METHOD Event ( Key, Block, p2, p3 ) CLASS TWndData
    ELSE
       IF HB_ISCHAR( Key ) ; Key := ::oEvents:Get( Key, Key )
       ENDIF
-      IF Key != NIL .and. ::lAction
+      IF Key != NIL .AND. ::lAction
          ::oEvent:Do( Key, Block, p2, p3 )
       ENDIF
    ENDIF
@@ -1871,7 +1877,7 @@ CLASS TThrData
    EXPORTED:
    VAR Cargo
 
-   METHOD New( lUpp ) INLINE ( ::lUpp := iif( lUpp == Nil, ::lUpp, !Empty(lUpp) ), Self ) CONSTRUCTOR
+   METHOD New( lUpp ) INLINE ( ::lUpp := iif( lUpp == Nil, ::lUpp, !Empty( lUpp ) ), Self ) CONSTRUCTOR
 
    METHOD Def( o, lVmMt ) INLINE ( ::Obj := o, ::MT := lVmMt, Self )
 
@@ -1915,7 +1921,7 @@ METHOD SGD( n, k, v ) CLASS TThrData
       RETURN hb_HPos( ::aKey, ::Upp( k ) )
    CASE 1
       IF HB_ISHASH( k )
-         IF HB_ISLOGICAL( v ) .and. v
+         IF HB_ISLOGICAL( v ) .AND. v
             FOR EACH x, y IN hb_HKeys( k ), hb_HValues( k )
                hb_HSet( ::aKey, ::Upp( x ), y )
             NEXT

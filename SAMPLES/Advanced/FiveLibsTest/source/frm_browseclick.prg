@@ -1,5 +1,6 @@
 /*
-frm_browseaction - action for browse
+frm_browseClick - action for browse
+called from frm_class
 */
 
 #include "frm_class.ch"
@@ -9,15 +10,17 @@ frm_browseaction - action for browse
    #define VK_RETURN  13
 #endif
 
-FUNCTION frm_BrowseAction( aItemOld, nKey, oFrmOld )
+FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
 
-   LOCAL oFrm, nPos, nSelect, aOrdScope
+   LOCAL oFrm, nPos, cAliasAnt, aOrdScope
 
-   nSelect := Select()
+   cAliasAnt := Alias()
+   SELECT ( Select( aItemOld[ CFG_BRWTABLE ] ) )
+   aOrdScope := { OrdScope( 0 ), OrdScope( 1 ) }
    oFrm := frm_Class():New()
    WITH OBJECT oFrm
       :cFileDbf    := aItemOld[ CFG_BRWTABLE ]
-      :cTitle      := gui_LibName() + " - BROWSE " + :cFileDbf
+      :cTitle      := "BROWSE " + :cFileDbf
       :cOptions    := "S"
       :lNavigate   := .F.
       :lModal      := .T.
@@ -31,15 +34,15 @@ FUNCTION frm_BrowseAction( aItemOld, nKey, oFrmOld )
       IF nKey == VK_INSERT
          SELECT ( Select( aItemOld[ CFG_BRWTABLE ] ) )
          aOrdScope := { OrdScope( 0 ), OrdScope( 1 ) }
-         SET ORDER TO 1
          SET SCOPE TO
+         SET ORDER TO 1
          GOTO BOTTOM // fail, SET SCOPE is activated
          :aInitValue2 := { aItemOld[ CFG_BRWKEYTO2 ], ( aItemOld[ CFG_BRWTABLE ] )->( FieldGet( FieldNum( aItemOld[ CFG_BRWKEYTO2 ] ) ) ) + 1 }
          SET ORDER TO ( aItemOld[ CFG_BRWIDXORD ] )
          OrdScope( 0, aOrdScope[1] )
          OrdScope( 1, aOrdScope[2] )
          GOTO ( LastRec() + 1 )
-         SELECT ( nSelect )
+         SELECT ( Select( cAliasAnt ) )
       ELSE
          :aInitValue2 := { aItemOld[ CFG_BRWKEYTO2 ], ( aItemOld[ CFG_BRWTABLE ] )->( FieldGet( FieldNum( aItemOld[ CFG_BRWKEYTO2 ] ) ) ) }
       ENDIF
@@ -50,7 +53,13 @@ FUNCTION frm_BrowseAction( aItemOld, nKey, oFrmOld )
       ENDCASE
       :Execute()
    ENDWITH
-   SELECT ( nSelect )
+   // return old position
+   SELECT ( Select( aItemOld[ CFG_BRWTABLE ] ) )
+   SET ORDER TO ( aItemOld[ CFG_BRWIDXORD ] )
+   OrdScope( 0, aOrdScope[1] )
+   OrdScope( 1, aOrdScope[2] )
+   // return old alias
+   SELECT ( Select( cAliasAnt ) )
    gui_SetFocus( oFrmOld:xDlg )
 
    RETURN Nil

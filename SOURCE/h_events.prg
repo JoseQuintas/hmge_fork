@@ -4307,6 +4307,7 @@ STATIC PROCEDURE DoComboAutoComplete ( i )
 
 RETURN
 
+#ifdef _HMG_COMPAT_
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION DoHeaderCustomDraw ( i, lParam, nCol )
 *-----------------------------------------------------------------------------*
@@ -4359,6 +4360,8 @@ STATIC FUNCTION DoHeaderCustomDraw ( i, lParam, nCol )
    ENDIF
 
 RETURN HEADER_SetFont ( lParam, nRGB_BackColor, nRGB_ForeColor, hFont )
+
+#endif
 
 *-----------------------------------------------------------------------------*
 PROCEDURE _AutoAdjust ( hWnd, aInitSize )

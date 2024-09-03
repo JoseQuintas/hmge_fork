@@ -43,10 +43,23 @@
 	"HWGUI"
   	Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
+
+#command @ <row>, <col> TAB <name>            ;
+                        [<clauses,...>]       ;
+                        WIDTH <w>             ;
+                        HEIGHT <h>            ;
+                        [<moreClauses,...>]   ;
+      =>                                      ;
+                    DEFINE TAB <name>         ;
+                        [<clauses>]           ;
+                        AT <row> , <col>      ;
+                        WIDTH <w>             ;
+                        HEIGHT <h>            ;
+                        [<moreClauses>]
 
 #command DEFINE TAB <name> ;
-        [ID <nId>];
+	[ID <nId>];
 	[ <dummy1: OF, PARENT, DIALOG> <parent> ] ;
 	AT <row> , <col> ;
 	WIDTH <w> ;
@@ -59,14 +72,14 @@
 	[ <underline : UNDERLINE> ] ;
 	[ <strikeout : STRIKEOUT> ] ;
 	[ TOOLTIP <tooltip> ] ;
-        [ BACKCOLOR <backcolor> ] ;
-        [ <multiline: MULTILINE> ] ;
-        [ <buttons: BUTTONS> ] ;
-        [ <flat: FLAT> ] ;
-        [ <hottrack: HOTTRACK> ;
-        [ HTFORECOLOR <htforecolor> ] ;
-        [ HTINACTIVECOLOR <htinactivecolor> ] ] ;
-        [ <vertical: VERTICAL> ] ;
+	[ BACKCOLOR <backcolor> ] ;
+	[ <multiline: MULTILINE> ] ;
+	[ <buttons: BUTTONS> ] ;
+	[ <flat: FLAT> ] ;
+	[ <hottrack: HOTTRACK> ;
+	[ HTFORECOLOR <htforecolor> ] ;
+	[ HTINACTIVECOLOR <htinactivecolor> ] ] ;
+	[ <vertical: VERTICAL> ] ;
 	[ <bottom: BOTTOM> ] ;
 	[ ON CHANGE <change> ] ;
 	[ <notabstop: NOTABSTOP> ] ;
@@ -76,7 +89,7 @@
 	_BeginTab( <(name)> , <(parent)> , <row> , <col> , <w> , <h> , <value> , <f> , <s> , <tooltip> , <{change}> , <.buttons.> , <.flat.> , <.hottrack.> , <.vertical.> , <.bottom.> , <.notabstop.> , <.bold.>, <.italic.>, <.underline.>, <.strikeout.>, <.multiline.>, {<backcolor>, <htforecolor>, <htinactivecolor>}, <nId>, <bInit>, <.NoTrans.> )
 
 #command REDEFINE TAB <name> ;
-        ID <nId>;
+	ID <nId>;
 	[ <dummy1: OF, PARENT, DIALOG> <parent> ] ;
 	[ VALUE <value> ] ;
 	[ FONT <f> ] ;
@@ -86,11 +99,11 @@
 	[ <underline : UNDERLINE> ] ;
 	[ <strikeout : STRIKEOUT> ] ;
 	[ TOOLTIP <tooltip> ] ;
-        [ <multiline: MULTILINE> ]     ;
-        [ <buttons: BUTTONS> ]       ;
-        [ <flat: FLAT> ]       ;
-        [ <hottrack: HOTTRACK> ]       ;
-        [ <vertical: VERTICAL> ]       ;
+	[ <multiline: MULTILINE> ]     ;
+	[ <buttons: BUTTONS> ]       ;
+	[ <flat: FLAT> ]       ;
+	[ <hottrack: HOTTRACK> ]       ;
+	[ <vertical: VERTICAL> ]       ;
 	[ <bottom: BOTTOM> ] ;
 	[ ON CHANGE <change> ] ;
 	[ <notabstop: NOTABSTOP> ]       ;

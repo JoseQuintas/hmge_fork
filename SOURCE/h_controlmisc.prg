@@ -1849,6 +1849,8 @@ FUNCTION _SetItem ( ControlName , ParentForm , Item , Value , index )
             AEval ( aTemp , {|x, i| iif( ISCHARACTER( x ) .OR. HB_ISNIL( x ), , aTemp [i] := hb_ValToStr( x ) ) } )
 
             ListViewSetItem ( c , aTemp , Item )
+#else
+            ListViewSetItem ( c , value , Item )
 #endif
          ELSE
 

@@ -48,7 +48,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineTimer ( ControlName , ParentForm , Interval , ProcedureName , Once )
+FUNCTION _DefineTimer ( ControlName , ParentForm , Interval , ProcedureName , Once , bInit )
 *-----------------------------------------------------------------------------*
    LOCAL ParentFormHandle
    LOCAL mVar
@@ -135,5 +135,7 @@ FUNCTION _DefineTimer ( ControlName , ParentForm , Interval , ProcedureName , On
    IF _HMG_lOOPEnabled
       Eval ( _HMG_bOnControlInit, k, mVar )
    ENDIF
+
+   Do_ControlEventProcedure ( bInit, k )
 
 RETURN lSuccess

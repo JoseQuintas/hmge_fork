@@ -1,20 +1,18 @@
 /*
 frm_Valid - valid used on getbox, edit, textbox
+called from frm_class
 */
 
 #include "frm_class.ch"
 
-FUNCTION frm_Valid( aItem, Self )
+FUNCTION frm_Valid( Self, aItem )
 
    LOCAL nSelect, lFound := .T., xValue, nPos
 
-   IF ! gui_IsCurrentFocus( ::xDlg )
-      RETURN .F.
-   ENDIF
    // if btn cancel abort validate (current on hwgui only)
    nPos := hb_AScan( ::aControlList, { | e | e[ CFG_CTLTYPE ] == TYPE_BUTTON .AND. ;
       e[ CFG_CAPTION ] == "Cancel" } )
-   IF nPos != 0
+   IF nPos != 0 .AND. ! gui_LibName() == "FIVEWIN"
       IF gui_IsCurrentFocus( ::xDlg, ::aControlList[ nPos, CFG_FCONTROL ] )
          RETURN .T.
       ENDIF
@@ -68,7 +66,7 @@ FUNCTION frm_Valid( aItem, Self )
       ENDIF
       IF ! Empty( aItem[ CFG_VSHOW ] )
          xValue := FieldGet( FieldNum( aItem[ CFG_VSHOW ] ) )
-         gui_LabelSetValue( ::xDlg, aItem[ CFG_VCONTROL ], xValue )
+         gui_ControlSetValue( ::xDlg, aItem[ CFG_VCONTROL ], xValue )
       ENDIF
       SELECT ( nSelect )
    ENDIF

@@ -4,6 +4,10 @@ test - main program
 REQUEST DBFCDX
 REQUEST HB_CODEPAGE_PT850
 
+#ifdef HBMK_HAS_HMGE
+   #include "minigui.ch"
+#endif
+
 #include "hbclass.ch"
 #include "directry.ch"
 #include "dbstruct.ch"
@@ -20,7 +24,7 @@ MEMVAR lLogin, cUser, cPass
    LOCAL aKeyList := {}, aSeekList := {}, aBrowseList := {}, aTypeList := {}
    LOCAL aAllSetup, aList, aFile, aField, aStru, cFile, aItem, aDBF, nKeyPos, nSeekPos
    LOCAL cFieldName, aBrowse, nPos, aSetup, lMakeLogin, aAddOptionList, aButton
-   PRIVATE lLogin := .F., cUser := "", cPass := ""
+   PRIVATE lLogin := .F., cUser := Space(30), cPass := Space(30)
 
    SET CONFIRM OFF
    SET CENTURY ON
@@ -64,7 +68,13 @@ MEMVAR lLogin, cUser, cPass
       { "DBCLIENT", "History",  { || gui_MsgBox( "History of changes, not available" ) } } }
 
    IF lMakeLogin
+      IF gui_LibName() = "HMGE"
+         SET WINDOW MAIN OFF
+      ENDIF
       Test_DlgLogin()
+      IF gui_LibName() = "HMGE"
+         SET WINDOW MAIN ON
+      ENDIF
       IF ! lLogin
          RETURN
       ENDIF

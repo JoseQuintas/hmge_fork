@@ -927,6 +927,14 @@ PROCEDURE ExecuteReport ( cReportName, lPreview, lSelect, cOutputFileName )
       GO nPreviousRecNo
    ENDIF
 
+   IF __mvExist ( cReportName )
+#ifndef _PUBLIC_RELEASE_
+      __mvPut ( cReportName , 0 )
+#else
+      __mvXRelease ( cReportName )
+#endif
+   ENDIF
+
 RETURN
 
 *.............................................................................*

@@ -2454,7 +2454,7 @@ Time Picker
    _HMG_ActiveControlFontStrikeOut   := .f.      ;;
    _HMG_ActiveControlOnEnter      := Nil      ;;
    _HMG_ActiveControlFontUnderLine   := .f. ;;
-   _HMG_ActiveControlStringFormat := NIL
+   _HMG_ActiveControlStringFormat := Nil
 
 #xcommand SHOWNONE  <shownone> ;
    => ;
@@ -3801,6 +3801,7 @@ Timer
    _HMG_ActiveControlOf        := Nil      ;;
    _HMG_ActiveControlIncrement := Nil      ;;
    _HMG_ActiveControlAction    := Nil      ;;
+   _HMG_ActiveControlShowAll   := Nil      ;;
    _HMG_ActiveControlWrap      := .F.
 
 #xcommand INTERVAL <interval>;
@@ -3818,7 +3819,8 @@ Timer
       _HMG_ActiveControlOf,;
       _HMG_ActiveControlIncrement,;
       _HMG_ActiveControlAction,;
-      _HMG_ActiveControlWrap )
+      _HMG_ActiveControlWrap,;
+      _HMG_ActiveControlShowAll )
 
 /*----------------------------------------------------------------------------
 Graph

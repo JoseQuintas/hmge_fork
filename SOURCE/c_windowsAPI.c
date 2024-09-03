@@ -840,7 +840,7 @@ HB_FUNC( ISWOW64PROCESS )
    BOOL IsWow64 = FALSE;
 
    if( fnIsWow64Process == NULL )
-      fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( GetModuleHandle( "kernel32" ), "IsWow64Process" );
+      fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( GetModuleHandle( TEXT( "kernel32" ) ), "IsWow64Process" );
 
    if( fnIsWow64Process != NULL )
    {

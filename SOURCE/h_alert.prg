@@ -48,7 +48,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #ifdef __XHARBOUR__
 #define __MINIPRINT__
 #else
-   SET PROCEDURE TO alerts.prg
+ SET PROCEDURE TO alerts.prg
 #endif
 
 #include "hmg.ch"
@@ -83,7 +83,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
              bInit      -> optional initial block of code for additional tuning
 
-   Last Modified by Grigory Filatov at 13-01-2024
+   Last Modified by Grigory Filatov at 24-08-2024
 */
 
 #define MARGIN          32
@@ -93,7 +93,8 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #define SEP_BUTTON      10
 #define TAB             Chr( 9 )
 
-STATIC aBackColor, aFontColor, nMaxLineLen := 79
+STATIC aBackColor, aFontColor
+STATIC nMaxLineLen := 79, cFontNameAlert := "DlgFont"
 
 *-----------------------------------------------------------------------------*
 FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColors, bInit, lClosable, cFontName )
@@ -122,7 +123,7 @@ FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColor
    __defaultNIL( @cTitle, _HMG_MESSAGE [10] )
    __defaultNIL( @aOptions, { "&OK" } )
    hb_default( @lClosable, .F. )
-   hb_default( @cFontName, "DlgFont" )
+   hb_default( @cFontName, cFontNameAlert )
 
    IF ISARRAY( aOptions )
       DEFAULT nType := iif( Len( aOptions ) > 1, 2, 1 )
@@ -233,6 +234,17 @@ FUNCTION HMG_Alert_RowStart( nRow )
    ENDIF
 
 RETURN nOldRow
+
+*-----------------------------------------------------------------------------*
+FUNCTION HMG_Alert_FontName( cFontName )
+*-----------------------------------------------------------------------------*
+   LOCAL cOldFont := cFontNameAlert
+
+   IF HB_ISCHAR( cFontName )
+      cFontNameAlert := cFontName
+   ENDIF
+
+RETURN cOldFont
 
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION FillDlg( cMsg, aOptions, nLineas, cIcoFile, nIcoSize, aBtnColors, bBlock, lClosable, cFont, nMaxLen )
@@ -605,13 +617,13 @@ FUNCTION GetDesktopRealWidth()
 
    LOCAL a := GetDesktopArea()
 
-RETURN ( a [3] - a [1] )
+RETURN ( a[ 3 ] - a[ 1 ] )
 
 FUNCTION GetDesktopRealHeight()
 
    LOCAL a := GetDesktopArea()
 
-RETURN ( a [4] - a [2] )
+RETURN ( a[ 4 ] - a[ 2 ] )
 
 #ifdef __XHARBOUR__
 #include "alerts.prg"

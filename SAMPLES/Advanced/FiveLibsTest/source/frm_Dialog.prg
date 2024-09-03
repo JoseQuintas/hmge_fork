@@ -1,5 +1,6 @@
 /*
 frm_Dialog - create the dialog for data
+called from frm_class
 */
 
 #include "frm_class.ch"
@@ -56,9 +57,9 @@ FUNCTION frm_Dialog( Self )
       ENDIF
    NEXT
 
-   gui_DialogCreate( @::xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, ::cTitle,, ::lModal, { || ::DlgInit() } )
+   gui_DialogCreate( @::xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, ::cTitle, { || ::DlgInit() }, ::lModal, ::xParent )
    ::CreateControls()
-   gui_DialogActivate( ::xDlg, { || ::DlgInit() } )
+   gui_DialogActivate( ::xDlg, { || ::DlgInit() }, ::lModal )
 
 #ifdef HBMK_HAS_GTWVG
    DO WHILE Inkey(1) != K_ESC
