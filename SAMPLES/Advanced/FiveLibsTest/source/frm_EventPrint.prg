@@ -1,5 +1,5 @@
 /*
-frm_print - single report
+frm_EventPrint - single report
 called from frm_class
 */
 
@@ -7,7 +7,7 @@ called from frm_class
 #define PAGE_ROWS     66
 #define PAGE_COLS     132
 
-FUNCTION frm_Print( Self )
+FUNCTION frm_EventPrint( Self )
 
    LOCAL aItem, nPag, nLin, nCol, nLen, nLinAnt
 
@@ -19,8 +19,8 @@ FUNCTION frm_Print( Self )
    DO WHILE ! Eof()
       IF nLin > PAGE_ROWS - 2
          nPag += 1
-         @ 0, 0 SAY gui_LibName()
-         @ 0, 66 - Int( Len( ::cFileDbf ) / 2 ) SAY ::cFileDBF
+         @ 0, 0 SAY GUI():LibName()
+         @ 0, 66 - Int( Len( ::cDataTable ) / 2 ) SAY ::cDataTable
          @ 0, PAGE_COLS - 9 SAY "Page " + StrZero( nPag, 3 )
          @ 1, 0 SAY Replicate( "-", PAGE_COLS )
          nLin := 2

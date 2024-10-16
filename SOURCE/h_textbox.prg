@@ -54,8 +54,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
-#define EM_SETCUEBANNER       0x1501
-
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
   #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
   #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )

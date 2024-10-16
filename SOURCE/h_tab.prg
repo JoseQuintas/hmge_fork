@@ -659,6 +659,16 @@ FUNCTION _AddTabControl ( TabName , ControlName , ParentForm , PageNumber , Row 
 
       t := _HMG_aControlType [x]
 
+      // IM 09/18/2024
+      IF t == "SPLITTER"
+         _HMG_aControlContainerRow [x] := _HMG_aControlRow [i]
+         _HMG_aControlContainerCol [x] := _HMG_aControlCol [i]
+         AAdd ( _HMG_aControlPageMap [i] [PageNumber] , _HMG_aControlHandles [x] )
+         UpdateTab ( i )
+         BringWindowToTop ( _HMG_aControlHandles [x] )
+         RETURN Nil
+      ENDIF
+
       // JD 07/20/2007
       IF t == "BROWSE" .AND. _HMG_aControlMiscData1 [x,8] == .F.
          AAdd ( _HMG_aControlPageMap [i] [PageNumber] , { _HMG_aControlHandles [x] , _HMG_aControlIds [x], _HMG_aControlMiscData1 [x] [1] } )

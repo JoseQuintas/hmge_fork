@@ -131,6 +131,17 @@ REQUEST dbAppend, dbDelete, dbRecall, dbCommit, dbFilter, dbSetFilter
 #endif
 REQUEST ordKeyVal, dbOrderInfo, RDDinfo, OrdSetFocus, Alias, Select, dbSelectArea
 
+REQUEST WAPI_SHELLEXECUTE_WAIT, HB_NTOC, hb_enumIndex, hb_cwd, LtoN
+REQUEST hb_hrbRun, hb_hrbLoad, hb_hrbDo, hb_hrbUnLoad, hb_hrbGetFunsym, hb_hrbGetFunList
+REQUEST HB_ZIPFILE, HB_UNZIPFILE
+REQUEST HB_DIRECTORY, HB_ISARRAY, HB_ISCHAR, HB_ISLOGICAL, HB_ISBLOCK, ;
+        HB_ISNUMERIC, HB_ISOBJECT, HB_ISNIL, hb_default, hb_ExecFromArray, ;
+        hb_jsonDecode, hb_jsonEncode, hb_DirSepAdd, hb_DirBuild, hb_DirExists, ;
+        hb_DefaultValue, hb_DirTemp, hb_DirUnbuild, hb_FileExists, hb_ForNext, ;
+        hb_FNameDir, hb_FNameExt, hb_FNameExtSet, hb_FNameExtSetDef, hb_FNameMerge, ;
+        hb_FNameName, hb_FNameNameExt, hb_FNameSplit, hb_eol, hb_ps, ;
+        hb_Crypt, hb_DeCrypt, hb_CRC32, hb_memoRead, hb_memoWrit, Seconds
+
 REQUEST FSEEK, FREAD, FREADSTR, FWRITE, FCLOSE, FERROR, HB_FEOF, HB_FREADLEN  /* !NO! FOPEN, FCREATE  */
 REQUEST LETO_FOPEN, LETO_FCREATE, LETO_FCLOSE, LETO_FRENAME, LETO_FERASE
 

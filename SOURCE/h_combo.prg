@@ -51,9 +51,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #define CBS_UPPERCASE         0x2000
 #define CBS_LOWERCASE         0x4000
 
-#define EM_SETCUEBANNER       0x1501
-#define CB_SETCUEBANNER       0x1703
-
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
   #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
   #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )

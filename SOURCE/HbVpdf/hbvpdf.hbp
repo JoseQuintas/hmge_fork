@@ -2,6 +2,8 @@
 # hbvpdf.hbp
 #
 
+{bcc}-env:DEBUG=yes
+
 -hblib
 -inc
 -o../../harbour/lib/hbvpdf
@@ -9,6 +11,8 @@
 -I../../include
 
 -w3 -es2 -ko -q0
+
+{!DEBUG&bcc|mingw}-l
 
 {bcc}-hbx=../../include/hbvpdf.hbx
 

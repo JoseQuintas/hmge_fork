@@ -528,6 +528,13 @@
 #define TRANSPARENT	1
 #define OPAQUE		2
 #endif
+
+#define ECM_FIRST               0x1500      // Edit control messages
+#define CBM_FIRST               0x1700      // Combobox control messages
+// custom edit and combobox control messages
+#define	EM_SETCUEBANNER	        (ECM_FIRST + 1)
+#define CB_SETCUEBANNER         (CBM_FIRST + 3)
+
 // listview
 #define LVN_FIRST               (-100)
 #define LVN_GETDISPINFOA        (LVN_FIRST-50)

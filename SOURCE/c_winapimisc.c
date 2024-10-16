@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #if defined( _MSC_VER )
@@ -183,7 +183,7 @@ HB_FUNC( WAITRUNPIPE )
       // If there is bytes, read them
       if( BytesRead )
       {
-         if( !ReadFile( ReadPipeHandle, Data, sizeof( Data ) - 1, &BytesRead, NULL ) )
+         if( !ReadFile( ReadPipeHandle, Data, sizeof( Data ) -1, &BytesRead, NULL ) )
          {
             hb_retni( -1 );
             return;
@@ -981,7 +981,7 @@ HB_FUNC( WAITRUNTERM )
 
    if( bTerm )
    {
-      dwExitCode = ( DWORD ) - 1;
+      dwExitCode = ( DWORD ) -1;
    }
    else
    {

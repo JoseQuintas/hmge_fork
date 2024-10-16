@@ -13,9 +13,9 @@
 
 #define _SHOW_PERCENT 5
 
-#define _SMALL_BLOCK 2048
-#define _DEFAULT_BLOCK 4096
-#define _LARGE_BLOCK 8192
+#define _SMALL_BLOCK 65536 / 2
+#define _DEFAULT_BLOCK 65536
+#define _LARGE_BLOCK 65536 * 2
 
 ***********************************
 FUNCTION Main()
@@ -44,7 +44,7 @@ FUNCTION Main()
    @ 103, 20  PROGRESSBAR ProgressBar_1 RANGE 0, 100 WIDTH 435 HEIGHT 21
 
    @ 146, 96  BUTTON Button_3 CAPTION "Copy" WIDTH 100 HEIGHT 24 ;
-      ACTION  FILECOPY( Form_1.TextBox_1.Value, Form_1.TextBox_2.Value, _LARGE_BLOCK, {| nArg | show_it( nArg ) } )
+      ACTION  FILECOPY( Form_1.TextBox_1.Value, Form_1.TextBox_2.Value, _LARGE_BLOCK, {| nArg, nTot | show_it( nArg / nTot ) } )
 
    @ 146, 292 BUTTON Button_4 CAPTION "Exit" WIDTH 100 HEIGHT 24 ACTION ThisWindow.Release
 

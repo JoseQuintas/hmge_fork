@@ -54,9 +54,9 @@
 
 #define MG_VER_MAJOR    3        /* Major version number */
 #define MG_VER_MINOR    3        /* Minor version number */
-#define MG_VER_RELEASE  8        /* Release number */
+#define MG_VER_RELEASE  9        /* Release number */
 
-#define __HMG__         0x030308 /* Three bytes: Major + Minor + Build. */
+#define __HMG__         0x030309 /* Three bytes: Major + Minor + Build. */
 
 #define __RELEASE__
 

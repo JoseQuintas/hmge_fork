@@ -93,8 +93,13 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #define SEP_BUTTON      10
 #define TAB             Chr( 9 )
 
-STATIC aBackColor, aFontColor
-STATIC nMaxLineLen := 79, cFontNameAlert := "DlgFont"
+#define aBackColor           s_Config [1]
+#define aFontColor           s_Config [2]
+#define cLineSeparator       s_Config [3]
+#define nMaxLineLen          s_Config [4]
+#define cFontNameAlert       s_Config [5]
+
+STATIC s_Config := { NIL, NIL, ";|", 79, "DlgFont" }
 
 *-----------------------------------------------------------------------------*
 FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColors, bInit, lClosable, cFontName )
@@ -157,9 +162,9 @@ FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColor
 
    cMsg := cValToChar( cMsg )
 
-   IF Set( _SET_DELIMITERS )
+   IF Set( _SET_DELIMITERS ) .AND. ! Empty( cLineSeparator )
       cOldDelim := Set( _SET_DELIMCHARS )
-      Set( _SET_DELIMCHARS, ";|" )
+      Set( _SET_DELIMCHARS, cLineSeparator )
 #ifdef __XHARBOUR__
       cDelim := SubStr( Set( _SET_DELIMCHARS ), iif( Upper( Left( Set ( _SET_LANGUAGE ), 2 ) ) == "EL", 2, 1 ), 1 )
 #else
@@ -245,6 +250,17 @@ FUNCTION HMG_Alert_FontName( cFontName )
    ENDIF
 
 RETURN cOldFont
+
+*-----------------------------------------------------------------------------*
+FUNCTION HMG_Alert_Separator( cSeparator )
+*-----------------------------------------------------------------------------*
+   LOCAL cOldSep := cLineSeparator
+
+   IF HB_ISCHAR( cSeparator )
+      cLineSeparator := cSeparator
+   ENDIF
+
+RETURN cOldSep
 
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION FillDlg( cMsg, aOptions, nLineas, cIcoFile, nIcoSize, aBtnColors, bBlock, lClosable, cFont, nMaxLen )

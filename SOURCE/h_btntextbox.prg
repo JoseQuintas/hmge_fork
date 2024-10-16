@@ -51,8 +51,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
-#define EM_SETCUEBANNER       0x1501
-
 #define TBB1   2
 #define TBB2   3
 

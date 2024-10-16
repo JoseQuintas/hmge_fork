@@ -44,7 +44,7 @@ frm_main.prg        - main class execute
 frm_preview.prg     - preview of report for database table
 frm_print.prg       - generate report for database table
 frm_valid.prg       - validate "textbox", can show description, can open browse or dialog
-lib_xxxx.prg        - routines of specific library (hmg3, hmg extended, oohg, fivewin, gtwvg)
+lib_xxxx.prg        - routines of specific library (hmg3, hmg extended, oohg, hwgui, gtwvg)
 
 test.prg            - main procedure, load setup
 test_dbf.prg        - create default DBFs

@@ -1,22 +1,50 @@
 /*
-frm_Dialog - create the dialog for data
+frm_DialogData - create the dialog for data
 called from frm_class
 */
 
 #include "frm_class.ch"
 #include "inkey.ch"
 
-FUNCTION frm_Dialog( Self )
+FUNCTION frm_DialogData( Self )
 
-   LOCAL aItem, aFile
+   LOCAL aItem
 
-   SELECT ( Select( ::cFileDbf ) )
+   IF ! ::lIsSQL()
+      frm_DialogOpenDbf( Self )
+   ENDIF
+   FOR EACH aItem IN ::aEditList
+      IF aItem[ CFG_CTLTYPE ] == TYPE_ADDBUTTON
+         AAdd( ::aOptionList, { aItem[ CFG_CAPTION ], aItem[ CFG_ACTION ] } )
+      ENDIF
+   NEXT
+
+   GUI():DialogCreate( @::xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, ::cTitle, { || ::OnFrmInit() }, ::lModal, ::xParent )
+   ::CreateControls()
+   GUI():DialogActivate( ::xDlg, { || ::OnFrmInit() }, ::lModal )
+
+#ifndef DLGAUTO_AS_LIB
+#ifdef HBMK_HAS_GTWVG
+   DO WHILE Inkey(1) != K_ESC
+   ENDDO
+#endif
+#endif
+   // nested dialogs can't close databases
+   // CLOSE DATABASES
+
+   RETURN Nil
+
+FUNCTION frm_DialogOpenDbf( Self )
+
+   LOCAL aFile, aItem
+
+   SELECT ( Select( ::cDataTable ) )
    USE
-   IF ! Empty( ::cFileDbf )
-      USE ( ::cFileDBF )
+   IF ! Empty( ::cDataTable )
+      USE ( ::cDataTable )
    ENDIF
    IF hb_ASCan( ::aEditList, { | e | e[ CFG_ISKEY ] } ) != 0
-      SET INDEX TO ( ::cFileDBF )
+      SET INDEX TO ( ::cDataTable )
    ENDIF
    FOR EACH aItem IN ::aEditList
       IF ! Empty( aItem[ CFG_VTABLE ] ) .AND. Select( aItem[ CFG_VTABLE ] ) == 0
@@ -39,7 +67,7 @@ FUNCTION frm_Dialog( Self )
    // dbfs for code in use validation
    FOR EACH aFile IN ::aAllSetup
       FOR EACH aItem IN aFile[ 2 ]
-         IF aItem[ CFG_VTABLE ] == ::cFileDBF .AND. Select( aFile[ 1 ] ) == 0
+         IF aItem[ CFG_VTABLE ] == ::cDataTable .AND. Select( aFile[ 1 ] ) == 0
             SELECT ( Select( aFile[ 1 ] ) )
             USE
             USE ( aFile[ 1 ] )
@@ -48,26 +76,8 @@ FUNCTION frm_Dialog( Self )
          ENDIF
       NEXT
    NEXT
-   IF ! Empty( ::cFileDbf )
-      SELECT ( Select( ::cFileDbf ) )
+   IF ! Empty( ::cDataTable )
+      SELECT ( Select( ::cDataTable ) )
    ENDIF
-   FOR EACH aItem IN ::aEditList
-      IF aItem[ CFG_CTLTYPE ] == TYPE_ADDBUTTON
-         AAdd( ::aOptionList, { aItem[ CFG_CAPTION ], aItem[ CFG_ACTION ] } )
-      ENDIF
-   NEXT
-
-   gui_DialogCreate( @::xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, ::cTitle, { || ::DlgInit() }, ::lModal, ::xParent )
-   ::CreateControls()
-   gui_DialogActivate( ::xDlg, { || ::DlgInit() }, ::lModal )
-
-#ifdef HBMK_HAS_GTWVG
-   DO WHILE Inkey(1) != K_ESC
-   ENDDO
-#endif
-   // nested calls can't close databases
-   // IF gui_LibName() != "FIVEWIN"
-   //    CLOSE DATABASES
-   // ENDIF
 
    RETURN Nil

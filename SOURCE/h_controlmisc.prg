@@ -60,9 +60,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #define ESB_ENABLE_BOTH    0x0000
 #define ESB_DISABLE_BOTH   0x0003
 
-#define EM_SETCUEBANNER    0x1501
-#define CB_SETCUEBANNER    0x1703
-
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
   #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
   #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
@@ -4571,8 +4568,11 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
          IF GetControlType ( Arg2 , Arg1 ) == 'GRID'
             ix := GetControlIndex ( Arg2 , Arg1 )
+
             _HMG_aControlFontColor [ix] := Arg4
+
             _HMG_aControlMiscData1 [ix] [ 1 ] := LISTVIEW_GETFOCUSEDITEM ( _HMG_aControlHandles [ix] )
+
             _RedrawControl ( ix )
          ENDIF
 
@@ -4590,7 +4590,9 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg3 == "TABSTOP"
 
-         SetTabStop( GetControlHandle( Arg2 , Arg1 ) , Arg4 )
+         ix := GetControlHandle( Arg2 , Arg1 )
+
+         SetTabStop( IFARRAY( ix , ix[ 1 ] , ix ) , Arg4 )
 
 #ifdef _DBFBROWSE_
       CASE Arg3 == "INPUTITEMS"
@@ -5509,6 +5511,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
          IF GetControlType ( Arg2 , Arg1 ) == 'GRID'
             ix := GetControlIndex ( Arg2 , Arg1 )
+
             RetVal := _HMG_aControlFontColor [ix]
          ENDIF
 
@@ -5528,7 +5531,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
          ix := GetControlHandle( Arg2 , Arg1 )
 
-         RetVal := IsTabStop( IFARRAY( ix , ix[1] , ix ) )
+         RetVal := IsTabStop ( IFARRAY( ix , ix[ 1 ] , ix ) )
 
       CASE Arg3 == "CHECKBOXENABLED"
 

@@ -1,5 +1,5 @@
 /*
-frm_browseClick - action for browse
+frm_EventBrowseClick - action for browse
 called from frm_class
 */
 
@@ -10,7 +10,7 @@ called from frm_class
    #define VK_RETURN  13
 #endif
 
-FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
+FUNCTION frm_EventBrowseClick( oFrmOld, aItemOld, nKey )
 
    LOCAL oFrm, nPos, cAliasAnt, aOrdScope
 
@@ -19,8 +19,8 @@ FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
    aOrdScope := { OrdScope( 0 ), OrdScope( 1 ) }
    oFrm := frm_Class():New()
    WITH OBJECT oFrm
-      :cFileDbf    := aItemOld[ CFG_BRWTABLE ]
-      :cTitle      := "BROWSE " + :cFileDbf
+      :cDataTable    := aItemOld[ CFG_BRWTABLE ]
+      :cTitle      := "BROWSE " + :cDataTable
       :cOptions    := "S"
       :lNavigate   := .F.
       :lModal      := .T.
@@ -30,7 +30,7 @@ FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
       nPos := hb_ASCan( :aAllSetup, { | e | e[ 1 ] == aItemOld[ CFG_BRWTABLE ] } )
       :aEditList   := :aAllSetup[ nPos, 2 ]
       :nInitRecno  := ( aItemOld[ CFG_BRWTABLE ] )->( RecNo() )
-      :aInitValue1 := { aItemOld[ CFG_BRWKEYTO ],  ( oFrmOld:cFileDbf )->( FieldGet( FieldNum( aItemOld[ CFG_BRWKEYFROM ] ) ) ) }
+      :aInitValue1 := { aItemOld[ CFG_BRWKEYTO ],  ( oFrmOld:cDataTable )->( FieldGet( FieldNum( aItemOld[ CFG_BRWKEYFROM ] ) ) ) }
       IF nKey == VK_INSERT
          SELECT ( Select( aItemOld[ CFG_BRWTABLE ] ) )
          aOrdScope := { OrdScope( 0 ), OrdScope( 1 ) }
@@ -47,9 +47,9 @@ FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
          :aInitValue2 := { aItemOld[ CFG_BRWKEYTO2 ], ( aItemOld[ CFG_BRWTABLE ] )->( FieldGet( FieldNum( aItemOld[ CFG_BRWKEYTO2 ] ) ) ) }
       ENDIF
       DO CASE
-      CASE nKey == VK_INSERT; :cOptions := "IS" ; :bActivate := { || :Insert() }
-      CASE nKey == VK_DELETE; :cOptions := "D" // :bActivate := { || :Delete() }
-      CASE nKey == VK_RETURN; :cOptions := "ES"; :bActivate := { || :Edit() }
+      CASE nKey == VK_INSERT; :cOptions := "IS" ; :bOnFrmActivate := { || :Insert_Click() }
+      CASE nKey == VK_DELETE; :cOptions := "D" // :bOnFrmActivate := { || :Delete_Click() }
+      CASE nKey == VK_RETURN; :cOptions := "ES"; :bOnFrmActivate := { || :Edit_Click() }
       ENDCASE
       :Execute()
    ENDWITH
@@ -60,7 +60,7 @@ FUNCTION frm_BrowseClick( oFrmOld, aItemOld, nKey )
    OrdScope( 1, aOrdScope[2] )
    // return old alias
    SELECT ( Select( cAliasAnt ) )
-   gui_SetFocus( oFrmOld:xDlg )
+   GUI():SetFocus( oFrmOld:xDlg )
 
    RETURN Nil
 

@@ -2,6 +2,8 @@
 # hbziparc.hbp
 #
 
+{bcc}-env:DEBUG=yes
+
 -hblib
 -inc
 -o../../harbour/lib/hbziparc
@@ -10,6 +12,8 @@
 
 -hbx=../../include/hbziparc.hbx
 
--w3 -es2 -ko -q0 -l
+-w3 -es2 -ko -q0
+
+{!DEBUG&bcc|mingw}-l
 
 hbziparc.prg

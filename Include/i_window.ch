@@ -43,7 +43,7 @@
 	"HWGUI"
   	Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 ////////////////////////////////////////////////////////////
 // DECLARE WINDOW Translate Map
@@ -663,7 +663,7 @@ _HMG_AutoAdjust := .T. ; _HMG_AutoZooming := .F. ; _HMG_AutoAdjustException := <
 
 #xtranslate SET AUTOADJUST OFF ;
 => ;
-_HMG_AutoAdjust := .F. ; _HMG_AutoZooming := .F.
+_HMG_AutoAdjust := .F. ; _HMG_AutoZooming := .F. ; _HMG_AutoAdjustException := .F.
 
 #xtranslate SET AUTOZOOMING ON ;
 => ;

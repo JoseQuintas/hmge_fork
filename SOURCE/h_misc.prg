@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2023, https://harbour.github.io/
+   Copyright 1999-2024, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -404,19 +404,22 @@ FUNCTION HMG_ClrToHTML( nClr )
 
 RETURN "#" + Right( cHex, 2 ) + SubStr( cHex, 3, 2 ) + Left( cHex, 2 )
 
-#include "fileio.ch"
-
-#define F_BLOCK   8192
+#define BUFFERSIZE  65536
 *-----------------------------------------------------------------------------*
 FUNCTION HMG_FileCopy( cSourceFile, cTargetFile, nBuffer, bEval )
 *-----------------------------------------------------------------------------*
+   LOCAL lShowProgress := ( ValType( bEval ) == "B" )
+   LOCAL lSuccess
+
+#if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
+
    LOCAL hSourceFile, hTargetFile
    LOCAL cBuffer
    LOCAL nTotalBytes, nCurrentlBytes, nReadBytes
-   LOCAL lShowProgress := ( ValType( bEval ) == "B" )
-   LOCAL lSuccess := .F.
 
-   DEFAULT nBuffer TO F_BLOCK
+   #include "fileio.ch"
+
+   DEFAULT nBuffer := BUFFERSIZE, lSuccess := .F.
 
    IF ( hSourceFile := FOpen( cSourceFile, FO_READ ) ) != F_ERROR
 
@@ -435,7 +438,7 @@ FUNCTION HMG_FileCopy( cSourceFile, cTargetFile, nBuffer, bEval )
 
             IF lShowProgress
 
-               Eval( bEval, nCurrentlBytes / nTotalBytes )
+               Eval( bEval, nCurrentlBytes, nTotalBytes )
 
             ENDIF
 
@@ -448,6 +451,14 @@ FUNCTION HMG_FileCopy( cSourceFile, cTargetFile, nBuffer, bEval )
       FClose( hSourceFile )
 
    ENDIF
+
+#else
+
+   DEFAULT nBuffer TO BUFFERSIZE
+
+   lSuccess := ( hb_vfCopyFileEx( cSourceFile, cTargetFile, nBuffer, , iif( lShowProgress, bEval, NIL ) ) == 0 )
+
+#endif
 
 RETURN lSuccess
 

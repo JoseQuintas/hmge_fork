@@ -242,6 +242,7 @@
 #include "i_chklabel.ch"
 #include "i_progresswheel.ch"
 #include "i_rating.ch"
+#include "i_splitter.ch"
 
 #ifdef _MIXEDMODE_
   ANNOUNCE HB_GTSYS

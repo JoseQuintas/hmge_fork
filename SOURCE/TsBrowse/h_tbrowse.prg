@@ -296,7 +296,10 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
 
    ELSE
       // BK
-      IF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ValType( uAlias[ 1 ] ) == 'A'
+      IF HB_ISOBJECT( uAlias )
+         lAutoCol  := .T.
+         lEditable := .T.
+      ELSEIF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ValType( uAlias[ 1 ] ) == 'A'
          aArray := uAlias
          uAlias := NIL
       ENDIF
@@ -495,8 +498,9 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
                ELSE
                   nColNumber := 1
                ENDIF
+               aColNumber[ 1 ] := nColNumber
+               DEFAULT aColNumber[ 2 ] := 80
             ENDIF
-            DEFAULT aColNumber[ 2 ] := 80
          ENDIF
 
          IF HB_ISNUMERIC( nColNumber )
@@ -987,11 +991,9 @@ CLASS TSBrowse FROM TControl
    DATA nClrSeleBack, nClrSeleFore // selected cell no focused
    DATA nClrOrdeBack, nClrOrdeFore // order control column colors
    DATA nClrSpcHdBack, nClrSpcHdFore, nClrSpcHdActive // special headers colors
-
    DATA nClrSelectorHdBack // special selector header background color
    DATA nClrSelectorFtBack // special selector footer background color
-   DATA lClrSelectorHdBack AS LOGICAL INIT .T.
-
+   DATA lClrSelectorHdBack AS LOGICAL INIT .T. // special selector header background color
    DATA nClrLine // grid line color
    DATA nColOrder AS NUMERIC // compatibility with TCBrowse
    DATA nColPos AS NUMERIC INIT 0 // grid column position
@@ -10621,7 +10623,7 @@ METHOD MouseMove( nRowPix, nColPix, nKeyFlags ) CLASS TSBrowse
       ::lNoMoveCols := .F., ;
       ::lDontChange := .F.
 
-   IF EmptyAlias( ::cAlias )
+   IF EmptyAlias( ::cAlias ) .OR. Empty( ::aColumns )
       RETURN 0
    ENDIF
 
@@ -10702,8 +10704,8 @@ METHOD MouseMove( nRowPix, nColPix, nKeyFlags ) CLASS TSBrowse
       lMChange := ::lMChange // save it for restore
       ::lMChange := .F.
 
-      IF ::lCellBrw .AND. ! Empty( ::aColumns[ Max( 1, ::nAtCol( nColPix ) ) ]:cMsg )
-         ::cMsg := ::aColumns[ Max( 1, ::nAtCol( nColPix ) ) ]:cMsg
+      IF ::lCellBrw .AND. ! Empty( ::aColumns[ nColumn ]:cMsg )
+         ::cMsg := ::aColumns[ nColumn ]:cMsg
       ELSE
          ::cMsg := cMsg
       ENDIF
@@ -15764,8 +15766,8 @@ RETURN cSeek
 
 * ============================================================================
 * FUNCTION TSBrowse EmptyAlias() Version 9.0 Nov/30/2009
-// Returns .T. if cAlias is not a constant "ARRAY" (browsing an array),
-// or a constant "TEXT_" (browsing a text file), or an active database alias.
+* Returns .T. if cAlias is not a constant "ARRAY" (browsing an array),
+* or a constant "TEXT_" (browsing a text file), or an active database alias.
 * ============================================================================
 
 STATIC FUNCTION EmptyAlias( cAlias )
@@ -15790,8 +15792,8 @@ RETURN lEmpty
 
 * ============================================================================
 * FUNCTION TSBrowse IsChar() Version 9.0 Nov/30/2009
-// Used by METHOD KeyChar() to filter keys according to the field type
-// Clipper's function IsAlpha() doesn't fit the purpose in some cases
+* Used by METHOD KeyChar() to filter keys according to the field type
+* Clipper's function IsAlpha() doesn't fit the purpose in some cases
 * ============================================================================
 
 STATIC FUNCTION _IsChar( nKey )
@@ -15800,8 +15802,8 @@ RETURN ( nKey >= 32 .AND. nKey <= hb_cdpCharMax() )
 
 * ============================================================================
 * FUNCTION TSBrowse IsNumeric() Version 9.0 Nov/30/2009
-* FUNCtion used by METHOD KeyChar() to filter keys according to the field type
-// Clipper's function IsDigit() doesn't fit the purpose in some cases
+* Function used by METHOD KeyChar() to filter keys according to the field type
+* Clipper's function IsDigit() doesn't fit the purpose in some cases
 * ============================================================================
 
 STATIC FUNCTION _IsNumeric( nKey )
@@ -15810,7 +15812,7 @@ RETURN ( Chr( nKey ) $ ".+-0123456789" )
 
 * ============================================================================
 * FUNCTION TSBrowse MakeBlock() Version 9.0 Nov/30/2009
-// Called from METHOD Default() to assign data to columns
+* Called from METHOD Default() to assign data to columns
 * ============================================================================
 
 STATIC FUNCTION MakeBlock( Self, nI )
@@ -15819,7 +15821,7 @@ RETURN {|| Eval( ::bLine )[ nI ] }
 
 * ============================================================================
 * FUNCTION TSBrowse nValToNum() Version 9.0 Nov/30/2009
-// Converts any type variables value into numeric
+* Converts any type variables value into numeric
 * ============================================================================
 
 FUNCTION nValToNum( uVar )
@@ -16392,7 +16394,7 @@ METHOD nField( cName ) CLASS TSBrowse
 RETURN iif( nEle <= nCount, nEle - 1, -1 )
 
 * ===================================================================================================
-// Auxiliary TSBcell class
+* Auxiliary TSBcell class
 * ===================================================================================================
 
 CLASS TSBcell

@@ -43,7 +43,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
- ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 
 #include "SET_COMPILE_HMG_UNICODE.ch"
 
@@ -367,7 +367,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
                ENDIF
 
-               IF _HMG_aControlBkColor [i] != Nil
+               IF _HMG_aControlBkColor [i] != Nil .AND. IsArrayRGB ( _HMG_aControlBkColor [i] )
                   SetBkColor( wParam , _HMG_aControlBkColor [i] [1] , _HMG_aControlBkColor [i] [2] , _HMG_aControlBkColor [i] [3] )
                   DeleteObject ( _HMG_aControlBrushHandle [i] )
                   _HMG_aControlBrushHandle [i] := CreateSolidBrush( _HMG_aControlBkColor [i] [1] , _HMG_aControlBkColor [i] [2] , _HMG_aControlBkColor [i] [3] )

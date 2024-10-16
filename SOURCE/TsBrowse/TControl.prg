@@ -416,6 +416,10 @@ METHOD End() CLASS TControl
       ASize( ::oWnd:aControls, Len( ::oWnd:aControls ) - 1 )
    ENDIF
 
+   IF ::hBrush != NIL
+      DeleteObject( ::hBrush )
+   ENDIF
+
    ::DelVars( Self:hWnd )
 
    IF "TGETBOX" $ Upper( Self:ClassName() )

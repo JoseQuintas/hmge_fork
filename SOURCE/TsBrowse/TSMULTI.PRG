@@ -73,7 +73,7 @@ METHOD New( nRow, nCol, bSetGet, oWnd, nWidth, nHeight, hFont, ;
    ::nLastKey     := 0
    ::lChanged     := .F.
 
-   ::SetColor( nClrFore, nClrBack )
+   //::SetColor( nClrFore, nClrBack )
 
    ::Atx := 0
 

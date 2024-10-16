@@ -171,10 +171,11 @@
 
 // Month Calendar View is only available starting Windows Vista
 #if ( NTDDI_VERSION >= 0x06000000 )
-#define MCMV_MONTH 0
-#define MCMV_YEAR 1
-#define MCMV_DECADE 2
-#define MCMV_CENTURY 3
+// View
+#define MCMV_MONTH      0
+#define MCMV_YEAR       1
+#define MCMV_DECADE     2
+#define MCMV_CENTURY    3
 
 #define MCM_GETCURRENTVIEW (MCM_FIRST+22)
 #xtranslate GetMonthCalView ( <hWnd> ) ;

@@ -48,6 +48,7 @@
 #xcommand DEFINE STATUSBAR ;
       [ <dummy1: OF, PARENT> <parent> ] ;
       [ <kbd: KEYBOARD> ] ;
+      [ PROMPT <cMsg> ] ;
       [ FONT <fontname> ] ;
       [ SIZE <fontsize> ] ;
       [ <bold : BOLD> ] ;
@@ -55,7 +56,7 @@
       [ <underline : UNDERLINE> ] ;
       [ <strikeout : STRIKEOUT> ] ;
    => ;
-   _BeginMessageBar( "StatusBar", <(parent)>, <.kbd.>, <fontname>, <fontsize>, <.bold.>, <.italic.>, <.underline.>, <.strikeout.> )
+   _BeginMessageBar( "StatusBar", <(parent)>, <.kbd.>, <fontname>, <fontsize>, <.bold.>, <.italic.>, <.underline.>, <.strikeout.>, <cMsg> )
 
 #xcommand  END STATUSBAR ;
    => ;

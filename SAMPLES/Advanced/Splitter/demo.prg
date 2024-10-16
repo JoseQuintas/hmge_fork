@@ -1,88 +1,86 @@
 /*
- * Harbour MiniGUI (H)orizontal Splitter Demo
- * Copyright 2017 P.Chornyj <myorg63@mail.ru>
+ * Harbour MiniGUI Splitter Demo
  */
 ANNOUNCE RDDSYS
 
 #include "minigui.ch"
-#include "i_winuser.ch"
 
-#include "demo.ch"
+PROCEDURE Main()
 
-#xtranslate RECTWIDTH ( <aRect> ) => ( <aRect>\[3\] - <aRect>\[1\] )
-#xtranslate RECTHEIGHT( <aRect> ) => ( <aRect>\[4\] - <aRect>\[2\] )
-///////////////////////////////////////////////////////////////////////////////
-procedure main()
+    LOCAL VerticalSplitter, HorizontalSplitter
 
-   local aRect := { 0, 0, 0, 0 }
-   local w, h, nBorder, nYPos
+    // Enable automatic resizing of controls when the window is resized
+    SET AUTOADJUST ON
 
-   set events func to App_OnEvents
+    // Define the main window
+    DEFINE WINDOW MainWindow ;
+        AT 0, 0 ;
+        WIDTH 800 ;
+        HEIGHT 600 ;
+        TITLE "Vertical and Horizontal SPLITTER Demo" ;
+        MAIN
 
-   define window  Form_1 ;
-      clientarea  400, 200 ;
-      title       'HSplitter demo' ;
-      windowtype  MAIN ;
-      on release  HSplitter_Release( Form_1.Handle )
+        // Define two EditBoxes for the vertical splitter
+        @ 50, 50 EDITBOX LeftEditBox ;
+            WIDTH 320 ;
+            HEIGHT 250 ;
+            VALUE "Left Pane" ;
+            NOVSCROLL NOHSCROLL
 
-      GetClientRect( This.Handle, @aRect )
-      w := RECTWIDTH ( aRect )
-      h := RECTHEIGHT( aRect )
+        @ 50, 380 EDITBOX RightEditBox ;
+            WIDTH 320 ;
+            HEIGHT 250 ;
+            VALUE "Right Pane" ;
+            NOVSCROLL NOHSCROLL
 
-      nYPos   := Int( 0.5 * h  )
-      nBorder := 4
+        // Define a VERTICAL SPLITTER between the two EditBoxes
+        DEFINE SPLITTER VerticalSplitter ;
+            AT 50, 370 ;                  // Position the splitter between controls
+            WIDTH 10 ;                    // Width of the splitter
+            HEIGHT 250 ;                  // Height of the splitter
+            VERTICAL ;                    // Vertical splitter
+            SPLIT {"LeftEditBox"} FROM {"RightEditBox"} ;  // Split the two controls
+            COLOR {0, 128, 255} ;         // Set the color of the splitter
+            BACKCOLOR {230, 230, 230} ;   // Background color
+            USEGRADIENT ;                 // Enable gradient effect
+            GRADIENT {255, 255, 255}, {0, 128, 255}, {0, 0, 128} ;  // Gradient colors
+            GRADIENTHOVER {255, 200, 200}, {200, 50, 50}, {100, 0, 0} ;  // Hover gradient colors
+            HIDEARROW ;                   // Hide the arrow icon
+            LIMITS {5, 10}                // Define the minimum and maximum limits for each section
 
-      @ 0, 0 editbox EditBox_1 ;
-         width    w ;
-         height   nYPos ;
-         value    LOREMIPSUM_L ;
-         tooltip  'EditBox_1' ;
-         nohscroll 
+        // Define two more EditBoxes for the horizontal splitter
+        @ 320, 50 EDITBOX TopEditBox ;
+            WIDTH 650 ;
+            HEIGHT 100 ;
+            VALUE "Top Pane" ;
+            NOVSCROLL NOHSCROLL
 
-      @ nYPos + nBorder, 0 editbox EditBox_2 ;
-         width    w ;
-         height   h - ( nYPos + nBorder ) ;
-         value    LOREMIPSUM_R ;
-         tooltip  'EditBox_2' ;
-         nohscroll 
-   end window
+        @ 430, 50 EDITBOX BottomEditBox ;
+            WIDTH 650 ;
+            HEIGHT 100 ;
+            VALUE "Bottom Pane" ;
+            NOVSCROLL NOHSCROLL
 
-   // Add Horizontal Splitter to Form_1   
-   HSplitter_Init( Form_1.Handle, { Form_1.EditBox_1.Handle, Form_1.EditBox_2.Handle }, nYPos, nBorder )
+        // Define a HORIZONTAL SPLITTER between the two EditBoxes
+        DEFINE SPLITTER HorizontalSplitter ;
+            AT 420, 50 ;                  // Position the splitter between controls
+            WIDTH 650 ;                   // Width of the splitter
+            HEIGHT 10 ;                   // Height of the splitter
+            HORIZONTAL ;                  // Horizontal splitter
+            SPLIT {"TopEditBox"} FROM {"BottomEditBox"} ;  // Split the two controls
+            COLOR {255, 128, 0} ;         // Set the color of the splitter
+            BACKCOLOR {230, 230, 230} ;   // Background color
+            USEGRADIENT ;                 // Enable gradient effect
+            GRADIENT {255, 255, 255}, {255, 128, 0}, {255, 64, 0} ;  // Gradient colors
+            GRADIENTHOVER {255, 200, 200}, {255, 100, 100}, {200, 0, 0} ;  // Hover gradient colors
+            LIMITS {5, 15}                // Define the minimum and maximum limits for each section
 
-   Form_1.Cursor := IDC_SIZENS
+    END WINDOW
 
-   Form_1.Center()
-   Form_1.Activate()
+    // Center the main window
+    CENTER WINDOW MainWindow
 
-return
+    // Activate the main window
+    ACTIVATE WINDOW MainWindow
 
-///////////////////////////////////////////////////////////////////////////////
-// FUNCTION App_OnEvents( hwnd, msg, wParam, lParam )
-///////////////////////////////////////////////////////////////////////////////
-#translate $_ => ( hwnd, msg, wParam, lParam )
-
-function App_OnEvents$_
-   local nRes
-
-   switch msg
-   case WM_LBUTTONDOWN
-      nRes := HSplitter_OnLButtonDown$_
-      exit
-
-   case WM_LBUTTONUP
-      nRes := HSplitter_OnLButtonUp$_
-      exit
-
-   case WM_MOUSEMOVE
-      nRes := HSplitter_OnMouseMove$_
-      exit
-
-   case WM_SIZE        
-      nRes := HSplitter_OnSize$_
-      exit
-   otherwise
-      nRes := Events$_
-   end
-
-return nRes
+RETURN

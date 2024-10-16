@@ -87,132 +87,6 @@ FUNCTION Do_WindowEventProcedure( bBlock, i, p1, p2, p3, p4 )
 
 RETURN RetVal
 
-#ifdef _OBJECT_
-
-*-----------------------------------------------------------------------------*
-FUNCTION _WindowObj( FormName )
-*-----------------------------------------------------------------------------*
-   LOCAL h := iif( HB_ISNUMERIC( FormName ), FormName, GetFormHandle( FormName ) )
-
-RETURN hmg_GetWindowObject( h )
-
-*-----------------------------------------------------------------------------*
-FUNCTION _ControlObj( ControlName, FormName )
-*-----------------------------------------------------------------------------*
-   LOCAL h := iif( HB_ISNUMERIC( ControlName ), ControlName, GetControlHandle( ControlName, FormName ) )
-
-   IF ISARRAY( h )
-      h := h[ 1 ]
-   ENDIF
-
-RETURN hmg_GetWindowObject( h )
-
-*-----------------------------------------------------------------------------*
-FUNCTION _oThis( oThis, lSets )      // Snapshot of current data This or Sets
-*-----------------------------------------------------------------------------*
-   LOCAL c, i := 0, k, o := oHmgData()
-
-   IF HB_ISLOGICAL( oThis )
-      lSets := oThis
-      oThis := Nil
-   ENDIF
-
-   DEFAULT lSets := .F.
-
-   o:FormIndex      := _HMG_ThisFormIndex
-   o:EventType      := _HMG_ThisEventType
-   o:Type           := _HMG_ThisType
-   o:Index          := _HMG_ThisIndex
-   o:FormName       := _HMG_ThisFormName
-   o:ControlName    := _HMG_ThisControlName
-   o:FocusedForm    := ""
-   o:FocusedControl := ""
-   o:FocusedControlIndex := 0
-
-   DEFAULT o:FormName := "", o:ControlName := ""
-
-   IF !Empty( c := GetFocus() )
-      IF ( k := AScan( _HMG_aControlHandles, c ) ) > 0
-         o:FocusedControlIndex := k
-         o:FocusedControl := _HMG_aControlNames [ k ]
-         c := _HMG_aControlParentHandles [ k ]
-         IF ( k := AScan( _HMG_aFormHandles, c ) ) > 0
-            o:FocusedForm := _HMG_aFormNames [ k ]
-         ENDIF
-      ELSEIF ( k := AScan( _HMG_aFormHandles, c ) ) > 0
-         o:FocusedForm := _HMG_aFormNames [ k ]
-      ENDIF
-      IF !Empty( o:FocusedForm ) .AND. o:FormName != o:FocusedForm
-         IF HB_ISLOGICAL( lSets ) .AND. ( k := GetFormIndex( o:FocusedForm ) ) > 0
-            // Sets objects variable
-            o:FormName       := o:FocusedForm
-            o:FormIndex      := k
-            o:EventType      := ""
-            o:Type           := iif( _HMG_aFormType [ k ] == "C", "W", _HMG_aFormType [ k ] )
-            o:Index          := k
-            o:ControlName    := ""
-            // Sets This variable
-            IF lSets                
-               _HMG_ThisFormIndex   := o:FormIndex
-               _HMG_ThisEventType   := o:EventType
-               _HMG_ThisType        := o:Type
-               _HMG_ThisIndex       := o:Index
-               _HMG_ThisFormName    := o:FormName
-               _HMG_ThisControlName := o:ControlName
-            ENDIF
-         ENDIF
-      ENDIF
-   ENDIF
-   k := iif( Empty( _HMG_ThisControlName ), o:FocusedControlIndex, _HMG_ThisIndex )
-   IF !Empty( k )
-      o:ControlCargo        := _HMG_aControlMiscData2     [ k ]
-      o:ControlHandle       := _HMG_aControlHandles       [ k ]
-      o:ControlParentHandle := _HMG_aControlParenthandles [ k ]
-      o:ControlParentName  := GetParentFormName ( k )
-   ENDIF
-   IF _HMG_ThisFormIndex > 0
-      o:FormCargo        := _HMG_aFormMiscData2    [ _HMG_ThisFormIndex ]
-      o:FormHandle       := _HMG_aFormHandles      [ _HMG_ThisFormIndex ]
-      o:FormParentHandle := _HMG_aFormParentHandle [ _HMG_ThisFormIndex ]
-      GetFormNameByHandle ( o:FormParentHandle, @c )
-      o:FormParentName := c
-      o:FormObject := _WindowObj( o:FormHandle )
-   ENDIF
-
-   IF HB_ISOBJECT( oThis )
-      IF   oThis:ClassName == 'TSBROWSE'
-         oThis := oThis:cParentWnd
-      ELSEIF oThis:ClassName == 'TWNDDATA'
-         oThis := oThis:Name
-      ENDIF
-   ENDIF
-
-   IF HB_ISCHAR ( oThis ) ; oThis := GetFormIndex ( oThis )
-   ENDIF
-
-   IF HB_ISNUMERIC ( oThis ) .AND. oThis > 0 ; i := oThis
-   ENDIF
-
-   IF i > 0
-      _HMG_ThisFormIndex   := i
-      _HMG_ThisEventType   := ""
-      _HMG_ThisType        := iif( _HMG_aFormType [ i ] == "C", "W", _HMG_aFormType [ i ] )
-      _HMG_ThisIndex       := i
-      _HMG_ThisFormName    := _HMG_aFormNames[ i ]
-      _HMG_ThisControlName := ""
-   ELSEIF HB_ISOBJECT( oThis ) .AND. oThis:ClassName $ "THMGDATA,TKEYDATA,TTHRDATA"
-      IF !Empty( oThis:FormIndex )
-         _HMG_ThisFormIndex   := oThis:FormIndex
-         _HMG_ThisEventType   := oThis:EventType
-         _HMG_ThisType        := oThis:Type
-         _HMG_ThisIndex       := oThis:Index
-         _HMG_ThisFormName    := oThis:FormName
-         _HMG_ThisControlName := oThis:ControlName
-      ENDIF
-   ENDIF
-
-RETURN o
-
 #ifdef __XHARBOUR__
   #xtranslate hb_ValToExp( [<x,...>] ) => ValToPrgExp( <x> )
 #endif
@@ -395,6 +269,132 @@ STATIC FUNCTION TR0( cTxt, nLen, cSim )
    ENDIF
 
 RETURN PadL( AllTrim( cTxt ), nLen, cSim )
+
+#ifdef _OBJECT_
+
+*-----------------------------------------------------------------------------*
+FUNCTION _WindowObj( FormName )
+*-----------------------------------------------------------------------------*
+   LOCAL h := iif( HB_ISNUMERIC( FormName ), FormName, GetFormHandle( FormName ) )
+
+RETURN hmg_GetWindowObject( h )
+
+*-----------------------------------------------------------------------------*
+FUNCTION _ControlObj( ControlName, FormName )
+*-----------------------------------------------------------------------------*
+   LOCAL h := iif( HB_ISNUMERIC( ControlName ), ControlName, GetControlHandle( ControlName, FormName ) )
+
+   IF ISARRAY( h )
+      h := h[ 1 ]
+   ENDIF
+
+RETURN hmg_GetWindowObject( h )
+
+*-----------------------------------------------------------------------------*
+FUNCTION _oThis( oThis, lSets )      // Snapshot of current data This or Sets
+*-----------------------------------------------------------------------------*
+   LOCAL c, i := 0, k, o := oHmgData()
+
+   IF HB_ISLOGICAL( oThis )
+      lSets := oThis
+      oThis := Nil
+   ENDIF
+
+   DEFAULT lSets := .F.
+
+   o:FormIndex      := _HMG_ThisFormIndex
+   o:EventType      := _HMG_ThisEventType
+   o:Type           := _HMG_ThisType
+   o:Index          := _HMG_ThisIndex
+   o:FormName       := _HMG_ThisFormName
+   o:ControlName    := _HMG_ThisControlName
+   o:FocusedForm    := ""
+   o:FocusedControl := ""
+   o:FocusedControlIndex := 0
+
+   DEFAULT o:FormName := "", o:ControlName := ""
+
+   IF !Empty( c := GetFocus() )
+      IF ( k := AScan( _HMG_aControlHandles, c ) ) > 0
+         o:FocusedControlIndex := k
+         o:FocusedControl := _HMG_aControlNames [ k ]
+         c := _HMG_aControlParentHandles [ k ]
+         IF ( k := AScan( _HMG_aFormHandles, c ) ) > 0
+            o:FocusedForm := _HMG_aFormNames [ k ]
+         ENDIF
+      ELSEIF ( k := AScan( _HMG_aFormHandles, c ) ) > 0
+         o:FocusedForm := _HMG_aFormNames [ k ]
+      ENDIF
+      IF !Empty( o:FocusedForm ) .AND. o:FormName != o:FocusedForm
+         IF HB_ISLOGICAL( lSets ) .AND. ( k := GetFormIndex( o:FocusedForm ) ) > 0
+            // Sets objects variable
+            o:FormName       := o:FocusedForm
+            o:FormIndex      := k
+            o:EventType      := ""
+            o:Type           := iif( _HMG_aFormType [ k ] == "C", "W", _HMG_aFormType [ k ] )
+            o:Index          := k
+            o:ControlName    := ""
+            // Sets This variable
+            IF lSets                
+               _HMG_ThisFormIndex   := o:FormIndex
+               _HMG_ThisEventType   := o:EventType
+               _HMG_ThisType        := o:Type
+               _HMG_ThisIndex       := o:Index
+               _HMG_ThisFormName    := o:FormName
+               _HMG_ThisControlName := o:ControlName
+            ENDIF
+         ENDIF
+      ENDIF
+   ENDIF
+   k := iif( Empty( _HMG_ThisControlName ), o:FocusedControlIndex, _HMG_ThisIndex )
+   IF !Empty( k )
+      o:ControlCargo        := _HMG_aControlMiscData2     [ k ]
+      o:ControlHandle       := _HMG_aControlHandles       [ k ]
+      o:ControlParentHandle := _HMG_aControlParenthandles [ k ]
+      o:ControlParentName  := GetParentFormName ( k )
+   ENDIF
+   IF _HMG_ThisFormIndex > 0
+      o:FormCargo        := _HMG_aFormMiscData2    [ _HMG_ThisFormIndex ]
+      o:FormHandle       := _HMG_aFormHandles      [ _HMG_ThisFormIndex ]
+      o:FormParentHandle := _HMG_aFormParentHandle [ _HMG_ThisFormIndex ]
+      GetFormNameByHandle ( o:FormParentHandle, @c )
+      o:FormParentName := c
+      o:FormObject := _WindowObj( o:FormHandle )
+   ENDIF
+
+   IF HB_ISOBJECT( oThis )
+      IF   oThis:ClassName == 'TSBROWSE'
+         oThis := oThis:cParentWnd
+      ELSEIF oThis:ClassName == 'TWNDDATA'
+         oThis := oThis:Name
+      ENDIF
+   ENDIF
+
+   IF HB_ISCHAR ( oThis ) ; oThis := GetFormIndex ( oThis )
+   ENDIF
+
+   IF HB_ISNUMERIC ( oThis ) .AND. oThis > 0 ; i := oThis
+   ENDIF
+
+   IF i > 0
+      _HMG_ThisFormIndex   := i
+      _HMG_ThisEventType   := ""
+      _HMG_ThisType        := iif( _HMG_aFormType [ i ] == "C", "W", _HMG_aFormType [ i ] )
+      _HMG_ThisIndex       := i
+      _HMG_ThisFormName    := _HMG_aFormNames[ i ]
+      _HMG_ThisControlName := ""
+   ELSEIF HB_ISOBJECT( oThis ) .AND. oThis:ClassName $ "THMGDATA,TKEYDATA,TTHRDATA"
+      IF !Empty( oThis:FormIndex )
+         _HMG_ThisFormIndex   := oThis:FormIndex
+         _HMG_ThisEventType   := oThis:EventType
+         _HMG_ThisType        := oThis:Type
+         _HMG_ThisIndex       := oThis:Index
+         _HMG_ThisFormName    := oThis:FormName
+         _HMG_ThisControlName := oThis:ControlName
+      ENDIF
+   ENDIF
+
+RETURN o
 
 *-----------------------------------------------------------------------------*
 FUNCTION _pPost( nEvent, nParam, xParam )

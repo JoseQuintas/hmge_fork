@@ -48,8 +48,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
-#define EM_SETCUEBANNER       0x1501
-
 *-----------------------------------------------------------------------------*
 FUNCTION _DefineSpinner ( ControlName, ParentForm, x, y, w, value , fontname, ;
       fontsize, rl, rh, tooltip, change, lostfocus, gotfocus, h, HelpId, ;

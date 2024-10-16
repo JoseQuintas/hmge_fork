@@ -12,7 +12,7 @@
 
 FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, lNumber, lCenter )
 
-   LOCAL cFormName, oBrw, nSaveSelect, cDbf, cAlias, lEdit, cTable
+   LOCAL cFormName, oBrw, nSaveSelect, cDbf, cAlias, lEdit, cTable, o
    LOCAL lbSetUp := ! Empty( bSetUp ), lRec, nY, nX, bAfter, lCellBrw := .F.
    LOCAL oApp := oDlu4Font( _HMG_DefaultFontSize )
    LOCAL nGw := oApp:GapsWidth
@@ -56,6 +56,14 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       lModal := .F., ;
       lCenter := .T.
 
+   IF _HMG_lOOPEnabled
+      DEFAULT uParam := oHmgData()
+   ELSE
+      uParam := oHmgData()
+   ENDIF
+   DEFAULT uParam:oTsb := oHmgData(), uParam:lIsDbf := .T. ; o := uParam:oTsb
+   DEFAULT o:uSelector := 20, o:cBrw := "oBrw"
+
    SWITCH ValType( lModal )
    CASE 'L'
       nWinType := iif( lModal, 1, 2 )
@@ -97,7 +105,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       ENDIF
 
    ELSEIF ValType( uAlias ) == 'N'
-      If ! Empty( Alias( uAlias ) )
+      IF ! Empty( Alias( uAlias ) )
          uAlias := Alias( uAlias )
       ELSE
          uAlias := { { uAlias } }
@@ -151,7 +159,11 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
    nWidth := This.ClientWidth - nX * 2
    nHeight := This.ClientHeight - nY * 2 - oApp:H1 - nGh
 
-   DEFINE TBROWSE oBrw AT nY, nX Alias ( uAlias ) WIDTH nWidth HEIGHT nHeight HEADER aCols ;
+      IF IsBlock(uParam:bWindow) ; EVal( uParam:bWindow )
+      ENDIF
+
+      DEFINE TBROWSE oBrw AT nY, nX Alias ( uAlias ) WIDTH nWidth HEIGHT nHeight ;
+         HEADER aCols ;
          AUTOCOLS SELECTOR 20 ;
          ON INIT {| ob | ob:nColOrder := 0, ;
          ob:lNoGrayBar := .F., ;
@@ -197,6 +209,8 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       END WITH
 
    END TBROWSE
+
+   This.Cargo:oBrw := oBrw
 
    IF oBrw:nColumn( "ORDKEYNO", .T. ) > 0
       oBrw:GetColumn( "SELECTOR" ):nClrBack := nClr
@@ -300,6 +314,9 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
    ELSE ; Eval( bSetUp, oBrw, .T. )
    ENDIF
 
+      IF IsBlock(uParam:bWindow) ; EVal( uParam:bWindow, .T. )
+      ENDIF
+
    END WINDOW
 
    IF lCenter
@@ -358,6 +375,7 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    hForm := GetFormHandle( cForm )
 
    DEFAULT oParam:lRowPosAtRec := .T.
+   DEFAULT oParam:lClrSelectorHdBack := .T.
    DEFAULT cBrw := oParam:cBrw, uAlias := oParam:uAlias
    DEFAULT cBrw := "oBrw", uAlias := Alias()
    DEFAULT nY := oParam:nRow, nX := oParam:nCol, nW := oParam:nWidth, nH := oParam:nHeight
@@ -427,33 +445,35 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 #ifndef __XHARBOUR__
    DEFAULT oParam:bSpecHdEnum := {|ob, op, cChar|  // нумерация SpecHd колонок, можно исп. в своем коде вызов
         LOCAL oCol, cCnt, nCnt := 0  // renumbering SpecHeader
+        LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         IF ob:lDrawSpecHd
-         DEFAULT cChar := op:cSpecHdChar
-         DEFAULT cChar := "."
-         FOR EACH oCol IN ob:aColumns
-           IF oCol:cName == "SELECTOR" ; LOOP
-           ENDIF
-           cCnt := cChar
-           IF oCol:cName != "ORDKEYNO" .AND. oCol:lVisible
-            cCnt := hb_ntos( ++nCnt )
-           ENDIF
-           oCol:cSpcHeading := cCnt
-         NEXT
+          DEFAULT cChar := op:cSpecHdChar
+          DEFAULT cChar := "."
+          FOR EACH oCol IN ob:aColumns
+            IF oCol:cName == "SELECTOR" ; LOOP
+            ENDIF
+            cCnt := cChar
+            IF oCol:cName != cName .AND. oCol:lVisible
+              cCnt := hb_ntos( ++nCnt )
+            ENDIF
+            oCol:cSpcHeading := cCnt
+          NEXT
         ENDIF
         RETURN Nil
         }
 
    DEFAULT oParam:bAdjColumns := {|ob|     // "растягивание" колонок в пределах окна тсб
         LOCAL aCol, nI, nK
+        LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         // у SELECTOR and ORDKEYNO не меняем width
-        nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( "ORDKEYNO", .T. ) )
+        nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( cName, .T. ) )
         IF nK > 0
-         aCol := {}
-         FOR nI := nK TO Len( ob:aColumns )
-           IF ob:aColumns[ nI ]:lVisible
-            AAdd( aCol, nI )
-           ENDIF
-         NEXT
+          aCol := {}
+          FOR nI := nK TO Len( ob:aColumns )
+            IF ob:aColumns[ nI ]:lVisible
+              AAdd( aCol, nI )
+            ENDIF
+           NEXT
         ENDIF
         ob:AdjColumns( aCol )
         RETURN Nil
@@ -462,12 +482,12 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DEFAULT bEnd  := {|ob, op|
         // нет горизонтального HScroll и есть SELECTOR
         IF op:uSelector != NIL .AND. op:lAdjust == NIL .AND. ob:lNoHScroll
-         IF HB_ISBLOCK( op:bAdjColumns )
-          EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
-         ENDIF
+           IF HB_ISBLOCK( op:bAdjColumns )
+              EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
+           ENDIF
         ENDIF
         IF ob:nLen > ob:nRowCount()     // нужен VScroll
-         ob:ResetVScroll( .T. )
+           ob:ResetVScroll( .T. )
         ENDIF
         ob:SetNoHoles()
         ob:SetFocus()
@@ -476,33 +496,35 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 #else
    DEFAULT oParam:bSpecHdEnum := <|ob, op, cChar|  // нумерация SpecHd колонок, можно исп. в своем коде вызов
         LOCAL oCol, cCnt, nCnt := 0  // renumbering SpecHeader
+        LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         IF ob:lDrawSpecHd
-         DEFAULT cChar := op:cSpecHdChar
-         DEFAULT cChar := "."
-         FOR EACH oCol IN ob:aColumns
-           IF oCol:cName == "SELECTOR" ; LOOP
-           ENDIF
-           cCnt := cChar
-           IF oCol:cName != "ORDKEYNO" .AND. oCol:lVisible
-            cCnt := hb_ntos( ++nCnt )
-           ENDIF
-           oCol:cSpcHeading := cCnt
-         NEXT
+          DEFAULT cChar := op:cSpecHdChar
+          DEFAULT cChar := "."
+          FOR EACH oCol IN ob:aColumns
+             IF oCol:cName == "SELECTOR" ; LOOP
+             ENDIF
+             cCnt := cChar
+             IF oCol:cName != cName .AND. oCol:lVisible
+                cCnt := hb_ntos( ++nCnt )
+             ENDIF
+             oCol:cSpcHeading := cCnt
+          NEXT
         ENDIF
         RETURN Nil
         >
 
    DEFAULT oParam:bAdjColumns := <|ob|     // "растягивание" колонок в пределах окна тсб
         LOCAL aCol, nI, nK
+        LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         // у SELECTOR and ORDKEYNO не меняем width
-        nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( "ORDKEYNO", .T. ) )
+        nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( cName, .T. ) )
         IF nK > 0
-         aCol := {}
-         FOR nI := nK TO Len( ob:aColumns )
-           IF ob:aColumns[ nI ]:lVisible
-            AAdd( aCol, nI )
-           ENDIF
-         NEXT
+          aCol := {}
+          FOR nI := nK TO Len( ob:aColumns )
+            IF ob:aColumns[ nI ]:lVisible
+               AAdd( aCol, nI )
+            ENDIF
+          NEXT
         ENDIF
         ob:AdjColumns( aCol )
         RETURN Nil
@@ -511,12 +533,12 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DEFAULT bEnd  := <|ob, op|
         // нет горизонтального HScroll и есть SELECTOR
         IF op:uSelector != NIL .AND. op:lAdjust == NIL .AND. ob:lNoHScroll
-         IF HB_ISBLOCK( op:bAdjColumns )
-          EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
-         ENDIF
+           IF HB_ISBLOCK( op:bAdjColumns )
+              EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
+           ENDIF
         ENDIF
         IF ob:nLen > ob:nRowCount()     // нужен VScroll
-         ob:ResetVScroll( .T. )
+           ob:ResetVScroll( .T. )
         ENDIF
         ob:SetNoHoles()
         ob:SetFocus()
@@ -564,10 +586,12 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
          ob:nClrLine := COLOR_GRID, ;
          ob:lCheckBoxAllReturn := .T. }
 
+      :lRowPosAtRec       := oParam:lRowPosAtRec
+      :lClrSelectorHdBack := oParam:lClrSelectorHdBack
+
       :Cargo:oParam := oParam
       :lEnum := lSpecHd
       :lDrawSpecHd := lSpecHd
-      :lRowPosAtRec := oParam:lRowPosAtRec
 
       IF lSpecHd .AND. Empty( :nHeightSpecHd )
          :nHeightSpecHd := GetFontHeight( oParam:aFont[ iif( Len( oParam:aFont ) > 3, 4, 1 ) ] )
