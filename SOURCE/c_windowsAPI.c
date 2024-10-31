@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #define _WIN32_IE 0x0501
 
 #include <mgdefs.h>
@@ -779,6 +779,12 @@ HB_FUNC( GETWINDOWSTATE )
 HB_FUNC( GETPARENT )
 {
    hmg_ret_raw_HWND( GetParent( hmg_par_raw_HWND( 1 ) ) );
+}
+
+HB_FUNC( SETPARENT )
+{
+   HWND hWnd = SetParent( hmg_par_raw_HWND( 1 ), hmg_par_raw_HWND( 2 ) );
+   hmg_ret_raw_HWND( hWnd );
 }
 
 HB_FUNC( GETDESKTOPWINDOW )

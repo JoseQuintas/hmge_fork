@@ -18,6 +18,20 @@
 #require "hbxlsxml"
 
 * =================================================================================
+STATIC FUNCTION RunOpenFileXML(cFile)
+
+      cFile := HB_ANSItoOEM(cFile) // OEM кодировка для русских букв
+      // можно так, если принудительно нужно запустить Excel для открытия *.xml
+      hb_memowrit('_run_.cmd', '@Start Excel "' + cFile + '"' + CRLF)
+      ShellExecute( 0, "Open", '_run_.cmd',,, SW_HIDE )
+      InkeyGui(1000)
+      fErase('_run_.cmd')
+
+      // можно и так, если назначена другая программа для открытия *.xml
+      // cFile - должно быть в ANSI кодировке для русских букв
+      //ShellExecute( 0, "Open", cFile,,, 3 )
+RETURN NIL
+* =================================================================================
 FUNCTION Brw7Xml( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress)
    LOCAL oXml, oSheet, oStyle, uData, nColDbf, nTotal, aCol, aClr
    LOCAL nLen, nLine, cTitle, i, lTsbSuperHd, lTsbHeading, lTsbFooting
@@ -210,13 +224,15 @@ FUNCTION Brw7Xml( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress)
           Case cType=="D"
              oStyle:setNumberFormat( "@")
           case cType == 'N'
-             nPoint   := AT('.', rPicture )
+           if !empty(rPicture)  
+            nPoint   := AT('.', rPicture )
              if nPoint == 0
                 rPicture :='#0'
              else
                 rPicture := Repl("#",nPoint-2) + '0.' + Repl("0",Len(rPicture)-nPoint)
              endif
              oStyle:setNumberFormat( rPicture )
+           endif
           Otherwise
              oStyle:setNumberFormat( "@")
        endcase
@@ -254,12 +270,12 @@ FUNCTION Brw7Xml( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress)
        ++nRow
     Endif
 
-   nColHead := 0
+   nCol := 0
    // Пишем суперхидер
    IF lTsbSuperHd
       nRow ++
       FOR EACH aCol IN aTsb[1]
-         nColHead ++
+         nCol ++
          uData := if(Empty(aCol[4]),' ',aCol[4])
          nColSh1 := if(aCol[5]>0, aCol[5], nColSh2+1)
          // Если  с -1 не последняя и следующая нормальная, то берем до следующей
@@ -269,7 +285,7 @@ FUNCTION Brw7Xml( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress)
             endif
          endif
          nColSh2 := if(aCol[6]>0, aCol[6], if(nCol==Len(aTsb[1]), nColDbf, nColSh1))
-         oSheet:writeString( nRow,  nColSh1, uData , "SH" + hb_ntoc(nColHead))
+         oSheet:writeString( nRow,  nColSh1, uData , "SH" + hb_ntoc(nCol))
          oSheet:cellMerge(    nRow, nColSh1, nColSh2 - nColSh1, 0 )
       NEXT
    Endif
@@ -372,16 +388,8 @@ FUNCTION Brw7Xml( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress)
    CursorArrow()
 
    If lActivate
-      WaitWindow( 'Loading the report in EXCEL ...', .T. )
-
-      // можно так, если принудительно нужно запустить Excel для открытия *.xml
-      hb_memowrit('_run_.cmd', '@Start Excel ' + cFile + CRLF)
-      ShellExecute( 0, "Open", '_run_.cmd',,, SW_HIDE )
-      InkeyGui(1000)
-      fErase('_run_.cmd')
-
-      // можно и так, если назначена другая программа для открытия *.xml
-      // ShellExecute( 0, "Open", cFile,,, 3 )
+      WaitWindow( 'Load the XML file into the program ...', .T. )
+      RunOpenFileXML(cFile)   // запуск программы
       INKEYGUI(800)
       WaitWindow()            // close the wait window
    EndIf
@@ -645,11 +653,11 @@ FUNCTION Brw7XmlColor( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress )
     Endif
 
    // Пишем Суперхидер
-   nColHead := 0
+   nCol := 0
    IF lTsbSuperHd
       nRow ++
       FOR EACH aCol IN aTsb[1]
-         nColHead ++
+         nCol ++
          uData := if(Empty(aCol[4]),' ',aCol[4])
          nColSh1 := if(aCol[5]>0, aCol[5], nColSh2+1)
          // Если  с -1 не последняя и следующая нормальная, то берем до следующей
@@ -659,7 +667,7 @@ FUNCTION Brw7XmlColor( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress )
             endif
          endif
          nColSh2 := if(aCol[6]>0, aCol[6], if(nCol==Len(aTsb[1]), nColDbf, nColSh1))
-         oSheet:writeString( nRow,  nColSh1, uData , "SH" + hb_ntoc(nColHead))
+         oSheet:writeString( nRow,  nColSh1, uData , "SH" + hb_ntoc(nCol))
          oSheet:cellMerge(    nRow, nColSh1, nColSh2 - nColSh1, 0 )
       NEXT
    Endif
@@ -769,16 +777,8 @@ FUNCTION Brw7XmlColor( aTsb, aXmlParam, aXmlTitle, aXmlFoot, hProgress )
    CursorArrow()
 
    If lActivate
-      WaitWindow( 'Loading the report in EXCEL ...', .T. )
-
-      // можно так, если принудительно нужно запустить Excel для открытия *.xml
-      hb_memowrit('_run_.cmd', '@Start Excel ' + cFile + CRLF)
-      ShellExecute( 0, "Open", '_run_.cmd',,, SW_HIDE )
-      InkeyGui(1000)
-      fErase('_run_.cmd')
-
-      // можно и так, если назначена другая программа для открытия *.xml
-      // ShellExecute( 0, "Open", cFile,,, 3 )
+      WaitWindow( 'Load the XML file into the program ...', .T. )
+      RunOpenFileXML(cFile)   // запуск программы
       INKEYGUI(800)
       WaitWindow()            // close the wait window
    EndIf

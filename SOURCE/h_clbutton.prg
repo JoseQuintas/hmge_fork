@@ -117,7 +117,7 @@ PROCEDURE _DefineCLButton ( cName, nRow, nCol, cCaption, cNotes, bAction, cParen
    _HMG_aControlFontName[k] :=  Nil
    _HMG_aControlFontSize[k] :=  Nil
    _HMG_aControlFontAttributes[k ] :=  {}
-   _HMG_aControlToolTip[k] :=  ''
+   _HMG_aControlToolTip[k] :=  cNotes
    _HMG_aControlRangeMin[k] :=   0
    _HMG_aControlRangeMax[k] :=   0
    _HMG_aControlCaption[k] :=   ''
@@ -363,9 +363,15 @@ RETURN RetVal
 *------------------------------------------------------------------------------*
 PROCEDURE SetCLButtonNoteText ( cWindow, cControl, cProperty, cValue )
 *------------------------------------------------------------------------------*
+   LOCAL i
+
    cProperty := NIL // Unused variable
 
    IF GetControlType ( cControl, cWindow ) == 'CLBUTTON'
+
+      i := GetControlIndex ( cControl, cWindow )
+
+      _HMG_aControlToolTip[ i ] := cValue
 
       CLButton_SetNote( GetControlHandle ( cControl, cWindow ), cValue )
 
@@ -382,21 +388,27 @@ RETURN
 *------------------------------------------------------------------------------*
 FUNCTION GetCLButtonNoteText ( cWindow, cControl )
 *------------------------------------------------------------------------------*
+   LOCAL RetVal := Nil
 
    IF GetControlType ( cControl, cWindow ) == 'CLBUTTON'
 
-      MsgExclamation ( 'This Property is Write Only!', 'Warning' )
+      _HMG_UserComponentProcess := .T.
+
+      RetVal := _GetToolTip ( cControl, cWindow )
+
+   ELSE
+
+      _HMG_UserComponentProcess := .F.
 
    ENDIF
 
-   _HMG_UserComponentProcess := .F.
-
-RETURN NIL
+RETURN RetVal
 
 *------------------------------------------------------------------------------*
 PROCEDURE SetCLButtonPicture ( cWindow, cControl, cProperty, cBitmap )
 *------------------------------------------------------------------------------*
    LOCAL i
+
    cProperty := NIL // Unused variable
 
    IF GetControlType ( cControl, cWindow ) == 'CLBUTTON'

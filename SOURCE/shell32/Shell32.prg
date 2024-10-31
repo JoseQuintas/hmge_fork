@@ -1,33 +1,42 @@
-// ===========================================================================
-// Shell32.PRG        (c) 2004, Grigory Filatov
-// ===========================================================================
-//
-//   Created   : 08.09.04
-//   Extended  : 28.04.07
-//   Section   : Shell Extensions
-//
-//   Windows ShellAPI provides functions to implement:
-//   · The drag-drop feature
-//   · Associations (used) to find and start applications
-//   · Extraction of icons from executable files
-//   · Explorer File operation
-//
-//
-// ===========================================================================
+/*
+ ===========================================================================
+ Shell32.PRG        (c) 2004, Grigory Filatov
+ ===========================================================================
+
+   Created   : 08.09.04
+   Extended  : 28.04.07
+   Section   : Shell Extensions
+
+   This library provides an interface for working with Windows ShellAPI 
+   functions, allowing for the following operations:
+   · Drag-and-drop functionality
+   · File association to open files with the correct applications
+   · Extraction of icons from executable files
+   · File operations (copy, move, delete, rename) via Explorer-like UI
+
+ ===========================================================================
+*/
 
 #include "Shell32.ch"
 #include "common.ch"
 
-// ===========================================================================
-// Function ShFolderDelete( hParentWnd, acFolder, lSilent )
-//
-// Purpose:
-//  Use the Windows ShellAPI function to delete folder(s) with all its files and
-//  subdirectories.
-//  acFolder can be an Array of FolderName string, or a single FolderName string.
-//  If lSilent is TRUE (default), you can not an any confirmation
-//
-// ===========================================================================
+/*
+ ===========================================================================
+ Function: SHFolderDelete( hParentWnd, acFolder, lSilent )
+
+ Purpose:
+  This function deletes a folder (or multiple folders) and all its contents 
+  (files and subdirectories) using the Windows ShellAPI function. 
+
+ Parameters:
+  - hWnd     : Handle to the parent window (default is the active window).
+  - acFolder : A string representing the folder name or an array of folder names.
+  - lSilent  : If TRUE (default), no confirmation dialogs are shown.
+
+ Returns:
+  - TRUE if the deletion succeeds, FALSE otherwise.
+ ===========================================================================
+*/
 FUNCTION SHFolderDelete( hWnd, acFolder, lSilent )
 
    LOCAL nFlag := 0
@@ -35,21 +44,29 @@ FUNCTION SHFolderDelete( hWnd, acFolder, lSilent )
    DEFAULT hWnd TO GetActiveWindow()
 
    IF lSilent == NIL .OR. lSilent
-      nFlag := FOF_NOCONFIRMATION + FOF_SILENT
+      nFlag := FOF_NOCONFIRMATION + FOF_SILENT  // No confirmation and silent operation
    ENDIF
 
 RETURN ( ShellFiles( hWnd, acFolder, , FO_DELETE, nFlag ) == 0 )
 
+/*
+ ===========================================================================
+ Function: SHFileDelete( hParentWnd, aFiles, lRecycle )
 
-// ===========================================================================
-// Function ShFileDelete( hParentWnd, aFiles, lRecycle )
-//
-// Purpose:
-//  Use the Windows ShellAPI function to delete file(s).
-//  aFiles can be an Array of FileName strings, or a single FileName string.
-//  If lRecycle is TRUE (default), deleted files are moved into the recycle Bin
-//
-// ===========================================================================
+ Purpose:
+  Deletes one or more files using the Windows ShellAPI function. If `lRecycle` 
+  is TRUE (default), files are moved to the Recycle Bin; otherwise, they are 
+  permanently deleted.
+
+ Parameters:
+  - hWnd    : Handle to the parent window (default is the active window).
+  - acFiles : A string representing a file name or an array of file names.
+  - lRecycle: If TRUE (default), files are sent to the Recycle Bin.
+
+ Returns:
+  - TRUE if the deletion succeeds, FALSE otherwise.
+ ===========================================================================
+*/
 FUNCTION SHFileDelete( hWnd, acFiles, lRecycle )
 
    LOCAL nFlag := 0
@@ -57,25 +74,30 @@ FUNCTION SHFileDelete( hWnd, acFiles, lRecycle )
    DEFAULT hWnd TO GetActiveWindow()
 
    IF lRecycle == NIL .OR. lRecycle
-      nFlag := FOF_ALLOWUNDO
+      nFlag := FOF_ALLOWUNDO  // Allow undo (send to Recycle Bin)
    ENDIF
 
 RETURN ( ShellFiles( hWnd, acFiles, , FO_DELETE, nFlag ) == 0 )
 
+/*
+ ===========================================================================
+ Function: ShellFiles( hParentWnd, aFiles, aTarget, nFunc, nFlag )
 
-// ===========================================================================
-// Function ShellFile( hParentWnd, aFiles, aTarget, nFunc, nFlag )
-//
-// Purpose:
-// Performs a copy, move, rename, or delete operation on a file system object.
-// Parameters:
-//   aFiles  is an Array of Source-Filenamestrings, or a single Filenamestring
-//   aTarget is an Array of Target-Filenamestrings, or a single Filenamestring
-//   nFunc   determines the action on the files:
-//           FO_MOVE, FO_COPY, FO_DELETE, FO_RENAME
-//   fFlag   Option Flag ( see the file SHELL32.CH )
-//
-// ===========================================================================
+ Purpose:
+  Performs a file system operation (copy, move, delete, rename) on one or more
+  files or folders using the Windows ShellAPI function.
+
+ Parameters:
+  - hWnd    : Handle to the parent window (default is the active window).
+  - aFiles  : A string representing the source file(s) or an array of file names.
+  - aTarget : A string representing the target file(s) or an array of file names (optional).
+  - nFunc   : Operation to perform: FO_MOVE, FO_COPY, FO_DELETE, FO_RENAME.
+  - fFlag   : Operation flags, such as FOF_NOCONFIRMATION, FOF_ALLOWUNDO, etc.
+
+ Returns:
+  - The result of the Shell operation: 0 if successful, non-zero otherwise.
+ ===========================================================================
+*/
 FUNCTION ShellFiles( hWnd, acFiles, acTarget, wFunc, fFlag )
 
    LOCAL cTemp
@@ -84,78 +106,99 @@ FUNCTION ShellFiles( hWnd, acFiles, acTarget, wFunc, fFlag )
    //
    hb_default( @hWnd, GetActiveWindow() )
 
-   // Operation Flag
+   // Default function to delete if not specified
    //
    IF wFunc == NIL
       wFunc := FO_DELETE
    ENDIF
 
-   // Options Flag
+   // Default option to allow undo (send to Recycle Bin) if not specified
    //
    IF fFlag == NIL
       fFlag := FOF_ALLOWUNDO
    ENDIF
 
-   // SourceFiles, convert Array to String
+   // Convert source files from an array to a null-terminated string
    //
    DEFAULT acFiles TO Chr( 0 )
 
    IF hb_IsArray( acFiles )
       cTemp :=  ""
-      AEval( acFiles, {| x | cTemp += x + Chr( 0 ) } )
+      AEval( acFiles, {| x | cTemp += x + Chr( 0 ) } )  // Convert array to a concatenated string
       acFiles := cTemp
    ENDIF
-   acFiles += Chr( 0 )
+   acFiles += Chr( 0 )  // Append null character to terminate the string
 
-   // TargetFiles, convert Array to String
+   // Convert target files from an array to a null-terminated string, if specified
    //
    DEFAULT acTarget TO Chr( 0 )
 
    IF hb_IsArray( acTarget )
       cTemp := ""
-      AEval( acTarget, {| x | cTemp += x + Chr( 0 ) } )
+      AEval( acTarget, {| x | cTemp += x + Chr( 0 ) } )  // Convert array to a concatenated string
       acTarget := cTemp
    ENDIF
-   acTarget += Chr( 0 )
+   acTarget += Chr( 0 )  // Append null character to terminate the string
 
-   // call SHFileOperation
+   // Call the ShellFileOperation function
    //
 RETURN ShellFileOperation( hWnd, acFiles, acTarget, wFunc, fFlag )
 
+/*
+ ===========================================================================
+ Internal Function: ShellFileOperation
 
+ Purpose:
+  This is a low-level interface to the Windows SHFileOperation function, 
+  which performs various file operations like copy, move, delete, and rename.
+
+ Parameters:
+  - hWnd   : Handle to the parent window.
+  - acFiles: Source file(s) as a null-terminated string.
+  - acTarget: Target file(s) as a null-terminated string (optional).
+  - wFunc  : The operation to be performed (FO_MOVE, FO_COPY, etc.).
+  - fFlag  : Operation flags for the Shell function (e.g., FOF_NOCONFIRMATION).
+
+ Returns:
+  - Result of the SHFileOperation function: 0 for success, non-zero otherwise.
+ ===========================================================================
+*/
 #pragma BEGINDUMP
 
 #include <mgdefs.h>
 #include <shellapi.h>
 
 #ifdef UNICODE
-   LPWSTR AnsiToWide( LPCSTR );
+   LPWSTR AnsiToWide( LPCSTR );  // Helper function to convert ANSI strings to Unicode
 #endif
 
 HB_FUNC ( SHELLFILEOPERATION )
 {
 #ifndef UNICODE
-   LPCSTR lpFrom = ( LPCSTR ) hb_parc( 2 );
-   LPCSTR lpTo = ( LPCSTR ) hb_parc( 3 );
+   LPCSTR lpFrom = ( LPCSTR ) hb_parc( 2 );   // Source file(s)
+   LPCSTR lpTo = ( LPCSTR ) hb_parc( 3 );     // Target file(s)
 #else
-   LPCWSTR lpFrom = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR lpTo = AnsiToWide( ( char * ) hb_parc( 3 ) );
+   LPCWSTR lpFrom = AnsiToWide( ( char * ) hb_parc( 2 ) );  // Convert source to Unicode
+   LPCWSTR lpTo = AnsiToWide( ( char * ) hb_parc( 3 ) );    // Convert target to Unicode
 #endif
-   SHFILEOPSTRUCT sh;
 
-   sh.hwnd   = hmg_par_raw_HWND( 1 );
-   sh.pFrom  = lpFrom;
-   sh.pTo    = lpTo;
-   sh.wFunc  = hmg_par_UINT( 4 );
-   sh.fFlags = hmg_par_WORD( 5 );
-   sh.hNameMappings = 0;
-   sh.lpszProgressTitle = NULL;
+   SHFILEOPSTRUCT sh;  // Define the structure for the SHFileOperation call
 
-   hmg_ret_NINT( SHFileOperation( &sh ) );
+   // Set the parameters for SHFileOperation
+   sh.hwnd   = hmg_par_raw_HWND( 1 );            // Parent window handle
+   sh.pFrom  = lpFrom;                           // Source file(s)
+   sh.pTo    = lpTo;                             // Target file(s)
+   sh.wFunc  = hmg_par_UINT( 4 );                // Operation function (move, copy, delete, etc.)
+   sh.fFlags = hmg_par_WORD( 5 );                // Flags for the operation
+   sh.hNameMappings = 0;                         // No name mappings
+   sh.lpszProgressTitle = NULL;                  // No progress dialog title
+
+   // Perform the file operation
+   hmg_ret_NINT( SHFileOperation( &sh ) );       // Return the result
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpFrom );
-   hb_xfree( ( TCHAR * ) lpTo );
+   hb_xfree( ( TCHAR * ) lpFrom );  // Free the memory allocated for the Unicode string
+   hb_xfree( ( TCHAR * ) lpTo );    // Free the memory allocated for the Unicode string
 #endif
 }
 

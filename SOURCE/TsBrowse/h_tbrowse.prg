@@ -5361,8 +5361,8 @@ METHOD Edit( uVar, nCell, nKey, nKeyFlags, cPicture, bValid, nClrFore, nClrBack 
       ELSEIF nKey != VK_RETURN // GF 15-10-2015
          uVar := Eval( oCol:bPrevEdit, uValue, Self, nCell, oCol )
          IF ValType( uVar ) == "A"
-            uVar := uVar[ 1 ]
             uValue := uVar[ 2 ]
+            uVar := uVar[ 1 ]
          ENDIF
          IF ValType( uVar ) == "L" .AND. ! uVar
             nKey := VK_RETURN
@@ -8716,8 +8716,8 @@ METHOD KeyDown( nKey, nFlags ) CLASS TSBrowse
             uVal := ::bDataEval( ::aColumns[ nCol ] )
             uVal := Eval( ::aColumns[ nCol ]:bPrevEdit, uVal, Self, nCol, ::aColumns[ nCol ] )
             IF ValType( uVal ) == "A"
-               uVal := uVal[ 1 ]
                uValue := uVal[ 2 ]
+               uVal := uVal[ 1 ]
             ENDIF
             IF ValType( uVal ) == "L" .AND. ! uVal
                RETURN 0
@@ -8741,8 +8741,10 @@ METHOD KeyDown( nKey, nFlags ) CLASS TSBrowse
                iif( ValType( ::aDefault[ nCol ] ) == "B", ;
                Eval( ::aDefault[ nCol ], Self ), ::aDefault[ nCol ] ) )
          ELSE
+
             uTemp := iif( nCol <= Len( ::aDefValue ), ;
                ::aDefValue[ nCol ], Space( 10 ) )
+
          ENDIF
 
       ELSEIF ::lAppendMode .AND. ::aDefault != NIL
@@ -8788,6 +8790,7 @@ METHOD KeyDown( nKey, nFlags ) CLASS TSBrowse
       IF ::bContext != NIL
          Eval( ::bContext, ::nRowPos, ::nColPos, Self )
       ENDIF
+
 #ifndef __EXT_SELECTION__
    CASE ! ::lCellbrw .AND. ( nKey == VK_RETURN .OR. nKey == VK_SPACE ) .AND. ::bLDblClick != NIL // 14.07.2015
       Eval( ::bLDblClick, NIL, nKey, nFlags, Self )

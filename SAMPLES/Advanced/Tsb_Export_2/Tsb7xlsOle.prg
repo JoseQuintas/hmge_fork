@@ -48,6 +48,7 @@ FUNCTION Brw7XlsOle( aTsb, aXlsParam, aXlsTitle, aXlsFoot, aImage, hProgress, bE
    hFont     := aXlsParam[4]
    nTotal    := Len(aTsb[4])     // количество строк таблицы
    nColDbf   := Len(aTsb[4,1])   // количество колонок
+   lFormula  := .F.
 
    CursorWait()
    IF Hb_LangSelect() == "ru.RU1251" ; cMsg := '«агружаю отчЄт в'
@@ -68,7 +69,7 @@ FUNCTION Brw7XlsOle( aTsb, aXlsParam, aXlsTitle, aXlsFoot, aImage, hProgress, bE
       WaitThreadCloseIcon()  // kill the window waiting
       CursorArrow()
       cMsg += " [ " + win_oleErrorText() + " ];;"
-      MG_Stop( cMsg , cVal )
+      AlertStop( cMsg , cVal, "ZZZ_B_STOP64", 64, {RED})
       RETURN Nil
    ENDIF
 
@@ -147,15 +148,24 @@ FUNCTION Brw7XlsOle( aTsb, aXlsParam, aXlsTitle, aXlsFoot, aImage, hProgress, bE
             endif
          endif
          nColSh2 := if(aCol[6]>0, aCol[6], if(nCol==Len(aTsb[1]), nColDbf, nColSh1))
+         if nColSh2>nColDbf
+         //≈сли в суперхидере задано больше колонок, чем в таблице
+         // (в случае наличи€ —електора, например)
+            nColSh2:=nColDbf
+         endif
          oSheet:Cells( nLine,  nColSh1):NumberFormat := '@'
          oSheet:Cells( nLine,  nColSh1):Value := if(Empty(aCol[4]),' ',aCol[4])
          cRange :=  HeadXls( nColSh1) + Hb_NtoS( nLine )  + ":" + ;
                     HeadXls( nColSh2) + Hb_NtoS( nLine )
-         oSheet:Range( cRange ):HorizontalAlignment  := xlHAlignCenterAcrossSelection
+         oRange := oSheet:Range( cRange )
+         oRange:Merge()
+         oRange:HorizontalAlignment  := TbsXlsAlign( DT_CENTER )
+         oRange := oSheet:Range( cRange )
+         oRange:Merge()
          aFontSHF := GetFontParam(aCol[3])
-         oSheet:Range( cRange ):Font:Name := aFontSHF[ 1 ]
-         oSheet:Range( cRange ):Font:Size := aFontSHF[ 2 ]
-         oSheet:Range( cRange ):Font:Bold := aFontSHF[ 3 ]
+         oRange:Font:Name := aFontSHF[ 1 ]
+         oRange:Font:Size := aFontSHF[ 2 ]
+         oRange:Font:Bold := aFontSHF[ 3 ]
       NEXT
       ++nLine
    Endif
@@ -399,9 +409,9 @@ FUNCTION Brw7XlsOle( aTsb, aXlsParam, aXlsTitle, aXlsFoot, aImage, hProgress, bE
 
    // вызов допольнительного внешнего блока дообработки таблицы
    If bExtern2 != Nil //.and. lFormula
-      Eval( bExtern2, oSheet, oExcel, aTsb, nLinecolor)
-      // внутри блока - стиль таблицы колонок помен€ли на цифры 
-      // oExcel:ReferenceStyle := xlR1C1   
+      Eval( bExtern2, oSheet, oExcel )
+      // внутри блока - стиль таблицы колонок помен€ли на цифры
+      // oExcel:ReferenceStyle := xlR1C1
    EndIf
 
    If hProgress != Nil
@@ -517,11 +527,16 @@ FUNCTION ExcelOle7Extern( hProgress, oSheet, aTsb, aXlsTitle)
          nColSh1 := if(aCol[5]>0, aCol[5], nColSh2+1)
          // ≈сли  с -1 не последн€€ и следующа€ нормальна€, то берем до следующей
          if aCol[6]>0.and.nCol<Len(aTsb[1])
-       if aTsb[1,nCol+1,5]>0
+         if aTsb[1,nCol+1,5]>0
                 nColSh2 := aTsb[1,nCol,5]-1
             endif
          endif
          nColSh2 := if(aCol[6]>0, aCol[6], if(nCol==Len(aTsb[1]), nColDbf, nColSh1))
+         if nColSh2>nColDbf
+         //≈сли в суперхидере задано больше колонок, чем в таблице
+         // (в случае наличи€ —електора, например)
+            nColSh2:=nColDbf
+         endif
          cRange :=  HeadXls( nColSh1) + Hb_NtoS( nLine )  + ":" + ;
                     HeadXls( nColSh2) + Hb_NtoS( nLine )
          oSheet:Range( cRange ):HorizontalAlignment  := xlHAlignCenterAcrossSelection
@@ -852,7 +867,7 @@ Return rPixelToPoint
 #pragma BEGINDUMP
 
 #include <windows.h>
-#include "hbapi.h"
+#include <hbapi.h>
 
 HB_FUNC( GETDPIX )
 {

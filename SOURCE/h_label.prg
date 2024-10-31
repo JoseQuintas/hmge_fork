@@ -262,17 +262,17 @@ FUNCTION _DefineLabel ( ControlName, ParentFormName, x, y, Caption, w, h, ;
    _HMG_aControlMiscData2 [k] :=  ''
 
    IF .NOT. lDialogInMemory
-      IF blink
-         _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
-            iif( _HMG_aControlMiscData1 [k] [3] == .T. , _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
-      ELSEIF autosize
+      IF autosize
          _SetControlWidth ( ControlName , ParentFormName , GetTextWidth( NIL, Caption, FontHandle ) + ;
             iif( bold == .T. .OR. italic == .T., GetTextWidth( NIL, " ", FontHandle ), 0 ) )
          _SetControlHeight ( ControlName , ParentFormName , FontSize + iif( FontSize < 14, 12, 16 ) )
-      ELSE
-         IF .NOT. _HMG_BeginWindowActive
-            _Refresh ( k )
-         ENDIF
+      ENDIF
+      IF blink
+         _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
+            iif( _HMG_aControlMiscData1 [k] [3] == .T., _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
+      ENDIF
+      IF .NOT. _HMG_BeginWindowActive
+         _Refresh ( k )
       ENDIF
    ENDIF
 
@@ -293,11 +293,6 @@ FUNCTION InitDialogLabel( ParentFormName, ControlHandle, k )
 *-----------------------------------------------------------------------------*
    LOCAL ControlName := _HMG_aControlNames [k]
 
-   IF _HMG_aControlMiscData1 [k] [2] == .T.
-      _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
-         iif( _HMG_aControlMiscData1 [k] [3] == .T. , _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
-   ENDIF
-
    IF _HMG_aControlSpacing [k] == 1
       _SetControlWidth ( ControlName , ParentFormName , GetTextWidth( NIL, _HMG_aControlCaption [k] , _HMG_aControlFontHandle [k] ) + ;
          iif( _HMG_aControlFontAttributes [k] [1] == .T. .OR. _HMG_aControlFontAttributes [k] [2] == .T., ;
@@ -305,22 +300,26 @@ FUNCTION InitDialogLabel( ParentFormName, ControlHandle, k )
       _SetControlHeight ( ControlName , ParentFormName , _HMG_aControlFontSize [k] + iif( _HMG_aControlFontSize [k] < 14, 12, 16 ) )
       RedrawWindow ( ControlHandle )
    ENDIF
-// JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]   // Modal
+   IF _HMG_aControlMiscData1 [k] [2] == .T.
+      _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
+         iif( _HMG_aControlMiscData1 [k] [3] == .T., _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
+   ENDIF
+   // JP 62
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]  // Modal
       _HMG_aControlDeleted [k] := .T.
    ENDIF
 
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-FUNCTION OLABELEVENTS( hWnd, nMsg, wParam, lParam )
+FUNCTION OLABELEVENTS ( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
-   LOCAL i := AScan ( _HMG_aControlHandles, hWnd )
+   LOCAL i
 
    HB_SYMBOL_UNUSED( wParam )
    HB_SYMBOL_UNUSED( lParam )
 
-   IF i > 0
+   IF ( i := AScan ( _HMG_aControlHandles, hWnd ) ) > 0
 
       SWITCH nMsg
 
@@ -330,6 +329,7 @@ FUNCTION OLABELEVENTS( hWnd, nMsg, wParam, lParam )
 
       CASE WM_MOUSELEAVE
         _DoControlEventProcedure ( _HMG_aControlLostFocusProcedure [i] , i )
+        EXIT
 
       ENDSWITCH
 

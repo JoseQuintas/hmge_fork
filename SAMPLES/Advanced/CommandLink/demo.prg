@@ -34,7 +34,7 @@ PROCEDURE Main()
 				MENUITEM 'Custom Property: Handle (Set)' ACTION Win1.(cBut1).Handle := 1
 				MENUITEM 'Custom Property: Caption (Get)' ACTION MsgInfo ( Win1.(cBut1).Caption )
 				MENUITEM 'Custom Property: Caption (Set)' ACTION Win1.(cBut1).Caption := 'New Caption'
-				MENUITEM 'Custom Property: NoteText (Get)' ACTION Win1.(cBut1).NoteText
+				MENUITEM 'Custom Property: NoteText (Get)' ACTION MsgInfo ( Win1.(cBut1).NoteText )
 				MENUITEM 'Custom Property: NoteText (Set)' ACTION Win1.(cBut1).NoteText := 'New Note'
 				MENUITEM 'Custom Property: Picture (Get)' ACTION MsgInfo ( Win1.(cBut1).Picture )
 				MENUITEM 'Custom Property: Picture (Set)' ACTION Win1.(cBut1).Picture := 'button.bmp'

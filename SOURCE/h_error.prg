@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2023, https://harbour.github.io/
+   Copyright 1999-2024, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -43,7 +43,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 #ifdef __XHARBOUR__
 #define __SYSDATA__
@@ -65,7 +65,6 @@ INIT PROCEDURE ClipInit()
 
    ENDIF
 
-   AltD( 1 )
    Init()
 
 RETURN
@@ -112,19 +111,21 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 24.10 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 24.11 ("
 
 *-----------------------------------------------------------------------------*
 FUNCTION MiniGuiVersion( nVer )
 *-----------------------------------------------------------------------------*
 #ifndef __XHARBOUR__
-   LOCAL cVer := MG_VERSION + hb_ntos( hb_Version( HB_VERSION_BITWIDTH ) ) + "-bit)"
+   LOCAL cVer := MG_VERSION + hb_ntos( hb_Version( HB_VERSION_BITWIDTH ) ) + "-bit) "
 #else
-   LOCAL cVer := MG_VERSION + iif( IsExe64(), "64", "32" ) + "-bit)"
+   LOCAL cVer := MG_VERSION + iif( IsExe64(), "64", "32" ) + "-bit) "
 #endif
    LOCAL anOfs
 
-   cVer += " " + HMG_CharsetName()
+   hb_default( @nVer, 0 )
+
+   cVer += HMG_CharsetName()
 
    IF Set( _SET_DEBUG )
       cVer += " (DEBUG)"
@@ -132,12 +133,4 @@ FUNCTION MiniGuiVersion( nVer )
 
    anOfs := { Len( cVer ), 38, 15 }
 
-   hb_default( @nVer, 0 )
-
-   IF nVer > 2
-      nVer := 2
-   ELSEIF nVer < 0
-      nVer := 0
-   ENDIF
-
-RETURN Left( cVer, anOfs[ nVer + 1 ] )
+RETURN Left( cVer, anOfs[ iif( nVer > 2, 2, iif( nVer < 0, 0, nVer ) ) + 1 ] )

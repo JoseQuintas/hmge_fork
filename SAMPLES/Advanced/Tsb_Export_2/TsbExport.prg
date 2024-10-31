@@ -155,7 +155,11 @@ FUNCTION myReportFoot(nView,aTsb,cPrg)
    cFoot := "The head of the calving" + SPACE(50) + "/Petrov I.I./"
    aFont  := { "Arial Black", 16 - nG, .T. , .T. }
    aColor := { BLACK ,  WHITE }
-   AADD( aFoot, {2,-1, cFoot, aFont, aColor, DT_LEFT } )
+   IF cPrg == "CALC"   
+      AADD( aFoot, {2,10, cFoot, aFont, aColor, DT_LEFT } )
+   ELSE
+      AADD( aFoot, {2,-1, cFoot, aFont, aColor, DT_LEFT } )
+   ENDIF
 
    IF nView == 2  // дл€ цветного эксел€
 
@@ -199,7 +203,7 @@ STATIC FUNCTION myExcelParam(oBrw)
       cMsg += 'contains several signs dot !;'
       cMsg += 'Excel can "truncate" the file name !;;'
       cMsg := AtRepl( ";", cMsg, CRLF )
-      MsgStop( cMsg , "Error" )
+      AlertStop( cMsg, "Error", "ZZZ_B_STOP64", 64, {RED} )
    ENDIF
 
    RETURN { cXlsFile, lActivate, lSave, aXlsFont }
@@ -355,4 +359,72 @@ STATIC FUNCTION myXmlParam(oBrw)
    End With
 
 RETURN { cFile, lActivate, lSave, aFont, anWidth, nHeight }
+
+* ======================================================================
+FUNCTION ToCalc7(oBrw,nView)
+   LOCAL hProgress, tTime, bExternCalc, aTsb, aCalcParam, aCalcTitle, aImage
+   LOCAL nRecno, aCalcFoot
+
+   nRecno := (oBrw:cAlias)->( RecNo() )
+   oBrw:GoTop()  // Ёкспорт идЄт с текущей позиции курсора
+   DO EVENTS
+   // скрыть колонки из списка колонок c формулами эксел€
+   //oBrw:HideColumns( 31, .t.)
+   //oBrw:HideColumns( 32, .t.)
+   // не надо ! формулы работают 
+
+   tTime      := HB_DATETIME()
+   hProgress  := NIL //test.PBar_1.Handle        // хенд дл€ ProgressBar на другой форме
+   aTsb       := myGetTsbContent(oBrw)           // содержание таблицы
+   aCalcParam := myCalcParam()                   // параметры дл€ Calc
+   aCalcTitle := myReportTitle(nView)            // заголовок Calc
+   aCalcFoot  := myReportFoot(nView,aTsb,"CALC") // подвал Calc
+   aImage     := myImageReport()                 // картинка
+
+   // Ёкспорт значений таблицы в массив идЄт с первой позиции таблицы
+   // принцип экспорта - что на экране в таблице, то и будет в экселе
+/*
+? "------- проверка/check -----------" + ProcNL()
+? "aTsb="     ,aTsb      ; ?v aTsb      ; ?
+? "aCalcParam=",aCalcParam ; ?v aCalcParam ; ?
+? "aCalcTitle=",aCalcTitle ; ?v aCalcTitle ; ?
+? "aCalcFoot=" ,aCalcFoot  ; ?v aCalcFoot  ; ?
+? "aImage="   ,aImage    ; ?v aImage    ; ?
+*/
+   IF nView == 1
+      bExternCalc := nil   // подключение внешнего блока дл€ оформлени€ oSheet
+      aImage      := nil   // не нужна картинка
+   ELSEIF nView == 2
+      bExternCalc := {|oSheet,aTsb,aCalcTitle| CalcOle7Extern( hProgress, oSheet, aTsb, aCalcTitle) }
+   ENDIF
+
+   Brw7OleCalc( aTsb, aCalcParam, aCalcTitle, aCalcFoot, aImage, hProgress, bExternCalc )
+   TotalTimeExports("Brw7OleCalc(" + HB_NtoS(nView) + ")=", aCalcParam[1], tTime )
+
+   // восстановить колонки из списка колонок
+   oBrw:HideColumns( 31, .f.)
+   oBrw:HideColumns( 32, .f.)
+
+   oBrw:Refresh(.T.)
+   oBrw:GoToRec( nRecno )
+   oBrw:SetFocus()
+   DO EVENTS
+
+   RETURN Nil
+
+* ======================================================================
+STATIC FUNCTION myCalcParam()
+   LOCAL cPath, cFile, aFont, lActivate, lSave, cMaska
+
+   cPath     := GetStartUpFolder() + "\"        // путь записи файла
+   cMaska    := "zTest_7Calc"                   // шаблон файла
+   cFile     := cPath + cMaska + "_" + CharRepl( ".", DTOC( DATE() ), "_" ) + ".ods"
+   cFile     := GetFileNameMaskNum(cFile)       // получить новое им€ файла
+   lActivate := .T.                             // открыть Calc
+   lSave     := .T.                             // сохранить файл
+   aFont     := {"DejaVu Sans Mono", 10 }       // задать фонт таблицы дл€ Calc
+                                                // дл€ черно-белого варианта
+                                                // дл€ цветного варианта фонт беретс€
+                                                // с €чеек таблицы
+   RETURN { cFile, lActivate, lSave, aFont }
 

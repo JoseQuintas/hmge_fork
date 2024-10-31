@@ -241,6 +241,7 @@ FUNCTION myGetTsbCell(oBrw)
                            oc:oCellEnum := NIL, oc:oCellFoot := NIL } )
 
    END WITH
+? "=======", aRet ; ?v aRet
 
 RETURN aRet
 

@@ -17,10 +17,10 @@ Function TestAdo(met)
    LOCAL nBrwWidth := nWinWidth-30
    LOCAL nBrwHeight:= nWinHeight-60
 
-   oConx := TOleAuto():new( "ADODB.connection" )
+   oConx := win_oleCreateObject( "ADODB.connection" )
    oConx:ConnectionString := cStr
    oConx:Open()
-   oRSet := TOleAuto():New( "ADODB.RecordSet" )
+   oRSet := win_oleCreateObject( "ADODB.RecordSet" )
 
    With Object oRSet
       :CursorLocation   := adUseClient

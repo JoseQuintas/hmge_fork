@@ -242,20 +242,4 @@ RETURN Nil
     
     RETURN lSuccess
     
-#else       //MiniGui
-
-    #pragma BEGINDUMP   
-    
-    #include <mgdefs.h>
-    
-    //        SetParent (hWndChild, hWndNewParent)
-    HB_FUNC ( SETPARENT )
-    {
-       HWND hWndChild     = (HWND) HB_PARNL (1);
-       HWND hWndNewParent = (HWND) HB_PARNL (2);
-       hb_retnl ((LONG_PTR)  SetParent (hWndChild, hWndNewParent) );
-    }
-    
-    #pragma ENDDUMP
-
 #endif

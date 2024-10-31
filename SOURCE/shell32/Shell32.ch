@@ -1,20 +1,22 @@
-// ===========================================================================
-// Shell32.CH					  (c) 2004, Grigory Filatov
-// =========================================================================== 
-//
-//   Created   : 08.09.04
-//   Section   : Shell Extensions
-//
-//   Windows ShellAPI provides functions to implement:
-//   ·	The drag-drop feature 
-//   ·	Associations (used) to find and start applications 
-//   ·	Extraction of icons from executable files 
-//   ·	Explorer File operation
-//
-//      
-// =========================================================================== 
+/*
+ ===========================================================================
+ Shell32.CH					  (c) 2004, Grigory Filatov
+ =========================================================================== 
 
-// file operations
+   Created   : 08.09.04
+   Section   : Shell Extensions
+
+   Windows ShellAPI provides functions to implement:
+   ·	The drag-drop feature 
+   ·	Associations (used) to find and start applications 
+   ·	Extraction of icons from executable files 
+   ·	Explorer File operation
+
+      
+ =========================================================================== 
+*/
+
+// File Operations
 // wFunc 
 #define FO_MOVE                  1
 #define FO_COPY                  2 

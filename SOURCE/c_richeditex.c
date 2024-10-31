@@ -51,7 +51,7 @@
         "HWGUI"
         Copyright 2001-2008 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 #include <commdlg.h>
 #include <commctrl.h>
@@ -736,34 +736,45 @@ HB_FUNC( RICHEDITBOX_SETTEXT )
 HB_FUNC( RICHEDITBOX_GETTEXT )
 {
 #ifdef UNICODE
-   LPSTR       pStr;
+   LPSTR             pStr;
 #endif
-   HWND        hWndControl = hmg_par_raw_HWND( 1 );
-   BOOL        lSelect = ( BOOL ) hb_parl( 2 );
-
-   TCHAR       cBuffer[8192];
-
-   GETTEXTEX   GT;
-
-   GT.cb = sizeof( cBuffer );
-   GT.flags = ( lSelect ? GT_SELECTION : GT_DEFAULT );
+   HWND              hWndControl = hmg_par_raw_HWND( 1 );
+   BOOL              lSelect = ( BOOL ) hb_parl( 2 );
+   int               nLen;
+   GETTEXTLENGTHEX   GTL;
+   GTL.flags = GTL_PRECISE;
 #ifdef UNICODE
-   GT.codepage = CP_UNICODE;
+   GTL.codepage = CP_UNICODE;
 #else
-   GT.codepage = CP_ACP;
+   GTL.codepage = CP_ACP;
 #endif
-   GT.lpDefaultChar = NULL;
-   GT.lpUsedDefChar = NULL;
+   nLen = SendMessage( hWndControl, EM_GETTEXTLENGTHEX, ( WPARAM ) &GTL, 0 );
 
-   SendMessage( hWndControl, EM_GETTEXTEX, ( WPARAM ) &GT, ( LPARAM ) cBuffer );
+   if( nLen > 0 )
+   {
+      TCHAR       *cBuffer = ( TCHAR * ) hb_xgrab( ( nLen + 1 ) * sizeof( TCHAR ) );
+
+      GETTEXTEX   GT;
+      GT.cb = ( nLen + 1 ) * sizeof( TCHAR );
+      GT.flags = ( lSelect ? GT_SELECTION : GT_DEFAULT );
+#ifdef UNICODE
+      GT.codepage = CP_UNICODE;
+#else
+      GT.codepage = CP_ACP;
+#endif
+      GT.lpDefaultChar = NULL;
+      GT.lpUsedDefChar = NULL;
+
+      SendMessage( hWndControl, EM_GETTEXTEX, ( WPARAM ) &GT, ( LPARAM ) cBuffer );
 
 #ifndef UNICODE
-   hb_retc( cBuffer );
+      hb_retc( cBuffer );
 #else
-   pStr = WideToAnsi( cBuffer );
-   hb_retc( pStr );
-   hb_xfree( pStr );
+      pStr = WideToAnsi( cBuffer );
+      hb_retc( pStr );
+      hb_xfree( pStr );
 #endif
+   }
 }
 
 //        RichEditBox_GetTextLength ( hWndControl )
@@ -787,25 +798,38 @@ HB_FUNC( RICHEDITBOX_GETTEXTLENGTH )
 HB_FUNC( RICHEDITBOX_GETTEXTRANGE )
 {
 #ifdef UNICODE
-   LPSTR       pStr;
+   LPSTR            pStr;
 #endif
-   TCHAR       cBuffer[4096];
+   HWND             hWndControl = hmg_par_raw_HWND( 1 );
+   int              nLength;
+   GETTEXTLENGTHEX  GTL;
+   GTL.flags = GTL_PRECISE;
+   #ifdef UNICODE
+       GTL.codepage = CP_UNICODE;
+   #else
+       GTL.codepage = CP_ACP;
+   #endif
+   nLength = SendMessage ( hWndControl, EM_GETTEXTLENGTHEX, ( WPARAM ) &GTL, 0 );
 
-   TEXTRANGE   TextRange;
+   if( nLength > 0 )
+   {
+      TCHAR       *cBuffer = ( TCHAR * ) hb_xgrab( ( nLength + 1 ) * sizeof( TCHAR ) );
 
-   TextRange.lpstrText = cBuffer;
-   TextRange.chrg.cpMin = hmg_parv_LONG( 2, 1 );
-   TextRange.chrg.cpMax = hmg_parv_LONG( 2, 2 );
+      TEXTRANGE   TextRange;
+      TextRange.lpstrText = cBuffer;
+      TextRange.chrg.cpMin = hmg_parv_LONG( 2, 1 );
+      TextRange.chrg.cpMax = hmg_parv_LONG( 2, 2 );
 
-   SendMessage( hmg_par_raw_HWND( 1 ), EM_GETTEXTRANGE, 0, ( LPARAM ) &TextRange );
+      SendMessage( hWndControl, EM_GETTEXTRANGE, 0, ( LPARAM ) &TextRange );
 
 #ifndef UNICODE
-   hb_retc( TextRange.lpstrText );
+      hb_retc( TextRange.lpstrText );
 #else
-   pStr = WideToAnsi( TextRange.lpstrText );
-   hb_retc( pStr );
-   hb_xfree( pStr );
+      pStr = WideToAnsi( TextRange.lpstrText );
+      hb_retc( pStr );
+      hb_xfree( pStr );
 #endif
+   }
 }
 
 //        RichEditBox_FindText ( hWndControl, cFind, lDown, lMatchCase, lWholeWord, lSelectFindText )
@@ -863,16 +887,16 @@ HB_FUNC( RICHEDITBOX_FINDTEXT )
    FindText.lpstrText = cFind;
 
 #ifdef UNICODE
-   SendMessage( hWndControl, EM_FINDTEXTEXW, ( WPARAM ) Options, ( LPARAM ) & FindText );
+   SendMessage( hWndControl, EM_FINDTEXTEXW, ( WPARAM ) Options, ( LPARAM ) &FindText );
 #else
-   SendMessage( hWndControl, EM_FINDTEXTEX, ( WPARAM ) Options, ( LPARAM ) & FindText );
+   SendMessage( hWndControl, EM_FINDTEXTEX, ( WPARAM ) Options, ( LPARAM ) &FindText );
 #endif
    if( SelectFindText == FALSE )
    {
       FindText.chrgText.cpMin = FindText.chrgText.cpMax;
    }
 
-   SendMessage( hWndControl, EM_EXSETSEL, 0, ( LPARAM ) & FindText.chrgText );
+   SendMessage( hWndControl, EM_EXSETSEL, 0, ( LPARAM ) &FindText.chrgText );
 
    hb_reta( 2 );
    HB_STORVNL( FindText.chrgText.cpMin, -1, 1 );
@@ -1324,7 +1348,7 @@ HB_FUNC( RICHEDITBOX_FORMATRANGE )
    FormatRange.chrg.cpMin = hmg_parv_LONG( 7, 1 );
    FormatRange.chrg.cpMax = hmg_parv_LONG( 7, 2 );
 
-   cpMin = ( LONG ) SendMessage( hWndControl, EM_FORMATRANGE, ( WPARAM ) ( BOOL ) TRUE, ( LPARAM ) & FormatRange );
+   cpMin = ( LONG ) SendMessage( hWndControl, EM_FORMATRANGE, ( WPARAM ) ( BOOL ) TRUE, ( LPARAM ) &FormatRange );
 
    SendMessage( hWndControl, EM_FORMATRANGE, ( WPARAM ) ( BOOL ) FALSE, ( LPARAM ) NULL );
 

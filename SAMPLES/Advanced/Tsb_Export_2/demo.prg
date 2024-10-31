@@ -17,8 +17,8 @@
 */
 
 #define _HMG_OUTLOG
-#define SHOW_TITLE    "Tsbrowse Dbf/Array for Report Demo / Export table to Excel, Word, Open Office"
-#define SHOW_VERSION  "  Version 1.00 from 10.08.2020"
+#define SHOW_TITLE   "Tsbrowse Dbf/Array for Report Demo / Export table to Excel, Word, Open Office"
+#define SHOW_VERSION "  Version 1.2 from 10.10.2024"
 
 #include "minigui.ch"
 #include "TSBrowse.ch"
@@ -123,6 +123,10 @@ PROCEDURE FORM_MAIN(lArray)
             ITEM "XML document format"                DISABLED   FONT hFont3
             ITEM "   Export to XML/white    (xml)"    ACTION ToXml7(oBrw,1)  FONT hFont1
             ITEM "   Export to XML/color    (xml)"    ACTION ToXml7(oBrw,2)  FONT hFont1
+            SEPARATOR
+            ITEM "Open Office"                        DISABLED   FONT hFont3
+            ITEM "   Export to Ole-Calc/white  (ods)" ACTION ToCalc7(oBrw,1)  FONT hFont1
+            ITEM "   Export to Ole-Calc/color  (ods)" ACTION ToCalc7(oBrw,2)  FONT hFont1
          END POPUP
          POPUP "About"      FONT hFont4
             ITEM "Program Info"  ACTION MsgAbout()   FONT hFont2
@@ -1532,6 +1536,9 @@ FUNCTION MsgAbout()
    cMsg += "(c) 2018-2020 Sidorov Aleksandr <aksidorov@mail.ru>;;"
    cMsg += "Export to XML;"
    cMsg += "(c) 2018 Igor Nazarov;"
+   cMsg += "(c) 2020 Sidorov Aleksandr <aksidorov@mail.ru>;;"
+   cMsg += "Export to Open Office;"
+   cMsg += "(c) 2018 Pavel Tsarenko <tpe2@mail.ru>;"
    cMsg += "(c) 2020 Sidorov Aleksandr <aksidorov@mail.ru>;;"
    cMsg += hb_compiler() + ";" + Version() + ";" + MiniGuiVersion() + ";"
    cMsg += "(c) Grigory Filatov http://www.hmgextended.com;;"
