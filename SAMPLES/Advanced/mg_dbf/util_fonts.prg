@@ -84,8 +84,8 @@ FUNCTION mySizeTBDir(cForm,cObj)
    nHobj   := GetProperty( cForm , cObj, "ClientHeight" ) - 1
    cText   := ALLTRIM(cText)
    IF LEN(cText) > 0
-      //nFSize  := GetFontSize4Text( cText, cFont, , lBold, nWObj, nHobj )
-      nFSize  := FontSizeMaxAutoFit( cText, cFont, lBold, nWObj, nHobj )
+      nFSize  := GetFontSize4Text( cText, cFont, , lBold, nWObj, nHobj )
+      //nFSize  := FontSizeMaxAutoFit( cText, cFont, lBold, nWObj, nHobj )
       SetProperty( cForm , cObj, "Fontsize", nFSize ) // change font size
    ENDIF
 

@@ -11,11 +11,11 @@ frm_DialogMenu.prg
 frm_DialogPreview.prg
 frm_DialogFree.prg
 
-frm_Button.prg
-frm_Edit.prg
+frm_ButtonCreate.prg
+frm_EditCreate.prg
 
 frm_EventBrowseClick.prg
-frm_EventValid.prg
+frm_EditValidate.prg
 frm_EventPrint.prg
 
 frm_funcMain.prg

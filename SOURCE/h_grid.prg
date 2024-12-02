@@ -179,7 +179,7 @@ FUNCTION _DefineGrid ( ControlName, ParentFormName, x, y, w, h, ;
    /* end code borrowed */
    __defaultNIL( @aRows, {} )
 
-   IF showheaders == .F.
+   IF ! showheaders
       aHeaders := AFill( Array( Len( aWidths ) ), '' )
    ENDIF
    IF value == NIL .AND. ! multiselect
@@ -194,7 +194,7 @@ FUNCTION _DefineGrid ( ControlName, ParentFormName, x, y, w, h, ;
    ENDIF
    /* end code borrowed */
    inplace := ISARRAY( editcontrols )
-   lsort := ( ISARRAY( columnsort ) .AND. nosortheaders == .F. .AND. ownerdata == .F. )
+   lsort := ( ISARRAY( columnsort ) .AND. ! nosortheaders .AND. ! ownerdata )
 
    IF ! HB_ISARRAY( aWidthLimits )
       aWidthLimits := Array( Len( aWidths ) )
@@ -741,6 +741,8 @@ PROCEDURE _DeleteGridColumn ( cControlName, cParentForm, nColIndex )
 
 RETURN
 
+#define DYNAMIC_FORE_ITEM 21
+#define DYNAMIC_BACK_ITEM 22
 *-----------------------------------------------------------------------------*
 PROCEDURE _UpdateGridColors ( i )
 *-----------------------------------------------------------------------------*
@@ -749,22 +751,22 @@ PROCEDURE _UpdateGridColors ( i )
    LOCAL processdbc := ISARRAY ( dbc ), processdfc := ISARRAY ( dfc )
    LOCAL h, Cols, Rows
 
-   IF processdbc == .F. .AND. processdfc == .F.
-      RETURN
-   ENDIF
+   IF processdbc .OR. processdfc
 
-   h := _HMG_aControlHandles[ i ]
-   Rows := ListViewGetItemCount ( h )
-   Cols := ListView_GetColumnCount ( h )
+      h := _HMG_aControlHandles[ i ]
+      Rows := ListViewGetItemCount ( h )
+      Cols := ListView_GetColumnCount ( h )
 
-   IF processdbc
-      ProcessDynamicArray ( i, Rows, Cols, dBc, 22 )
-   ENDIF
-   IF processdfc
-      ProcessDynamicArray ( i, Rows, Cols, dFc, 21 )
-   ENDIF
+      IF processdbc
+         ProcessDynamicArray ( i, Rows, Cols, dBc, DYNAMIC_BACK_ITEM )
+      ENDIF
+      IF processdfc
+         ProcessDynamicArray ( i, Rows, Cols, dFc, DYNAMIC_FORE_ITEM )
+      ENDIF
 
-   ReDrawWindow ( h )
+      ReDrawWindow ( h )
+
+   ENDIF
 
 RETURN
 
@@ -897,7 +899,7 @@ FUNCTION _GridInplaceEdit( idx )
 
          _HMG_ThisEventType := ''
 
-         IF ISLOGICAL( WHEN ) .AND. WHEN == .F.
+         IF ISLOGICAL( WHEN ) .AND. ! WHEN
             _HMG_IPE_CANCELLED := .F.
             RETURN .F.
          ENDIF
@@ -1067,9 +1069,9 @@ FUNCTION _GridInplaceEdit( idx )
             VALUE v
             FONTNAME _hmg_aControlFontName[ idx ]
             FONTSIZE _hmg_aControlFontSize[ idx ]
-            CAPTION ALABELS[ iif ( V == .T., 1, 2 ) ]
+            CAPTION ALABELS[ iif ( V, 1, 2 ) ]
             BACKCOLOR WHITE
-            ON CHANGE ( v := This.Value, This.Caption := ALABELS[ iif ( V == .T., 1, 2 ) ], ;
+            ON CHANGE ( v := This.Value, This.Caption := ALABELS[ iif ( V, 1, 2 ) ], ;
                _HMG_GridInplaceEdit_StageEvent := 2, _HMG_OnInplaceEditEvent( idx ) )
          END CHECKBOX
 
@@ -1268,7 +1270,7 @@ STATIC PROCEDURE _GridInplaceEditOK ( idx, ci, ri, aec )
          _HMG_ThisFormName := _HMG_aFormNames[ _HMG_ThisFormIndex ]
          _HMG_ThisControlName := _HMG_aControlNames[ _HMG_ThisIndex ]
 
-         IF ISLOGICAL( VALID ) .AND. VALID == .F.
+         IF ISLOGICAL( VALID ) .AND. ! VALID
 
             aValidMessages := _HMG_aControlMiscData1[ idx ][ 16 ]
 
@@ -1449,7 +1451,7 @@ PROCEDURE _GridInplaceKbdEdit( i )
       _HMG_ThisFormName := ''
       _HMG_ThisControlName := ''
 
-      IF _HMG_IPE_CANCELLED == .T.
+      IF _HMG_IPE_CANCELLED
 
          IF _HMG_IPE_COL == IPE_MAXCOL
             _HMG_IPE_COL := 1
@@ -1880,7 +1882,7 @@ PROCEDURE _GRIDINPLACEKBDEDIT_2( i )
 
    r := _GridInplaceEdit( i )
 
-   IF _HMG_IPE_CANCELLED == .F.
+   IF ! _HMG_IPE_CANCELLED
 
       IF r == .T. .AND. _HMG_aControlMiscData1[ i ][ 19 ] == 0
 
@@ -1913,10 +1915,10 @@ PROCEDURE _GRIDINPLACEKBDEDIT_2( i )
 
             IF ISARRAY ( aColumnWhen )
 
-               IF ownerdata == .F.
-                  aTemp := This.Item( This.CellRowIndex )
-               ELSE
+               IF ownerdata
                   _HMG_ThisQueryRowIndex := This.CellRowIndex
+               ELSE
+                  aTemp := This.Item( This.CellRowIndex )
                ENDIF
 
                nStart := _HMG_aControlMiscData1[ i ][ 17 ]
@@ -1925,20 +1927,20 @@ PROCEDURE _GRIDINPLACEKBDEDIT_2( i )
                FOR j := nStart TO nEnd
                   IF ISBLOCK ( aColumnWhen[ j ] )
                      r := Min ( IPE_MAXCOL, j )
-                     IF ownerdata == .F.
-                        _HMG_ThisItemCellValue := aTemp[ r ]
-                     ELSE
+                     IF ownerdata
                         _HMG_ThisQueryColIndex := r
                         Eval ( _HMG_aControlProcedures[ i ] )
                         _HMG_ThisItemCellValue := _HMG_ThisQueryData
+                     ELSE
+                        _HMG_ThisItemCellValue := aTemp[ r ]
                      ENDIF
                      _HMG_ThisEventType := 'GRID_WHEN'
                      lResult := Eval ( aColumnWhen[ j ] )
                      _HMG_ThisEventType := ''
-                     IF lResult == .F.
-                        _HMG_aControlMiscData1[ i ][ 17 ] ++
-                     ELSE
+                     IF lResult
                         EXIT
+                     ELSE
+                        _HMG_aControlMiscData1[ i ][ 17 ] ++
                      ENDIF
                   ELSE
                      EXIT

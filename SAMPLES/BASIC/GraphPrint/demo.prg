@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
- * Data provided by gs.statcounter.com for January 2023
+ * Data provided by gs.statcounter.com for October 2024
 */
 
 #include "hmg.ch"
@@ -21,13 +21,13 @@ FUNCTION Main
 
    // set the series data
    aSeries := { ;
-      68.86, ;
-      18.12, ;
-      9.55, ;
-      2.28, ;
-      0.62, ;
-      0.45, ;
-      0.12  ;
+      60.97, ;
+      35.55, ;
+      2.62, ;
+      0.31, ;
+      0.28, ;
+      0.19, ;
+      0.08  ;
       }
 
    // set the series names
@@ -36,8 +36,8 @@ FUNCTION Main
       "Windows 11", ;
       "Windows 7", ;
       "Windows 8.1", ;
-      "Windows 8", ;
       "Windows XP", ;
+      "Windows 8", ;
       "Other" ;
       }
 
@@ -136,7 +136,11 @@ RETURN NIL
 /////////////////////////////////////////////////////////////
 FUNCTION savepie
 
-   oObj:Save( 'graph.png' )
+   LOCAL cFileName := 'graph.png'
+
+   oObj:Save( cFileName )
+
+   MsgInfo( "Save as: " + cFileName )
 
 RETURN NIL
 

@@ -48,25 +48,32 @@
    Parts  of  this  code  is contributed and used here under permission of his
    author: Copyright 2016 (C) P.Chornyj <myorg63@mail.ru>
  */
+
+// Define `CINTERFACE` if it is not already defined; this flag controls interface definitions in C code
 #ifndef CINTERFACE
 #define CINTERFACE
 #endif
+
+// Include custom MiniGUI definitions and standard control headers
 #include <mgdefs.h>
-
 #include <commctrl.h>
-#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 
-// Static Class Name
+// Compatibility for older Borland compilers with a custom class name for static controls
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 #define WC_STATIC "Static"
 #endif
+
+// Suppress non-standard extension warnings in Microsoft Visual Studio for certain structs/unions
 #if defined( _MSC_VER )
 #pragma warning( push )
-#pragma warning( disable : 4201 )   /* warning C4201: nonstandard extension used: nameless struct/union */
+#pragma warning( disable : 4201 )
 #endif
-#include <olectl.h>
+#include <olectl.h>     // Include OLE control definitions
 #if defined( _MSC_VER )
-#pragma warning( pop )
+#pragma warning( pop )  // Restore warning settings after including OLE definitions
 #endif
+
+// Include headers based on compiler flags and additional library headers
 #ifdef __XCC__
 #include "ocidl.h"
 #endif
@@ -74,15 +81,20 @@
 #include "hbapiitm.h"
 #include "hbvm.h"
 
+// Macro for displaying error messages in a MessageBox with an error icon
 #define HB_GPLUS_MSG_ERROR( text ) \
    do \
    { \
       MessageBox( NULL, TEXT( text ), TEXT( "GPlus error" ), MB_OK | MB_ICONERROR ); \
    } \
    while( 0 )
-#define LOGHIMETRIC_TO_PIXEL( hm, ppli )  MulDiv( ( hm ), ( ppli ), 2540 ) // ppli = Point per Logic Inch
-#define PIXEL_TO_LOGHIMETRIC( px, ppli )  MulDiv( ( px ), 2540, ( ppli ) ) // ppli = Point per Logic Inch
-   LRESULT APIENTRY  ImageSubClassFunc( HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam );
+
+// Conversion macros for units from HIMETRIC to pixels and vice versa based on pixels-per-inch (PPI)
+#define LOGHIMETRIC_TO_PIXEL( hm, ppli )  MulDiv( ( hm ), ( ppli ), 2540 )
+#define PIXEL_TO_LOGHIMETRIC( px, ppli )  MulDiv( ( px ), 2540, ( ppli ) )
+
+// Function declarations for resource handling, image loading, and conversions
+LRESULT APIENTRY     ImageSubClassFunc( HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam );
 
 HB_EXPORT IStream    *HMG_CreateMemStreamFromResource( HINSTANCE instance, const char *res_type, const char *res_name );
 HB_EXPORT IStream    *HMG_CreateMemStream( const BYTE *pInit, UINT cbInitSize );
@@ -102,108 +114,121 @@ HB_EXPORT HBITMAP    HMG_LoadPicture
                         HB_BOOL     bAlphaFormat,
                         int         iAlpfaConstant
                      );
+
 HB_EXPORT HBITMAP    HMG_OleLoadPicturePath( const char *pszURLorPath );
 
+// Function to convert ANSI strings to wide-character (Unicode) strings
 #ifdef UNICODE
-LPWSTR               AnsiToWide( LPCSTR );
+LPWSTR         AnsiToWide( LPCSTR );
 #endif
-HINSTANCE            GetResources( void );
 
-// Minigui Resources control system
-void                 RegisterResource( HANDLE hResource, LPCSTR szType );
+// Function to retrieve MiniGUI resources
+HINSTANCE      GetResources( void );
 
-static WNDPROC       s_Image_WNDPROC;
-static char          *MimeTypeOld;
-static int           s_nWidth, s_nHeight;
+// Resource management function to register handles of MiniGUI resources
+void           RegisterResource( HANDLE hResource, LPCSTR szType );
 
+// Static variables for image subclassing
+static WNDPROC s_Image_WNDPROC;
+static char    *MimeTypeOld;
+static int     s_nWidth, s_nHeight;
+
+// Function to create a memory stream from a resource file within an application
 HB_EXPORT IStream *HMG_CreateMemStreamFromResource( HINSTANCE hinstance, const char *res_name, const char *res_type )
 {
-   HRSRC    resource;
-   DWORD    res_size;
-   HGLOBAL  res_global;
-   void     *res_data;
-   wchar_t  *res_nameW;
-   wchar_t  *res_typeW;
-   IStream  *stream;
+   HRSRC    resource;               // Resource handle
+   DWORD    res_size;               // Size of resource data
+   HGLOBAL  res_global;             // Handle to loaded resource data
+   void     *res_data;              // Pointer to resource data
+   wchar_t  *res_nameW, *res_typeW; // Wide strings for resource name and type
+   IStream  *stream;                // Stream for memory data
 
+   // Return NULL if resource name or type is missing
    if( NULL == res_name || NULL == res_type )
    {
       return NULL;
    }
 
+   // Convert resource name and type to wide characters
    res_nameW = hb_mbtowc( res_name );
    res_typeW = hb_mbtowc( res_type );
 
+   // Find the specified resource
    resource = FindResourceW( hinstance, res_nameW, res_typeW );
 
+   // Free converted strings and check if resource was found
    hb_xfree( res_nameW );
    hb_xfree( res_typeW );
-
    if( NULL == resource )
    {
       return NULL;
    }
 
+   // Load the resource and obtain a pointer to its data
    res_size = SizeofResource( hinstance, resource );
    res_global = LoadResource( hinstance, resource );
-
    if( NULL == res_global )
    {
       return NULL;
    }
 
    res_data = LockResource( res_global );
-
    if( NULL == res_data )
    {
       return NULL;
    }
 
+   // Create a memory stream from the resource data
    stream = HMG_CreateMemStream( ( const BYTE * ) res_data, ( UINT ) res_size );
 
    return stream;
 }
 
+// Function to create a memory stream from byte data
 HB_EXPORT IStream *HMG_CreateMemStream( const BYTE *pInit, UINT cbInitSize )
 {
-   HMODULE  hShlDll = LoadLibrary( TEXT( "shlwapi.dll" ) );
+   HMODULE  hShlDll = LoadLibrary( TEXT( "shlwapi.dll" ) ); // Load shell DLL for memory stream function
    IStream  *stream = NULL;
 
    if( NULL != hShlDll )
    {
+      // Define function pointer for SHCreateMemStream and attempt to load it
       typedef IStream * ( __stdcall * SHCreateMemStreamPtr ) ( const BYTE *pInit, UINT cbInitSize );
-
       SHCreateMemStreamPtr f_SHCreateMemStream = ( SHCreateMemStreamPtr ) wapi_GetProcAddress( hShlDll, ( LPCSTR ) 12 );
 
+      // If the function is available, create a memory stream
       if( f_SHCreateMemStream != NULL )
       {
          stream = f_SHCreateMemStream( pInit, cbInitSize );
       }
 
-      FreeLibrary( hShlDll );
+      FreeLibrary( hShlDll );             // Free the shell DLL
    }
 
-   return stream;
+   return stream;                         // Return created memory stream
 }
 
+// Function to create a DIB section (bitmap) with specified dimensions and bit count
 HB_EXPORT HBITMAP HMG_GdiCreateHBITMAP( HDC hDC_mem, int width, int height, WORD iBitCount )
 {
-   LPBYTE      pBits;
-   HBITMAP     hBitmap;
-   BITMAPINFO  BI;
+   LPBYTE      pBits;                     // Pointer to bitmap bits
+   HBITMAP     hBitmap;                   // Handle to bitmap
+   BITMAPINFO  BI;                        // Bitmap info structure
 
+   // Set up BITMAPINFOHEADER with specified width, height, and bit count
    BI.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
    BI.bmiHeader.biWidth = width;
    BI.bmiHeader.biHeight = height;
    BI.bmiHeader.biPlanes = 1;
    BI.bmiHeader.biBitCount = iBitCount;
-   BI.bmiHeader.biCompression = BI_RGB;   // TODO
+   BI.bmiHeader.biCompression = BI_RGB;   // No compression
    BI.bmiHeader.biSizeImage = 0;
    BI.bmiHeader.biXPelsPerMeter = 0;
    BI.bmiHeader.biYPelsPerMeter = 0;
    BI.bmiHeader.biClrUsed = 0;
    BI.bmiHeader.biClrImportant = 0;
 
+   // Create a DIB section and return the bitmap handle
    hBitmap = CreateDIBSection( hDC_mem, ( BITMAPINFO * ) &BI, DIB_RGB_COLORS, ( VOID ** ) &pBits, NULL, 0 );
 
    return hBitmap;
@@ -269,34 +294,38 @@ static HBITMAP HMG_GdipLoadBitmap( const char *res_name, const char *res_type )
    return hBitmap;
 }
 
+// Image subclass function for handling image control events
 LRESULT APIENTRY ImageSubClassFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
-   static BOOL bMouseTracking = FALSE;
+   static BOOL bMouseTracking = FALSE;    // Mouse tracking state
 
+   // Track mouse movement and leave events
    if( Msg == WM_MOUSEMOVE || Msg == WM_MOUSELEAVE )
    {
-      static PHB_SYMB   pSymbol = NULL;
-      LRESULT           r = 0;
+      static PHB_SYMB   pSymbol = NULL;   // Symbol for event handling
+      LRESULT           r = 0;            // Result variable
 
+      // Handle mouse movement by starting tracking if not active
       if( Msg == WM_MOUSEMOVE )
       {
          if( bMouseTracking == FALSE )
          {
             TRACKMOUSEEVENT   tme;
 
+            // Configure and start mouse event tracking
             tme.cbSize = sizeof( TRACKMOUSEEVENT );
             tme.dwFlags = TME_LEAVE;
             tme.hwndTrack = hWnd;
             tme.dwHoverTime = HOVER_DEFAULT;
-
             bMouseTracking = _TrackMouseEvent( &tme );
          }
       }
       else
       {
-         bMouseTracking = FALSE;
+         bMouseTracking = FALSE;          // Stop tracking on mouse leave
       }
 
+      // Retrieve and execute custom "OLABELEVENTS" symbol (if defined) for event handling
       if( !pSymbol )
       {
          pSymbol = hb_dynsymSymbol( hb_dynsymGet( "OLABELEVENTS" ) );
@@ -313,10 +342,10 @@ LRESULT APIENTRY ImageSubClassFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM l
          hb_vmDo( 4 );
 
          r = hmg_par_LRESULT( -1 );
-
          hb_vmRequestRestore();
       }
 
+      // Call the original window procedure if necessary
       return( r != 0 ) ? r : CallWindowProc( s_Image_WNDPROC, hWnd, 0, 0, 0 );
    }
 
@@ -325,57 +354,69 @@ LRESULT APIENTRY ImageSubClassFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM l
    return CallWindowProc( s_Image_WNDPROC, hWnd, Msg, wParam, lParam );
 }
 
+// Function to initialize and create an image control
 HB_FUNC( INITIMAGE )
 {
-   HWND  hWnd;
-   DWORD Style = WS_CHILD | SS_BITMAP;
+   HWND  hWnd; // Handle for the image window
+   DWORD Style = WS_CHILD | SS_BITMAP;    // Basic style: child window with bitmap support
 
+   // If the 5th parameter is false, make the window visible by adding WS_VISIBLE style
    if( !hb_parl( 5 ) )
    {
       Style |= WS_VISIBLE;
    }
 
+   // If the 6th or 7th parameters are true, add SS_NOTIFY style to handle mouse events
    if( hb_parl( 6 ) || hb_parl( 7 ) )
    {
       Style |= SS_NOTIFY;
    }
 
+   // Create the static control (image window) with the defined styles
    hWnd = CreateWindow( WC_STATIC, NULL, Style, hb_parni( 3 ), hb_parni( 4 ), 0, 0, hmg_par_raw_HWND( 1 ), hmg_par_raw_HMENU( 2 ), GetResources(), NULL );
 
+   // If the 7th parameter is true, subclass the window to handle custom image events
    if( hb_parl( 7 ) )
    {
       s_Image_WNDPROC = SubclassWindow1( hWnd, ImageSubClassFunc );
    }
 
+   // Return the created window handle
    hmg_ret_raw_HWND( hWnd );
 }
 
+// Function to set a picture to an image control
 HB_FUNC( C_SETPICTURE )
 {
-   HWND     hWnd = hmg_par_raw_HWND( 1 );
-   HBITMAP  hBitmap = NULL;
+   HWND     hWnd = hmg_par_raw_HWND( 1 ); // Get the window handle for the image control
+   HBITMAP  hBitmap = NULL;               // Bitmap handle for the image to load
 
+   // Check if the window is valid and there is a path to the image (second parameter)
    if( IsWindow( hWnd ) && ( hb_parclen( 2 ) > 0 ) )
    {
+      // Load the picture based on specified parameters
       hBitmap = HMG_LoadPicture
          (
-            hb_parc( 2 ),                 // Filename, resource or URL
-            hb_parni( 3 ),                // Width
-            hb_parni( 4 ),                // Height
-            hWnd,          // Handle of parent window
-            hb_parni( 5 ), // Scale factor
-            hb_parni( 6 ), // Transparent
-            hb_parnl( 7 ), // BackColor
-            hb_parni( 8 ), // Adjust factor
-            hb_parldef( 9, HB_FALSE ), // Bitmap with alpha channel
-            hb_parnidef( 10, 255 )
+            hb_parc( 2 ),                 // Filename, resource, or URL for the image
+            hb_parni( 3 ),                // Width of the image
+            hb_parni( 4 ),                // Height of the image
+            hWnd,          // Handle of the image control
+            hb_parni( 5 ), // Scale factor for resizing
+            hb_parni( 6 ), // Transparency option
+            hb_parnl( 7 ), // Background color for transparency
+            hb_parni( 8 ), // Adjustment factor for image display
+            hb_parldef( 9, HB_FALSE ),       // Alpha channel option for transparency
+            hb_parnidef( 10, 255 )           // Alpha constant for transparency level
          );
 
+      // If a bitmap is successfully loaded
       if( hBitmap != NULL )
       {
+         // Set the new bitmap to the image control, replacing the old one if necessary
          HBITMAP  hOldBitmap = ( HBITMAP ) SendMessage( hWnd, STM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) hBitmap );
-         RegisterResource( hBitmap, "BMP" );
+         RegisterResource( hBitmap, "BMP" ); // Register the bitmap resource
 
+         // Delete the old bitmap if it exists to avoid memory leaks
          if( hOldBitmap != NULL )
          {
             DeleteObject( hOldBitmap );
@@ -383,50 +424,61 @@ HB_FUNC( C_SETPICTURE )
       }
    }
 
+   // Return the bitmap handle as the function result
    hmg_ret_raw_HANDLE( hBitmap );
 }
 
+// Function to load and display an image in a specified or active window
 HB_FUNC( LOADIMAGE )
 {
+   // Get the handle of the specified window or the active window if not provided
    HWND     hWnd = HB_ISNIL( 2 ) ? GetActiveWindow() : hmg_par_raw_HWND( 2 );
-   HBITMAP  hBitmap = NULL;
+   HBITMAP  hBitmap = NULL;                  // Handle for the bitmap to load
 
+   // Check if there is a valid path (first parameter) for the image
    if( hb_parclen( 1 ) > 0 )
    {
+      // Load the picture with given parameters
       hBitmap = HMG_LoadPicture
          (
-            hb_parc( 1 ),              // Filename, resource or URL
-            hb_parnidef( 3, -1 ),      // Width
-            hb_parnidef( 4, -1 ),      // Height
-            hWnd,                   // Handle of parent window
+            hb_parc( 1 ),                    // Image file path, resource, or URL
+            hb_parnidef( 3, -1 ),            // Width (-1 if not specified)
+            hb_parnidef( 4, -1 ),            // Height (-1 if not specified)
+            hWnd,                   // Target window handle
             hb_parnidef( 5, 1 ),    // Scale factor
-            hb_parnidef( 6, 1 ),    // Transparent
-            hb_parnldef( 7, -1 ),   // BackColor
-            hb_parnidef( 8, 0 ),    // Adjust factor
-            hb_parldef( 9, HB_FALSE ), // Bitmap with alpha channel
-            hb_parnidef( 10, 255 )
+            hb_parnidef( 6, 1 ),    // Transparency option
+            hb_parnldef( 7, -1 ),   // Background color for transparency
+            hb_parnidef( 8, 0 ),    // Adjustment factor
+            hb_parldef( 9, HB_FALSE ), // Alpha channel support
+            hb_parnidef( 10, 255 )     // Alpha transparency level
          );
 
+      // If the bitmap loaded successfully, register it as a resource
       if( hBitmap != NULL )
       {
          RegisterResource( hBitmap, "BMP" );
       }
    }
 
+   // Return the bitmap handle
    hmg_ret_raw_HANDLE( hBitmap );
 }
 
+// Function to get a picture from a specified resource and load it
 HB_FUNC( C_GETRESPICTURE )
 {
    HBITMAP  hBitmap;
 
+   // Load the image from the specified resource
    hBitmap = HMG_LoadImage( hb_parc( 1 ), hb_parc( 2 ) );
 
+   // If successful, register the bitmap as a resource
    if( hBitmap != NULL )
    {
       RegisterResource( hBitmap, "BMP" );
    }
 
+   // Return the bitmap handle
    hmg_ret_raw_HANDLE( hBitmap );
 }
 

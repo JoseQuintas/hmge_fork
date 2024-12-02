@@ -43,37 +43,48 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
-#define _WIN32_IE 0x0501
+---------------------------------------------------------------------------*/
+#define _WIN32_IE 0x0501   // Set minimum required version of Internet Explorer (needed for some common controls)
 
 #include <mgdefs.h>
-
 #include <commctrl.h>
-#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 
-// Edit Class Name
-#define WC_EDIT   "Edit"
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+   // Define edit control class name for older versions of Borland C++
+   #define WC_EDIT   "Edit"
 #endif
 #include "hbvm.h"
 
+// Ensure support for the ICC_STANDARD_CLASSES flag in older compilers
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 ) || defined( __XCC__ )
-#define ICC_STANDARD_CLASSES  0x00004000
+   #define ICC_STANDARD_CLASSES  0x00004000
 #endif
-LRESULT CALLBACK  OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam );
 
+// Forward declarations
+LRESULT CALLBACK  OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam );
 HINSTANCE         GetInstance( void );
 
+/**
+ * Function: INITSPINNER
+ * Initializes a spinner control with an associated "buddy" edit control.
+ * The spinner control allows users to increment or decrement a numeric value.
+ * Parameters:
+ *   - hwnd (parent window handle)
+ *   - Control styles, visibility, range, read-only setting, and alignment options.
+ * Returns:
+ *   - An array containing the handles to the edit and spinner controls.
+ */
 HB_FUNC( INITSPINNER )
 {
    HWND                 hedit, hupdown;
-   HWND                 hwnd = hmg_par_raw_HWND( 1 );
-   DWORD                Style1 = ES_NUMBER | WS_CHILD | ES_AUTOHSCROLL;
-   DWORD                Style2 = WS_CHILD | WS_BORDER | UDS_ARROWKEYS | UDS_ALIGNRIGHT | UDS_SETBUDDYINT | UDS_NOTHOUSANDS;
-
+   HWND                 hwnd = hmg_par_raw_HWND( 1 );                   // Parent window handle
+   DWORD                Style1 = ES_NUMBER | WS_CHILD | ES_AUTOHSCROLL; // Edit control styles
+   DWORD                Style2 = WS_CHILD | WS_BORDER | UDS_ARROWKEYS | UDS_ALIGNRIGHT | UDS_SETBUDDYINT | UDS_NOTHOUSANDS;   // Spinner control styles
    INITCOMMONCONTROLSEX i;
 
    i.dwSize = sizeof( INITCOMMONCONTROLSEX );
 
+   // Set visibility and tab-stop options
    if( !hb_parl( 11 ) )
    {
       Style1 |= WS_VISIBLE;
@@ -87,82 +98,103 @@ HB_FUNC( INITSPINNER )
 
    if( hb_parl( 13 ) )
    {
-      Style2 |= UDS_WRAP;
+      Style2 |= UDS_WRAP;                    // Enable wrap-around behavior for spinner
    }
 
    if( hb_parl( 14 ) )
    {
-      Style1 |= ES_READONLY;
+      Style1 |= ES_READONLY;                 // Set edit control to read-only if specified
    }
 
    if( hb_parl( 15 ) )
    {
-      Style2 |= UDS_HORZ | UDS_ALIGNRIGHT;   /* P.Ch. 10.16. */
+      Style2 |= UDS_HORZ | UDS_ALIGNRIGHT;   // Align spinner horizontally if specified
    }
 
-   // Create the Buddy Window
+   // Initialize standard controls
    i.dwICC = ICC_STANDARD_CLASSES;
    InitCommonControlsEx( &i );
 
+   // Create the "buddy" edit control for numeric input
    hedit = CreateWindowEx
       (
-         WS_EX_CLIENTEDGE,
-         WC_EDIT,
-         NULL,
-         Style1,
-         hb_parni( 3 ),
-         hb_parni( 4 ),
-         hb_parni( 5 ),
-         hb_parni( 10 ),
-         hwnd,
-         hmg_par_raw_HMENU( 2 ),
-         GetInstance(),
-         NULL
+         WS_EX_CLIENTEDGE,       // Extended style for edit control
+         WC_EDIT,                // Edit control class name
+         NULL,                   // No initial text
+         Style1,                 // Defined styles for the edit control
+         hb_parni( 3 ),          // X-coordinate
+         hb_parni( 4 ),          // Y-coordinate
+         hb_parni( 5 ),          // Width
+         hb_parni( 10 ),         // Height
+         hwnd,                   // Parent window handle
+         hmg_par_raw_HMENU( 2 ), // Control ID or menu handle
+         GetInstance(),          // Application instance
+         NULL                    // No additional parameters
       );
 
-   // Create the Up-Down Control
-   i.dwICC = ICC_UPDOWN_CLASS;               /* P.Ch. 10.16. */
+   // Initialize up-down (spinner) controls
+   i.dwICC = ICC_UPDOWN_CLASS;
    InitCommonControlsEx( &i );
 
+   // Create the up-down control
    hupdown = CreateWindowEx
       (
-         WS_EX_CLIENTEDGE,
-         UPDOWN_CLASS,
-         NULL,
-         Style2,
-         0,
-         0,
-         0,
-         0, // Set to zero to automatically size to fit the buddy window.
-         hwnd,
-         ( HMENU ) NULL,
-         GetInstance(),
-         NULL
+         WS_EX_CLIENTEDGE,       // Extended style for up-down control
+         UPDOWN_CLASS,           // Up-down control class name
+         NULL,                   // No initial text
+         Style2,                 // Defined styles for the up-down control
+         0,                      // X-coordinate (auto-aligns with buddy)
+         0,                      // Y-coordinate
+         0,                      // Width (auto-sizes to fit buddy)
+         0,                      // Height
+         hwnd,                   // Parent window handle
+         ( HMENU ) NULL,         // No menu handle
+         GetInstance(),          // Application instance
+         NULL                    // No additional parameters
       );
 
+   // Associate the edit control with the up-down control (buddy relationship)
    SendMessage( hupdown, UDM_SETBUDDY, ( WPARAM ) hedit, ( LPARAM ) NULL );
+
+   // Set the range of the spinner
    SendMessage( hupdown, UDM_SETRANGE32, ( WPARAM ) hb_parni( 8 ), ( LPARAM ) hb_parni( 9 ) );
 
-   // 2006.08.13 JD
-   SetProp( ( HWND ) hedit, TEXT( "oldspinproc" ), ( HWND ) GetWindowLongPtr( ( HWND ) hedit, GWLP_WNDPROC ) );
+   // Store the old window procedure, then subclass the edit control to handle custom messages
+   SetProp( hedit, TEXT( "oldspinproc" ), ( HWND ) GetWindowLongPtr( hedit, GWLP_WNDPROC ) );
    SubclassWindow2( hedit, OwnSpinProc );
 
+   // Return handles of the edit and spinner controls
    hb_reta( 2 );
    hmg_storvnl_HANDLE( hedit, -1, 1 );
    hmg_storvnl_HANDLE( hupdown, -1, 2 );
 }
 
+/**
+ * Function: SETSPINNERINCREMENT
+ * Sets the increment for the spinner control (number of units to increment/decrement).
+ * Parameters:
+ *   - hWnd: Handle to the spinner control.
+ *   - increment: Integer value specifying the increment step.
+ */
 HB_FUNC( SETSPINNERINCREMENT )
 {
    UDACCEL  inc;
-
    inc.nSec = 0;
-   inc.nInc = hb_parni( 2 );
-
-   SendMessage( hmg_par_raw_HWND( 1 ), UDM_SETACCEL, ( WPARAM ) 1, ( LPARAM ) &inc );
+   inc.nInc = hb_parni( 2 );  // Set increment value
+   SendMessage( hmg_par_raw_HWND( 1 ), UDM_SETACCEL, ( WPARAM ) 1, ( LPARAM ) & inc );
 }
 
-// 2006.08.13 JD
+/**
+ * Function: OwnSpinProc
+ * Custom window procedure to handle specific messages for the buddy edit control.
+ * Handles context menu events, destroys subclassing on WM_DESTROY, and other custom events.
+ * Parameters:
+ *   - hedit: Handle to the edit control.
+ *   - Msg: Message ID.
+ *   - wParam, lParam: Additional message-specific parameters.
+ * Returns:
+ *   - LRESULT: Result of message handling.
+ */
 LRESULT CALLBACK OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
    static PHB_SYMB   pSymbol = NULL;
@@ -174,12 +206,14 @@ LRESULT CALLBACK OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam
    switch( Msg )
    {
       case WM_DESTROY:
+         // Restore original window procedure and remove property on destruction
          SubclassWindow2( hedit, OldWndProc );
          RemoveProp( hedit, TEXT( "oldspinproc" ) );
          break;
 
       case WM_CONTEXTMENU:
       case WM_GETDLGCODE:
+         // Handle context menu and other custom dialog messages
          if( !pSymbol )
          {
             pSymbol = hb_dynsymSymbol( hb_dynsymGet( "OSPINEVENTS" ) );
@@ -187,6 +221,7 @@ LRESULT CALLBACK OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam
 
          if( pSymbol )
          {
+            // Push parameters onto the VM stack and call the event handler
             hb_vmPushSymbol( pSymbol );
             hb_vmPushNil();
             hb_vmPushNumInt( ( HB_PTRUINT ) hedit );
@@ -196,10 +231,12 @@ LRESULT CALLBACK OwnSpinProc( HWND hedit, UINT Msg, WPARAM wParam, LPARAM lParam
             hb_vmDo( 4 );
          }
 
-         r = hmg_par_LRESULT( -1 ); /* P.Ch. 10.16. */
+         r = hmg_par_LRESULT( -1 ); // Get return result
 
+         // Return result if non-zero, otherwise call default window procedure
          return( r != 0 ) ? r : CallWindowProc( OldWndProc, hedit, Msg, wParam, lParam );
    }
 
+   // Call the default window procedure for unhandled messages
    return CallWindowProc( OldWndProc, hedit, Msg, wParam, lParam );
 }

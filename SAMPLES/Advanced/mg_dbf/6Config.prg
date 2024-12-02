@@ -12,7 +12,7 @@
 FUNCTION Menu6Config(oWnd,nKy,cn,oBrw)
    LOCAL cForm, hFont1, hFont2, nY, nX, nMenu, cImg1, cImg2, lAutoInx
    LOCAL aBtnObj, aBtn6, cLang, aLang, cIndx, cLngCdPg, cLngDrv, cLngShrd
-   LOCAL cLngSDel
+   LOCAL cLngSDel, cLSet
 
    ? ProcNL(), oWnd, nKy, cn, oBrw, oWnd:Name
    cForm    := oWnd:Name
@@ -29,7 +29,7 @@ FUNCTION Menu6Config(oWnd,nKy,cn,oBrw)
    nMenu    := 0
    cImg1    := "bAddFile32"     // ON
    cImg2    := "bAddFile32x2"   // OFF
-   cLang    := IIF( App.Cargo:cLang == "RU", "Установить язык: ", "Set language: ")
+   cLang    := IIF( App.Cargo:cLang == "RU", "Интерфейс программы: ", "Program interface: ")
    cLang    += App.Cargo:cLang
    cLngDrv  := IIF( App.Cargo:cLang == "RU", "Сменить драйвер БД: ", "Change DB driver: ")
    cLngDrv  += App.Cargo:oIni:MAIN:DrvDbf
@@ -43,9 +43,11 @@ FUNCTION Menu6Config(oWnd,nKy,cn,oBrw)
    IF App.Cargo:cLang == "RU"
       aLang := { 'Настройка цветов', 'Настройка фонтов таблицы', 'Настройка фонтов меню', 'Другие настройки'}
       cIndx := 'Автооткрытие индексного файла'
+      cLSet := "Запуск программы - кодовая страница"
    ELSE
       aLang := { 'Adjust colors' , 'Configure table fonts', 'Customize menu fonts', 'Other settings' }
       cIndx := 'Auto-open index file'
+      cLSet := "Program startup - code page"
    ENDIF
 
    SET MENUSTYLE EXTENDED                              // switch menu style to advanced
@@ -73,6 +75,14 @@ FUNCTION Menu6Config(oWnd,nKy,cn,oBrw)
        //MENUITEM aLang[2]  ACTION {|| nMenu := 2 } FONT hFont2 ICON "iFont32"
        //MENUITEM aLang[3]  ACTION {|| nMenu := 3 } FONT hFont2 ICON "iFont32"
        //MENUITEM aLang[4]  ACTION {|| nMenu := 4 } FONT hFont2 ICON "iGear32"
+       SEPARATOR
+       Popup cLSet FONT hFont1 IMAGE "bDbfFile32" // Level 2
+          // Кодовая страница для баз по умолчанию не используется нигде - так это меню не нужно
+          // The default code page for databases is not used anywhere - so this menu is not needed
+          //MENUITEM 'SET CODEPAGE TO - ' + App.Cargo:cSetCdpg ACTION {|| nMenu := 301 } FONT hFont1
+          MENUITEM 'SET LANGUAGE TO - ' + App.Cargo:cSetLang ACTION {|| nMenu := 302 } FONT hFont1
+       End Popup
+
    END MENU
 
    _ShowContextMenu(cForm, nY, nX, .f. ) // SHOWING DROP OUT MENU
@@ -101,8 +111,10 @@ FUNCTION Menu6Config(oWnd,nKy,cn,oBrw)
       myConfig105menu(oWnd,oBrw,nMenu)
    ELSEIF nMenu == 106                    // Удалённые записи в БД
       myConfig106menu(oWnd,oBrw,nMenu)
-   ELSEIF nMenu == 201 .OR. nMenu == 202  // Сменить язык
+   ELSEIF nMenu == 201 .OR. nMenu == 202  // Сменить язык интерфейса
       myConfig201menu(oWnd,oBrw,nMenu)
+   ELSEIF nMenu == 301 .OR. nMenu == 302  // Сменить язык  SET CODEPAGE/SET LANGUAGE
+      myConfig301menu(oWnd,oBrw,nMenu)
    ENDIF
 
    DO EVENTS
@@ -241,4 +253,46 @@ FUNCTION myConfig201menu(oWnd, oBrw, nMenu)
 
 RETURN NIL
 
+/////////////////////////////////////////////////////////////////////
+// Сменить язык  SET CODEPAGE/SET LANGUAGE
+FUNCTION myConfig301menu(oWnd, oBrw, nMenu)
+   LOCAL cForm, owc, aRet, cStr, aObjLbl
 
+   ? ProcNL(), oWnd:ClassName, oBrw:ClassName, HB_ValToExp(hb_aParams())
+
+   owc     := oWnd:Cargo
+   cForm   := oWnd:Name
+   aObjLbl := oWnd:Cargo:aLblUp           // строки подсказки
+   //owc:aLblUp := { "Lbl_1", "Lbl_2" , "Lbl_3"}        // строки подсказки
+   cStr    := ""
+
+   SET WINDOW THIS TO oWnd:Name        // ОБЯЗАТЕЛЬНО !!!
+   aRet := myCodePageDbf()             // -> util_dbf.prg
+   SET WINDOW THIS TO
+   IF LEN(aRet) > 0
+      cStr := aRet[2]
+   ENDIF
+   DO EVENTS
+
+   IF LEN(cStr) > 0
+      // запись в ини-файл будет при выходе из программы
+      IF nMenu == 301
+         App.Cargo:cSetCdpg               := cStr
+         App.Cargo:oIni:MAIN:SET_CODEPAGE := cStr
+         HB_CDPSELECT( App.Cargo:cSetCdpg )
+      ELSE
+         App.Cargo:cSetLang                  := cStr
+         App.Cargo:oIni:MAIN:SET_LANGUAGE    := cStr
+         owc:cLang := "HB_LANGSELECT()= " + cStr
+         SetProperty(cForm, aObjLbl[3], "Value", owc:cLang)   // показ строки подсказки
+         IF cStr == "RU1251" .OR. cStr == "RU866"
+            SET LANGUAGE TO RUSSIAN
+         ELSE
+            HB_LANGSELECT( App.Cargo:cSetLang )
+         ENDIF
+      ENDIF
+   ENDIF
+
+   DO EVENTS
+
+RETURN NIL

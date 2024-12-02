@@ -48,7 +48,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #include "hbapiitm.h"
@@ -287,20 +287,26 @@ typedef HRESULT ( WINAPI *fnSetWindowTheme ) ( HWND hwnd, LPCWSTR pszSubAppName,
 typedef HRESULT ( WINAPI *fnEnableThemeDialogTexture ) ( HWND hwnd, DWORD dwFlags );
 typedef HRESULT ( WINAPI *fnGetThemeColor ) ( HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF * pColor );
 
+// Global variable to hold the instance handle of the "uxtheme.dll" library.
 static HINSTANCE  hUxTheme;
 
+// Function to initialize the uxtheme library and load it if not already loaded.
 HINSTANCE InitUxTheme( void )
 {
+   // Load the "uxtheme.dll" library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
    }
 
+   // Return the library handle.
    return hUxTheme;
 }
 
+// Function to free the uxtheme library when it is no longer needed.
 void EndUxTheme( void )
 {
+   // Free the library if it has been loaded and reset the handle.
    if( hUxTheme != NULL )
    {
       FreeLibrary( hUxTheme );
@@ -308,20 +314,24 @@ void EndUxTheme( void )
    }
 }
 
+// Harbour function to initialize the uxtheme library and return its handle.
 HB_FUNC( INITUXTHEME )
 {
    hmg_ret_raw_HANDLE( InitUxTheme() );
 }
 
+// Harbour function to free the uxtheme library.
 HB_FUNC( ENDUXTHEME )
 {
    EndUxTheme();
 }
 
+// Harbour function to check if themes are currently active in the OS.
 HB_FUNC( ISTHEMEACTIVE )
 {
    BOOL  bRet = HB_FALSE;
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -329,20 +339,25 @@ HB_FUNC( ISTHEMEACTIVE )
 
    if( hUxTheme )
    {
+      // Get the address of "IsThemeActive" function.
       fnIsThemeActive   pfn = ( fnIsThemeActive ) wapi_GetProcAddress( hUxTheme, "IsThemeActive" );
       if( pfn )
       {
+         // Call the function to check if themes are active.
          bRet = ( BOOL ) pfn();
       }
    }
 
+   // Return the result as a boolean.
    hb_retl( bRet );
 }
 
+// Harbour function to check if themes are enabled for the application.
 HB_FUNC( ISAPPTHEMED )
 {
    BOOL  bRet = HB_FALSE;
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -350,23 +365,27 @@ HB_FUNC( ISAPPTHEMED )
 
    if( hUxTheme )
    {
+      // Get the address of "IsAppThemed" function.
       fnIsAppThemed  pfn = ( fnIsAppThemed ) wapi_GetProcAddress( hUxTheme, "IsAppThemed" );
       if( pfn )
       {
+         // Call the function to check if application themes are enabled.
          bRet = ( BOOL ) pfn();
       }
    }
 
+   // Return the result as a boolean.
    hb_retl( bRet );
 }
 
+// Harbour function to open themed data for a given class list.
 HB_FUNC( OPENTHEMEDATA )
 {
    HTHEME   nRet = ( HTHEME ) NULL;
    HWND     hWnd = hmg_par_raw_HWND( 1 );
-
    LPCWSTR  pszClassList = ( LPCWSTR ) hb_parc( 2 );
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -374,29 +393,33 @@ HB_FUNC( OPENTHEMEDATA )
 
    if( hUxTheme )
    {
+      // Get the address of "OpenThemeData" function.
       fnOpenThemeData   pfn = ( fnOpenThemeData ) wapi_GetProcAddress( hUxTheme, "OpenThemeData" );
       if( pfn )
       {
+         // Open themed data for the specified window and class list.
          nRet = ( HTHEME ) pfn( hWnd, pszClassList );
       }
    }
 
+   // Return the theme handle if successful, otherwise return NIL.
    if( nRet != NULL )
    {
       hmg_ret_raw_HANDLE( nRet );
    }
    else
    {
-      hb_ret();   /* return NIL */
+      hb_ret();
    }
 }
 
+// Harbour function to close themed data for a given theme handle.
 HB_FUNC( CLOSETHEMEDATA )
 {
    HRESULT  nRet = S_FALSE;
-
    HTHEME   hTheme = hmg_par_raw_HTHEME( 1 );
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -404,20 +427,23 @@ HB_FUNC( CLOSETHEMEDATA )
 
    if( hUxTheme )
    {
+      // Get the address of "CloseThemeData" function.
       fnCloseThemeData  pfn = ( fnCloseThemeData ) wapi_GetProcAddress( hUxTheme, "CloseThemeData" );
       if( pfn )
       {
+         // Close themed data for the specified theme handle.
          nRet = ( HRESULT ) pfn( hTheme );
       }
    }
 
+   // Return TRUE if the operation was successful, otherwise FALSE.
    hmg_ret_L( nRet == S_OK );
 }
 
+// Harbour function to draw themed background in a specified rectangle.
 HB_FUNC( DRAWTHEMEBACKGROUND )
 {
    HRESULT  nRet = S_FALSE;
-
    HTHEME   hTheme = hmg_par_raw_HTHEME( 1 );
    HDC      hDC = hmg_par_raw_HDC( 2 );
    int      iPartId = hb_parni( 3 );
@@ -426,9 +452,11 @@ HB_FUNC( DRAWTHEMEBACKGROUND )
    RECT     pRect;
    RECT     pClipRect;
 
+   // Convert array parameters to RECT structures.
    Array2Rect( hb_param( 5, HB_IT_ARRAY ), &pRect );
    Array2Rect( hb_param( 6, HB_IT_ARRAY ), &pClipRect );
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -436,29 +464,34 @@ HB_FUNC( DRAWTHEMEBACKGROUND )
 
    if( hUxTheme )
    {
+      // Get the address of "DrawThemeBackground" function.
       fnDrawThemeBackground   pfn = ( fnDrawThemeBackground ) wapi_GetProcAddress( hUxTheme, "DrawThemeBackground" );
       if( pfn )
       {
+         // Draw the themed background.
          nRet = ( HRESULT ) pfn( hTheme, hDC, iPartId, iStateId, &pRect, &pClipRect );
       }
    }
 
+   // Return TRUE if the operation was successful, otherwise FALSE.
    hmg_ret_L( nRet == S_OK );
 }
 
+// Harbour function to draw the themed background of a parent window.
 HB_FUNC( DRAWTHEMEPARENTBACKGROUND )
 {
    HRESULT  nRet = S_FALSE;
-
    HWND     hWnd = hmg_par_raw_HWND( 1 );
    HDC      hDC = hmg_par_raw_HDC( 2 );
    RECT     pRect;
 
+   // Convert array parameter to RECT structure if provided.
    if( HB_ISARRAY( 7 ) )
    {
       Array2Rect( hb_param( 3, HB_IT_ARRAY ), &pRect );
    }
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -466,24 +499,28 @@ HB_FUNC( DRAWTHEMEPARENTBACKGROUND )
 
    if( hUxTheme )
    {
+      // Get the address of "DrawThemeParentBackground" function.
       fnDrawThemeParentBackground   pfn = ( fnDrawThemeParentBackground ) wapi_GetProcAddress( hUxTheme, "DrawThemeParentBackground" );
       if( pfn )
       {
+         // Draw the parent window themed background.
          nRet = ( HRESULT ) pfn( hWnd, hDC, &pRect );
       }
    }
 
+   // Return TRUE if the operation was successful, otherwise FALSE.
    hmg_ret_L( nRet == S_OK );
 }
 
+// Harbour function to set the window theme for a specified window.
 HB_FUNC( SETWINDOWTHEME )
 {
    HRESULT  nRet = S_FALSE;
-
    HWND     hWnd = hmg_par_raw_HWND( 1 );
    LPCWSTR  pszSubAppName = ( LPCWSTR ) hb_parc( 2 );
    LPCWSTR  pszSubIdList = ( LPCWSTR ) hb_parc( 3 );
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -491,23 +528,27 @@ HB_FUNC( SETWINDOWTHEME )
 
    if( hUxTheme )
    {
+      // Get the address of "SetWindowTheme" function.
       fnSetWindowTheme  pfn = ( fnSetWindowTheme ) wapi_GetProcAddress( hUxTheme, "SetWindowTheme" );
       if( pfn )
       {
+         // Set the window theme.
          nRet = ( HRESULT ) pfn( hWnd, pszSubAppName, pszSubIdList );
       }
    }
 
+   // Return TRUE if the operation was successful, otherwise FALSE.
    hmg_ret_L( nRet == S_OK );
 }
 
+// Harbour function to enable themed dialog texture.
 HB_FUNC( ENABLETHEMEDIALOGTEXTURE )
 {
    HRESULT  nRet = S_FALSE;
-
    HWND     hWnd = hmg_par_raw_HWND( 1 );
    DWORD    flags = hmg_par_DWORD( 2 );
 
+   // Load the library if not already loaded.
    if( hUxTheme == NULL )
    {
       hUxTheme = LoadLibraryEx( TEXT( "uxtheme.dll" ), NULL, 0 );
@@ -515,16 +556,20 @@ HB_FUNC( ENABLETHEMEDIALOGTEXTURE )
 
    if( hUxTheme )
    {
+      // Get the address of "EnableThemeDialogTexture" function.
       fnEnableThemeDialogTexture pfn = ( fnEnableThemeDialogTexture ) wapi_GetProcAddress( hUxTheme, "EnableThemeDialogTexture" );
       if( pfn )
       {
+         // Enable themed dialog texture.
          nRet = ( HRESULT ) pfn( hWnd, flags );
       }
    }
 
+   // Return TRUE if the operation was successful, otherwise FALSE.
    hmg_ret_L( nRet == S_OK );
 }
 
+// Harbour function to check if a point is inside a rectangle.
 HB_FUNC( PTINRECT )
 {
    POINT point;
@@ -532,6 +577,7 @@ HB_FUNC( PTINRECT )
 
    if( Array2Point( hb_param( 1, HB_IT_ANY ), &point ) && Array2Rect( hb_param( 2, HB_IT_ANY ), &rect ) )
    {
+      // Check if the point is within the rectangle.
       hmg_ret_L( PtInRect( &rect, point ) );
    }
    else
@@ -540,6 +586,7 @@ HB_FUNC( PTINRECT )
    }
 }
 
+// Utility function to convert array to RECT structure.
 BOOL Array2Rect( PHB_ITEM aRect, RECT *rc )
 {
    if( HB_IS_ARRAY( aRect ) && hb_arrayLen( aRect ) == 4 )
@@ -555,6 +602,7 @@ BOOL Array2Rect( PHB_ITEM aRect, RECT *rc )
    return FALSE;
 }
 
+// Utility function to convert array to POINT structure.
 BOOL Array2Point( PHB_ITEM aPoint, POINT *pt )
 {
    if( HB_IS_ARRAY( aPoint ) && hb_arrayLen( aPoint ) == 2 )
@@ -568,6 +616,7 @@ BOOL Array2Point( PHB_ITEM aPoint, POINT *pt )
    return FALSE;
 }
 
+// Utility function to convert array to COLORREF.
 BOOL Array2ColorRef( PHB_ITEM aCRef, COLORREF *cr )
 {
    if( HB_IS_ARRAY( aCRef ) && hb_arrayLen( aCRef ) == 3 )
@@ -586,6 +635,7 @@ BOOL Array2ColorRef( PHB_ITEM aCRef, COLORREF *cr )
    return FALSE;
 }
 
+// Exported function to convert RECT to array.
 HB_EXPORT PHB_ITEM Rect2Array( RECT *rc )
 {
    PHB_ITEM aRect = hb_itemArrayNew( 4 );
@@ -598,6 +648,7 @@ HB_EXPORT PHB_ITEM Rect2Array( RECT *rc )
    return aRect;
 }
 
+// Exported function to convert POINT to array.
 HB_EXPORT PHB_ITEM Point2Array( POINT *pt )
 {
    PHB_ITEM aPoint = hb_itemArrayNew( 2 );

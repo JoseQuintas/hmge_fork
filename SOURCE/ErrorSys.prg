@@ -227,11 +227,7 @@ STATIC PROCEDURE ShowError( cErrorMessage, oError )
 
       cMsg += iif( _lShowDetailError(), cErrorMessage, ErrorMessage( oError ) )
 
-      IF ISLOGICAL( _HMG_lOnErrorStop ) .AND. _HMG_lOnErrorStop == .F.
-
-         MsgStop( StrTran( cMsg, ";", CRLF ), 'Program Error', NIL, .F. )
-
-      ELSE
+      IF ISLOGICAL( _HMG_lOnErrorStop ) .AND. _HMG_lOnErrorStop
 
          bInit := {|| iif( GetControlType( "Say_01", "oDlg" ) == "EDIT",, ( ;
             SetProperty( "oDlg", "Say_01", "FontColor", YELLOW ), ;
@@ -255,6 +251,10 @@ STATIC PROCEDURE ShowError( cErrorMessage, oError )
          ENDIF
 
          AlertStop( cMsg, "Program Error", "ZZZ_B_STOP64", 64, { { 217, 67, 67 } }, .T., bInit )
+
+      ELSE
+
+         MsgStop( StrTran( cMsg, ";", CRLF ), 'Program Error', NIL, .F. )
 
       ENDIF
 

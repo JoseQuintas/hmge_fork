@@ -11,7 +11,7 @@ PROCEDURE Main
 
    DEFINE WINDOW Win1 ;
          AT 0, 0 ;
-         WIDTH 550 ;
+         WIDTH 547 ;
          HEIGHT 450 ;
          TITLE 'Custom Component Demo' ;
          MAIN

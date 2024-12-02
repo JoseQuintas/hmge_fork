@@ -23,8 +23,7 @@ FUNCTION MsgAbout(hIcon,nIcoSize)
    //SET MSGALERT BACKCOLOR TO { 159, 191, 236 } STOREIN aBack_Alert
    //SET MSGALERT FONTCOLOR TO BLUE
 
-   cMsg := REPL(".",70) + ";"
-   cMsg += App.Cargo:cTitle   + ";"
+   cMsg := App.Cargo:cTitle   + ";"
    cMsg += App.Cargo:cVersion + ";;"
    cMsg += App.Cargo:cAvtor    + ";" + App.Cargo:cEmail + ";;"
    cMsg += App.Cargo:cExport1  + ";"
@@ -40,9 +39,8 @@ FUNCTION MsgAbout(hIcon,nIcoSize)
    cMsg += "xBase Compiler: " + Version() + ";"
    cMsg += "C Compiler: " + Hb_Ccompiler() + ";;"
    cMsg += PadC( "This program is Freeware!", 70 ) + ";"
-   cMsg += PadC( "Copying is allowed!", 70 )  + ";"
-   cMsg += REPL(".",70) + ";"
-   cMsg += REPL( ";", 6 )
+   cMsg += PadC( "Copying is allowed!", 70 )  + ";;"
+   cMsg += HelpThisProg()
 
    aBtnClr := { RED }
    bOnInit := {|| // свои параметры окна
@@ -169,3 +167,107 @@ FUNCTION MG_Version( lNum, nLen )
    NEXT
 
 RETURN iif( Empty(lNum), cVer, nVer )
+
+*----------------------------------------------------------------------------*
+STATIC FUNCTION HelpThisProg()
+*----------------------------------------------------------------------------*
+   LOCAL lRus, cMsg := ""
+
+   cMsg += REPL("~",80) + ";"
+   lRus := IIF( App.Cargo:cLang == "RU", .T., .F. )
+   IF lRus
+      cMsg += "Простой просмоторщик всех форматов DBF-файлов поддерживаемых Harbour;"
+      cMsg += "   DBFCDX - memo *.fpt (FoxPro compatible);"
+      cMsg += "   DBFNTX - memo *.dbt (Clipper compatible);"
+      cMsg += "   DBFNSX - memo *.smt (Six compatible) ;"
+      cMsg += "   SIXCDX - memo *.fpt/smt (FoxPro compatible) ;"
+      cMsg += "   BMDBFCDX - bitmap filter,compatible with dbfcdx;"
+      cMsg += "   BMDBFNTX - bitmap filter,compatible with dbfntx;"
+      cMsg += "   BMDBFNSX - bitmap filter,compatible with dbfnsx;"
+      cMsg += "   BM_DBSEEKWILD - bitmap filter;;"
+      cMsg += "Включены все кодовые таблицы Harbour (около 100);"
+      cMsg += "Открытие файлов - имя файла на русском/украинском языках;"
+      cMsg += "Поиск/фильтр по всем полям базы;"
+      cMsg += "Два языка программы: русский и английский;"
+      cMsg += "Экспорт в .csv .dbf .sqlite .xls .ods;"
+      cMsg += "Экспорт DBF в другую кодировку - меню Экспорт;"
+      cMsg += "Выгрузка структуры списка полей;"
+      cMsg += REPL("~",80) + ";"
+      cMsg += "Для открытия базы в национальной кодировке необходимо указать эту кодировку при;"
+      cMsg += "старте программы. После запуска программы - меню Настройка, далее меню;"
+      cMsg += "Запуск программы - кодовая страница, далее выбираете свою национальную кодировку;"
+      cMsg += REPL("~",80) + ";"
+      cMsg += "Форматы поддерживаемых полей базы:;"
+      cMsg += '    {"ID"     ,"+"  ,  8, 0 } ) // Autoinc - автоинкремент RDD-драйвер;'
+      cMsg += '    {"VM"     ,"^"  ,  8, 0 } ) // RowVersion - RDD-драйвер модификации записи;'
+      cMsg += '    {"FLOG"   ,"L"  ,  1, 0 } ) // Logik;'
+      cMsg += '    {"FNUMBA" ,"N"  , 12, 4 } ) // Numeric;'
+      cMsg += '    {"FNUMBA2","N"  ,  8, 2 } ) // Numeric;'
+      cMsg += '    {"FTEXT"  ,"C"  , 20, 0 } ) // TEXT;'
+      cMsg += '    {"FDATE"  ,"D"  ,  8, 0 } ) // DATE;'
+      cMsg += '    {"TS_0"   ,"="  ,  8, 0 } ) // RDD-TimeStamp ModTime;'
+      cMsg += '    {"TS_1"   ,"T"  ,  8, 0 } ) // Time;'
+      cMsg += '    {"TS_2"   ,"@"  ,  8, 0 } ) // TimeStamp;'
+      cMsg += '    {"FMEMO"  ,"M"  , 10, 0 } ) // MEMO;'
+      cMsg += '    {"F_MU"   ,"M:U", 10, 0 } ) // MEMO;'
+      cMsg += '    {"F_W"    ,"W"  , 10, 0 } ) // Binary (MEMO);'
+      cMsg += '    {"F_P"    ,"P"  , 10, 0 } ) // Image  (MEMO);'
+      cMsg += '    {"F_CU"   ,"C:U", 20, 0 } ) // nChar  (TEXT);'
+      cMsg += '    {"F_CB"   ,"C:B", 10, 0 } ) // Raw    (TEXT);'
+      cMsg += '    {"F_I"    ,"I"  ,  4, 0 } ) // Integer, ShortInt, LongInt   (Numeric);'
+      cMsg += '    {"F_Z"    ,"Z"  ,  8, 0 } ) // Curdouble  (Numeric);'
+      cMsg += '    {"F_B"    ,"B"  ,  8, 0 } ) // Double     (Numeric);'
+      cMsg += '    {"F_Q"    ,"Q"  , 10, 0 } ) // VarCharFox (TEXT);'
+      cMsg += '    {"F_QU"   ,"Q:U", 10, 0 } ) // nVarChar   (TEXT);'
+      cMsg += '    {"F_Y"    ,"Y"  ,  8, 4 } ) // Money      (Numeric);'
+      cMsg += '    {"F_V"    ,"V"  ,  6, 0 } ) // MEMO - Variant 3, 4, 6 or more - Six3;'
+   ELSE
+      cMsg += "Simple viewer for all DBF file formats supported by Harbour;"
+      cMsg += "   DBFCDX - memo *.fpt (FoxPro compatible);"
+      cMsg += "   DBFNTX - memo *.dbt (Clipper compatible);"
+      cMsg += "   DBFNSX - memo *.smt (Six compatible) ;"
+      cMsg += "   SIXCDX - memo *.fpt/smt (FoxPro compatible) ;"
+      cMsg += "   BMDBFCDX - bitmap filter,compatible with dbfcdx;"
+      cMsg += "   BMDBFNTX - bitmap filter,compatible with dbfntx;"
+      cMsg += "   BMDBFNSX - bitmap filter,compatible with dbfnsx;"
+      cMsg += "   BM_DBSEEKWILD - bitmap filter;;"
+      cMsg += "All Harbour code tables are enabled (about 100);"
+      cMsg += "Opening files - file name in Russian/Ukrainian;"
+      cMsg += "Search/filter by all database fields;"
+      cMsg += "Two program languages: Russian and English;"
+      cMsg += "Export to .csv .dbf .sqlite .xls .ods;"
+      cMsg += "Export DBF to another encoding - Export menu;"
+      cMsg += "Unloading the structure of the list of fields;"
+      cMsg += REPL("~",80) + ";"
+      cMsg += "To open a database in a national encoding, you must specify this encoding when;"
+      cMsg += "start the program. After starting the program - the Settings menu, then the menu;"
+      cMsg += "Start the program - code page, then select your national encoding;"
+      cMsg += REPL("~",80) + ";"
+      cMsg += "Supported database field formats:;"
+      cMsg += '   {"ID"     , "+" ,  8, 0 } ) // Autoinc - autoincrement RDD driver;'
+      cMsg += '   {"VM"     , "^" ,  8, 0 } ) // RowVersion - RDD driver for record modification;'
+      cMsg += '   {"FLOG"   , "L" ,  1, 0 } ) // Logik;'
+      cMsg += '   {"FNUMBA" , "N" , 12, 4 } ) // Numeric;'
+      cMsg += '   {"FNUMBA2", "N" ,  8, 2 } ) // Numeric;'
+      cMsg += '   {"FTEXT"  , "C" , 20, 0 } ) // TEXT;'
+      cMsg += '   {"FDATE"  , "D" ,  8, 0 } ) // DATE;'
+      cMsg += '   {"TS_0"   , "=" ,  8, 0 } ) // RDD-TimeStamp ModTime;'
+      cMsg += '   {"TS_1"   , "T" ,  8, 0 } ) // Time;'
+      cMsg += '   {"TS_2"   , "@" ,  8, 0 } ) // TimeStamp;'
+      cMsg += '   {"FMEMO"  , "M" , 10, 0 } ) // MEMO;'
+      cMsg += '   {"F_MU"   ,"M:U", 10, 0 } ) // MEMO;'
+      cMsg += '   {"F_W"    , "W" , 10, 0 } ) // Binary (MEMO);'
+      cMsg += '   {"F_P"    , "P" , 10, 0 } ) // Image (MEMO);'
+      cMsg += '   {"F_CU"   ,"C:U", 20, 0 } ) // nChar (TEXT);'
+      cMsg += '   {"F_CB"   ,"C:B", 10, 0 } ) // Raw (TEXT);'
+      cMsg += '   {"F_I"    , "I" ,  4, 0 } ) // Integer, ShortInt, LongInt (Numeric);'
+      cMsg += '   {"F_Z"    , "Z" ,  8, 0 } ) // Curdouble (Numeric);'
+      cMsg += '   {"F_B"    , "B" ,  8, 0 } ) // Double (Numeric);'
+      cMsg += '   {"F_Q"    , "Q" , 10, 0 } ) // VarCharFox (TEXT);'
+      cMsg += '   {"F_QU"   ,"Q:U", 10, 0 } ) // nVarChar (TEXT);'
+      cMsg += '   {"F_Y"    , "Y" ,  8, 4 } ) // Money (Numeric);'
+      cMsg += '   {"F_V"    , "V" ,  6, 0 } ) // MEMO - Variant 3, 4, 6 or more - Six3;'
+   ENDIF
+   cMsg += REPL("~",80) + ";"
+
+RETURN cMsg

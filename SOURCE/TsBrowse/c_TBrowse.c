@@ -239,7 +239,7 @@ void DrawBitmap( HDC hDC, HBITMAP hBitmap, int wRow, int wCol, int wWidth, int w
    }
 
    hBmpOld = ( HBITMAP ) SelectObject( hDCmem, hBitmap );
-   GetObject( hBitmap, sizeof( BITMAP ), ( LPVOID ) & bitmap );
+   GetObject( hBitmap, sizeof( BITMAP ), ( LPVOID ) &bitmap );
 
    if( wWidth && ( wWidth != bitmap.bmWidth || wHeight != bitmap.bmHeight ) )
    {
@@ -415,8 +415,6 @@ HB_FUNC( TSDRAWCELL )
             ExtTextOut( hDC, rct.left, rct.top, ETO_OPAQUE | ETO_CLIPPED, &rct, TEXT( "" ), 0, 0 );
          }
 
-         //       else
-         //          FillRect( hDC, &rct, wBrush );
          rct.bottom -= ( bHeader ? 0 : 1 );
          rct.right -= 1;
       }

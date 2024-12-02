@@ -44,44 +44,58 @@
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
    ---------------------------------------------------------------------------*/
-#include <mgdefs.h>
 
-#include <commctrl.h>
-#include <mmsystem.h>
+// Include necessary headers for multimedia functions and controls
+#include <mgdefs.h>                   // Custom definitions for the application (e.g., Harbour-specific macros)
+#include <commctrl.h>                 // Common controls library for Windows GUI applications
+#include <mmsystem.h>                 // Multimedia API for playing sounds and controlling multimedia devices
 
-#if defined( __BORLANDC__ ) && ! defined( _WIN64 )
-#pragma warn -use   /* unused var */
+// Borland C++ compiler-specific warnings and configurations
+#if defined( __BORLANDC__ ) && !defined( _WIN64 )
+#pragma warn -use                     // Disable warnings about unused variables for 32-bit Borland C++
 #endif
+
 #if defined( __BORLANDC__ ) && defined( _WIN64 )
 #ifndef UNICODE
+
+// Define _MCIWndCreate as external for Borland C++ 64-bit compilation (ANSI version)
 extern HWND _MCIWndCreate( HWND, HINSTANCE, DWORD, LPCSTR );
 #else
+
+// Define _MCIWndCreate as external for Borland C++ 64-bit compilation (Unicode version)
 extern HWND _MCIWndCreate( HWND, HINSTANCE, DWORD, LPCWSTR );
 #endif
 #endif /* __BORLANDC__ & _WIN64 */
 
-#include <vfw.h>
+#include <vfw.h>                      // Video for Windows, used for handling video files and MCI (Media Control Interface)
 
+// Function prototype to convert ANSI strings to Wide (Unicode) strings
 #ifdef UNICODE
 LPWSTR      AnsiToWide( LPCSTR );
 #endif
+
+// Function to retrieve resources (used when playing sounds from resource files)
 HINSTANCE   GetResources( void );
 
+// Harbour function to play a system beep sound
 HB_FUNC( MESSAGEBEEP )
 {
    hb_retl( MessageBeep( hb_parni( 1 ) ) );
 }
 
+// Harbour function to play a WAV sound file or resource
 HB_FUNC( C_PLAYWAVE )
 {
-   DWORD    Style = SND_ASYNC;
+   DWORD    Style = SND_ASYNC;         // Default style for asynchronous play
    HMODULE  hmod = NULL;
 
 #ifndef UNICODE
-   LPCSTR   pszSound = hb_parc( 1 );
+   LPCSTR   pszSound = hb_parc( 1 );   // Retrieve sound file name as ANSI string
 #else
-   LPCWSTR  pszSound = AnsiToWide( ( char * ) hb_parc( 1 ) );
+   LPCWSTR  pszSound = AnsiToWide( ( char * ) hb_parc( 1 ) );  // Convert to Wide string for Unicode
 #endif
+
+   // Check for resource flag and set appropriate style and module handle
    if( hb_parl( 2 ) )
    {
       Style |= SND_RESOURCE;
@@ -92,49 +106,54 @@ HB_FUNC( C_PLAYWAVE )
       Style |= SND_FILENAME;
    }
 
+   // Set additional flags based on function parameters
    if( hb_parl( 3 ) )
    {
       Style |= SND_SYNC;
-   }
+   }  // Play synchronously
 
    if( hb_parl( 4 ) )
    {
       Style |= SND_NOSTOP;
-   }
+   }  // Do not stop other sounds
 
    if( hb_parl( 5 ) )
    {
       Style |= SND_LOOP;
-   }
+   }  // Loop the sound
 
    if( hb_parl( 6 ) )
    {
       Style |= SND_NODEFAULT;
-   }
+   }  // No default sound if file/resource not found
 
+   // Play the sound and return success/failure
    hb_retl( PlaySound( pszSound, hmod, Style ) );
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) pszSound );
+   hb_xfree( ( TCHAR * ) pszSound );   // Free converted Wide string memory
 #endif
 }
 
+// Harbour function to stop any currently playing wave sounds
 HB_FUNC( STOPWAVE )
 {
    hb_retl( PlaySound( NULL, ( HMODULE ) GetResources(), SND_PURGE ) );
 }
 
+// Harbour function to initialize a media player window for playback
 HB_FUNC( INITPLAYER )
 {
    HWND     hwnd;
 
 #ifndef UNICODE
-   LPCSTR   szFile = hb_parc( 2 );
+   LPCSTR   szFile = hb_parc( 2 );     // File name in ANSI format
 #else
-   LPCWSTR  szFile = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPCWSTR  szFile = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Convert to Wide string for Unicode
 #endif
-   DWORD    Style = WS_VISIBLE | WS_CHILD | WS_BORDER;
+   DWORD    Style = WS_VISIBLE | WS_CHILD | WS_BORDER;      // Default window styles
 
+   // Configure additional MCI (Media Control Interface) window styles based on parameters
    if( hb_parl( 7 ) )
    {
       Style |= MCIWNDF_NOAUTOSIZEWINDOW;
@@ -191,7 +210,7 @@ HB_FUNC( INITPLAYER )
    hwnd = MCIWndCreate( hmg_par_raw_HWND( 1 ), NULL, Style, szFile );
 #endif
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) szFile );
+   hb_xfree( ( TCHAR * ) szFile );        // Free converted Wide string memory
 #endif
    if( hwnd == NULL )
    {
@@ -199,15 +218,18 @@ HB_FUNC( INITPLAYER )
       return;
    }
 
+   // Set the player window's position and size based on parameters
    MoveWindow( hwnd, hb_parni( 3 ), hb_parni( 4 ), hb_parni( 5 ), hb_parni( 6 ), TRUE );
    hmg_ret_raw_HWND( hwnd );
 }
 
+// Harbour function to perform various MCI (Media Control Interface) actions
 HB_FUNC( MCIFUNC )
 {
-   HWND  mcihand = hmg_par_raw_HWND( 1 );
-   int   func = hb_parni( 2 );
+   HWND  mcihand = hmg_par_raw_HWND( 1 ); // Retrieve the MCI window handle
+   int   func = hb_parni( 2 );            // Function code to execute
 
+   // Execute the requested MCI action based on the function code
    switch( func )
    {
       case 1:
@@ -294,15 +316,17 @@ HB_FUNC( MCIFUNC )
          break;
 
       default:
-         hb_retnl( 0 );
+         hb_retnl( 0 );                   // Return 0 if function code is invalid
    }
 }
 
+// Harbour function to initialize an animation window
 HB_FUNC( INITANIMATE )
 {
    HWND  hwnd;
-   DWORD Style = WS_CHILD;
+   DWORD Style = WS_CHILD;                // Default style for child window
 
+   // Add styles based on parameters
    if( hb_parl( 9 ) )
    {
       Style |= WS_BORDER;
@@ -328,47 +352,51 @@ HB_FUNC( INITANIMATE )
       Style |= ACS_TRANSPARENT;
    }
 
-   hwnd = Animate_Create( hmg_par_raw_HWND( 1 ), NULL, Style, GetResources() );
-
+   hwnd = Animate_Create( hmg_par_raw_HWND( 1 ), NULL, Style, GetResources() );  // Create the animation window
    if( hwnd == NULL )
    {
       MessageBox( 0, TEXT( "AnimateBox Creation Failed!" ), TEXT( "Error!" ), MB_ICONEXCLAMATION | MB_OK | MB_SYSTEMMODAL );
       return;
    }
 
+   // Set the animation window's position and size
    MoveWindow( hwnd, hb_parni( 2 ), hb_parni( 3 ), hb_parni( 4 ), hb_parni( 5 ), TRUE );
    hmg_ret_raw_HWND( hwnd );
 }
 
+// Harbour function to open an animation resource
 HB_FUNC( OPENANIMATE )
 {
 #ifndef UNICODE
-   LPCSTR   szName = hb_parc( 2 );
+   LPCSTR   szName = hb_parc( 2 );  // Animation file/resource name in ANSI
 #else
-   LPCWSTR  szName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPCWSTR  szName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Convert to Wide string for Unicode
 #endif
-   Animate_Open( hmg_par_raw_HWND( 1 ), szName );
-
+   Animate_Open( hmg_par_raw_HWND( 1 ), szName );           // Open the animation
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) szName );
+   hb_xfree( ( TCHAR * ) szName );                    // Free converted Wide string memory
 #endif
 }
 
+// Harbour function to play the opened animation
 HB_FUNC( PLAYANIMATE )
 {
-   Animate_Play( hmg_par_raw_HWND( 1 ), 0, -1, 1 );
+   Animate_Play( hmg_par_raw_HWND( 1 ), 0, -1, 1 );   // Play from beginning to end, once
 }
 
+// Harbour function to seek to a specific frame in the animation
 HB_FUNC( SEEKANIMATE )
 {
-   Animate_Seek( hmg_par_raw_HWND( 1 ), hb_parni( 2 ) );
+   Animate_Seek( hmg_par_raw_HWND( 1 ), hb_parni( 2 ) ); // Seek to the specified frame
 }
 
+// Harbour function to stop the animation playback
 HB_FUNC( STOPANIMATE )
 {
    Animate_Stop( hmg_par_raw_HWND( 1 ) );
 }
 
+// Harbour function to close the animation and release resources
 HB_FUNC( CLOSEANIMATE )
 {
    Animate_Close( hmg_par_raw_HWND( 1 ) );

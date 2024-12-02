@@ -48,80 +48,94 @@
    author: Copyright 2016 (C) P.Chornyj <myorg63@mail.ru>
  */
 #include <mgdefs.h>
+#include "hbapifs.h"                 // Include Harbour API for file system functions.
 
-#include "hbapifs.h"
-
+// Function prototype to get the application instance handle.
 HINSTANCE         GetInstance( void );
 
+// Prototype for function to convert ANSI to wide character strings (Unicode).
 #ifdef UNICODE
 LPWSTR            AnsiToWide( LPCSTR );
 #endif
-static HINSTANCE  hResources = 0;
+
+// Global variables
+static HINSTANCE  hResources = 0;                     // Handle to the currently loaded resources DLL.
 static HINSTANCE  HMG_DllStore[256];
 
+// Array to store handles of up to 256 loaded DLLs.
+
+// Function to load a DLL and manage it in HMG_DllStore
 static HINSTANCE HMG_LoadDll( char *DllName )
 {
-   static int  DllCnt;
-
+   static int  DllCnt;                                // Counter to track the index for storing DLL handles in HMG_DllStore.
 #ifndef UNICODE
-   LPCSTR      lpLibFileName = DllName;
+   LPCSTR      lpLibFileName = DllName;               // If not Unicode, DLL name is in ANSI.
 #else
-   LPCWSTR     lpLibFileName = AnsiToWide( DllName );
+   LPCWSTR     lpLibFileName = AnsiToWide( DllName ); // Convert DLL name to wide characters for Unicode.
 #endif
-   DllCnt = ( DllCnt + 1 ) & 255;
-   FreeLibrary( HMG_DllStore[DllCnt] );
+   DllCnt = ( DllCnt + 1 ) & 255;                     // Update DllCnt in a circular manner within 256 entries.
+   FreeLibrary( HMG_DllStore[DllCnt] );               // Free any previously loaded DLL at this index.
 
+   // Load the specified DLL and store its handle in the current slot in HMG_DllStore.
    return HMG_DllStore[DllCnt] = LoadLibraryEx( lpLibFileName, NULL, 0 );
 }
 
+// Function to unload all DLLs stored in HMG_DllStore
 static void HMG_UnloadDll( void )
 {
    register int   i;
 
+   // Iterate through HMG_DllStore and free each loaded DLL.
    for( i = 255; i >= 0; i-- )
    {
       FreeLibrary( HMG_DllStore[i] );
    }
 }
 
+// Function to get the current resources handle, either hResources or the main instance
 HINSTANCE GetResources( void )
 {
    return( hResources ) ? ( hResources ) : ( GetInstance() );
 }
 
+// Harbour function to return the handle to the current resources (DLL)
 HB_FUNC( GETRESOURCES )
 {
-   hmg_ret_raw_HANDLE( GetResources() );
+   hmg_ret_raw_HANDLE( GetResources() );              // Return the resources handle.
 }
 
+// Harbour function to set the current resources handle
 HB_FUNC( SETRESOURCES )
 {
-   if( HB_ISCHAR( 1 ) )
+   if( HB_ISCHAR( 1 ) ) // If parameter 1 is a string, treat it as a DLL name.
    {
-      hResources = HMG_LoadDll( ( char * ) hb_parc( 1 ) );
+      hResources = HMG_LoadDll( ( char * ) hb_parc( 1 ) );  // Load DLL and set hResources.
    }
-   else if( HB_ISNUM( 1 ) )
+   else if( HB_ISNUM( 1 ) )                           // If parameter 1 is numeric, treat it as a direct handle.
    {
       hResources = hmg_par_raw_HINSTANCE( 1 );
    }
 
-   hmg_ret_raw_HANDLE( hResources );
+   hmg_ret_raw_HANDLE( hResources );                  // Return the newly set resources handle.
 }
 
+// Harbour function to free all loaded resources and reset hResources to zero
 HB_FUNC( FREERESOURCES )
 {
-   HMG_UnloadDll();
-
-   if( hResources )
+   HMG_UnloadDll();                                   // Free all DLLs in HMG_DllStore.
+   if( hResources )                                   // Reset hResources if it’s not zero.
    {
       hResources = 0;
    }
 }
 
+// Compatibility macros for older versions of Harbour or xHarbour
 #if defined( __XHARBOUR__ ) || ( __HARBOUR__ - 0 < 0x030200 )
+
+// Harbour function to save binary resource data to a file
 HB_FUNC( RCDATATOFILE )
 {
-   HMODULE  hModule = GetResources();
+   HMODULE  hModule = GetResources();                 // Get the handle to the current resources.
    LPTSTR   lpType = ( hb_parclen( 3 ) > 0 ? ( LPTSTR ) hb_parc( 3 ) : MAKEINTRESOURCE( RT_RCDATA ) );
    HRSRC    hResInfo;
    HGLOBAL  hResData;
@@ -129,6 +143,7 @@ HB_FUNC( RCDATATOFILE )
    DWORD    dwSize, dwRet;
    HANDLE   hFile;
 
+   // Locate resource by name or ID, based on the length of the first parameter.
    if( hb_parclen( 1 ) > 0 )
    {
       hResInfo = FindResourceA( hModule, hb_parc( 1 ), lpType );
@@ -138,22 +153,25 @@ HB_FUNC( RCDATATOFILE )
       hResInfo = FindResource( hModule, MAKEINTRESOURCE( hb_parni( 1 ) ), lpType );
    }
 
+   // Check if the resource was found; return -1 if not.
    if( NULL == hResInfo )
    {
       hb_retni( -1 );
       return;
    }
 
-   hResData = LoadResource( hModule, hResInfo );
+   hResData = LoadResource( hModule, hResInfo );      // Load the located resource.
 
+   // Check if resource data was loaded; return -2 if not.
    if( NULL == hResData )
    {
       hb_retni( -2 );
       return;
    }
 
-   lpData = LockResource( hResData );
+   lpData = LockResource( hResData );                 // Lock the resource to get a data pointer.
 
+   // Check if data pointer is valid; return -3 if not.
    if( NULL == lpData )
    {
       FreeResource( hResData );
@@ -161,10 +179,12 @@ HB_FUNC( RCDATATOFILE )
       return;
    }
 
-   dwSize = SizeofResource( hModule, hResInfo );
+   dwSize = SizeofResource( hModule, hResInfo );      // Get the size of the resource.
 
+   // Create a new file to write the resource data.
    hFile = CreateFile( hb_parc( 2 ), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, ( DWORD ) 0, NULL );
 
+   // Check if the file was created; return -4 if not.
    if( INVALID_HANDLE_VALUE == hFile )
    {
       FreeResource( hResData );
@@ -172,10 +192,10 @@ HB_FUNC( RCDATATOFILE )
       return;
    }
 
-   WriteFile( hFile, lpData, dwSize, &dwRet, NULL );
+   WriteFile( hFile, lpData, dwSize, &dwRet, NULL );  // Write resource data to the file.
+   FreeResource( hResData );           // Free the resource data after use.
 
-   FreeResource( hResData );
-
+   // Check if write was successful; return -5 if not.
    if( dwRet != dwSize )
    {
       CloseHandle( hFile );
@@ -183,20 +203,21 @@ HB_FUNC( RCDATATOFILE )
       return;
    }
 
-   CloseHandle( hFile );
-
-   hb_retnl( dwRet );
+   CloseHandle( hFile );               // Close the file.
+   hb_retnl( dwRet );                  // Return the number of bytes written.
 }
 
+// Harbour function to return binary resource data in memory
 HB_FUNC( RCDATATOMEM )
 {
-   HMODULE  hModule = GetResources();
+   HMODULE  hModule = GetResources();  // Get the handle to the current resources.
    LPTSTR   lpType = ( hb_parclen( 2 ) > 0 ? ( LPTSTR ) hb_parc( 2 ) : MAKEINTRESOURCE( RT_RCDATA ) );
    HRSRC    hResInfo;
    HGLOBAL  hResData;
    LPVOID   lpData;
    DWORD    dwSize;
 
+   // Locate the resource by name or ID.
    if( hb_parclen( 1 ) > 0 )
    {
       hResInfo = FindResourceA( hModule, hb_parc( 1 ), lpType );
@@ -206,22 +227,25 @@ HB_FUNC( RCDATATOMEM )
       hResInfo = FindResource( hModule, MAKEINTRESOURCE( hb_parni( 1 ) ), lpType );
    }
 
+   // Return empty string if the resource was not found.
    if( NULL == hResInfo )
    {
       hb_retc( "" );
       return;
    }
 
-   hResData = LoadResource( hModule, hResInfo );
+   hResData = LoadResource( hModule, hResInfo );   // Load the located resource.
 
+   // Return empty string if resource data could not be loaded.
    if( NULL == hResData )
    {
       hb_retc( "" );
       return;
    }
 
-   lpData = LockResource( hResData );
+   lpData = LockResource( hResData );              // Lock the resource data for access.
 
+   // Return empty string if resource data could not be locked.
    if( NULL == lpData )
    {
       FreeResource( hResData );
@@ -229,14 +253,13 @@ HB_FUNC( RCDATATOMEM )
       return;
    }
 
-   dwSize = SizeofResource( hModule, hResInfo );
-
-   if( dwSize )
+   dwSize = SizeofResource( hModule, hResInfo );   // Get the size of the resource.
+   if( dwSize )               // If the resource has data, return it as a binary string.
    {
       hb_retclen( lpData, dwSize );
    }
 
-   FreeResource( hResData );
+   FreeResource( hResData );  // Free the resource data after use.
 }
 
 #else
@@ -274,12 +297,12 @@ HB_FUNC( RCDATATOFILE )
 
       if( NULL == hResData )
       {
-         dwResult = ( HB_SIZE ) - 2;         // can't load
+         dwResult = ( HB_SIZE ) -2;         // can't load
       }
    }
    else
    {
-      dwResult = ( HB_SIZE ) - 1;            // can't find
+      dwResult = ( HB_SIZE ) -1;            // can't find
    }
 
    if( 0 == dwResult )
@@ -299,19 +322,19 @@ HB_FUNC( RCDATATOFILE )
 
             if( dwResult != dwSize )
             {
-               dwResult = ( HB_SIZE ) - 5;   // can't write
+               dwResult = ( HB_SIZE ) -5;   // can't write
             }
 
             hb_fileClose( pFile );
          }
          else
          {
-            dwResult = ( HB_SIZE ) - 4;      // can't open
+            dwResult = ( HB_SIZE ) -4;      // can't open
          }
       }
       else
       {
-         dwResult = ( HB_SIZE ) - 3;         // can't lock
+         dwResult = ( HB_SIZE ) -3;         // can't lock
       }
 
       FreeResource( hResData );

@@ -48,27 +48,33 @@
    Parts  of  this  code  is contributed and used here under permission of his
    author: Copyright 2016 (C) P.Chornyj <myorg63@mail.ru>
  */
-#include <mgdefs.h>
+#include <mgdefs.h>        // MiniGUI definitions and macros.
+#include "hbapierr.h"      // Harbour error-handling functions.
+#include "hbapistr.h"      // Harbour string handling functions.
 
-#include "hbapierr.h"
-#include "hbapistr.h"
-
+// Compatibility definition for xHarbour version.
 #ifdef __XHARBOUR__
 #define hb_storclen_buffer hb_storclenAdopt
 #endif
+
 #ifdef UNICODE
+
+// Function declaration for checking if a window has a specific class name in Unicode.
 BOOL  _isValidCtrlClassW( HWND hwndTip, LPWSTR ClassName );
 
+// Function to validate if a given window handle (HWND) has a specified control class name in Unicode.
 BOOL _isValidCtrlClassW( HWND hwndTip, LPWSTR ClassName )
 {
-   TCHAR lpClassName[256];
+   TCHAR lpClassName[256]; // Buffer to store the retrieved class name.
    int   iLen = 0;
 
+   // Check if the window is valid and retrieve the class name.
    if( IsWindow( hwndTip ) )
    {
-      iLen = GetClassNameW( hwndTip, lpClassName, 256 );
+      iLen = GetClassNameW( hwndTip, lpClassName, 256 ); // Get the class name in Unicode.
    }
 
+   // Compare the retrieved class name with the given class name and return TRUE if they match.
    if( ( iLen > 0 ) && ( hb_wstrncmp( ( TCHAR * ) lpClassName, ClassName, iLen ) == 0 ) )
    {
       return TRUE;
@@ -80,19 +86,23 @@ BOOL _isValidCtrlClassW( HWND hwndTip, LPWSTR ClassName )
 }
 
 #else
+
+// Function declaration for checking if a window has a specific class name in ASCII.
 BOOL  _isValidCtrlClassA( HWND hwndTip, const char *ClassName );
 
-/* P.Ch. 16.10. */
+/* Check if the window class name matches the given class name. */
 BOOL _isValidCtrlClassA( HWND hwndTip, const char *ClassName )
 {
-   char  lpClassName[256];
+   char  lpClassName[256]; // Buffer for storing class name in ASCII.
    int   iLen = 0;
 
+   // Check if the window handle is valid and retrieve the class name.
    if( IsWindow( hwndTip ) )
    {
-      iLen = GetClassNameA( hwndTip, lpClassName, 256 );
+      iLen = GetClassNameA( hwndTip, lpClassName, 256 ); // Get the class name in ASCII.
    }
 
+   // Compare the retrieved class name with the specified class name and return TRUE if they match.
    if( ( iLen > 0 ) && ( strncmp( ( const char * ) lpClassName, ClassName, iLen ) == 0 ) )
    {
       return TRUE;
@@ -104,86 +114,84 @@ BOOL _isValidCtrlClassA( HWND hwndTip, const char *ClassName )
 }
 #endif
 
-/*
-   cClassName := GetClassName( nHwnd )
-   IF ! Empty( cClassName )
-      ..
-   ..
+/* 
+   Function to retrieve the class name of a given window handle and return it as a string.
  */
 HB_FUNC( GETCLASSNAME )
 {
-   HWND  hwnd = hmg_par_raw_HWND( 1 );
-
-   if( IsWindow( hwnd ) )
+   HWND  hwnd = hmg_par_raw_HWND( 1 );                   // Retrieve the window handle from the function's first parameter.
+   if( IsWindow( hwnd ) )                 // Check if the handle corresponds to a valid window.
    {
-      char  ClassName[256];
+      char  ClassName[256];               // Buffer to hold the window class name.
       int   iLen;
 
       iLen = GetClassNameA( hwnd, ClassName, sizeof( ClassName ) / sizeof( char ) );
 
-      if( iLen > 0 )
+      if( iLen > 0 )                      // If the class name is retrieved successfully, return it as a string.
       {
          hb_retclen( ( const char * ) ClassName, iLen );
       }
       else
       {
-         hb_retc_null();
+         hb_retc_null();                  // If retrieval fails, return a null string.
       }
    }
    else
    {
+      // Return an error if the window handle is invalid.
       hb_errRT_BASE_SubstR( EG_ARG, 3012, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
    }
 }
 
 /*
-   cClassName := Space( 32 )
-   ..
-   nLen := GetClassNameByRef( nHwnd, @cClassName )
-   IF nLen > 0
-      ..
-   ..
+   Function to retrieve the class name of a window by reference and return its length.
  */
 HB_FUNC( GETCLASSNAMEBYREF )
 {
-   HWND     hwnd = hmg_par_raw_HWND( 1 );
-   HB_SIZE  nLen = hb_parcsiz( 2 ); // fixed P.Ch. 16.12.
-   hb_retni( 0 );
+   HWND     hwnd = hmg_par_raw_HWND( 1 ); // Get the window handle from the function's first parameter.
+   HB_SIZE  nLen = hb_parcsiz( 2 );       // Get the size of the buffer for storing the class name.
 
-   if( IsWindow( hwnd ) && nLen > 1 )
+   hb_retni( 0 ); // Default return value (0) if retrieval fails.
+
+   if( IsWindow( hwnd ) && nLen > 1 )                    // Proceed if the window is valid and buffer size is adequate.
    {
-      char  *pBuffer = ( char * ) hb_xgrab( nLen + 1 );
-
+      char  *pBuffer = ( char * ) hb_xgrab( nLen + 1 );  // Allocate memory for the buffer.
       if( pBuffer )
       {
          int   nResult = GetClassNameA( hwnd, pBuffer, ( int ) nLen );
 
-         if( nResult > 0 )
+         if( nResult > 0 )             // Store and return the class name if retrieval succeeds.
          {
             hb_retni( hb_storclen_buffer( pBuffer, ( HB_SIZE ) nResult, 2 ) );
          }
          else
          {
-            hb_xfree( pBuffer );
+            hb_xfree( pBuffer );       // Free memory if retrieval fails.
          }
       }
    }
 }
 
+/*
+   Function to retrieve a specific property of a window (like style or other window parameters).
+ */
 HB_FUNC( GETWINDOWLONG )
 {
-   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   HWND  hwnd = hmg_par_raw_HWND( 1 ); // Get the window handle.
 
-   if( IsWindow( hwnd ) )
+   if( IsWindow( hwnd ) )              // Verify that the window is valid.
    {
-      HB_RETNL( GetWindowLongPtr( hwnd, hb_parni( 2 ) ) );
+      HB_RETNL( GetWindowLongPtr( hwnd, hb_parni( 2 ) ) );  // Retrieve and return the window property.
    }
    else
    {
-      hb_errRT_BASE_SubstR( EG_ARG, 3012, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS ); // Error handling.
    }
 }
 
+/*
+   Function to set a specific property (e.g., style) of a window and return the old property value.
+ */
 HB_FUNC( SETWINDOWLONG )
 {
    HWND  hwnd = hmg_par_raw_HWND( 1 );
@@ -199,13 +207,7 @@ HB_FUNC( SETWINDOWLONG )
 }
 
 /*
-   nCtlStyle := GetWindowStyle( Form_1.Button_1.Handle )
-
-   IF hb_bitAnd( nCtlStyle, WS_TABSTOP ) != 0
-      SetWindowStyle( nButtonHandle, WS_TABSTOP, .F. )   // Turn WS_TABSTOP style off
-   ELSE
-      SetWindowStyle( nButtonHandle, WS_TABSTOP, .T. )   // Turn WS_TABSTOP style on
-   ENDIF
+   Function to get the style of a window and return it for style-related operations.
  */
 HB_FUNC( GETWINDOWSTYLE )
 {
@@ -222,11 +224,7 @@ HB_FUNC( GETWINDOWSTYLE )
 }
 
 /*
-   nOldStyle := SetWindowStyle( Form_1.Button_1.Handle, WS_TABSTOP, .T. )
-
-   IF nOldStyle == 0
-      MsgExclamation( "Cannot add WS_TABSTOP style to Button_1", "Warning!")
-   ENDIF
+   Function to set or modify a window's style by adding or removing a specified style.
  */
 HB_FUNC( SETWINDOWSTYLE )
 {
@@ -234,10 +232,17 @@ HB_FUNC( SETWINDOWSTYLE )
 
    if( IsWindow( hwnd ) )
    {
-      LONG_PTR OldStyle = GetWindowLongPtr( hwnd, GWL_STYLE );
-      LONG_PTR NewStyle = hmg_par_raw_LONG_PTR( 2 );
-
-      HB_RETNL( SetWindowLongPtr( hwnd, GWL_STYLE, ( ( BOOL ) hb_parl( 3 ) ) ? OldStyle | NewStyle : OldStyle & ( ~NewStyle ) ) );
+      LONG_PTR OldStyle = GetWindowLongPtr( hwnd, GWL_STYLE ); // Retrieve current window style.
+      LONG_PTR NewStyle = hmg_par_raw_LONG_PTR( 2 );           // New style to be set.
+      HB_RETNL
+      (
+         SetWindowLongPtr
+            (
+               hwnd,
+               GWL_STYLE,  // Update the window style based on the 3rd parameter.
+               ( ( BOOL ) hb_parl( 3 ) ) ? OldStyle | NewStyle : OldStyle & ( ~NewStyle )
+            )
+      );
    }
    else
    {
@@ -246,11 +251,7 @@ HB_FUNC( SETWINDOWSTYLE )
 }
 
 /*
-   IF GetClassName( nCtlHandle ) == "Button" .AND. IsWindowHasStyle( nCtlHandle, WS_TABSTOP )
-      SetWindowStyle( nCtlHandle, WS_TABSTOP, .F. )   // Turn WS_TABSTOP style off
-   ELSE
-      SetWindowStyle( nCtlHandle, WS_TABSTOP, .T. )   // Turn WS_TABSTOP style on
-   ENDIF
+   Function to check if a window has a specified style applied and return TRUE or FALSE.
  */
 HB_FUNC( ISWINDOWHASSTYLE )
 {
@@ -258,9 +259,8 @@ HB_FUNC( ISWINDOWHASSTYLE )
 
    if( IsWindow( hwnd ) )
    {
-      LONG_PTR Style = GetWindowLongPtr( hwnd, GWL_STYLE );
-
-      hmg_ret_L( ( Style & hmg_par_raw_LONG_PTR( 2 ) ) );
+      LONG_PTR Style = GetWindowLongPtr( hwnd, GWL_STYLE );       // Retrieve the current style.
+      hmg_ret_L( ( Style & hmg_par_raw_LONG_PTR( 2 ) ) );         // Check if the specified style is applied.
    }
    else
    {
@@ -268,15 +268,17 @@ HB_FUNC( ISWINDOWHASSTYLE )
    }
 }
 
+/*
+   Function to check if a window has a specific extended style applied.
+ */
 HB_FUNC( ISWINDOWHASEXSTYLE )
 {
    HWND  hwnd = hmg_par_raw_HWND( 1 );
 
    if( IsWindow( hwnd ) )
    {
-      LONG_PTR ExStyle = GetWindowLongPtr( hwnd, GWL_EXSTYLE );
-
-      hmg_ret_L( ( ExStyle & hmg_par_raw_LONG_PTR( 2 ) ) );
+      LONG_PTR ExStyle = GetWindowLongPtr( hwnd, GWL_EXSTYLE );   // Get the current extended style.
+      hmg_ret_L( ( ExStyle & hmg_par_raw_LONG_PTR( 2 ) ) );       // Check if the specified extended style is applied.
    }
    else
    {

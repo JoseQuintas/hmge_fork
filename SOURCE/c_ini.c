@@ -43,52 +43,67 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #ifdef UNICODE
+// Functions to convert ANSI strings to wide character strings and vice versa
 LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
+
+// Function: GETPRIVATEPROFILESTRING
+// Retrieves a string value from an INI file for a given section and key.
+// Parameters:
+//   1. Section name (string) - The section in the INI file.
+//   2. Key name (string) - The specific key within the section.
+//   3. Default value (string) - Value to return if key is not found.
+//   4. File path (string) - Path to the INI file.
+// Returns:
+//   The value associated with the key as a string, or the default value if not found.
 HB_FUNC( GETPRIVATEPROFILESTRING )
 {
-   DWORD    nSize = 256;
-   TCHAR    *bBuffer;
-   DWORD    dwLen;
-
+   DWORD nSize = 256;   // Initial buffer size
+   TCHAR *bBuffer;      // Buffer to hold the retrieved string
+   DWORD dwLen;         // Length of the string read from the file
 #ifndef UNICODE
+   // If not Unicode, retrieve parameters as ANSI strings
    LPCSTR   lpSection = HB_ISCHAR( 1 ) ? hb_parc( 1 ) : NULL;
    LPCSTR   lpEntry = HB_ISCHAR( 2 ) ? hb_parc( 2 ) : NULL;
    LPCSTR   lpDefault = hb_parc( 3 );
    LPCSTR   lpFileName = hb_parc( 4 );
 #else
+   // If Unicode, convert input parameters from ANSI to wide characters
    LPCWSTR  lpSection = HB_ISCHAR( 1 ) ? AnsiToWide( ( char * ) hb_parc( 1 ) ) : NULL;
    LPCWSTR  lpEntry = HB_ISCHAR( 2 ) ? AnsiToWide( ( char * ) hb_parc( 2 ) ) : NULL;
    LPCWSTR  lpDefault = AnsiToWide( ( char * ) hb_parc( 3 ) );
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 4 ) );
-   LPSTR    pStr;
+   LPSTR    pStr;       // Temporary variable for ANSI conversion
 #endif
+
+   // Loop until the buffer is large enough to hold the result
    do
    {
-      nSize *= 2;
+      nSize *= 2;       // Double the buffer size if needed
       bBuffer = ( TCHAR * ) hb_xgrab( sizeof( TCHAR ) * nSize );
       dwLen = GetPrivateProfileString( lpSection, lpEntry, lpDefault, bBuffer, nSize, lpFileName );
    }
    while( dwLen >= nSize - 1 );
 
+   // If retrieval was successful, return the retrieved value
    if( dwLen )
    {
 #ifndef UNICODE
-      hb_retclen( ( TCHAR * ) bBuffer, dwLen );
+      hb_retclen( ( TCHAR * ) bBuffer, dwLen ); // Return the string directly for ANSI
 #else
-      pStr = WideToAnsi( bBuffer );
-      hb_retc( pStr );
-      hb_xfree( pStr );
-      hb_xfree( ( TCHAR * ) lpFileName );
+      pStr = WideToAnsi( bBuffer );       // Convert from wide to ANSI
+      hb_retc( pStr );                    // Return the ANSI string
+      hb_xfree( pStr );                   // Free memory
+      hb_xfree( ( TCHAR * ) lpFileName ); // Free memory for converted strings
       hb_xfree( ( TCHAR * ) lpDefault );
 #endif
    }
-   else
+   else                 // If retrieval failed, return the default value
    {
 #ifndef UNICODE
       hb_retc( lpDefault );
@@ -101,9 +116,18 @@ HB_FUNC( GETPRIVATEPROFILESTRING )
 #endif
    }
 
-   hb_xfree( bBuffer );
+   hb_xfree( bBuffer ); // Free the buffer memory
 }
 
+// Function: WRITEPRIVATEPROFILESTRING
+// Writes a string value to an INI file for a given section and key.
+// Parameters:
+//   1. Section name (string) - The section to modify or create.
+//   2. Key name (string) - The key to modify or create.
+//   3. Value (string) - The value to set for the specified key.
+//   4. File path (string) - Path to the INI file.
+// Returns:
+//   A logical value indicating whether the write operation was successful.
 HB_FUNC( WRITEPRIVATEPROFILESTRING )
 {
 #ifndef UNICODE
@@ -112,18 +136,27 @@ HB_FUNC( WRITEPRIVATEPROFILESTRING )
    LPCSTR   lpData = HB_ISCHAR( 3 ) ? hb_parc( 3 ) : NULL;
    LPCSTR   lpFileName = hb_parc( 4 );
 #else
+   // Convert input parameters to wide characters
    LPCWSTR  lpSection = AnsiToWide( ( char * ) hb_parc( 1 ) );
    LPCWSTR  lpEntry = HB_ISCHAR( 2 ) ? AnsiToWide( ( char * ) hb_parc( 2 ) ) : NULL;
    LPCWSTR  lpData = HB_ISCHAR( 3 ) ? AnsiToWide( ( char * ) hb_parc( 3 ) ) : NULL;
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 4 ) );
 #endif
-   hb_retl( WritePrivateProfileString( lpSection, lpEntry, lpData, lpFileName ) );
+   hb_retl( WritePrivateProfileString( lpSection, lpEntry, lpData, lpFileName ) );  // Write to INI
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpSection );
    hb_xfree( ( TCHAR * ) lpFileName );
 #endif
 }
 
+// Function: DELINIENTRY
+// Deletes a specific key from a section in the INI file.
+// Parameters:
+//   1. Section name (string) - The section containing the key.
+//   2. Key name (string) - The key to delete.
+//   3. File path (string) - Path to the INI file.
+// Returns:
+//   A logical value indicating whether the deletion was successful.
 HB_FUNC( DELINIENTRY )
 {
 #ifndef UNICODE
@@ -135,10 +168,7 @@ HB_FUNC( DELINIENTRY )
    LPCWSTR  lpEntry = AnsiToWide( ( char * ) hb_parc( 2 ) );
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 3 ) );
 #endif
-   hb_retl( WritePrivateProfileString( lpSection, // Section
-   lpEntry, // Entry
-   NULL, // String
-   lpFileName ) );    // INI File
+   hb_retl( WritePrivateProfileString( lpSection, lpEntry, NULL, lpFileName ) );    // NULL deletes the entry
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpSection );
    hb_xfree( ( TCHAR * ) lpEntry );
@@ -146,6 +176,13 @@ HB_FUNC( DELINIENTRY )
 #endif
 }
 
+// Function: DELINISECTION
+// Deletes an entire section from an INI file.
+// Parameters:
+//   1. Section name (string) - The section to delete.
+//   2. File path (string) - Path to the INI file.
+// Returns:
+//   A logical value indicating whether the section was successfully deleted.
 HB_FUNC( DELINISECTION )
 {
 #ifndef UNICODE
@@ -155,41 +192,42 @@ HB_FUNC( DELINISECTION )
    LPCWSTR  lpSection = AnsiToWide( ( char * ) hb_parc( 1 ) );
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-   hb_retl( WritePrivateProfileString( lpSection, // Section
-   NULL, // Entry
-   TEXT( "" ), // String
-   lpFileName ) ); // INI File
+   hb_retl( WritePrivateProfileString( lpSection, NULL, TEXT( "" ), lpFileName ) ); // NULL deletes the section
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpSection );
    hb_xfree( ( TCHAR * ) lpFileName );
 #endif
 }
 
+// Helper function: FindFirstSubString
+// Finds the start of the first substring in a list of null-terminated strings.
 static TCHAR *FindFirstSubString( TCHAR *Strings )
 {
    TCHAR *p = Strings;
-
    if( *p == 0 )
    {
-      p = NULL;
+      p = NULL;                     // If empty, return NULL
    }
 
    return p;
 }
 
+// Helper function: FindNextSubString
+// Finds the start of the next substring after a given string.
 static TCHAR *FindNextSubString( TCHAR *Strings )
 {
    TCHAR *p = Strings;
-
-   p = p + lstrlen( Strings ) + 1;
+   p = p + lstrlen( Strings ) + 1;  // Move to next substring
    if( *p == 0 )
    {
-      p = NULL;
+      p = NULL;                     // Return NULL if end of list
    }
 
    return p;
 }
 
+// Helper function: FindLenSubString
+// Finds the number of substrings in a list of null-terminated strings.
 static INT FindLenSubString( TCHAR *Strings )
 {
    INT   i = 0;
@@ -200,13 +238,18 @@ static INT FindLenSubString( TCHAR *Strings )
       for( i = 1; ( p = FindNextSubString( p ) ) != NULL; i++ );
    }
 
-   return i;
+   return i;                  // Return count of substrings
 }
 
-// (JK) HMG 1.0 Experimental build 6
+// Function: _GETPRIVATEPROFILESECTIONNAMES
+// Retrieves all section names from an INI file.
+// Parameters:
+//   1. File path (string) - Path to the INI file.
+// Returns:
+//   An array of section names.
 HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
 {
-   TCHAR    bBuffer[32767];
+   TCHAR    bBuffer[32767];   // Buffer for section names
    TCHAR    *p;
    INT      i, nLen;
 
@@ -216,12 +259,12 @@ HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
    LPSTR    pStr;
 #endif
-   ZeroMemory( bBuffer, sizeof( bBuffer ) );
+   ZeroMemory( bBuffer, sizeof( bBuffer ) ); // Clear buffer
    GetPrivateProfileSectionNames( bBuffer, sizeof( bBuffer ) / sizeof( TCHAR ), lpFileName );
 
    p = ( TCHAR * ) bBuffer;
-   nLen = FindLenSubString( p );
-   hb_reta( nLen );
+   nLen = FindLenSubString( p );             // Count sections
+   hb_reta( nLen );           // Return array of sections
    if( nLen > 0 )
    {
 #ifndef UNICODE
@@ -247,10 +290,16 @@ HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
    }
 }
 
-// Used to retrieve all key/value pairs of a given section.
+// Function: _GETPRIVATEPROFILESECTION
+// Retrieves all key-value pairs for a given section in an INI file.
+// Parameters:
+//   1. Section name (string) - The section to retrieve.
+//   2. File path (string) - Path to the INI file.
+// Returns:
+//   An array of key-value pairs as strings.
 HB_FUNC( _GETPRIVATEPROFILESECTION )
 {
-   TCHAR    bBuffer[32767];
+   TCHAR    bBuffer[32767];   // Buffer for section data
    TCHAR    *p;
    INT      i, nLen;
 
@@ -262,11 +311,12 @@ HB_FUNC( _GETPRIVATEPROFILESECTION )
    LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
    LPSTR    pStr;
 #endif
-   ZeroMemory( bBuffer, sizeof( bBuffer ) );
+   ZeroMemory( bBuffer, sizeof( bBuffer ) ); // Clear buffer
    GetPrivateProfileSection( lpSectionName, bBuffer, sizeof( bBuffer ) / sizeof( TCHAR ), lpFileName );
+
    p = ( TCHAR * ) bBuffer;
-   nLen = FindLenSubString( p );
-   hb_reta( nLen );
+   nLen = FindLenSubString( p );             // Count entries
+   hb_reta( nLen );  // Return array of entries
    if( nLen > 0 )
    {
 #ifndef UNICODE

@@ -188,7 +188,7 @@ STATIC FUNCTION _DefineTab( ControlName, ParentFormName, x, y, w, h, aCaptions, 
       ENDIF
    NEXT
 
-   IF _HMG_IsThemed .AND. buttons == .F.
+   IF _HMG_IsThemed .AND. ! buttons
       vertical := .F.
    ENDIF
 
@@ -625,7 +625,7 @@ FUNCTION _AddTabPage ( ControlName , ParentForm , Position , Caption , Image , t
 
       _HMG_aControlMiscData1 [i] [2] := ImageFlag  // JD 11/05/2006
       // JD 11/05/2006
-      IF ImageFlag == .T.
+      IF ImageFlag
          IF !Empty( _HMG_aControlInputMask [i] )
             IMAGELIST_DESTROY ( _HMG_aControlInputMask [i] )
          ENDIF
@@ -832,7 +832,7 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
       _HMG_aControlMiscData1 [i,2] := ImageFlag   // JD 11/05/2006
 
       // JD 11/05/2006
-      IF ImageFlag == .T.
+      IF ImageFlag
 
          IF !Empty( _HMG_aControlInputMask [i] )
             IMAGELIST_DESTROY ( _HMG_aControlInputMask [i] )

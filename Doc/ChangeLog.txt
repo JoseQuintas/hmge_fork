@@ -1,3 +1,90 @@
+2024/12/02: HMG Extended Edition version 24.12.
+  * Fixed: Wrong handling of ON CHANGE event in the RichEditBox(Ex) control.
+           Bug was reported by Ivanil Marcelino
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\RichEditBox)
+  * Enhanced: 'Vista Command Link Button' supports the 'NoteText' read/write
+           property.
+           You can set/get this property at runtime as usually:
+             Form.CLbutton.NoteText := 'New Note'
+             SetProperty( Form, Control, 'NoteText', 'New Note' )
+             cNoteText := GetProperty( Form, Control, 'NoteText' )
+           Contributed by Grigory Filatov
+           (see demo.prg in folder \samples\Advanced\CommandLink)
+  * Modified: Adaptation of MiniGUI core is completed for compatibility with
+           Embarcadero C++ 7.70 (64-bit) compiler (packaged on 2024-03-25).
+           This is a Clang-enhanced compiler and comes with C++Builder 12
+           Community Edition at
+           https://www.embarcadero.com/products/cbuilder/starter
+           Contributed by Grigory Filatov.
+  * Modified: Adaptation of MiniGUI core is completed for compatibility with
+           Visual C++ 2022 Community Edition compiler at
+           https://visualstudio.microsoft.com/en/vs/community
+           Contributed by Grigory Filatov.
+  * Updated: The core C code was revised with detailed, consistent comments.
+           The comments describe each function's purpose, parameters, return
+           values, and handling of different conditions, making the code more
+           accessible to developers who need to understand or maintain it.
+           Note. Minor code optimizations were made during the documentation
+           process.
+           Contributed by Grigory Filatov.
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - improved SuperHeader processing in the function _TBrowse().
+           Suggested and contributed by Sergej Kiselev
+           (see demo in folder \samples\Advanced\Tsb_filter_3)
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.47.1 (from 3.47.0).
+           Contributed by Grigory Filatov
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2024-10-28 16:57):
+           * Updated libcurl library to 8.10.1 (from 7.86.0).
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (look at ReadMe.txt in folder \harbour)
+  * New: 'Viewing arrays in a window using _TBrowse()' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\AlertTsb)
+  * New: 'Menu on buttons - two button states' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\APP_OOPTOPMENU)
+  * New: 'TsBrowse Color Themes' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\Tsb_colors_3)
+  * New: 'TsBrowse Static Filter Test' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_filter_3)
+  * New: 'Inventory Billing System' application:
+           - for more information, see the readme.md and manual.md files.
+           Contributed by Marcos Jarrin
+           (see in folder \samples\Applications\inventory_billing) [PRO VERSION]
+  * New: 'Harbour Commander' utility by Rafal Jopek:
+           - a partial implementation of a text-based file manager, 
+             likely inspired by classic tools like Norton Commander.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \Utils\Harbour_Commander) [PRO VERSION]
+  * Updated: HbSvg library source code.
+           This library is designed to simplify various graphic tasks.
+           Based upon a contribution of Rafal Jopek.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \Utils\hbsvg) [PRO VERSION]
+  * Updated: 'Harbour Registered And WinAPI Available Functions' sample:
+           - added export datas to the CSV file;
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \Utils\hmg_funclist) [PRO VERSION]
+  * Updated: 'Desktop Windows Version Market Share Worldwide' sample:
+           - updated the data for October 2024.
+           Contributed by Grigory Filatov
+           (see demo.prg in folder \samples\Basic\GraphPrint)
+  * Updated: 'Custom Button' user component sample:
+           - improved C code to use native HMG button at 64-bit version.
+           Contributed by Grigory Filatov
+           (see hmgbutton.prg in folder \samples\Basic\USER_COMPONENTS)
+  * Updated: 'Five GUI libraries for testing' sample:
+           - added a new main form parameter to the gui_DialogCreate()
+             function instead of local workaround.
+           Contribution of Jose Quintas.
+           Revised for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Advanced\FiveLibsTest)
+
 2024/10/30: HMG Extended Edition version 24.11.
   * Fixed: Issue with using both AUTOSIZE and BLINK clauses at the same time
            when defining a LABEL control.

@@ -1,6 +1,6 @@
 /*
-frm_Edit - Create textbox/label on dialog
-called from frmclass
+frm_EditCreate - Create textbox/label on dialog
+part of frmclass
 */
 
 #include "hbclass.ch"
@@ -11,14 +11,14 @@ called from frmclass
    #define VK_RETURN  13
 #endif
 
-FUNCTION frm_Edit( Self )
+FUNCTION frm_EditCreate( Self )
 
-   LOCAL nRow, nCol, aItem, xTab, nPageCount := 0, nLen, aList := {}
+   LOCAL nRow, nCol, aItem, xTab, nPageCount := 0, nLen, aPageList := {}
    LOCAL nRow2, nCol2, lFirst := .T., aBrowDbf, aBrowField, oTBrowse
    LOCAL aKeyDownList, xTabPage, nHeight, nInitRow := APP_BUTTON_SIZE + APP_LINE_SPACING
 
    IF ::lWithTab
-      nInitRow := APP_LINE_HEIGHT * 2
+      nInitRow := iif( GUI():LibName() == "FIVEWIN", 10, APP_LINE_HEIGHT * 2 )
    ENDIF
 
    /* began control list with fields */
@@ -119,7 +119,7 @@ FUNCTION frm_Edit( Self )
          Atail( ::aControlList )[ CFG_CTLTYPE ]  := TYPE_TABPAGE
          Atail( ::aControlList )[ CFG_FCONTROL ] := xTabPage
          nRow := nInitRow
-         AAdd( aList, {} )
+         AAdd( aPageList, {} )
          lFirst := .T.
          (lFirst)
       ENDIF
@@ -133,7 +133,7 @@ FUNCTION frm_Edit( Self )
             IF aBrowDBF[ 1 ] == aItem[ CFG_BRWTABLE ]
                FOR EACH aBrowField IN aBrowDbf[ 2 ]
                   IF ! aBrowField[ CFG_FNAME ] == aItem[ CFG_BRWKEYTO ] .AND. aBrowField[ CFG_CTLTYPE ] != TYPE_BROWSE
-                     AAdd( oTBrowse, { aBrowField[ CFG_CAPTION ], aBrowField[ CFG_FNAME ], aBrowField[ CFG_FPICTURE ] } )
+                     AAdd( oTBrowse, { aBrowField[ CFG_CAPTION ], aBrowField[ CFG_FNAME ], aBrowField[ CFG_FPICTURE ], aBrowField[ CFG_FTYPE ], aBrowField[ CFG_FLEN ] } )
                   ENDIF
                NEXT
                EXIT
@@ -256,9 +256,9 @@ FUNCTION frm_Edit( Self )
          GUI():TextCreate( ::xDlg, iif( ::lWithTab, xTabPage, ::xDlg ), @aItem[ CFG_FCONTROL ], ;
             nRow2, nCol2, Max( aItem[ CFG_FLEN ], 5 ) * 12 + 12, APP_LINE_HEIGHT, ;
             @aItem[ CFG_VALUE ], aItem[ CFG_FPICTURE ], aitem[ CFG_FLEN ], ;
-            { || ::Validate( aItem ) }, ;
+            { || ::EditValidate( aItem ) }, ;
             iif( aItem[ CFG_ISKEY ] .OR. ! Empty( aItem[ CFG_VTABLE ] ), aItem[ CFG_ACTION ], Nil ), ;
-            iif( aItem[ CFG_ISKEY ] .OR. ! Empty( aItem[ CFG_VTABLE ] ), "bmpsearch", Nil ), @aItem, ;
+            iif( aItem[ CFG_ISKEY ] .OR. ! Empty( aItem[ CFG_VTABLE ] ), iif( GUI():LibName() == "FIVEWIN", "icoSearch", "bmpsearch" ), Nil ), @aItem, ;
             Self )
 
          IF ! Empty( aItem[ CFG_VTABLE ] ) .AND. ! Empty( aItem[ CFG_VSHOW ] )
@@ -272,26 +272,25 @@ FUNCTION frm_Edit( Self )
       OTHERWISE
          GUI():MsgBox( "This control is not available " + hb_ValToExp( aItem[ CFG_CTLTYPE ] ) )
       ENDCASE
-      IF ::lWithTab
-         IF ! aItem[ CFG_ISKEY ]
-            AAdd( Atail( aList ), aItem[ CFG_FCONTROL ] )
-         ENDIF
+      IF ::lWithTab .AND. ! aItem[ CFG_ISKEY ]
+         AAdd( Atail( aPageList ), aItem[ CFG_FCONTROL ] )
       ENDIF
       lFirst := .F.
    NEXT
-   //IF GUI():LibName() $ "HWGUI"
+   IF GUI():LibName() $ "FIVEWIN,HWGUI"
       /* dummy textbox to works last valid */
       AAdd( ::aControlList, EmptyFrmClassItem() )
       Atail( ::aControlList )[ CFG_CTLTYPE ] := TYPE_BUG_GET
 
       GUI():TextCreate( ::xDlg, ::xDlg, @Atail( ::aControlList )[ CFG_FCONTROL ], ;
-         nRow, nCol, 0, 0, " ", "", 0, { || .T. },,,Atail( ::aControlList ), Self )
+         APP_DLG_HEIGHT - 40, 20, 0, 0, " ", "", 0, { || .T. },,,Atail( ::aControlList ), Self )
 
-   //ENDIF
+   ENDIF
+
    IF ::lWithTab
 
       GUI():TabPageEnd( ::xDlg, xTab )
-      GUI():TabNavigate( ::xDlg, xTab, aList )
+      GUI():TabNavigate( ::xDlg, xTab, aPageList )
       GUI():TabEnd( ::xDlg, xTab, nPageCount )
 
    ENDIF

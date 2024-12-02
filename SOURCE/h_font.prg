@@ -345,7 +345,7 @@ FUNCTION _SetFontAttr( ControlName, ParentForm, Value, nType )
    ENDCASE
 
    IF "LABEL" $ _HMG_aControlType[ i ] .AND. ISLOGICAL ( _HMG_aControlInputMask[ i ] )
-      IF _HMG_aControlInputMask[ i ] == .T.
+      IF _HMG_aControlInputMask[ i ]
          _SetValue ( ControlName, ParentForm, _GetValue ( , , i ) )
       ENDIF
    ENDIF
@@ -422,7 +422,7 @@ FUNCTION GetFontList( hDC, cFontFamilyName, nCharSet, nPitch, nFontType, lSortCa
    // return is array { { cFontName, nCharSet, nPitchAndFamily, nFontType } , ... }
    LOCAL SortCodeBlock
 
-   IF hb_defaultValue ( lSortCaseSensitive , .F. ) == .T.
+   IF hb_defaultValue ( lSortCaseSensitive , .F. )
       SortCodeBlock := { |x, y| x[1] < y[1] }
    ELSE
       SortCodeBlock := { |x, y| Upper( x[1] ) < Upper( y[1] ) }

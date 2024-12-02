@@ -1,20 +1,21 @@
 /*
  * MiniGUI DBF Header Info Test
  * (c) 2010 Grigory Filatov <gfilatov@inbox.ru>
-*/
+ *
+ * This program demonstrates creating and accessing DBF file headers using MiniGUI.
+ */
 
-#include "minigui.ch"
-
-#include "dbstruct.ch"
-#include "fileio.ch"
-
+#include "minigui.ch"  // Includes MiniGUI definitions
+#include "dbstruct.ch" // Includes DBF structure constants
+#include "fileio.ch"   // Includes file I/O constants
 
 PROCEDURE Main()
 
-   LOCAL aResult
+   LOCAL aResult // Variable to hold DBF header information
 
-   filltable( 100 )
+   filltable( 100 ) // Create and populate the DBF file with 100 records
 
+   // Define the main application window
    DEFINE WINDOW Form_1 ;
       AT 0, 0 ;
       WIDTH 450 ;
@@ -22,15 +23,19 @@ PROCEDURE Main()
       TITLE 'DBF Header Info' ;
       MAIN
 
+   // Define the main menu for the application window
    DEFINE MAIN MENU
 
+      // Define a popup menu for testing options
       DEFINE POPUP "Test"
 
+         // Option to get header info from the test DBF file
          MENUITEM 'Get Header Info' ACTION ( aResult := GetHeaderInfo( 'test.dbf' ), ;
             AChoice( ,,,, aResult, "Header Info of TEST.DBF" ) )
 
-         SEPARATOR
+         SEPARATOR // Adds a separator line in the menu
 
+         // Exit option to close the application
          ITEM 'Exit' ACTION Form_1.Release()
 
       END POPUP
@@ -39,17 +44,19 @@ PROCEDURE Main()
 
    END WINDOW
 
-   Form_1.Center()
-   Form_1.Activate()
+   Form_1.Center()   // Center the window on the screen
+   Form_1.Activate() // Activate the window for user interaction
 
 RETURN
 
+// Procedure to create and populate the DBF file
+PROCEDURE filltable( nCount )
 
-PROCEDURE filltable ( nCount )
+   LOCAL aDbf[ 11 ][ 4 ], i // Array to define DBF structure and loop counter
 
-   LOCAL aDbf[ 11 ][ 4 ], i
-
+   // Check if the DBF file exists; if not, create it
    IF !File( 'test.dbf' )
+      // Define fields for the DBF file
       aDbf[ 1 ][ DBS_NAME ] := "First"
       aDbf[ 1 ][ DBS_TYPE ] := "Character"
       aDbf[ 1 ][ DBS_LEN ]  := 20
@@ -105,15 +112,17 @@ PROCEDURE filltable ( nCount )
       aDbf[ 11 ][ DBS_LEN ]  := 70
       aDbf[ 11 ][ DBS_DEC ]  := 0
 
-      dbCreate( "test", aDbf )
+      dbCreate( "test", aDbf ) // Create the DBF file with the defined structure
    ENDIF
 
-   USE test
-   ZAP
+   USE test // Open the DBF file
+   ZAP      // Clear all records
 
+   // Populate the DBF with records
    FOR i := 1 TO nCount
-      APPEND BLANK
+      APPEND BLANK // Add a blank record
 
+      // Fill fields with sample data
       REPLACE   first      WITH   'first'   + Str( i )
       REPLACE   last       WITH   'last'    + Str( i )
       REPLACE   street     WITH   'street'  + Str( i )
@@ -127,11 +136,12 @@ PROCEDURE filltable ( nCount )
       REPLACE   notes      WITH   'notes' + Str( i )
    NEXT i
 
-   USE
+   USE // Close the DBF file
 
 RETURN
 
 
+// Displays a dialog with a list of header information for selection.
 FUNCTION AChoice( t, l, b, r, aInput, cTitle, dummy, nValue )
 
    LOCAL aItems := {}
@@ -144,6 +154,7 @@ FUNCTION AChoice( t, l, b, r, aInput, cTitle, dummy, nValue )
 
    DEFAULT cTitle TO "Please, select", nValue TO 1
 
+   // Construct a list of strings from the header data.
    AEval( aInput, {|x| AAdd( aItems, x[ 2 ] + ": " + hb_ValToStr( x[ 1 ] ) ) } )
 
    DEFINE WINDOW Win_2 ;
@@ -154,6 +165,7 @@ FUNCTION AChoice( t, l, b, r, aInput, cTitle, dummy, nValue )
       NOMAXIMIZE NOSIZE ;
       ON INIT Win_2.Button_1.SetFocus
 
+   // Define buttons for OK and Cancel actions.
    @ 335, 190 BUTTON Button_1 ;
       CAPTION 'OK' ;
       ACTION {|| nValue := Win_2.List_1.Value, Win_2.Release } ;
@@ -164,6 +176,7 @@ FUNCTION AChoice( t, l, b, r, aInput, cTitle, dummy, nValue )
       ACTION {|| nValue := 0, Win_2.Release } ;
       WIDTH 80
 
+   // Define a list box to display the header information.
    @ 20, 15 LISTBOX List_1 ;
       WIDTH 360 ;
       HEIGHT 300 ;
@@ -174,7 +187,6 @@ FUNCTION AChoice( t, l, b, r, aInput, cTitle, dummy, nValue )
       ON DBLCLICK {|| nValue := Win_2.List_1.Value, Win_2.Release }
 
    ON KEY ESCAPE ACTION Win_2.Button_2.OnClick
-
    END WINDOW
 
    CENTER WINDOW Win_2
@@ -186,6 +198,7 @@ RETURN nValue
 #define FIELD_ENTRY_SIZE  32
 #define FIELD_NAME_SIZE   11
 
+// Reads and parses the header information of a DBF file.
 FUNCTION GetHeaderInfo( database )
 
    LOCAL aRet := {}
@@ -205,14 +218,18 @@ FUNCTION GetHeaderInfo( database )
    LOCAL cWidth, nWidth
    LOCAL nDec, cDec
 
+   // Ensure the file has a .DBF extension.
    IF .NOT. '.DBF' $ Upper( database )
       database += '.DBF'
    ENDIF
+
+   // Open the file for reading.
    IF ( nHandle := FOpen( database, FO_READ ) ) == -1
       msgstop( 'Can not open file ' + Upper( database ) + ' for reading!' )
       RETURN aRet
    ENDIF
 
+   // Read the DBF header and parse information.
    dbfhead := Space( 4 )
    FRead( nHandle, @dbfhead, 4 )
 
@@ -296,6 +313,8 @@ FUNCTION GetHeaderInfo( database )
    FClose( nHandle )
 
    AAdd( aRet, { '', 'Fields structure' } )
+
+   // Add field list to the result.
    AEval( fieldlist, {|x, i| AAdd( aRet, { x[ 1 ] + " - " + x[ 2 ] + "(" + hb_ntos( x[ 3 ] ) + "," + hb_ntos( x[ 4 ] ) + ")", hb_ntos( i ) } ) } )
 
 RETURN aRet

@@ -42,11 +42,11 @@ FUNCTION test_Setup()
 
    cTxt += '[ "BROWSELIST",[' + hb_Eol()
    cTxt += '[ "cDbfOrigin",  "cFieldName", "cDbfTarget", "nOrder", "cFieldTarget", "cTargetKey", "lEdit", "cTitle" ],' + hb_Eol()
-   cTxt += '[ "DBTICKET",    "IDTICKET",   "DBTICKETPRO",2,        "TPTICKET",     "IDTICKEDPRO",false,   "PROD LIST" ],' + hb_Eol()
+   cTxt += '[ "DBTICKET",    "IDTICKET",   "DBTICKETPRO",2,        "TPTICKET",     "IDTICKEDPRO",true,   "PROD LIST" ],' + hb_Eol()
    cTxt += '[ "DBDBF",       "NAME",       "DBFIELDS",   2,        "DBF",          "IDFIELD",    false,   "DBF LIST" ],' + hb_Eol()
    cTxt += '[ "DBCLIENT",    "IDCLIENT",   "DBFINANC",   2,        "FICLIENT",     "IDFINANC",   true,    "FINANC LIST" ],' + hb_Eol()
    cTxt += '[ "DBCLIENT",    "IDCLIENT",   "DBSTOCK",    2,        "STCLIENT",     "IDSTOCK",    false,   "STOCK LIST" ],' + hb_Eol()
-   cTxt += '[ "DBCLIENT",    "IDCLIENT",   "DBTICKET",   2,        "TICLIENT",     "IDTICKET",   false,   "TICKET LIST" ]' + hb_Eol()
+   cTxt += '[ "DBCLIENT",    "IDCLIENT",   "DBTICKET",   2,        "TICLIENT",     "IDTICKET",   true,    "TICKET LIST" ]' + hb_Eol()
    cTxt += ']],' + hb_Eol()
 
    cTxt += '[ "TYPELIST",[' + hb_Eol()

@@ -7,7 +7,7 @@ frm_Class - Class for data and bypass for functions
 
 CREATE CLASS frm_Class
 
-#ifdef DLGAUTO_AS_LIB
+#ifdef DLGAUTO_AS_SQL
    VAR lIsSQL          INIT .T.
    VAR cnSQL           INIT ADOLocal()
 #else
@@ -16,63 +16,74 @@ CREATE CLASS frm_Class
 #endif
    VAR cDataTable      INIT ""
    VAR cDataField      INIT ""
+   VAR cDataFilter     INIT ""
    VAR cTitle          INIT ""
    VAR aEditList       INIT {}
+   // buttons/toolbar
    VAR cOptions        INIT "IED"
    VAR aOptionList     INIT {}
    VAR cSelected       INIT "NONE"
    VAR lNavigate       INIT .T.
+   //
    VAR lModal          INIT .F.
    VAR nInitRecno
    VAR aInitValue1
    VAR aInitValue2
-   VAR bOnFrmActivate
+   VAR EventInitList   INIT {}
 
    VAR nLayout         INIT 2
    VAR lWithTab        INIT .T.
 
-   VAR xDlg           INIT ""
-   VAR aControlList   INIT {}
-   VAR aAllSetup      INIT {}
-   VAR aDlgKeyDown    INIT {}
+   VAR xDlg            INIT ""
+   VAR aControlList    INIT {}
+   VAR aAllSetup       INIT {}
+   VAR aDlgKeyDown     INIT {}
    VAR xParent
 
-   METHOD First_Click()
-   METHOD Last_Click()
-   METHOD Next_Click()
-   METHOD Previous_Click()
-   METHOD Insert_Click()       INLINE ::cSelected := "INSERT", ::EditKeyOn()
-   METHOD Edit_Click()         INLINE ::cSelected := "EDIT", ::EditKeyOn()
-   METHOD Print_Click()        INLINE frm_EventPrint( Self )
-   METHOD Delete_Click()
-   METHOD Cancel_Click()       INLINE ::cSelected := "NONE", ::EditOff(), ::DataLoad()
-   METHOD Save_Click()
+   METHOD CreateControls()     INLINE frm_ButtonCreate( Self ), frm_EditCreate( Self )
+
+   METHOD Move_Click( cMoveTo )
    METHOD View_Click()         INLINE ::Browse( "", "", ::cDataTable, Nil ), ::DataLoad()
+   METHOD Print_Click()        INLINE frm_EventPrint( Self )
    METHOD Exit_Click()
 
-   METHOD CreateControls()     INLINE frm_Button( Self ), frm_Edit( Self )
+   METHOD Delete_Click()
+   METHOD Edit_Click()         INLINE ::cSelected := "EDIT",   ::EditKeyOn()
+   METHOD Insert_Click()       INLINE ::cSelected := "INSERT", ::EditKeyOn()
+   METHOD Cancel_Click()       INLINE ::cSelected := "NONE",   ::EditOff(), ::DataLoad()
+   METHOD Save_Click()
+   METHOD Browse( ... )               INLINE frm_DialogBrowse( Self, ... )
+   METHOD Browse_Click( aItem, nKey ) INLINE frm_EventBrowseClick( Self, aItem, nKey )
+
    METHOD ButtonSaveOn( lSave )
    METHOD ButtonSaveOff()
    METHOD DataLoad()
    METHOD EditKeyOn()
    METHOD EditOn()
    METHOD EditOff()
-   METHOD Execute()            INLINE frm_DialogData( Self )
-   METHOD Validate( aItem )    INLINE frm_EventValid( Self, aItem )
-   METHOD Browse( ... )        INLINE frm_DialogBrowse( Self, ... )
-   METHOD Browse_Click( aItem, nKey ) INLINE frm_EventBrowseClick( Self, aItem, nKey )
-   METHOD OnFrmInit()
+   METHOD EditValidate( aItem )       INLINE frm_EditValidate( Self, aItem )
+
+   METHOD Execute()                   INLINE frm_DialogData( Self )
+   METHOD EventInit() // may be lib have oninit and onactivate
 
    ENDCLASS
 
-METHOD OnFrmInit() CLASS frm_Class
+METHOD EventInit() CLASS frm_Class
 
-   LOCAL nPos
+   LOCAL nPos, aItem
 
+   // if subroutine part 1
    IF ::nInitRecno != Nil
-      GOTO ::nInitRecno
+      IF ::lIsSQL
+         // key
+      ELSE
+         GOTO ::nInitRecno
+      ENDIF
    ENDIF
+
    ::DataLoad()
+
+   // if subroutine part2
    IF Empty( ::cDataTable )
       AEval( ::aControlList, { | e | ;
          iif( e[ CFG_CTLTYPE ] == TYPE_TEXT, GUI():ControlEnable( ::xDlg, e[ CFG_FCONTROL ], .T. ), Nil ) } )
@@ -91,16 +102,15 @@ METHOD OnFrmInit() CLASS frm_Class
          GUI():ControlSetValue( ::xDlg, ::aControlList[ nPos ][ CFG_FCONTROL ], ::aInitValue2[2] )
       ENDIF
    ENDIF
-   // no success
-#ifdef DLGAUTO_AS_LIB
-#endif
-   IF ! Empty( ::bOnFrmActivate )
-      Eval( ::bOnFrmActivate )
+   IF ! Empty( ::EventInitList )
+      FOR EACH aItem IN ::EventInitList
+         Eval( aItem )
+      NEXT
    ENDIF
 
    RETURN Nil
 
-METHOD First_Click() CLASS frm_Class
+METHOD Move_Click( cMoveTo ) CLASS frm_Class
 
    LOCAL aItem, xValue
 
@@ -108,129 +118,63 @@ METHOD First_Click() CLASS frm_Class
       IF Empty( ::cDataField )
          RETURN Nil
       ENDIF
-      ::cnSQL:Execute( "SELECT " + ::cDataField + " FROM " + ::cDataTable + " ORDER BY " + ::cDataField + " LIMIT 1" )
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            DO CASE
-            CASE aItem[ CFG_FTYPE ] == "C"; xValue := ::cnSQL:String( ::cDataField, aItem[ CFG_FLEN ] )
-            CASE aItem[ CFG_FTYPE ] == "N"; xValue := ::cnSQL:Number( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "D"; xValue := ::cnSQL:Date( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "M"; xValue := ::cnSQL:String( ::cDataField )
-            ENDCASE
-            GUI():ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
-            EXIT
-         ENDIF
-      NEXT
-      ::cnSQL:CloseRecordset()
-   ELSE
-      GOTO TOP
-   ENDIF
-   ::DataLoad()
-
-   RETURN Nil
-
-METHOD Last_Click() CLASS frm_Class
-
-   LOCAL aItem, xValue
-
-   IF ::lIsSQL
-      IF Empty( ::cDataField )
-         RETURN Nil
-      ENDIF
-      ::cnSQL:Execute( "SELECT " + ::cDataField + " FROM " + ::cDataTable + " ORDER BY " + ::cDataField + " DESC LIMIT 1" )
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            DO CASE
-            CASE aItem[ CFG_FTYPE ] == "C"; xValue := ::cnSQL:String( ::cDataField, aItem[ CFG_FLEN ] )
-            CASE aItem[ CFG_FTYPE ] == "N"; xValue := ::cnSQL:Number( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "D"; xValue := ::cnSQL:Date( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "M"; xValue := ::cnSQL:String( ::cDataField )
-            ENDCASE
-            GUI():ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
-            EXIT
-         ENDIF
-      NEXT
-      ::cnSQL:CloseRecordset()
-   ELSE
-      GOTO BOTTOM
-   ENDIF
-   ::DataLoad()
-
-   RETURN Nil
-
-METHOD Next_Click() CLASS frm_Class
-
-   LOCAL aItem, xValue
-
-   IF ::lIsSQL
-      IF Empty( ::cDataField )
-         RETURN Nil
-      ENDIF
-      ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " WHERE " + ::cDataField + " > "
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            ::cnSQL:cSQL += hb_ValToExp( GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] ) )
-         ENDIF
-      NEXT
-      ::cnSQL:cSQL += " ORDER BY " + ::cDataField + " LIMIT 1"
+      DO CASE
+      CASE cMoveTo == "FIRST"
+         ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " ORDER BY " + ::cDataField + " LIMIT 1"
+      CASE cMoveTo == "LAST"
+         ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " ORDER BY " + ::cDataField + " DESC LIMIT 1"
+      CASE cMoveTo == "NEXT"
+         ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " WHERE " + ::cDataField + " > "
+         FOR EACH aItem IN ::aControlList
+            IF aItem[ CFG_FNAME ] == ::cDataField
+               ::cnSQL:cSQL += hb_ValToExp( GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] ) )
+            ENDIF
+         NEXT
+         ::cnSQL:cSQL += " ORDER BY " + ::cDataField + " LIMIT 1"
+      CASE cMoveTo == "PREV"
+         ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " WHERE " + ::cDataField + " < "
+         FOR EACH aItem IN ::aControlList
+            IF aItem[ CFG_FNAME ] == ::cDataField
+               ::cnSQL:cSQL += hb_ValToExp( GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] ) )
+            ENDIF
+         NEXT
+         ::cnSQL:cSQL += " ORDER BY " + ::cDataField + " DESC LIMIT 1"
+      ENDCASE
       ::cnSQL:Execute()
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            DO CASE
-            CASE aItem[ CFG_FTYPE ] == "C"; xValue := ::cnSQL:String( ::cDataField, aItem[ CFG_FLEN ] )
-            CASE aItem[ CFG_FTYPE ] == "N"; xValue := ::cnSQL:Number( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "D"; xValue := ::cnSQL:Date( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "M"; xValue := ::cnSQL:String( ::cDataField )
-            ENDCASE
-            GUI():ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
-            EXIT
-         ENDIF
-      NEXT
+      IF ::cnSQL:Eof()
+         GUI():MsgBox( "No record found" )
+      ELSE
+         FOR EACH aItem IN ::aControlList
+            IF aItem[ CFG_FNAME ] == ::cDataField
+               DO CASE
+               CASE aItem[ CFG_FTYPE ] == "C"; xValue := ::cnSQL:String( ::cDataField, aItem[ CFG_FLEN ] )
+               CASE aItem[ CFG_FTYPE ] == "N"; xValue := ::cnSQL:Number( ::cDataField )
+               CASE aItem[ CFG_FTYPE ] == "D"; xValue := ::cnSQL:Date( ::cDataField )
+               CASE aItem[ CFG_FTYPE ] == "M"; xValue := ::cnSQL:String( ::cDataField )
+               ENDCASE
+               GUI():ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
+               EXIT
+            ENDIF
+         NEXT
+      ENDIF
       ::cnSQL:CloseRecordset()
    ELSE
-      SKIP
-      IF Eof()
-         GOTO BOTTOM
-      ENDIF
-   ENDIF
-   ::DataLoad()
-
-   RETURN Nil
-
-METHOD Previous_Click() CLASS frm_Class
-
-   LOCAL aItem, xValue
-
-   IF ::lIsSQL
-      IF Empty( ::cDataField )
-         RETURN Nil
-      ENDIF
-      ::cnSQL:cSQL := "SELECT " + ::cDataField + " FROM " + ::cDataTable + " WHERE " + ::cDataField + " < "
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            ::cnSQL:cSQL += hb_ValToExp( GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] ) )
-         ENDIF
-      NEXT
-      ::cnSQL:cSQL += " ORDER BY " + ::cDataField + " DESC LIMIT 1"
-      ::cnSQL:Execute()
-      FOR EACH aItem IN ::aControlList
-         IF aItem[ CFG_FNAME ] == ::cDataField
-            DO CASE
-            CASE aItem[ CFG_FTYPE ] == "C"; xValue := ::cnSQL:String( ::cDataField, aItem[ CFG_FLEN ] )
-            CASE aItem[ CFG_FTYPE ] == "N"; xValue := ::cnSQL:Number( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "D"; xValue := ::cnSQL:Date( ::cDataField )
-            CASE aItem[ CFG_FTYPE ] == "M"; xValue := ::cnSQL:String( ::cDataField )
-            ENDCASE
-            GUI():ControlSetValue( ::xDlg, aItem[ CFG_FCONTROL ], xValue )
-            EXIT
-         ENDIF
-      NEXT
-      ::cnSQL:CloseRecordset()
-   ELSE
-      SKIP -1
-      IF Bof()
+      DO CASE
+      CASE cMoveTo == "FIRST"
          GOTO TOP
-      ENDIF
+      CASE cMoveTo == "LAST"
+         GOTO BOTTOM
+      CASE cMoveTo == "NEXT"
+         SKIP
+         IF Eof()
+            GOTO BOTTOM
+         ENDIF
+     CASE cMoveTo == "PREV"
+         SKIP -1
+         IF Bof()
+            GOTO TOP
+         ENDIF
+     ENDCASE
    ENDIF
    ::DataLoad()
 
@@ -275,21 +219,21 @@ METHOD ButtonSaveOff() CLASS frm_Class
 
 METHOD EditKeyOn() CLASS frm_Class
 
-   LOCAL aItem, oKeyEdit, lFound := .F.
+   LOCAL aItem, oKeyEdit, lFoundEdit := .F.
 
    // search key field
    FOR EACH aItem IN ::aControlList
       IF aItem[ CFG_CTLTYPE ] == TYPE_BUG_GET
-            GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
+         GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
       ELSEIF aItem[ CFG_CTLTYPE ] == TYPE_TEXT .AND. aItem[ CFG_ISKEY ] .AND. ! aItem[ CFG_SAVEONLY ]
          GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
-         IF ! lFound .AND. aItem[ CFG_ISKEY ]
-            lFound := .T.
+         IF ! lFoundEdit .AND. aItem[ CFG_ISKEY ]
+            lFoundEdit := .T.
             oKeyEdit := aItem[ CFG_FCONTROL ]
          ENDIF
       ENDIF
    NEXT
-   IF lFound // have key field
+   IF lFoundEdit // have key field
       ::ButtonSaveOn(.F.)
       GUI():SetFocus( ::xDlg, oKeyEdit )
    ELSE // do not have key field
@@ -300,29 +244,31 @@ METHOD EditKeyOn() CLASS frm_Class
 
 METHOD EditOn() CLASS frm_Class
 
-   LOCAL aItem, oFirstEdit, lFound := .F.
+   LOCAL aItem, oFirstEdit, lFoundEdit := .F.
    LOCAL aEnableList := { TYPE_TEXT, TYPE_MLTEXT, TYPE_COMBOBOX, TYPE_CHECKBOX, ;
       TYPE_DATEPICKER, TYPE_SPINNER, TYPE_BROWSE }
 
    FOR EACH aItem IN ::aControlList
       IF aItem[ CFG_CTLTYPE ] == TYPE_BUG_GET
-            GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
+         GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
       ELSEIF aItem[ CFG_CTLTYPE ] == TYPE_BUTTON_BRW
-            GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
+         GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
       ELSEIF hb_AScan( aEnableList, { | e | e == aItem[ CFG_CTLTYPE ] } ) != 0
          IF aItem[ CFG_ISKEY ] .OR. aItem[ CFG_SAVEONLY ]
             GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .F. )
          ELSE
             GUI():ControlEnable( ::xDlg, aItem[ CFG_FCONTROL ], .T. )
-            IF ! lFound
-               lFound := .T.
+            IF ! lFoundEdit
+               lFoundEdit := .T.
                oFirstEdit := aItem[ CFG_FCONTROL ]
             ENDIF
          ENDIF
       ENDIF
    NEXT
    ::ButtonSaveOn()
-   GUI():SetFocus( ::xDlg, oFirstEdit )
+   IF ! Empty( oFirstEdit )
+      GUI():SetFocus( ::xDlg, oFirstEdit )
+   ENDIF
 
    RETURN Nil
 
@@ -339,6 +285,7 @@ METHOD EditOff() CLASS frm_Class
       ENDIF
    NEXT
    ::ButtonSaveOff()
+   GUI():SetFocus( ::xDlg )
 
    RETURN Nil
 
@@ -392,7 +339,7 @@ METHOD DataLoad() CLASS frm_Class
 
    LOCAL aItem, nSelect, xValue, cText, xScope, nLenScope, xValueControl
    LOCAL aCommonList := { TYPE_TEXT, TYPE_MLTEXT, TYPE_DATEPICKER, TYPE_SPINNER }
-#ifdef DLGAUTO_AS_LIB
+#ifdef DLGAUTO_AS_SQL
    LOCAL aControl
 #endif
 
@@ -448,7 +395,11 @@ METHOD DataLoad() CLASS frm_Class
 
       CASE ! Empty( aItem[ CFG_FNAME ] ) .AND. aItem[ CFG_CTLTYPE ] == TYPE_COMBOBOX
          xValue := FieldGet( FieldNum( aItem[ CFG_FNAME ] ) )
-         xValueControl := hb_AScan( aItem[ CFG_COMBOLIST ], { | e | e == xValue } )
+         IF GUI():LibName() == "FIVEWIN"
+            xValueControl := hb_Ascan( aItem[ CFG_COMBOLIST ], { |e | e == xValue } )
+         ELSE
+            xValueControl := hb_AScan( aItem[ CFG_COMBOLIST ], { | e | e == xValue } )
+         ENDIF
          GUI():ControlSetValue( ::xDLg, aItem[ CFG_FCONTROL ], xValueControl )
 
       ENDCASE
@@ -461,23 +412,40 @@ METHOD DataLoad() CLASS frm_Class
       DO CASE
       CASE aItem[ CFG_CTLTYPE ] == TYPE_BROWSE
          IF ::lIsSQL
-#ifdef DLGAUTO_AS_LIB
-            WITH OBJECT aItem[ CFG_FCONTROL ]
-#ifdef HBMK_HAS_HWGUI
-               :aArray:CloseRecordset()
-               :aArray:cSQL := "SELECT * FROM " + aItem[ CFG_BRWTABLE ] + ;
-                  " WHERE " + aItem[ CFG_BRWKEYTO ] + ;
-                  " = "
-               FOR EACH aControl IN ::aControlList
-                  IF aControl[ CFG_FNAME ] == aItem[ CFG_BRWKEYFROM ]
-                     :aArray:cSQL += hb_ValToExp( gui():ControlGetValue( ::xDlg, aControl[ CFG_FCONTROL ] ) )
-                     EXIT
-                  ENDIF
-               NEXT
-               :aArray:Execute()
-               GUI():BrowseRefresh( ::xDlg, aItem[ CFG_FCONTROL ] )
-#endif
-            ENDWITH
+#ifdef DLGAUTO_AS_SQL
+            IF GUI():LibName() == "FIVEWIN"
+               WITH OBJECT aItem[ CFG_FCONTROL ]
+                  :xUserData:CloseRecordset()
+                  :xUserData:cSQL := "SELECT * FROM " + aItem[ CFG_BRWTABLE ] + ;
+                     " WHERE " + aItem[ CFG_BRWKEYTO ] + ;
+                     " = "
+                  FOR EACH aControl IN ::aControlList
+                     IF aControl[ CFG_FNAME ] == aItem[ CFG_BRWKEYFROM ]
+                        :xUserData:cSQL += hb_ValToExp( gui():ControlGetValue( ::xDlg, aControl[ CFG_FCONTROL ] ) )
+                        EXIT
+                     ENDIF
+                  NEXT
+                  :xUserData:Execute()
+                  :SetArray( Array( :xUserData:RecordCount() ) )
+                  GUI():BrowseRefresh( ::xDlg, aItem[ CFG_FCONTROL ] )
+               ENDWITH
+            ENDIF
+            IF GUI():LibName() == "HWGUI"
+               WITH OBJECT aItem[ CFG_FCONTROL ]
+                  :aArray:CloseRecordset()
+                  :aArray:cSQL := "SELECT * FROM " + aItem[ CFG_BRWTABLE ] + ;
+                     " WHERE " + aItem[ CFG_BRWKEYTO ] + ;
+                     " = "
+                  FOR EACH aControl IN ::aControlList
+                     IF aControl[ CFG_FNAME ] == aItem[ CFG_BRWKEYFROM ]
+                        :aArray:cSQL += hb_ValToExp( gui():ControlGetValue( ::xDlg, aControl[ CFG_FCONTROL ] ) )
+                        EXIT
+                     ENDIF
+                  NEXT
+                  :aArray:Execute()
+                  GUI():BrowseRefresh( ::xDlg, aItem[ CFG_FCONTROL ] )
+               ENDWITH
+            ENDIF
 #endif
          ELSE
             SELECT  ( Select( aItem[ CFG_BRWTABLE ] ) )
@@ -524,45 +492,74 @@ METHOD DataLoad() CLASS frm_Class
 
 METHOD Save_Click() CLASS frm_Class
 
-   LOCAL aItem, xValue
+   LOCAL aItem, xValue, aQueryList := {}, aReplace
    LOCAL aCommonList := { TYPE_TEXT, TYPE_MLTEXT, TYPE_DATEPICKER, TYPE_SPINNER }
+   //LOCAL cTxt := ""
 
+#ifdef DLGAUTO_AS_SQL
+   LOCAL cSQL := "", cWhere := ""
+   LOCAL cnSQL := ADOLocal()
+#endif
    IF Empty( ::cDataTable ) // no data source
       RETURN Nil
    ENDIF
    ::EditOff()
-   IF RLock()
-      FOR EACH aItem IN ::aControlList
-         DO CASE
-         CASE Empty( aItem[ CFG_FNAME ] ) // not a field
-         CASE aItem[ CFG_CTLTYPE ] == TYPE_COMBOBOX
-            xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
-            IF ValType( xValue ) == "N"
-               IF xValue == 0 .OR. xValue > Len( aItem[ CFG_COMBOLIST ] )
-                  xValue := Space( aItem[ CFG_FLEN ] )
-               ELSE
-                  xValue := aItem[ CFG_COMBOLIST ][ xValue ]
-               ENDIF
+   FOR EACH aItem IN ::aControlList
+      DO CASE
+      CASE Empty( aItem[ CFG_FNAME ] ) // not a field
+      CASE aItem[ CFG_CTLTYPE ] == TYPE_COMBOBOX
+         xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
+         IF ValType( xValue ) == "N"
+            IF xValue == 0 .OR. xValue > Len( aItem[ CFG_COMBOLIST ] )
+               xValue := Space( aItem[ CFG_FLEN ] )
+            ELSE
+               xValue := aItem[ CFG_COMBOLIST ][ xValue ]
             ENDIF
-            fieldput( FieldNum( aItem[ CFG_FNAME ] ), xValue )
-         CASE aItem[ CFG_CTLTYPE ] == TYPE_CHECKBOX
-            xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
-            DO CASE
-            CASE aItem[ CFG_FTYPE ] == "L"
-            CASE aItem[ CFG_FTYPE ] == "N"; xValue := iif( xValue, 1, 0 )
-            CASE aItem[ CFG_FTYPE ] == "C"; xValue := iif( xValue, "Y", "N" )
-            ENDCASE
-            FieldPut( FieldNum( aItem[ CFG_FNAME ] ), xValue )
-         CASE hb_AScan( aCommonList, { | e | e == aItem[ CFG_CTLTYPE ] } ) == 0 // not "value"
-         CASE aItem[ CFG_ISKEY ]
-         OTHERWISE
-            xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
-            FieldPut( FieldNum( aItem[ CFG_FNAME ] ), xValue )
+         ENDIF
+         AAdd( aQueryList, { aItem[ CFG_FNAME ], xValue } )
+      CASE aItem[ CFG_CTLTYPE ] == TYPE_CHECKBOX
+         xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
+         DO CASE
+         CASE aItem[ CFG_FTYPE ] == "L"
+         CASE aItem[ CFG_FTYPE ] == "N"; xValue := iif( xValue, 1, 0 )
+         CASE aItem[ CFG_FTYPE ] == "C"; xValue := iif( xValue, "Y", "N" )
          ENDCASE
+         AAdd( aQueryList, { aItem[ CFG_FNAME ], xValue } )
+      CASE hb_AScan( aCommonList, { | e | e == aItem[ CFG_CTLTYPE ] } ) == 0 // not "value"
+      CASE aItem[ CFG_ISKEY ]
+#ifdef DLGAUTO_AS_SQL
+         cWhere += iif( Empty( cWhere ), "", " AND " ) + ;
+            aItem[ CFG_FNAME ] + "=" + hb_ValToExp( GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] ) )
+#endif
+      OTHERWISE
+         xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
+         AAdd( aQueryList, { aItem[ CFG_FNAME ], xValue } )
+      ENDCASE
+   NEXT
+#ifdef DLGAUTO_AS_SQL
+   IF ! Empty( cWhere )
+      FOR EACH aReplace IN aQueryList
+         xValue := aReplace[2]
+         DO CASE
+         CASE ValType( xValue ) == "N"; xValue := hb_ValToExp( xValue )
+         CASE ValType( xValue ) == "D"; xValue := iif( Empty( xValue ), "NULL", hb_ValToExp( hb_Dtoc( xValue, "YYYY-MM-DD" ) ) )
+         OTHERWISE                    ; xValue := hb_ValToExp( AllTrim( xValue ) )
+         ENDCASE
+         cSQL += iif( Len( cSql ) == 0, "", ", " ) + aReplace[ 1 ] + "=" + xValue
+      NEXT
+      cSQL := "UPDATE " + ::cDataTable + " SET " + cSQL
+      cSQL += " WHERE " + cWhere
+      cnSQL:Execute( cSQL )
+   ENDIF
+#else
+   IF RLock()
+      FOR EACH aReplace IN aQueryList
+         FieldPut( FieldNum( aReplace[ 1 ] ), aReplace[ 2 ] )
       NEXT
       SKIP 0
       UNLOCK
    ENDIF
+#endif
    ::cSelected := "NONE"
 
    RETURN Nil
@@ -574,9 +571,11 @@ METHOD Exit_Click() CLASS frm_Class
    IF ::lIsSQL
       FOR EACH aItem IN ::aControlList
          IF aItem[ CFG_CTLTYPE ] == TYPE_BROWSE
-#ifdef HBMK_HAS_HWGUI
-            aItem[ CFG_FCONTROL ]:aArray:CloseRecordset()
-#endif
+            IF GUI():LibName() == "FIVEWIN"
+               aItem[ CFG_FCONTROL ]:xUserData:CloseRecordset()
+            ELSE
+               aItem[ CFG_FCONTROL ]:aArray:CloseRecordset()
+            ENDIF
          ENDIF
       NEXT
       ::cnSQL:CloseRecordset()
@@ -623,7 +622,7 @@ FUNCTION EmptyFrmClassItem()
 
    RETURN aItem
 
-#ifndef DLGAUTO_AS_LIB
+#ifndef DLGAUTO_AS_SQL
 
 FUNCTION ADOLocal()
 

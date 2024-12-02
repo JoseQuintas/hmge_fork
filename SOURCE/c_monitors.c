@@ -48,22 +48,27 @@
    Parts  of  this  code  is contributed and used here under permission of his
    author: Copyright 2016 (C) P.Chornyj <myorg63@mail.ru>
  */
+
+// Include headers for MiniGUI definitions and Harbour API error and item handling.
 #include <mgdefs.h>
 #include "hbapierr.h"
 #include "hbapiitm.h"
 
+// Function declarations and macros for working with monitors and points.
 extern HB_EXPORT BOOL   Array2Point( PHB_ITEM aPoint, POINT *pt );
 #ifndef __XHARBOUR__
-HB_EXPORT PHB_ITEM      Rect2Hash( RECT *rc );
+HB_EXPORT PHB_ITEM      Rect2Hash( RECT *rc );              // Converts a RECT struct to a Harbour hash.
 BOOL CALLBACK           _MonitorEnumProc0( HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData );
 #endif
 static void             ClipOrCenterRectToMonitor( LPRECT prc, HMONITOR hMonitor, UINT flags );
 
+// Return the count of monitors detected on the system.
 HB_FUNC( COUNTMONITORS )
 {
    hb_retni( GetSystemMetrics( SM_CMONITORS ) );
 }
 
+// Check if all displays have the same color format (boolean result).
 HB_FUNC( ISSAMEDISPLAYFORMAT )
 {
    hmg_ret_L( GetSystemMetrics( SM_SAMEDISPLAYFORMAT ) );
@@ -72,39 +77,34 @@ HB_FUNC( ISSAMEDISPLAYFORMAT )
 #ifndef __XHARBOUR__
 
 /*
-   The  EnumDisplayMonitors  function  enumerates  display monitors
-        (including invisible pseudo-monitors associated with the mirroring drivers)
-
-        BOOL EnumDisplayMonitors( HDC hdc, LPCRECT lprcClip, MONITORENUMPROC lpfnEnum, LPARAM dwData )
- */
+   Enumerates all display monitors. Each monitor's handle and rectangle are added to a Harbour array.
+   The EnumDisplayMonitors function is called with a callback (_MonitorEnumProc0).
+*/
 HB_FUNC( ENUMDISPLAYMONITORS )
 {
-   PHB_ITEM pMonitorEnum = hb_itemArrayNew( 0 );
-
+   PHB_ITEM pMonitorEnum = hb_itemArrayNew( 0 );            // Initialize an empty array.
    EnumDisplayMonitors( NULL, NULL, _MonitorEnumProc0, ( LPARAM ) pMonitorEnum );
 
-   hb_itemReturnRelease( pMonitorEnum );
+   hb_itemReturnRelease( pMonitorEnum );                    // Return the array to Harbour.
 }
 
+// Callback function for ENUMDISPLAYMONITORS, called once per monitor.
 BOOL CALLBACK _MonitorEnumProc0( HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData )
 {
-   PHB_ITEM pMonitor = hb_itemArrayNew( 2 );
-   PHB_ITEM pRect = Rect2Hash( lprcMonitor );
-
+   PHB_ITEM pMonitor = hb_itemArrayNew( 2 );                // Create array for monitor data.
+   PHB_ITEM pRect = Rect2Hash( lprcMonitor );               // Convert RECT to a hash.
    HB_SYMBOL_UNUSED( hdcMonitor );
+   hb_arraySetNInt( pMonitor, 1, ( LONG_PTR ) hMonitor );   // Set monitor handle.
+   hb_itemArrayPut( pMonitor, 2, pRect );                   // Set monitor rectangle.
+   hb_arrayAddForward( ( PHB_ITEM ) dwData, pMonitor );     // Add monitor data to main array.
 
-   hb_arraySetNInt( pMonitor, 1, ( LONG_PTR ) hMonitor );
-   hb_itemArrayPut( pMonitor, 2, pRect );
-
-   hb_arrayAddForward( ( PHB_ITEM ) dwData, pMonitor );
-
-   hb_itemRelease( pMonitor );
+   hb_itemRelease( pMonitor );                              // Release temporary items.
    hb_itemRelease( pRect );
 
    return TRUE;
 }
 
-// BOOL GetMonitorInfo( HMONITOR hMonitor, LPMONITORINFO lpmi )
+// Retrieve monitor information (like rectangle bounds) as a Harbour array.
 HB_FUNC( GETMONITORINFO )
 {
    MONITORINFO mi;
@@ -113,30 +113,29 @@ HB_FUNC( GETMONITORINFO )
 
    if( GetMonitorInfo( hmg_par_raw_HMONITOR( 1 ), &mi ) )
    {
-      PHB_ITEM pMonInfo = hb_itemArrayNew( 3 );
-      PHB_ITEM pMonitor = Rect2Hash( &mi.rcMonitor );
-      PHB_ITEM pWork = Rect2Hash( &mi.rcWork );
-
-      hb_itemArrayPut( pMonInfo, 1, pMonitor );
-      hb_itemArrayPut( pMonInfo, 2, pWork );
-      hb_arraySetNInt( pMonInfo, 3, ( LONG_PTR ) mi.dwFlags );
-
-      hb_itemReturnRelease( pMonInfo );
+      PHB_ITEM pMonInfo = hb_itemArrayNew( 3 );                // Create array for monitor info.
+      PHB_ITEM pMonitor = Rect2Hash( &mi.rcMonitor );          // Convert monitor rectangle to hash.
+      PHB_ITEM pWork = Rect2Hash( &mi.rcWork );                // Convert work area rectangle to hash.
+      hb_itemArrayPut( pMonInfo, 1, pMonitor );                // Set monitor rectangle.
+      hb_itemArrayPut( pMonInfo, 2, pWork );                   // Set work area rectangle.
+      hb_arraySetNInt( pMonInfo, 3, ( LONG_PTR ) mi.dwFlags ); // Set monitor flags.
+      hb_itemReturnRelease( pMonInfo );                        // Return monitor info array.
       hb_itemRelease( pMonitor );
       hb_itemRelease( pWork );
    }
    else
    {
-      hb_ret();
+      hb_ret();                     // Return null if monitor info retrieval failed.
    }
 }
 #endif
 
-// HMONITOR MonitorFromPoint( POINT pt, DWORD dwFlags )
+// Returns the monitor associated with a specified point.
 HB_FUNC( MONITORFROMPOINT )
 {
    POINT pt;
 
+   // Check if the input is an array of points.
    if( HB_ISARRAY( 1 ) )
    {
       if( !Array2Point( hb_param( 1, HB_IT_ARRAY ), &pt ) )
@@ -150,6 +149,7 @@ HB_FUNC( MONITORFROMPOINT )
    }
    else if( HB_ISNUM( 1 ) && HB_ISNUM( 2 ) )
    {
+      // Input is specified as separate x and y coordinates.
       pt.x = hb_parnl( 1 );
       pt.y = hb_parnl( 2 );
 
@@ -157,11 +157,12 @@ HB_FUNC( MONITORFROMPOINT )
    }
    else
    {
+      // Error for invalid input parameters.
       hb_errRT_BASE_SubstR( EG_ARG, 5000, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
    }
 }
 
-// HMONITOR MonitorFromWindow( HWND  hwnd, DWORD dwFlags )
+// Returns the monitor associated with a specified window.
 HB_FUNC( MONITORFROMWINDOW )
 {
    HWND  hwnd = hmg_par_raw_HWND( 1 );
@@ -177,22 +178,13 @@ HB_FUNC( MONITORFROMWINDOW )
 }
 
 /*
-   Based on
-   https://msdn.microsoft.com/ru-ru/library/windows/desktop/dd162826(v=vs.85).aspx
+   Adjusts a window to be centered or clipped to its monitor bounds, using the multi-monitor API.
+*/
+#define MONITOR_CENTER     0x0001   // Center the rect on monitor
+#define MONITOR_CLIP       0x0000   // Clip the rect to monitor
+#define MONITOR_WORKAREA   0x0002   // Use the monitor's work area
+#define MONITOR_AREA       0x0000   // Use the monitor's entire area
 
-   The  most common problem apps have when running on a multimonitor system is
-   that  they "clip" or "pin" windows based on the SM_CXSCREEN and SM_CYSCREEN
-   system  metrics.  Because of app compatibility reasons these system metrics
-   return the size of the primary monitor.
-
-   This shows how you use the multi-monitor functions to do the same thing.
- */
-#define MONITOR_CENTER     0x0001   // center rect to monitor
-#define MONITOR_CLIP       0x0000   // clip rect to monitor
-#define MONITOR_WORKAREA   0x0002   // use monitor work area
-#define MONITOR_AREA       0x0000 \
- \
-   // use monitor entire area
 HB_FUNC( WINDOWTOMONITOR )
 {
    HWND  hwnd = hmg_par_raw_HWND( 1 );
@@ -214,6 +206,7 @@ HB_FUNC( WINDOWTOMONITOR )
    }
 }
 
+// Helper function to clip or center a rectangle within a monitor's bounds.
 static void ClipOrCenterRectToMonitor( LPRECT prc, HMONITOR hMonitor, UINT flags )
 {
    MONITORINFO mi;
@@ -221,19 +214,19 @@ static void ClipOrCenterRectToMonitor( LPRECT prc, HMONITOR hMonitor, UINT flags
    int         w = prc->right - prc->left;
    int         h = prc->bottom - prc->top;
 
-   // get the nearest monitor to the passed rect.
+   // Get the nearest monitor if none is specified.
    if( NULL == hMonitor )
    {
       hMonitor = MonitorFromRect( prc, MONITOR_DEFAULTTONEAREST );
    }
 
-   // get the work area or entire monitor rect.
+   // Get the monitor work area or full area based on flags.
    mi.cbSize = sizeof( mi );
    GetMonitorInfo( hMonitor, &mi );
 
    rc = ( flags & MONITOR_WORKAREA ) ? mi.rcWork : mi.rcMonitor;
 
-   // center or clip the passed rect to the monitor rect
+   // Center or clip the rectangle to the monitor area.
    if( flags & MONITOR_CENTER )
    {
       prc->left = rc.left + ( rc.right - rc.left - w ) / 2;
@@ -251,6 +244,8 @@ static void ClipOrCenterRectToMonitor( LPRECT prc, HMONITOR hMonitor, UINT flags
 }
 
 #ifndef __XHARBOUR__
+
+// Converts a RECT structure to a Harbour hash containing 'left', 'top', 'right', 'bottom' keys.
 HB_EXPORT PHB_ITEM Rect2Hash( RECT *rc )
 {
    PHB_ITEM phRect = hb_hashNew( NULL );

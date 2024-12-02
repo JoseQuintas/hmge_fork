@@ -43,16 +43,17 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
-
 #include <commctrl.h>
-#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 
-// Button Class Name
-#define WC_BUTTON                      "Button"
-#define BUTTON_IMAGELIST_ALIGN_CENTER  4
+#if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
+   // Define button control constants for older versions of Borland C++
+   #define WC_BUTTON                      "Button"
+   #define BUTTON_IMAGELIST_ALIGN_CENTER  4
 #endif
+
+// Function declarations for loading images and handling instances
 HBITMAP     HMG_LoadPicture
             (
                const char  *FileName,
@@ -64,7 +65,7 @@ HBITMAP     HMG_LoadPicture
                long        BackgroundColor,
                int         AdjustImage,
                HB_BOOL     bAlphaFormat,
-               int         iAlpfaConstant
+               int         iAlphaConstant
             );
 
 HIMAGELIST  HMG_SetButtonImageList( HWND hButton, const char *FileName, int Transparent, UINT uAlign );
@@ -75,6 +76,15 @@ LPWSTR      AnsiToWide( LPCSTR );
 HINSTANCE   GetInstance( void );
 HINSTANCE   GetResources( void );
 
+/**
+ * Function: INITCHECKBOX
+ * Initializes a checkbox control with various style options.
+ * Parameters:
+ *   - lpWindowName: The label text for the checkbox.
+ *   - Style settings including visibility, tab-stop, multiline, left-text alignment, etc.
+ * Returns:
+ *   - The handle to the created checkbox control.
+ */
 HB_FUNC( INITCHECKBOX )
 {
 #ifndef UNICODE
@@ -85,6 +95,7 @@ HB_FUNC( INITCHECKBOX )
    DWORD    Style = BS_NOTIFY | WS_CHILD | ( hb_parl( 7 ) ? BS_AUTO3STATE : BS_AUTOCHECKBOX );
    DWORD    ExStyle = hb_parl( 13 ) ? WS_EX_TRANSPARENT : 0;
 
+   // Adjust styles based on parameters
    if( !hb_parl( 10 ) )
    {
       Style |= WS_VISIBLE;
@@ -105,6 +116,7 @@ HB_FUNC( INITCHECKBOX )
       Style |= BS_MULTILINE;
    }
 
+   // Create the checkbox control
    hmg_ret_raw_HWND
    (
       CreateWindowEx
@@ -129,6 +141,15 @@ HB_FUNC( INITCHECKBOX )
 #endif
 }
 
+/**
+ * Function: INITCHECKBUTTON
+ * Initializes a check button (checkbox styled like a button).
+ * Parameters:
+ *   - lpWindowName: The label text for the button.
+ *   - Style settings including visibility, tab-stop, etc.
+ * Returns:
+ *   - The handle to the created check button.
+ */
 HB_FUNC( INITCHECKBUTTON )
 {
 #ifndef UNICODE
@@ -138,6 +159,7 @@ HB_FUNC( INITCHECKBUTTON )
 #endif
    DWORD    Style = BS_NOTIFY | WS_CHILD | BS_AUTOCHECKBOX | BS_PUSHLIKE;
 
+   // Adjust styles based on parameters
    if( !hb_parl( 10 ) )
    {
       Style |= WS_VISIBLE;
@@ -148,6 +170,7 @@ HB_FUNC( INITCHECKBUTTON )
       Style |= WS_TABSTOP;
    }
 
+   // Create the check button
    hmg_ret_raw_HWND
    (
       CreateWindow
@@ -171,6 +194,16 @@ HB_FUNC( INITCHECKBUTTON )
 #endif
 }
 
+/**
+ * Function: INITIMAGECHECKBUTTON
+ * Initializes a check button with an image, optionally using an image list.
+ * Parameters:
+ *   - lpWindowName: The label text for the button.
+ *   - Image file for the button.
+ *   - Various style settings, including visibility, tab-stop, transparency, etc.
+ * Returns:
+ *   - Handles to the created check button and its associated image.
+ */
 HB_FUNC( INITIMAGECHECKBUTTON )
 {
    HWND        hbutton;
@@ -185,6 +218,7 @@ HB_FUNC( INITIMAGECHECKBUTTON )
    HWND        hwnd = hmg_par_raw_HWND( 1 );
    DWORD       Style = BS_NOTIFY | BS_BITMAP | WS_CHILD | BS_AUTOCHECKBOX | BS_PUSHLIKE;
 
+   // Adjust styles based on parameters
    if( !hb_parl( 11 ) )
    {
       Style |= WS_VISIBLE;
@@ -195,6 +229,7 @@ HB_FUNC( INITIMAGECHECKBUTTON )
       Style |= WS_TABSTOP;
    }
 
+   // Create the button with bitmap style to accommodate an image
    hbutton = CreateWindow
       (
          WC_BUTTON,
@@ -210,12 +245,11 @@ HB_FUNC( INITIMAGECHECKBUTTON )
          NULL
       );
 
+   // Load image either as a bitmap or image list based on parameter
    if( !hb_parl( 13 ) )
    {
       himage = ( HWND ) HMG_LoadPicture( hb_parc( 8 ), -1, -1, hwnd, 0, hb_parl( 7 ) ? 0 : 1, -1, 0, HB_FALSE, 255 );
-
       SendMessage( hbutton, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
-
       hb_reta( 2 );
       hmg_storvnl_HANDLE( hbutton, -1, 1 );
       hmg_storvnl_HANDLE( himage, -1, 2 );
@@ -223,7 +257,6 @@ HB_FUNC( INITIMAGECHECKBUTTON )
    else
    {
       himl = HMG_SetButtonImageList( hbutton, hb_parc( 8 ), hb_parl( 7 ) ? 0 : 1, BUTTON_IMAGELIST_ALIGN_CENTER );
-
       hb_reta( 2 );
       hmg_storvnl_HANDLE( hbutton, -1, 1 );
       hmg_storvnl_HANDLE( himl, -1, 2 );

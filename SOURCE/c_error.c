@@ -53,74 +53,82 @@
 #if defined( __WATCOMC__ )
 #ifndef _RSIZE_T_DEFINED
 #define _RSIZE_T_DEFINED
-typedef size_t             rsize_t;
+typedef size_t       rsize_t;
 #endif
-_WCRTLINK extern int       swprintf_s( wchar_t * __restrict __s, rsize_t __n, const wchar_t * __restrict __format, ... );
+_WCRTLINK extern int swprintf_s( wchar_t * __restrict __s, rsize_t __n, const wchar_t * __restrict __format, ... );
 #endif
-extern HB_SIZE             hmg_tstrlen( const TCHAR *pText );
+extern HB_SIZE       hmg_tstrlen( const TCHAR *pText );
 
-extern HB_EXPORT PHB_ITEM  hb_errRT_SubstParams
-                           (
-                              const char  *szSubSystem,
-                              HB_ERRCODE  errGenCode,
-                              HB_ERRCODE  errSubCode,
-                              const char  *szDescription,
-                              const char  *szOperation
-                           );
-
-// fixed P.Ch. 16.12.
 void hmg_ErrorExit( LPCTSTR lpszMessage, DWORD dwError, BOOL bExit )
 {
-   LPVOID   lpMsgBuf;
-   LPVOID   lpDisplayBuf;
-   DWORD    nError;
+   LPVOID   lpMsgBuf = NULL;
+   LPVOID   lpDisplayBuf = NULL;
+   DWORD    nError = ( dwError != 0 ) ? dwError : GetLastError();
 
-   nError = ( 0 != dwError ) ? dwError : GetLastError();
-
-   FormatMessage
+   if
    (
-      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-      NULL,
-      nError,
-      MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
-      ( LPTSTR ) & lpMsgBuf,
-      0,
-      NULL
-   );
+      FormatMessage
+         (
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            nError,
+            MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
+            ( LPTSTR ) &lpMsgBuf,
+            0,
+            NULL
+         )
+   )
+   {
+      // Only proceed if lpMsgBuf was successfully allocated
+      size_t   displayBufSize = ( hmg_tstrlen( ( LPCTSTR ) lpMsgBuf ) + hmg_tstrlen( lpszMessage ) + 40 ) * sizeof( TCHAR );
+      lpDisplayBuf = ( LPVOID ) LocalAlloc( LMEM_ZEROINIT, displayBufSize );
 
-   // Display the error message and exit the process
-   lpDisplayBuf = ( LPVOID ) LocalAlloc( LMEM_ZEROINIT, ( hmg_tstrlen( ( LPCTSTR ) lpMsgBuf ) + hmg_tstrlen( lpszMessage ) + 40 ) * sizeof( TCHAR ) );
+      if( lpDisplayBuf )
+      {
+         // Format the combined error message
+   #ifdef UNICODE
+      #if defined( __BORLANDC__ ) && ( __BORLANDC__ <= 1410 )
+         swprintf( ( LPTSTR ) lpDisplayBuf, TEXT( "'%s' failed with error %lu: %s" ), lpszMessage, nError, ( LPTSTR ) lpMsgBuf );
+      #else
+         swprintf_s
+         (
+            ( LPTSTR ) lpDisplayBuf,
+            LocalSize( lpDisplayBuf ) / sizeof( TCHAR ),
+            TEXT( "'%s' failed with error %lu: %s" ),
+            lpszMessage,
+            nError,
+            ( LPTSTR ) lpMsgBuf
+         );
+      #endif
+   #else
+         hb_snprintf
+         (
+            ( LPTSTR ) lpDisplayBuf,
+            LocalSize( lpDisplayBuf ) / sizeof( TCHAR ),
+            TEXT( "'%s' failed with error %lu: %s" ),
+            lpszMessage,
+            nError,
+            ( LPTSTR ) lpMsgBuf
+         );
+   #endif
 
-#ifdef UNICODE
-#if ( ( defined( __BORLANDC__ ) && __BORLANDC__ <= 1410 ) )
-   swprintf( ( LPTSTR ) lpDisplayBuf, TEXT( "'%s' failed with error %lu : %s" ), lpszMessage, nError, ( LPTSTR ) lpMsgBuf );
-#else
-   swprintf_s
-   (
-      ( LPTSTR ) lpDisplayBuf,
-      LocalSize( lpDisplayBuf ) / sizeof( TCHAR ),
-      TEXT( "'%s' failed with error %lu : %s" ),
-      lpszMessage,
-      nError,
-      ( LPTSTR ) lpMsgBuf
-   );
-#endif
-#else
-   hb_snprintf
-   (
-      ( LPTSTR ) lpDisplayBuf,
-      LocalSize( lpDisplayBuf ) / sizeof( TCHAR ),
-      TEXT( "'%s' failed with error %lu : %s" ),
-      lpszMessage,
-      nError,
-      ( LPTSTR ) lpMsgBuf
-   );
-#endif
-   MessageBox( NULL, ( LPCTSTR ) lpDisplayBuf, TEXT( "MiniGUI Error" ), MB_OK );
+         // Show the formatted error message
+         MessageBox( NULL, ( LPCTSTR ) lpDisplayBuf, TEXT( "MiniGUI Error" ), MB_OK );
+      }
+   }
 
-   LocalFree( lpMsgBuf );
-   LocalFree( lpDisplayBuf );
+   // Clean up allocated memory
+   if( lpMsgBuf )
+   {
+      LocalFree( lpMsgBuf );
+   }
 
+   if( lpDisplayBuf )
+   {
+      LocalFree( lpDisplayBuf );
+   }
+
+   // Exit process if specified
    if( bExit )
    {
       ExitProcess( nError );

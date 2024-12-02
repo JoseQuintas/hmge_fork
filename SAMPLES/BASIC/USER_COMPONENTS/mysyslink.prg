@@ -173,9 +173,13 @@ Function SetMySysLinkHandle ( cWindow , cControl )
 
 		MsgExclamation ( 'This Property is Read Only!' , 'Warning' )
 
-	endif
+		_HMG_UserComponentProcess := .T.
 
-	_HMG_UserComponentProcess := .F.
+	else
+
+		_HMG_UserComponentProcess := .F.
+
+	endif
 
 Return Nil
 

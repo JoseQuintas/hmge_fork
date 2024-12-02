@@ -21,7 +21,48 @@ FUNCTION Test_DBF()
          { "CLBANK",   "N", 6, 0 }, ;
          { "CLPAYTERM","N", 3, 0 }, ;
          { "CLSTATUS", "N", 1, 0 }, ;
-         { "CLCOMMENT", "C", 255, 0 } } )
+         { "CLDUMMY01", "C", 50, 0 }, ;
+         { "CLDUMMY02", "C", 50, 0 }, ;
+         { "CLDUMMY03", "C", 50, 0 }, ;
+         { "CLDUMMY04", "C", 50, 0 }, ;
+         { "CLDUMMY05", "C", 50, 0 }, ;
+         { "CLDUMMY06", "C", 50, 0 }, ;
+         { "CLDUMMY07", "C", 50, 0 }, ;
+         { "CLDUMMY08", "C", 50, 0 }, ;
+         { "CLDUMMY09", "C", 50, 0 }, ;
+         { "CLDUMMY10", "C", 50, 0 }, ;
+         { "CLDUMMY11", "C", 50, 0 }, ;
+         { "CLDUMMY12", "C", 50, 0 }, ;
+         { "CLDUMMY13", "C", 50, 0 }, ;
+         { "CLDUMMY14", "C", 50, 0 }, ;
+         { "CLDUMMY15", "C", 50, 0 }, ;
+         { "CLDUMMY16", "C", 50, 0 }, ;
+         { "CLDUMMY17", "C", 50, 0 }, ;
+         { "CLDUMMY18", "C", 50, 0 }, ;
+         { "CLDUMMY19", "C", 50, 0 }, ;
+         { "CLDUMMY20", "C", 50, 0 }, ;
+         { "CLDUMMY21", "C", 50, 0 }, ;
+         { "CLDUMMY22", "C", 50, 0 }, ;
+         { "CLDUMMY23", "C", 50, 0 }, ;
+         { "CLDUMMY24", "C", 50, 0 }, ;
+         { "CLDUMMY25", "C", 50, 0 }, ;
+         { "CLDUMMY26", "C", 50, 0 }, ;
+         { "CLDUMMY27", "C", 50, 0 }, ;
+         { "CLDUMMY28", "C", 50, 0 }, ;
+         { "CLDUMMY29", "C", 50, 0 }, ;
+         { "CLDUMMY30", "C", 50, 0 }, ;
+         { "CLDUMMY31", "C", 50, 0 }, ;
+         { "CLDUMMY32", "C", 50, 0 }, ;
+         { "CLDUMMY33", "C", 50, 0 }, ;
+         { "CLDUMMY34", "C", 50, 0 }, ;
+         { "CLDUMMY35", "C", 50, 0 }, ;
+         { "CLDUMMY36", "C", 50, 0 }, ;
+         { "CLDUMMY37", "C", 50, 0 }, ;
+         { "CLDUMMY38", "C", 50, 0 }, ;
+         { "CLDUMMY39", "C", 50, 0 }, ;
+         { "CLDUMMY40", "C", 50, 0 }, ;
+         { "CLCOMMENT", "C", 255, 0 }, ;
+         { "DLDUMMY41", "C", 50, 0  } } )
    ENDIF
    IF ! File( "DBPRODUCT.DBF" )
       dbCreate( "DBPRODUCT", { ;

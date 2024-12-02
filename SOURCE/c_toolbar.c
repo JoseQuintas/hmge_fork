@@ -46,59 +46,74 @@
    TOOLBAREX and TOOLBUTTONEX controls source code
    (C)2005 Janusz Pora <januszpora@onet.eu>
 
-   --------------------------------------------------------------------------*/
-#define _WIN32_IE    0x0501
-#define _WIN32_WINNT 0x0502
+ --------------------------------------------------------------------------*/
+#define _WIN32_IE    0x0501   // Define minimum Internet Explorer version
+#define _WIN32_WINNT 0x0502   // Define minimum Windows version as Windows Server 2003
 
+// Include MiniGUI definitions
 #include <mgdefs.h>
 
+// Disable deprecation warnings in Microsoft compilers
 #if defined( _MSC_VER )
 #pragma warning( disable : 4996 )
 #endif
+
+// Include necessary Windows control definitions
 #include <commctrl.h>
 
+// Define the number of toolbar buttons
 #define NUM_TOOLBAR_BUTTONS   10
 
-extern HBITMAP    HMG_LoadPicture
-                  (
-                     const char  *FileName,
-                     int         New_Width,
-                     int         New_Height,
-                     HWND        hWnd,
-                     int         ScaleStretch,
-                     int         Transparent,
-                     long        BackgroundColor,
-                     int         AdjustImage,
-                     HB_BOOL     bAlphaFormat,
-                     int         iAlpfaConstant
-                  );
+// Load a bitmap image with custom specifications and scaling
+extern HBITMAP HMG_LoadPicture
+               (
+                  const char  *FileName,
+                  int         New_Width,
+                  int         New_Height,
+                  HWND        hWnd,
+                  int         ScaleStretch,
+                  int         Transparent,
+                  long        BackgroundColor,
+                  int         AdjustImage,
+                  HB_BOOL     bAlphaFormat,
+                  int         iAlpfaConstant
+               );
+
 #ifdef UNICODE
+// Convert ANSI string to wide string in UNICODE mode
 LPWSTR            AnsiToWide( LPCSTR );
 #endif
+
+// Get the instance handle of the current application
 HINSTANCE         GetInstance( void );
+
+// Get handle to resources for the application
 HINSTANCE         GetResources( void );
 
-// Minigui Resources control system
+// MiniGUI resources control
 void              RegisterResource( HANDLE hResource, LPCSTR szType );
-void pascal       DelResource( HANDLE hResource );
+void pascal       DelResource( HANDLE hResource ); // Deletes a specified resource
 
-static LPTBBUTTON lpSaveButtons;
-static int        nResetCount, buttonCount;
-static int        isInSizeMsg = 0;
+// Global pointers and counters for managing toolbar buttons
+static LPTBBUTTON lpSaveButtons;                // Pointer to save button states
+static int        nResetCount, buttonCount;     // Reset and button counters
+static int        isInSizeMsg = 0;              // Tracks if a size message is in process
 
+// Initializes a toolbar with customizable styles and appearance
 HB_FUNC( INITTOOLBAR )
 {
    HWND  hwndTB;
-   DWORD Style = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS;
+   DWORD Style = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS;  // Basic toolbar style
+   DWORD ExStyle = 0;                           // Extended styles (initially none)
+   DWORD TbExStyle = TBSTYLE_EX_DRAWDDARROWS;   // Toolbar extended style for dropdown arrows
 
-   DWORD ExStyle = 0;
-   DWORD TbExStyle = TBSTYLE_EX_DRAWDDARROWS;
-
+   // Apply extended style if specified
    if( hb_parl( 14 ) )
    {
       ExStyle |= WS_EX_CLIENTEDGE;
    }
 
+   // Conditional styles for flat, bottom-aligned, and list styles
    if( hb_parl( 10 ) )
    {
       Style |= TBSTYLE_FLAT;
@@ -116,7 +131,7 @@ HB_FUNC( INITTOOLBAR )
 
    if( hb_parl( 13 ) )
    {
-      Style = Style | CCS_NOPARENTALIGN | CCS_NODIVIDER | CCS_NORESIZE;
+      Style |= CCS_NOPARENTALIGN | CCS_NODIVIDER | CCS_NORESIZE;
    }
 
    if( hb_parl( 15 ) )
@@ -129,44 +144,44 @@ HB_FUNC( INITTOOLBAR )
       Style |= CCS_ADJUSTABLE;
    }
 
+   // Create the toolbar window with specified styles
    hwndTB = CreateWindowEx( ExStyle, TOOLBARCLASSNAME, NULL, Style, 0, 0, 0, 0, hmg_par_raw_HWND( 1 ), hmg_par_raw_HMENU( 3 ), GetInstance(), NULL );
 
+   // Set button and bitmap sizes if specified
    if( hb_parni( 6 ) && hb_parni( 7 ) )
    {
       SendMessage( hwndTB, TB_SETBUTTONSIZE, hb_parni( 6 ), hb_parni( 7 ) );
       SendMessage( hwndTB, TB_SETBITMAPSIZE, 0, ( LPARAM ) MAKELONG( hb_parni( 6 ), hb_parni( 7 ) ) );
    }
 
+   // Set extended style for the toolbar
    SendMessage( hwndTB, TB_SETEXTENDEDSTYLE, 0, ( LPARAM ) TbExStyle );
 
+   // Show the toolbar
    ShowWindow( hwndTB, SW_SHOW );
-   hmg_ret_raw_HWND( hwndTB );
+   hmg_ret_raw_HWND( hwndTB );                  // Return the toolbar window handle
 }
 
+// Adds a button to the toolbar with an optional image and styles
 HB_FUNC( INITTOOLBUTTON )
 {
-   HWND        hwndTB = hmg_par_raw_HWND( 1 );
-   HWND        himage = NULL;
-   TBADDBITMAP tbab;
-   TBBUTTON    tbb[NUM_TOOLBAR_BUTTONS];
-   DWORD       tSize;
-   int         index;
-   int         nPoz;
-   int         nBtn;
-   int         Style = TBSTYLE_BUTTON;
-
+   HWND        hwndTB = hmg_par_raw_HWND( 1 );  // Toolbar window handle
+   HWND        himage = NULL;                   // Image handle (initially NULL)
+   TBADDBITMAP tbab;                      // Structure for adding bitmap to the toolbar
+   TBBUTTON    tbb[NUM_TOOLBAR_BUTTONS];  // Array of toolbar buttons
+   DWORD       tSize;                     // Holds toolbar padding
+   int         index, nPoz, nBtn;         // Indices and button count
+   int         Style = TBSTYLE_BUTTON;    // Initial button style
 #ifndef UNICODE
-   LPCSTR      lpText;
+   LPCSTR      lpText;                    // ANSI text pointer for non-UNICODE
 #else
-   LPWSTR      lpText;
+   LPWSTR      lpText;                    // Wide text pointer for UNICODE
 #endif
+
+   // Set button image if image path is provided
    if( hb_parclen( 8 ) > 0 )
    {
-      int   px;
-      int   py;
-      int   ix = 0;
-      int   iy = 0;
-
+      int   px, py, ix = 0, iy = 0;
       tSize = ( DWORD ) SendMessage( hwndTB, TB_GETPADDING, 0, 0 );
       px = LOWORD( tSize );
       py = HIWORD( tSize );
@@ -177,6 +192,7 @@ HB_FUNC( INITTOOLBUTTON )
          iy = hb_parni( 7 ) - py;
       }
 
+      // Load specified picture with customized parameters
       himage = ( HWND ) HMG_LoadPicture
          (
             hb_parc( 8 ),
@@ -192,34 +208,35 @@ HB_FUNC( INITTOOLBUTTON )
          );
    }
 
-   memset( tbb, 0, sizeof tbb );
+   memset( tbb, 0, sizeof tbb );          // Zero out button structure
 
-   // Add the bitmap containing button images to the toolbar.
+   // Set button style as autosize if specified
    if( hb_parl( 11 ) )
    {
       Style |= TBSTYLE_AUTOSIZE;
    }
 
    nBtn = 0;
-   tbab.hInst = NULL;
+   tbab.hInst = NULL;                     // Use custom image handle
    tbab.nID = ( UINT_PTR ) himage;
-   nPoz = ( int ) SendMessage( hwndTB, TB_ADDBITMAP, ( WPARAM ) 1, ( LPARAM ) &tbab );
+   nPoz = ( int ) SendMessage( hwndTB, TB_ADDBITMAP, ( WPARAM ) 1, ( LPARAM ) &tbab );   // Add bitmap to toolbar
 
-   // Add the strings
+   // Set button text if specified
    if( hb_parclen( 2 ) > 0 )
    {
 #ifndef UNICODE
-      lpText = hb_parc( 2 );
+      lpText = hb_parc( 2 );  // Get ANSI text
 #else
-      lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
+      lpText = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Convert to wide text if UNICODE
 #endif
       index = ( int ) SendMessage( hwndTB, TB_ADDSTRING, ( WPARAM ) 0, ( LPARAM ) lpText );
       tbb[nBtn].iString = index;
 #ifdef UNICODE
-      hb_xfree( lpText );
+      hb_xfree( lpText );                    // Free allocated memory in UNICODE
 #endif
    }
 
+   // Add specific button styles based on parameters
    if( hb_parl( 12 ) )
    {
       Style |= BTNS_CHECK;
@@ -240,15 +257,16 @@ HB_FUNC( INITTOOLBUTTON )
       Style |= BTNS_WHOLEDROPDOWN;
    }
 
-   SendMessage( hwndTB, TB_AUTOSIZE, 0, 0 );
+   SendMessage( hwndTB, TB_AUTOSIZE, 0, 0 ); // Adjust toolbar size to fit buttons
 
-   // Button New
+   // Initialize the new button properties
    tbb[nBtn].iBitmap = nPoz;
    tbb[nBtn].idCommand = hb_parni( 3 );
    tbb[nBtn].fsState = TBSTATE_ENABLED;
    tbb[nBtn].fsStyle = ( BYTE ) Style;
    nBtn++;
 
+   // Add separator if specified
    if( hb_parl( 10 ) )
    {
       tbb[nBtn].fsState = 0;
@@ -256,13 +274,14 @@ HB_FUNC( INITTOOLBUTTON )
       nBtn++;
    }
 
+   // Set button structure size
    SendMessage( hwndTB, TB_BUTTONSTRUCTSIZE, ( WPARAM ) sizeof( TBBUTTON ), 0 );
 
+   // Add buttons to the toolbar
    SendMessage( hwndTB, TB_ADDBUTTONS, ( WPARAM ) nBtn, ( LPARAM ) tbb );
 
-   ShowWindow( hwndTB, SW_SHOW );
-
-   hmg_ret_raw_HANDLE( himage );
+   ShowWindow( hwndTB, SW_SHOW );            // Display the toolbar
+   hmg_ret_raw_HANDLE( himage );             // Return image handle
 }
 
 LONG WidestBtn( LPCTSTR pszStr, HWND hwnd )

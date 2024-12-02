@@ -577,10 +577,10 @@ FUNCTION InitDialogMaskedTextBox( ParentName, ControlHandle, k )
    date   := _HMG_aControlMiscData1 [k,2]
    cValue := _HMG_aControlValue [k]
 
-   IF date == .F.
-      SetWindowText ( ControlHandle , cValue  )
-   ELSE
+   IF date
       SetWindowText ( ControlHandle , DToC ( cValue ) )
+   ELSE
+      SetWindowText ( ControlHandle , cValue  )
    ENDIF
 
    IF Field != NIL
@@ -844,10 +844,10 @@ FUNCTION _DefineCharMaskTextbox ( ControlName, ParentFormName, x, y, inputmask ,
       ENDIF
 
       IF Value != NIL
-         IF date == .F.
-            SetWindowText ( ControlHandle , Value )
-         ELSE
+         IF date
             SetWindowText ( ControlHandle , DToC ( Value ) )
+         ELSE
+            SetWindowText ( ControlHandle , Value )
          ENDIF
       ENDIF
 
@@ -876,7 +876,7 @@ PROCEDURE ProcessCharMask ( i , d )
    LOCAL x
 
    IF ValType ( _HMG_aControlSpacing [i] ) == 'L'
-      IF _HMG_aControlSpacing [i] == .F.
+      IF ! _HMG_aControlSpacing [i]
          RETURN
       ENDIF
    ENDIF
@@ -1118,7 +1118,7 @@ STATIC FUNCTION CharMaskTekstOK( cString, cMask )
       OTHERWISE
          lPassed := !( CM == 'X' )  // GF 07/04/2022
       ENDCASE
-      IF lPassed == .F.
+      IF ! lPassed
          EXIT
       ENDIF
    NEXT

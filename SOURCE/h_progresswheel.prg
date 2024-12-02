@@ -935,11 +935,11 @@ RETURN
 #pragma BEGINDUMP
 
 #define WINVER 0x0501  // minimum requirements: Windows XP
-#include <mgdefs.h>
 
+#include <mgdefs.h>
 #include <commctrl.h>
 
-// Minigui Resources control system
+// MiniGUI resources control
 void RegisterResource( HANDLE hResource, LPCSTR szType );
 
 HB_FUNC( SETBRUSHORG )

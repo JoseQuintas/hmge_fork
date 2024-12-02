@@ -1,14 +1,14 @@
 /*---------------------------------------------------------------------------
  MINIGUI - Harbour Win32 GUI library source code
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 #include "TSBrowse.ch"
 #include "hbcompat.ch"
 
-// ============================================================================
-// FUNCTION SBrowse() Version 9.0 Nov/30/2009
-// ============================================================================
+* ============================================================================
+* FUNCTION SBrowse() Version 9.0 Nov/30/2009
+* ============================================================================
 
 FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, lNumber, lCenter )
 
@@ -202,6 +202,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
             :nHeightFoot := :nHeightHead
             :InsColNumber()
             :GetColumn( "ORDKEYNO" ):cFooting := hb_ntos( :nLen )
+            :GetColumn( "ORDKEYNO" ):lNoHilite := .T.
             :nFreeze := :nColumn( "ORDKEYNO" )
             :nCell := :nFreeze + 1
             :lLockFreeze := .T.
@@ -336,7 +337,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
 
 RETURN NIL
 
-// --------------------------------------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 FUNCTION SBrowse_Record( oBrw, cTitle, bSetUp, aHead, nWidth, nHeight, lNoCrLf, lModal )
 
@@ -357,14 +358,14 @@ FUNCTION SBrowse_Record( oBrw, cTitle, bSetUp, aHead, nWidth, nHeight, lNoCrLf, 
 
 RETURN NIL
 
-// ============================================================================
-// FUNCTION _TBrowse()  by SergKis
-// ============================================================================
+* ============================================================================
+* FUNCTION _TBrowse()  by SergKis
+* ============================================================================
 
 FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 
    LOCAL oBrw, aTmp, aBrush, aHead, aField, aFoot, aColor
-   LOCAL cForm, hForm, lSpecHd, bInit, bEnd
+   LOCAL cForm, hForm, lSpecHd, bInit, bEnd, lSuperHd, lZebra, aZebra
    LOCAL i, j
 
    DEFAULT oParam := oHmgData()
@@ -385,12 +386,25 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DEFAULT lSpecHd := oParam:lDrawSpecHd
    DEFAULT lSpecHd := .F.
 
+   lSuperHd := !Empty( oParam:lSuperHd ) .OR. !Empty( oParam:lSuperHead )
+   lZebra   := !Empty( oParam:lZebra   ) .OR. !Empty( oParam:lZebraLine ) ;
+                                         .OR. !Empty( oParam:lZebraRow  )
+
    DEFAULT oParam:bDblClick  := oParam:bOnDblClick
    DEFAULT oParam:bGotFocus  := oParam:bOnGotFocus
    DEFAULT oParam:bLostFocus := oParam:bOnLostFocus
    DEFAULT oParam:bChange    := oParam:bOnChange
+   DEFAULT oParam:lNoPicture := .F.
 
-   IF HB_ISCHAR( uAlias ) .AND. ! "." $ uAlias ; dbSelectArea( uAlias )
+   IF HB_ISCHAR( uAlias ) .AND. ! "." $ uAlias
+      dbSelectArea( uAlias )
+   ELSEIF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ! HB_ISARRAY( uAlias[1] )
+      j := uAlias
+      uAlias := {}
+      FOR EACH i IN j
+         AAdd( uAlias, { i } )
+      NEXT
+      oParam:lNoPicture := .T.
    ENDIF
 
    IF HB_ISARRAY( oParam:aFont )
@@ -421,20 +435,20 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       cBrw := j
    ENDIF
 
-   bInit := oParam:bInit
-   bEnd := oParam:bEnd
+   bInit  := oParam:bInit
+   bEnd   := oParam:bEnd
    aBrush := oParam:aBrush
    aColor := oParam:aColor
-   aHead := oParam:aHead ; DEFAULT aHead := oParam:aHeader
+   aHead  := oParam:aHead  ; DEFAULT aHead  := oParam:aHeader
    aField := oParam:aField ; DEFAULT aField := oParam:aFields
-   aFoot := oParam:aFoot ; DEFAULT aFoot := oParam:aFooter
+   aFoot  := oParam:aFoot  ; DEFAULT aFoot  := oParam:aFooter
 
    DEFAULT aFoot := ! Empty( aFoot ), ;
       nY := 0, ;
       nX := 0, ;
       nW := _GetClientRect( hForm )[ 3 ] - nX * 2, ;  // GetClientWidth
       nH := _GetClientRect( hForm )[ 4 ] - nY - 1 - ; // GetClientHeight
-      iif( _IsControlDefined( "StatusBar", cForm ), GetProperty( cForm, "StatusBar", "Height" ), 0 )
+            iif( _IsControlDefined( "StatusBar", cForm ), GetProperty( cForm, "StatusBar", "Height" ), 0 )
 
    DEFAULT aColor := { ;
       { CLR_FOCUSF, GetSysColor( COLOR_WINDOWTEXT ) }, ;
@@ -442,9 +456,37 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       { CLR_SELEF, GetSysColor( COLOR_WINDOWTEXT ) }, ;
       { CLR_SELEB, {|c, n, b| c := n, iif( b:nCell == n, -CLR_BLUE, -RGB( 128, 225, 225 ) ) } } }
 
+   IF lZebra
+      aZebra := oParam:aZebra ; DEFAULT aZebra := oParam:aZebraColor
+      DEFAULT aZebra := { GetSysColor( COLOR_WINDOW ), GetSysColor( COLOR_BTNFACE ) }
+      IF IsArray( aZebra ) .AND. Len( aZebra ) > 1
+         IF IsArray( aZebra[1] ) ; aZebra[1] := HMG_RGB2n( aZebra[1] )
+         ENDIF
+         IF IsArray( aZebra[2] ) ; aZebra[2] := HMG_RGB2n( aZebra[2] )
+         ENDIF
+         IF IsNumeric( aZebra[1] ) .AND. IsNumeric( aZebra[2] )
+            AAdd( aColor, { CLR_PANE, {|c,n,b| c := aZebra[2], n := aZebra[1], ;
+                                        iif( b:nAt % 2 == 0, c, n ) } } )
+         ENDIF
+      ENDIF
+   ENDIF
+
+   IF IsArray( oParam:aColorAdd ) .AND. Len( oParam:aColorAdd ) > 0
+      FOR EACH j IN oParam:aColorAdd
+          IF IsArray( j ) .AND. Len( j ) > 1 .AND. IsNumeric( j[1] )
+             i := j[1]
+             j := j[2]
+             IF IsArray( j ) .AND. Len( j ) == 3   // RGB array
+                j := HMG_RGB2n( j )
+             ENDIF
+             AAdd( aColor, { i, j })
+          ENDIF
+      NEXT
+   ENDIF
+
 #ifndef __XHARBOUR__
-   DEFAULT oParam:bSpecHdEnum := {|ob, op, cChar|  // нумерация SpecHd колонок, можно исп. в своем коде вызов
-        LOCAL oCol, cCnt, nCnt := 0  // renumbering SpecHeader
+   DEFAULT oParam:bSpecHdEnum := {|ob, op, cChar|  // renumbering SpecHeader
+        LOCAL oCol, cCnt, nCnt := 0
         LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         IF ob:lDrawSpecHd
           DEFAULT cChar := op:cSpecHdChar
@@ -462,10 +504,10 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
         RETURN Nil
         }
 
-   DEFAULT oParam:bAdjColumns := {|ob|     // "растягивание" колонок в пределах окна тсб
+   DEFAULT oParam:bAdjColumns := {|ob|     // adjusting all columns
         LOCAL aCol, nI, nK
         LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
-        // у SELECTOR and ORDKEYNO не меняем width
+        // exception for SELECTOR and ORDKEYNO width
         nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( cName, .T. ) )
         IF nK > 0
           aCol := {}
@@ -480,13 +522,13 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
         }
 
    DEFAULT bEnd  := {|ob, op|
-        // нет горизонтального HScroll и есть SELECTOR
+        // no HScroll but there is SELECTOR
         IF op:uSelector != NIL .AND. op:lAdjust == NIL .AND. ob:lNoHScroll
            IF HB_ISBLOCK( op:bAdjColumns )
-              EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
+              EVal( op:bAdjColumns, ob, op )
            ENDIF
         ENDIF
-        IF ob:nLen > ob:nRowCount()     // нужен VScroll
+        IF ob:nLen > ob:nRowCount()     // need VScroll
            ob:ResetVScroll( .T. )
         ENDIF
         ob:SetNoHoles()
@@ -494,8 +536,8 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
         RETURN Nil
         }
 #else
-   DEFAULT oParam:bSpecHdEnum := <|ob, op, cChar|  // нумерация SpecHd колонок, можно исп. в своем коде вызов
-        LOCAL oCol, cCnt, nCnt := 0  // renumbering SpecHeader
+   DEFAULT oParam:bSpecHdEnum := <|ob, op, cChar|  // renumbering SpecHeader
+        LOCAL oCol, cCnt, nCnt := 0
         LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
         IF ob:lDrawSpecHd
           DEFAULT cChar := op:cSpecHdChar
@@ -513,10 +555,10 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
         RETURN Nil
         >
 
-   DEFAULT oParam:bAdjColumns := <|ob|     // "растягивание" колонок в пределах окна тсб
+   DEFAULT oParam:bAdjColumns := <|ob|     // adjusting all columns
         LOCAL aCol, nI, nK
         LOCAL cName := iif( ob:lIsDbf, "ORDKEYNO", "ARRAYNO" )
-        // у SELECTOR and ORDKEYNO не меняем width
+        // exception for SELECTOR and ORDKEYNO width
         nK := Max( ob:nColumn( "SELECTOR", .T. ), ob:nColumn( cName, .T. ) )
         IF nK > 0
           aCol := {}
@@ -531,13 +573,13 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
         >
 
    DEFAULT bEnd  := <|ob, op|
-        // нет горизонтального HScroll и есть SELECTOR
+        // no HScroll but there is SELECTOR
         IF op:uSelector != NIL .AND. op:lAdjust == NIL .AND. ob:lNoHScroll
            IF HB_ISBLOCK( op:bAdjColumns )
-              EVal( op:bAdjColumns, ob, op )  // :AdjColumns(...)
+              EVal( op:bAdjColumns, ob, op )
            ENDIF
         ENDIF
-        IF ob:nLen > ob:nRowCount()     // нужен VScroll
+        IF ob:nLen > ob:nRowCount()     // need VScroll
            ob:ResetVScroll( .T. )
         ENDIF
         ob:SetNoHoles()
@@ -593,12 +635,37 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       :lEnum := lSpecHd
       :lDrawSpecHd := lSpecHd
 
-      IF lSpecHd .AND. Empty( :nHeightSpecHd )
-         :nHeightSpecHd := GetFontHeight( oParam:aFont[ iif( Len( oParam:aFont ) > 3, 4, 1 ) ] )
+      IF lSpecHd
+         IF IsNumeric( oParam:nHeightSpecHd ) .AND. oParam:nHeightSpecHd > 0
+            :nHeightSpecHd := oParam:nHeightSpecHd
+         ELSE
+            :nHeightSpecHd := GetFontHeight( oParam:aFont[ iif( Len( oParam:aFont ) > 3, 4, 1 ) ] )
+         ENDIF
+      ENDIF
+
+      IF IsNumeric( oParam:nHeightHead ) .AND. oParam:nHeightHead > 0
+         :nHeightHead := oParam:nHeightHead
+      ENDIF
+
+      IF IsNumeric( oParam:nHeightCell ) .AND. oParam:nHeightCell  > 0
+         :nHeightCell := oParam:nHeightCell
+      ENDIF
+
+      IF IsNumeric( oParam:nHeightFoot ) .AND. oParam:nHeightFoot > 0
+         :nHeightFoot := oParam:nHeightFoot
       ENDIF
 
       :SetAppendMode( .F. )
       :SetDeleteMode( .F. )
+
+      IF oParam:lNoPicture                          // clear oCol:cPicture
+         j := iif( :lIsDbf, "ORDKEYNO", "ARRAYNO" )
+         FOR EACH i IN :aColumns
+             IF !Empty( i:cName ) .AND. i:cName != j
+                i:cPicture := NIL
+             ENDIF
+         NEXT
+      ENDIF
 
       IF HB_ISBLOCK( bInit ) ; Eval( bInit, oBrw, oParam ) // 1. call your customization functions
       ENDIF
@@ -608,6 +675,14 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       ENDIF
 
       IF HB_ISBLOCK( oParam:bBody ) ; Eval( oParam:bBody, oBrw, oParam ) // 2. call your customization functions
+      ENDIF
+
+      IF ! :lDrawSuperHd .AND. lSuperHd
+         DEFAULT oParam:cSuperHd := " "
+         DEFAULT oParam:nHeightSuper := oParam:nHeightSuperHd
+         DEFAULT oParam:nHeightSuper := :nHeightHead
+         :AddSuperHead( 1, :nColCount(), oParam:cSuperHd, oParam:nHeightSuper, ;
+            oParam:aSuperHdColor, .F., , oParam:uSuperHdBmp, .F., .F., .F., , )
       ENDIF
 
       IF HB_ISLOGICAL( oParam:bLDblClick ) .OR. HB_ISLOGICAL( oParam:bDblClick )
@@ -660,6 +735,10 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       :oHScroll:SetRange( 0, 0 )
 
    END TBROWSE
+
+   IF oBrw:lDrawSuperHd
+      ATail(oBrw:aSuperHead)[2] := oBrw:nColCount()
+   ENDIF
 
    IF HB_ISBLOCK( oParam:bGotFocus )
       oBrw:bGotFocus := oParam:bGotFocus     // :bGotFocus := {|ob,hCtlLost| ... }

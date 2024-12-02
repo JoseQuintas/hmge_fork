@@ -257,8 +257,8 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       hscroll := .T.
    ENDIF
 
-   IF MSC_VER() > 0 .OR. _HMG_IsBcc77
-      IF nosize .AND. _HMG_IsThemed
+   IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
+      IF nosize
          w += 10
          h += 10
       ENDIF
@@ -603,8 +603,8 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
       hscroll := .T.
    ENDIF
 
-   IF MSC_VER() > 0 .OR. _HMG_IsBcc77
-      IF nosize .AND. !nocaption .AND. _HMG_IsThemed
+   IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
+      IF nosize
          w += 10
          h += 5
       ENDIF

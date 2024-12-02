@@ -379,8 +379,7 @@ RETURN RetVal
 
 #pragma BEGINDUMP
 
-#include <windows.h>
-#include "hbapi.h"
+#include <mgdefs.h>
 #include <commctrl.h>
 
 HINSTANCE   GetInstance( void );
@@ -388,7 +387,7 @@ HIMAGELIST  HMG_SetButtonImageList( HWND hButton, const char *FileName, int Tran
 
 HB_FUNC( INITMIXEDBUTTON )
 {
-   HWND        hwnd = ( HWND ) hb_parnl( 1 );
+   HWND        hwnd = hmg_par_raw_HWND( 1 );
    const char  *FileName = hb_parc( 13 );
    HIMAGELIST  hImageList;
    HWND        hButton;
@@ -427,7 +426,7 @@ HB_FUNC( INITMIXEDBUTTON )
          hb_parni( 6 ),
          hb_parni( 7 ),
          hwnd,
-         ( HMENU ) hb_parnl( 3 ),
+         hmg_par_raw_HMENU( 3 ),
          GetInstance(),
          NULL
       );
@@ -435,19 +434,8 @@ HB_FUNC( INITMIXEDBUTTON )
    hImageList = HMG_SetButtonImageList( hButton, FileName, Transparent, hb_parni( 14 ) );
 
    hb_reta( 2 );
-   hb_storvnl( ( LONG_PTR ) hButton, -1, 1 );
-   hb_storvnl( ( LONG_PTR ) hImageList, -1, 2 );
-}
-
-HB_FUNC( _SETMIXEDBTNPICTURE )
-{
-   HWND        hButton = ( HWND ) hb_parnl( 1 );
-   const char  *FileName = hb_parc( 2 );
-   HIMAGELIST  hImageList;
-
-   hImageList = HMG_SetButtonImageList( hButton, FileName, hb_parl( 4 ) ? 0 : 1, hb_parni( 3 ) );
-
-   hb_retnl( ( LONG_PTR ) hImageList );
+   hmg_storvnl_HANDLE( hButton, -1, 1 );
+   hmg_storvnl_HANDLE( hImageList, -1, 2 );
 }
 
 #pragma ENDDUMP

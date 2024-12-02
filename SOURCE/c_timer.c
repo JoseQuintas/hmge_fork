@@ -43,16 +43,46 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
+// INITTIMER
+// Initializes a timer for a specific window with a given interval.
+// Parameters:
+//   1. hwnd - Handle of the window associated with the timer.
+//   2. nIDEvent - Unique identifier for the timer within the window's scope.
+//   3. uElapse - Time interval in milliseconds between timer events.
+// Returns:
+//   Logical (TRUE/FALSE) indicating if the timer was successfully created.
 HB_FUNC( INITTIMER )
 {
-   hb_retl( ( UINT ) SetTimer( hmg_par_raw_HWND( 1 ), hmg_par_UINT( 2 ), hmg_par_UINT( 3 ), ( TIMERPROC ) NULL ) );
+   // SetTimer returns the timer ID if successful, 0 otherwise.
+   // Convert this result to a logical value and return it.
+   hb_retl
+   (
+      ( UINT ) SetTimer
+         (
+            hmg_par_raw_HWND( 1 ),  // Window handle associated with the timer
+            hmg_par_UINT( 2 ),      // Timer ID
+            hmg_par_UINT( 3 ),      // Timer interval in milliseconds
+            ( TIMERPROC ) NULL      // No callback function; uses default WM_TIMER message
+         ) != 0
+   );
 }
 
+// KILLTIMER
+// Stops and destroys the timer for a specific window and timer ID.
+// Parameters:
+//   1. hwnd - Handle of the window associated with the timer.
+//   2. nIDEvent - Unique identifier of the timer to destroy.
+// Returns:
+//   Logical (TRUE/FALSE) indicating if the timer was successfully destroyed.
 HB_FUNC( KILLTIMER )
 {
-   hb_retl( KillTimer( hmg_par_raw_HWND( 1 ), // handle of main window
-   hmg_par_UINT( 2 ) ) );   // timer identifier
+   hb_retl(
+      KillTimer(
+         hmg_par_raw_HWND(1),  // Window handle associated with the timer
+         hmg_par_UINT(2)       // Timer ID to destroy
+      ) != 0
+   );
 }

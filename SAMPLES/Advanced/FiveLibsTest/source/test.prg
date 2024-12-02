@@ -9,9 +9,10 @@ REQUEST HB_CODEPAGE_PTISO
 #include "dbstruct.ch"
 #include "frm_class.ch"
 #include "hbgtinfo.ch"
+#include "set.ch"
 
 MEMVAR lLogin, cUser, cPass
-MEMVAR pGenPrg, pGenName
+MEMVAR pGenPrg
 
 #ifdef DLGAUTO_AS_LIB
    PROCEDURE DlgAuto
@@ -21,7 +22,8 @@ MEMVAR pGenPrg, pGenName
 
    LOCAL aAllSetup, lMakeLogin
 
-   PRIVATE lLogin := .F., cUser := Space(30), cPass := Space(20), pGenPrg := "", pGenName := "code"
+   PRIVATE lLogin := .F., cUser := Space(30), cPass := Space(30)
+   PUBLIC pGenPrg := ""
 
    SET CONFIRM ON
    SET CENTURY ON
@@ -49,9 +51,9 @@ MEMVAR pGenPrg, pGenName
 
    frm_DialogMenu( @aAllSetup )
 
-#ifndef DLGAUTO_AS_LIB
-   hb_MemoWrit( pGenName + ".txt", pGenPrg )
-#endif
+   IF .F.
+      hb_MemoWrit( "code.txt", pGenPrg )
+   ENDIF
 
    RETURN
 
@@ -108,3 +110,14 @@ PROCEDURE HB_GTSYS
    RETURN
 #endif
 #endif
+
+FUNCTION DlgAuto_ShowDefault()
+
+   LOCAL cText := ""
+
+   cText += "date:" + hb_ValToExp( Set( _SET_DATEFORMAT ) ) + hb_Eol()
+   cText += "cpd:" + hb_ValToExp( Set( _SET_CODEPAGE ) ) + hb_Eol()
+   cText += "decimals: " + hb_ValToExp( Set( _SET_DECIMALS ) ) + hb_Eol()
+   GUI():MsgBox( cText )
+
+   RETURN Nil

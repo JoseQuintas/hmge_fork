@@ -337,7 +337,7 @@ FUNCTION _SetStatusClock ( BarName, FormName, width, tooltip, action, lAMPM, bac
    nrItem := _DefineItemMessage ( "TimerBar", BarName, 0, 0, iif( lAMPM, AMPM( Time() ), Time() ), action, width, 0, , "", tooltip, , backcolor, fontcolor, 1 )
 
 #ifdef _HMG_COMPAT_
-   IF _HMG_BeginWindowActive == .F.
+   IF ! _HMG_BeginWindowActive
       FormName := GetParentFormName( GetControlIndexByHandle ( _HMG_ActiveStatusHandle ) )
    ENDIF
 
@@ -369,7 +369,7 @@ FUNCTION _SetStatusKeybrd ( BarName, FormName, width, tooltip, action )
       iif( IsInsertActive(), "zzz_led_on", "zzz_led_off" ), "", ToolTip )
 
 #ifdef _HMG_COMPAT_
-   IF _HMG_BeginWindowActive == .F.
+   IF ! _HMG_BeginWindowActive
       FormName := GetParentFormName( GetControlIndexByHandle ( _HMG_ActiveStatusHandle ) )
    ENDIF
 

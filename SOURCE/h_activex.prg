@@ -190,7 +190,7 @@ PROCEDURE ReleaseActiveX ( cWindow, cControl )
 
       oActiveX := _HMG_aControlIds[ GetControlIndex ( cControl, cWindow ) ]
 
-      IF ISOBJECT( oActiveX )
+      IF ISOBJECT ( oActiveX )
          oActiveX:Release()
       ENDIF
 
@@ -268,46 +268,88 @@ RETURN ( _HMG_aControlMiscData1[ i ] )
 
 #include "hbclass.ch"
 
+/*
+   TActiveX Class:
+   This class facilitates the use and management of ActiveX controls in a Harbour application.
+   It provides methods for initializing, resizing, hiding, showing, and interacting with an ActiveX control.
+*/
+
 CLASS TActiveX
-   DATA oOle
-   DATA hWnd
-   DATA cWindowName
-   DATA cProgId
-   DATA hSink     INIT NIL
-   DATA hAtl      INIT NIL
-   DATA nRow
-   DATA nCol
-   DATA nWidth
-   DATA nHeight
-   DATA nOldWinWidth
-   DATA nOldWinHeight
-   DATA bHide INIT .F.
+
+   /* Instance Variables */
+   DATA oOle           // Holds the OLE object created from the ActiveX control.
+   DATA hWnd           // The handle of the ActiveX control's window.
+   DATA cWindowName    // The name of the parent window containing the ActiveX control.
+   DATA cProgId        // The ProgID of the ActiveX control.
+   DATA hSink INIT NIL // Connection point sink for event handling (if applicable).
+   DATA hAtl INIT NIL  // Internal reference for the ActiveX ATL object.
+   DATA nRow           // Row position of the ActiveX control.
+   DATA nCol           // Column position of the ActiveX control.
+   DATA nWidth         // Width of the ActiveX control.
+   DATA nHeight        // Height of the ActiveX control.
+   DATA nOldWinWidth   // Previous window width (used for adjustments).
+   DATA nOldWinHeight  // Previous window height (used for adjustments).
+   DATA bHide INIT .F. // Tracks whether the control is hidden.
+
+   /* Event Management */
+   DATA aAxEv     INIT {} // Array of event IDs handled by the control.
+   DATA aAxExec   INIT {} // Array of event execution handlers.
+
+   /* Methods */
+   // Initializes the ActiveX control with the specified parameters.
    METHOD New( cWindowName, cProgId, nRow, nCol, nWidth, nHeight )
+
+   // Loads and initializes the ActiveX control in the specified window.
    METHOD Load()
+
+   // Resizes the ActiveX control and updates its dimensions.
    METHOD ReSize( nRow, nCol, nWidth, nHeight )
+
+   // Hides the ActiveX control.
    METHOD Hide()
+
+   // Shows the ActiveX control.
    METHOD Show()
+
+   // Releases the ActiveX control, destroying its window and cleaning up resources.
    METHOD Release()
+
+   // Refreshes the ActiveX control by hiding and showing it again.
    METHOD Refresh()
+
+   // Adjusts the control's size and position based on the parent window's dimensions.
    METHOD Adjust()
+
+   // Returns the current row position of the control.
    METHOD GetRow()
+
+   // Returns the current column position of the control.
    METHOD GetCol()
+
+   // Returns the current width of the control.
    METHOD GetWidth()
+
+   // Returns the current height of the control.
    METHOD GetHeight()
 
-   DATA aAxEv     INIT {}
-   DATA aAxExec   INIT {}
+   // Maps events to handlers for the ActiveX control.
    METHOD EventMap( nMsg, xExec, oSelf )
-   #if defined( __XHARBOUR__ )
+
+   // Handles errors occurring during ActiveX interaction.
+#if defined( __XHARBOUR__ )
    ERROR HANDLER OnError( p1, p2, p3, p4, p5 ) 
-   #else
+#else
    ERROR HANDLER OnError( ... ) 
-   #endif
+#endif
 
 ENDCLASS
 
-METHOD New( cWindowName, cProgId, nRow, nCol, nWidth, nHeight ) CLASS TActiveX
+/* Method Definitions */
 
+/*
+   Initializes the ActiveX control and its dimensions, using default values if necessary.
+*/
+METHOD New( cWindowName, cProgId, nRow, nCol, nWidth, nHeight ) CLASS TActiveX
    if( Empty( nRow )    , nRow    := 0 , )
    if( Empty( nCol )    , nCol    := 0 , )
    if( Empty( nWidth )  , nWidth  := GetProperty( cWindowName , "width" ) , )
@@ -323,8 +365,10 @@ METHOD New( cWindowName, cProgId, nRow, nCol, nWidth, nHeight ) CLASS TActiveX
 
 RETURN Self
 
+/*
+   Loads the ActiveX control, creates its window, and connects events.
+*/
 METHOD Load() CLASS TActiveX
-
    LOCAL oError
    LOCAL xObjeto, hSink
    LOCAL nHandle := GetFormHandle( ::cWindowName )
@@ -346,7 +390,6 @@ METHOD Load() CLASS TActiveX
 RETURN ::oOle
 
 METHOD ReSize( nRow, nCol, nWidth, nHeight ) CLASS TActiveX
-
    IF !::bHide
       MoveWindow( ::hWnd, nCol, nRow, nWidth, nHeight, .T. )
    ENDIF
@@ -392,14 +435,12 @@ METHOD Hide() CLASS TActiveX
 RETURN .T.
 
 METHOD Show() CLASS TActiveX
-
    MoveWindow( ::hWnd, ::nCol, ::nRow, ::nWidth, ::nHeight, .T. )
    ::bHide := .F.
 
 RETURN .T.
 
 METHOD Release() CLASS TActiveX
-
    IF ::hWnd != NIL
       DestroyWindow( ::hWnd )
    ENDIF
@@ -412,7 +453,6 @@ METHOD Release() CLASS TActiveX
 RETURN .T.
 
 METHOD Refresh() CLASS TActiveX
-
    ::Hide()
    ::Show()
 
@@ -449,151 +489,160 @@ METHOD OnError( ... )
 
 RETURN NIL 
 
+/*
+ * C-level
+ */
 #pragma BEGINDUMP
 
 #ifndef CINTERFACE
-#define CINTERFACE  1
+#define CINTERFACE   1                    // Enable C-style interfaces if not already defined
 #endif
-
 #ifndef NONAMELESSUNION
-#define NONAMELESSUNION
+#define NONAMELESSUNION                   // Enable non-anonymous unions if not already defined
 #endif
-
-#include <mgdefs.h>
-#include <commctrl.h>
-#include <ocidl.h>
-
-#include <hbvm.h>
-#include <hbapiitm.h>
-
+#include <mgdefs.h>                       // Include MiniGUI definitions
+#include <commctrl.h>                     // Include common controls for GUI elements
+#include <ocidl.h>                        // Include OLE Control Interface definitions
+#include <hbvm.h>                         // Harbour Virtual Machine interface
+#include <hbapiitm.h>                     // Harbour API item management
 #ifdef UNICODE
-LPWSTR AnsiToWide( LPCSTR );
+LPWSTR            AnsiToWide( LPCSTR );   // Declaration of a function to convert ANSI to wide strings for Unicode
 #endif
 
+// Declaration of an external function to retrieve a function address from a DLL
 extern HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName );
 
-typedef HRESULT ( WINAPI * LPAtlAxWinInit )( void );
-typedef HRESULT ( WINAPI * LPAtlAxGetControl )( HWND, IUnknown ** );
+// Typedefs for function pointers used to initialize and manage ActiveX controls
+typedef HRESULT ( WINAPI *LPAtlAxWinInit ) ( void );                 // Typedef for AtlAxWinInit function pointer
+typedef HRESULT ( WINAPI *LPAtlAxGetControl ) ( HWND, IUnknown ** ); // Typedef for AtlAxGetControl function pointer
 
-static HMODULE    hAtl = NULL;
-LPAtlAxWinInit    AtlAxWinInit;
+// Static global variables to hold handles and function pointers for ActiveX library
+static HMODULE    hAtl = NULL;                  // Handle to Atl.dll
+LPAtlAxWinInit    AtlAxWinInit;                 // Pointer to AtlAxWinInit function
 LPAtlAxGetControl AtlAxGetControl;
 
+// Pointer to AtlAxGetControl function
+// Initializes the ActiveX library by loading Atl.dll and getting function pointers
 static void _Ax_Init( void )
 {
-   if( ! hAtl )
+   if( !hAtl )                                  // If the library is not already loaded
    {
-      hAtl            = LoadLibrary( TEXT( "Atl.Dll" ) );
-      AtlAxWinInit    = ( LPAtlAxWinInit ) wapi_GetProcAddress( hAtl, "AtlAxWinInit" );
-      AtlAxGetControl = ( LPAtlAxGetControl ) wapi_GetProcAddress( hAtl, "AtlAxGetControl" );
-      ( AtlAxWinInit ) ( );
+      hAtl = LoadLibrary( TEXT( "Atl.Dll" ) );  // Load Atl.dll library
+      AtlAxWinInit = ( LPAtlAxWinInit ) wapi_GetProcAddress( hAtl, "AtlAxWinInit" );            // Get AtlAxWinInit function address
+      AtlAxGetControl = ( LPAtlAxGetControl ) wapi_GetProcAddress( hAtl, "AtlAxGetControl" );   // Get AtlAxGetControl function address
+      ( AtlAxWinInit ) (); // Initialize ActiveX (AtlAxWinInit function)
    }
 }
 
+// Harbour function to initialize the ActiveX library by calling _Ax_Init
 HB_FUNC( ATLAXWININIT )
 {
    _Ax_Init();
 }
 
+// Harbour function to free the ActiveX library
 HB_FUNC( ATLAXWINEND )
 {
-   if( hAtl )
+   if( hAtl )              // If the library handle exists
    {
-      FreeLibrary( hAtl );
-      hAtl = NULL;
+      FreeLibrary( hAtl ); // Free the Atl.dll library
+      hAtl = NULL;         // Reset the handle to NULL
    }
 }
 
+// Harbour function to get IDispatch interface from an ActiveX control
 HB_FUNC( ATLAXGETDISP ) // hWnd -> pDisp
 {
-   IUnknown *  pUnk;
-   IDispatch * pDisp;
-
-   _Ax_Init();
-
-   AtlAxGetControl( hmg_par_raw_HWND( 1 ), &pUnk );
+   IUnknown    *pUnk;   // Pointer to IUnknown interface
+   IDispatch   *pDisp;  // Pointer to IDispatch interface
+   _Ax_Init();          // Ensure ActiveX library is initialized
+   AtlAxGetControl( hmg_par_raw_HWND( 1 ), &pUnk );            // Get the IUnknown interface of the control
 #if defined( __cplusplus )
-   pUnk->QueryInterface( IID_IDispatch, ( void ** ) &pDisp );
+   pUnk->QueryInterface( IID_IDispatch, ( void ** ) &pDisp );  // Query for IDispatch in C++
 #else
-   pUnk->lpVtbl->QueryInterface( pUnk, &IID_IDispatch, ( void ** ) &pDisp );
+   pUnk->lpVtbl->QueryInterface( pUnk, &IID_IDispatch, ( void ** ) &pDisp );  // Query for IDispatch in C-style
 #endif
-   pUnk->lpVtbl->Release( pUnk );
-
-   hmg_ret_raw_HANDLE( pDisp );
+   pUnk->lpVtbl->Release( pUnk );   // Release the IUnknown interface
+   hmg_ret_raw_HANDLE( pDisp );     // Return the IDispatch interface to the caller
 }
 
+// Harbour function to create an ActiveX window using a ProgID
 HB_FUNC_STATIC( CREATEWINDOWEX ) // ( hWnd, cProgId ) -> hActiveXWnd
 {
 #ifndef UNICODE
-   LPCSTR lpWindowName = hb_parc( 2 );
+   LPCSTR   lpWindowName = hb_parc( 2 );  // Get window name in ANSI
 #else
-   LPWSTR lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Convert window name to Unicode if applicable
 #endif
-
-   hmg_ret_raw_HWND( CreateWindowEx( 0, TEXT( "AtlAxWin" ),
-                     lpWindowName,
-                     WS_VISIBLE | WS_CHILD,
-                     0, 0, 0, 0,
-                     hmg_par_raw_HWND( 1 ),
-                     0, 0,
-                     NULL ) );
+   hmg_ret_raw_HWND
+   (
+      CreateWindowEx
+         (
+            0,
+            TEXT( "AtlAxWin" ),     // Extended window creation with AtlAxWin class
+            lpWindowName,
+            WS_VISIBLE | WS_CHILD,  // Window styles for visibility and child placement
+            0,
+            0,
+            0,
+            0, // Position and size (defaults to 0 here)
+            hmg_par_raw_HWND( 1 ),  // Parent window handle
+            0,
+            0,
+            NULL
+         )
+   ); // No additional parameters
 }
 
+// Conditional include for hash-based event handling if __USEHASHEVENTS is defined
 #ifdef __USEHASHEVENTS
-   #include <hashapi.h>
+#include <hashapi.h>
 #endif
 
 //------------------------------------------------------------------------------
-HRESULT hb_oleVariantToItem( PHB_ITEM pItem, VARIANT * pVariant );
+// Prototype for function that converts OLE Variant to Harbour item
+HRESULT  hb_oleVariantToItem( PHB_ITEM pItem, VARIANT *pVariant );
 
-#undef  INTERFACE
-#define INTERFACE  IEventHandler
+// Definition of a custom IDispatch-based COM interface for event handling
+#undef INTERFACE
+#define INTERFACE IEventHandler
 
 DECLARE_INTERFACE_( INTERFACE, IDispatch )
 {
-   // IUnknown functions
-   STDMETHOD( QueryInterface           ) ( THIS_ REFIID, void **                                                          ) PURE;
-   STDMETHOD_( ULONG, AddRef           ) ( THIS                                                                           ) PURE;
-   STDMETHOD_( ULONG, Release          ) ( THIS                                                                           ) PURE;
-   // IDispatch functions
-   STDMETHOD_( ULONG, GetTypeInfoCount ) ( THIS_ UINT *                                                                   ) PURE;
-   STDMETHOD_( ULONG, GetTypeInfo      ) ( THIS_ UINT, LCID, ITypeInfo * *                                                ) PURE;
-   STDMETHOD_( ULONG, GetIDsOfNames    ) ( THIS_ REFIID, LPOLESTR *, UINT, LCID, DISPID *                                 ) PURE;
-   STDMETHOD_( ULONG, Invoke           ) ( THIS_ DISPID, REFIID, LCID, WORD, DISPPARAMS *, VARIANT *, EXCEPINFO *, UINT * ) PURE;
+   // IUnknown methods
+   STDMETHOD ( QueryInterface ) ( THIS_ REFIID, void ** ) PURE;
+
+   STDMETHOD_ ( ULONG, AddRef ) ( THIS ) PURE;
+
+   STDMETHOD_ ( ULONG, Release ) ( THIS ) PURE;
+
+   // IDispatch methods
+   STDMETHOD_ ( ULONG, GetTypeInfoCount ) ( THIS_ UINT * ) PURE;
+
+   STDMETHOD_ ( ULONG, GetTypeInfo ) ( THIS_ UINT, LCID, ITypeInfo ** ) PURE;
+
+   STDMETHOD_ ( ULONG, GetIDsOfNames ) ( THIS_ REFIID, LPOLESTR *, UINT, LCID, DISPID * ) PURE;
+
+   STDMETHOD_ ( ULONG, Invoke ) ( THIS_ DISPID, REFIID, LCID, WORD, DISPPARAMS *, VARIANT *, EXCEPINFO *, UINT * ) PURE;
 };
 
-// In other words, it defines our IEventHandler to have nothing
-// but a pointer to its VTable. And of course, every COM object must
-// start with a pointer to its VTable.
-//
-// But we actually want to add some more members to our IEventHandler.
-// We just don't want any app to be able to know about, and directly
-// access, those members. So here we'll define a MyRealIEventHandler that
-// contains those extra members. The app doesn't know that we're
-// really allocating and giving it a MyRealIEventHAndler object. We'll
-// lie and tell it we're giving a plain old IEventHandler. That's ok
-// because a MyRealIEventHandler starts with the same VTable pointer.
-//
-// We add a DWORD reference count so that self IEventHandler
-// can be allocated (which we do in our IClassFactory object's
-// CreateInstance()) and later freed. And, we have an extra
-// BSTR (pointer) string, which is used by some of the functions we'll
-// add to IEventHandler
-
+// Explanation of the IEventHandler structure and its extended version
+// IEventHandler starts with a pointer to its VTable, a required structure
+// for all COM objects. The extended struct (MyRealIEventHandler) contains
+// additional private members but is presented as an IEventHandler to external
+// applications.
+// Extended structure for event handler with private data members
 typedef struct
 {
-
-   IEventHandler * lpVtbl;
-   DWORD count;
-   IConnectionPoint * pIConnectionPoint;          // Ref counted of course.
-   DWORD    dwEventCookie;
-   IID      device_event_interface_iid;
-   PHB_ITEM pEvents;
-
+   IEventHandler     *lpVtbl;             // Pointer to virtual function table (VTable) for IEventHandler
+   DWORD             count;               // Reference count for memory management
+   IConnectionPoint  *pIConnectionPoint;  // Pointer to connection point for event handling
+   DWORD             dwEventCookie;       // Event subscription identifier
+   IID               device_event_interface_iid;   // Interface identifier for the device event
+   PHB_ITEM          pEvents;       // Harbour item to store events
 #ifndef __USEHASHEVENTS
-   PHB_ITEM pEventsExec;
+   PHB_ITEM          pEventsExec;   // Harbour item for direct event execution if not using hash events
 #endif
-
 } MyRealIEventHandler;
 
 //------------------------------------------------------------------------------
@@ -601,9 +650,8 @@ typedef struct
 //------------------------------------------------------------------------------
 // Every COM object's interface must have the 3 functions QueryInterface(),
 // AddRef(), and Release().
-
 // IEventHandler's QueryInterface()
-static HRESULT STDMETHODCALLTYPE QueryInterface( IEventHandler * self, REFIID vTableGuid, void ** ppv )
+static HRESULT STDMETHODCALLTYPE QueryInterface( IEventHandler *self, REFIID vTableGuid, void **ppv )
 {
    // Check if the GUID matches IEvenetHandler VTable's GUID. We gave the C variable name
    // IID_IEventHandler to our VTable GUID. We can use an OLE function called
@@ -612,10 +660,10 @@ static HRESULT STDMETHODCALLTYPE QueryInterface( IEventHandler * self, REFIID vT
    // masquerade as an IUnknown object too. Finally, if the called passed a
    // IDispatch GUID, then we'll return the IExample3, since it can masquerade
    // as an IDispatch too
-
    if( IsEqualIID( vTableGuid, &IID_IUnknown ) )
    {
       *ppv = ( IUnknown * ) self;
+
       // Increment the count of callers who have an outstanding pointer to self object
       self->lpVtbl->AddRef( self );
       return S_OK;
@@ -643,7 +691,7 @@ static HRESULT STDMETHODCALLTYPE QueryInterface( IEventHandler * self, REFIID vT
 
 //------------------------------------------------------------------------------
 // IEventHandler's AddRef()
-static ULONG STDMETHODCALLTYPE AddRef( IEventHandler * self )
+static ULONG STDMETHODCALLTYPE AddRef( IEventHandler *self )
 {
    // Increment IEventHandler's reference count, and return the updated value.
    // NOTE: We have to typecast to gain access to any data members. These
@@ -655,39 +703,40 @@ static ULONG STDMETHODCALLTYPE AddRef( IEventHandler * self )
 
 //------------------------------------------------------------------------------
 // IEventHandler's Release()
-static ULONG STDMETHODCALLTYPE Release( IEventHandler * self )
+static ULONG STDMETHODCALLTYPE Release( IEventHandler *self )
 {
    if( --( ( MyRealIEventHandler * ) self )->count == 0 )
    {
       GlobalFree( self );
       return 0;
    }
-   return ( ( MyRealIEventHandler * ) self )->count;
+
+   return( ( MyRealIEventHandler * ) self )->count;
 }
 
 //------------------------------------------------------------------------------
 // IEventHandler's GetTypeInfoCount()
-static ULONG STDMETHODCALLTYPE GetTypeInfoCount( IEventHandler * self, UINT * pCount )
+static ULONG STDMETHODCALLTYPE GetTypeInfoCount( IEventHandler *self, UINT *pCount )
 {
    HB_SYMBOL_UNUSED( self );
    HB_SYMBOL_UNUSED( pCount );
-   return ( ULONG ) E_NOTIMPL;
+   return( ULONG ) E_NOTIMPL;
 }
 
 //------------------------------------------------------------------------------
 // IEventHandler's GetTypeInfo()
-static ULONG STDMETHODCALLTYPE GetTypeInfo( IEventHandler * self, UINT itinfo, LCID lcid, ITypeInfo ** pTypeInfo )
+static ULONG STDMETHODCALLTYPE GetTypeInfo( IEventHandler *self, UINT itinfo, LCID lcid, ITypeInfo **pTypeInfo )
 {
    HB_SYMBOL_UNUSED( self );
    HB_SYMBOL_UNUSED( itinfo );
    HB_SYMBOL_UNUSED( lcid );
    HB_SYMBOL_UNUSED( pTypeInfo );
-   return ( ULONG ) E_NOTIMPL;
+   return( ULONG ) E_NOTIMPL;
 }
 
 //------------------------------------------------------------------------------
 // IEventHandler's GetIDsOfNames()
-static ULONG STDMETHODCALLTYPE GetIDsOfNames( IEventHandler * self, REFIID riid, LPOLESTR * rgszNames, UINT cNames, LCID lcid, DISPID * rgdispid )
+static ULONG STDMETHODCALLTYPE GetIDsOfNames( IEventHandler *self, REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgdispid )
 {
    HB_SYMBOL_UNUSED( self );
    HB_SYMBOL_UNUSED( riid );
@@ -695,7 +744,7 @@ static ULONG STDMETHODCALLTYPE GetIDsOfNames( IEventHandler * self, REFIID riid,
    HB_SYMBOL_UNUSED( cNames );
    HB_SYMBOL_UNUSED( lcid );
    HB_SYMBOL_UNUSED( rgdispid );
-   return ( ULONG ) E_NOTIMPL;
+   return( ULONG ) E_NOTIMPL;
 }
 
 //------------------------------------------------------------------------------
@@ -703,22 +752,33 @@ static ULONG STDMETHODCALLTYPE GetIDsOfNames( IEventHandler * self, REFIID riid,
 // self is where the action happens
 // self function receives events (by their ID number) and distributes the processing
 // or them or ignores them
-static ULONG STDMETHODCALLTYPE Invoke( IEventHandler * self, DISPID dispid, REFIID riid,
-                                       LCID lcid, WORD wFlags, DISPPARAMS * params, VARIANT * result, EXCEPINFO * pexcepinfo,
-                                       UINT * puArgErr )
+static ULONG STDMETHODCALLTYPE Invoke
+(
+   IEventHandler  *self,
+   DISPID         dispid,
+   REFIID         riid,
+   LCID           lcid,
+   WORD           wFlags,
+   DISPPARAMS     *params,
+   VARIANT        *result,
+   EXCEPINFO      *pexcepinfo,
+   UINT           *puArgErr
+)
 {
-   PHB_ITEM   pItem;
-   int        iArg, i;
-   PHB_ITEM   pItemArray[ 32 ]; // max 32 parameters?
-   PHB_ITEM * pItems;
-   HB_SIZE    ulPos;
-   PHB_ITEM   Key;
+   PHB_ITEM pItem;
+   int      iArg, i;
+   PHB_ITEM pItemArray[32];         // max 32 parameters?
+   PHB_ITEM *pItems;
+   HB_SIZE  ulPos;
+   PHB_ITEM Key;
 
    Key = hb_itemNew( NULL );
 
    // We implement only a "default" interface
-   if( ! IsEqualIID( riid, &IID_NULL ) )
-      return ( ULONG ) DISP_E_UNKNOWNINTERFACE;
+   if( !IsEqualIID( riid, &IID_NULL ) )
+   {
+      return( ULONG ) DISP_E_UNKNOWNINTERFACE;
+   }
 
    HB_SYMBOL_UNUSED( lcid );
    HB_SYMBOL_UNUSED( wFlags );
@@ -728,174 +788,156 @@ static ULONG STDMETHODCALLTYPE Invoke( IEventHandler * self, DISPID dispid, REFI
 
    // delegate work to somewhere else in PRG
    //***************************************
-
 #ifdef __USEHASHEVENTS
-
-   if( hb_hashScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ),
-                    &ulPos ) )
+   if( hb_hashScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ), &ulPos ) )
    {
       PHB_ITEM pArray = hb_hashGetValueAt( ( ( MyRealIEventHandler * ) self )->pEvents, ulPos );
-
 #else
-
    #if defined( __XHARBOUR__ )
-   ulPos = hb_arrayScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ),
-                         NULL, NULL, 0, 0 );
+      ulPos = hb_arrayScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ), NULL, NULL, 0, 0 );
    #else
-   ulPos = hb_arrayScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ),
-                         NULL, NULL, 0 );
+   ulPos = hb_arrayScan( ( ( MyRealIEventHandler * ) self )->pEvents, hb_itemPutNL( Key, dispid ), NULL, NULL, 0 );
    #endif
-
    if( ulPos )
    {
       PHB_ITEM pArray = hb_arrayGetItemPtr( ( ( MyRealIEventHandler * ) self )->pEventsExec, ulPos );
-
 #endif
       PHB_ITEM pExec = hb_arrayGetItemPtr( pArray, 1 );
 
       if( pExec )
       {
-
          if( hb_vmRequestReenter() )
          {
-
-         switch( hb_itemType( pExec ) )
-         {
-
-            case HB_IT_BLOCK:
+            switch( hb_itemType( pExec ) )
             {
+               case HB_IT_BLOCK:
+                  {
 #ifdef __XHARBOUR__
-               hb_vmPushSymbol( &hb_symEval );
+                     hb_vmPushSymbol( &hb_symEval );
 #else
-               hb_vmPushEvalSym();
+                     hb_vmPushEvalSym();
+
 #endif
-               hb_vmPush( pExec );
-               break;
+                     hb_vmPush( pExec );
+                     break;
+                  }
+
+               case HB_IT_STRING:
+                  {
+                     PHB_ITEM pObject = hb_arrayGetItemPtr( pArray, 2 );
+                     hb_vmPushSymbol( hb_dynsymSymbol( hb_dynsymFindName( hb_itemGetCPtr( pExec ) ) ) );
+
+                     if( HB_IS_OBJECT( pObject ) )
+                     {
+                        hb_vmPush( pObject );
+                     }
+                     else
+                     {
+                        hb_vmPushNil();
+                     }
+                     break;
+                  }
+
+               case HB_IT_POINTER:
+                  {
+                     hb_vmPushSymbol( hb_dynsymSymbol( ( ( PHB_SYMB ) pExec )->pDynSym ) );
+                     hb_vmPushNil();
+                     break;
+                  }
             }
 
-            case HB_IT_STRING:
+            iArg = params->cArgs;
+            for( i = 1; i <= iArg; i++ )
             {
-               PHB_ITEM pObject = hb_arrayGetItemPtr( pArray, 2 );
-               hb_vmPushSymbol( hb_dynsymSymbol( hb_dynsymFindName( hb_itemGetCPtr( pExec ) ) ) );
+               pItem = hb_itemNew( NULL );
+               hb_oleVariantToItem( pItem, &( params->rgvarg[iArg - i] ) );
+               pItemArray[i - 1] = pItem;
 
-               if( HB_IS_OBJECT( pObject ) )
-                  hb_vmPush( pObject );
-               else
-                  hb_vmPushNil();
-               break;
-
+               // set bit i
+               //ulRefMask |= ( 1L << ( i - 1 ) );
             }
 
-            case HB_IT_POINTER:
-            {
-               hb_vmPushSymbol( hb_dynsymSymbol( ( ( PHB_SYMB ) pExec )->pDynSym ) );
-               hb_vmPushNil();
-               break;
-            }
-
-         }
-
-         iArg = params->cArgs;
-         for( i = 1; i <= iArg; i++ )
-         {
-            pItem = hb_itemNew( NULL );
-            hb_oleVariantToItem( pItem, &( params->rgvarg[ iArg - i ] ) );
-            pItemArray[ i - 1 ] = pItem;
-            // set bit i
-            //ulRefMask |= ( 1L << ( i - 1 ) );
-         }
-
-         if( iArg )
-         {
-            pItems = pItemArray;
             if( iArg )
             {
-               for( i = 0; i < iArg; i++ )
+               pItems = pItemArray;
+               if( iArg )
                {
-                  hb_vmPush( ( pItems )[ i ] );
+                  for( i = 0; i < iArg; i++ )
+                  {
+                     hb_vmPush( ( pItems )[i] );
+                  }
                }
             }
-         }
 
-         // execute
-         hb_vmDo( ( USHORT ) iArg );
+            // execute
+            hb_vmDo( ( USHORT ) iArg );
 
-         // En caso de que los parametros sean pasados por referencia
-         for( i = iArg; i > 0; i-- )
-         {
-            if( ( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.vt & VT_BYREF ) == VT_BYREF )
+            // En caso de que los parametros sean pasados por referencia
+            for( i = iArg; i > 0; i-- )
             {
-
-               switch( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.vt )
+               if( ( ( &( params->rgvarg[iArg - i] ) )->n1.n2.vt & VT_BYREF ) == VT_BYREF )
                {
+                  switch( ( &( params->rgvarg[iArg - i] ) )->n1.n2.vt )
+                  {
+                     //case VT_UI1|VT_BYREF:
+                     //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pbVal) = va_arg(argList,unsigned char*);  //pItemArray[i-1]
+                     //   break;
+                     case VT_I2 | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.piVal ) = ( short ) hb_itemGetNI( pItemArray[i - 1] );
+                        break;
 
-                  //case VT_UI1|VT_BYREF:
-                  //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pbVal) = va_arg(argList,unsigned char*);  //pItemArray[i-1]
-                  //   break;
-                  case VT_I2 | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.piVal ) = ( short ) hb_itemGetNI( pItemArray[ i - 1 ] );
-                     break;
-                  case VT_I4 | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.plVal ) = ( long ) hb_itemGetNL( pItemArray[ i - 1 ] );
-                     break;
-                  case VT_R4 | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.pfltVal ) = ( float ) hb_itemGetND( pItemArray[ i - 1 ] );
-                     break;
-                  case VT_R8 | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.pdblVal ) = ( double ) hb_itemGetND( pItemArray[ i - 1 ] );
-                     break;
-                  case VT_BOOL | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.pboolVal ) = ( VARIANT_BOOL ) ( hb_itemGetL( pItemArray[ i - 1 ] ) ? 0xFFFF : 0 );
-                     break;
-                  //case VT_ERROR|VT_BYREF:
-                  //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pscode) = va_arg(argList, SCODE*);
-                  //   break;
-                  case VT_DATE | VT_BYREF:
-                     *( ( &( params->rgvarg[ iArg - i ] ) )->n1.n2.n3.pdate ) = ( DATE ) ( double ) ( hb_itemGetDL( pItemArray[ i - 1 ] ) - 2415019 );
-                     break;
-                  //case VT_CY|VT_BYREF:
-                  //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pcyVal) = va_arg(argList, CY*);
-                  //   break;
-                  //case VT_BSTR|VT_BYREF:
-                  //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pbstrVal = va_arg(argList, BSTR*);
-                  //   break;
-                  //case VT_UNKNOWN|VT_BYREF:
-                  //   pArg->ppunkVal = va_arg(argList, LPUNKNOWN*);
-                  //   break;
-                  //case VT_DISPATCH|VT_BYREF:
-                  //   pArg->ppdispVal = va_arg(argList, LPDISPATCH*);
-                  //   break;
+                     case VT_I4 | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.plVal ) = ( long ) hb_itemGetNL( pItemArray[i - 1] );
+                        break;
 
+                     case VT_R4 | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.pfltVal ) = ( float ) hb_itemGetND( pItemArray[i - 1] );
+                        break;
+
+                     case VT_R8 | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.pdblVal ) = ( double ) hb_itemGetND( pItemArray[i - 1] );
+                        break;
+
+                     case VT_BOOL | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.pboolVal ) = ( VARIANT_BOOL ) ( hb_itemGetL( pItemArray[i - 1] ) ? 0xFFFF : 0 );
+                        break;
+
+                     //case VT_ERROR|VT_BYREF:
+                     //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pscode) = va_arg(argList, SCODE*);
+                     //   break;
+                     case VT_DATE | VT_BYREF:
+                        *( ( &( params->rgvarg[iArg - i] ) )->n1.n2.n3.pdate ) = ( DATE ) ( double ) ( hb_itemGetDL( pItemArray[i - 1] ) - 2415019 );
+                        break;
+
+                        //case VT_CY|VT_BYREF:
+                        //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pcyVal) = va_arg(argList, CY*);
+                        //   break;
+                        //case VT_BSTR|VT_BYREF:
+                        //   *((&(params->rgvarg[iArg-i]))->n1.n2.n3.pbstrVal = va_arg(argList, BSTR*);
+                        //   break;
+                        //case VT_UNKNOWN|VT_BYREF:
+                        //   pArg->ppunkVal = va_arg(argList, LPUNKNOWN*);
+                        //   break;
+                        //case VT_DISPATCH|VT_BYREF:
+                        //   pArg->ppdispVal = va_arg(argList, LPDISPATCH*);
+                        //   break;
+                  }
                }
-
             }
 
+            hb_vmRequestRestore();
          }
-
-         hb_vmRequestRestore();
-         }
-
       }
-
    }
 
    hb_itemRelease( Key );
 
    return S_OK;
-
 }
 
 //------------------------------------------------------------------------------
 // Here's IEventHandler's VTable. It never changes so we can declare it static
-static const IEventHandlerVtbl IEventHandler_Vtbl = {
-   QueryInterface,
-   AddRef,
-   Release,
-   GetTypeInfoCount,
-   GetTypeInfo,
-   GetIDsOfNames,
-   Invoke
-};
+static const IEventHandlerVtbl   IEventHandler_Vtbl = { QueryInterface, AddRef, Release, GetTypeInfoCount, GetTypeInfo, GetIDsOfNames, Invoke };
 
 //------------------------------------------------------------------------------
 // constructor
@@ -905,76 +947,79 @@ static const IEventHandlerVtbl IEventHandler_Vtbl = {
 //                           This will be the interface that must be implemented by the Sink object.
 //                           is essentially derived from IDispatch, our Sink object (self IEventHandler)
 //                           is also derived from IDispatch.
-
-typedef IEventHandler device_interface;
+typedef IEventHandler            device_interface;
 
 // Hash  // SetupConnectionPoint( oOle:hObj, @hSink, hEvents )             -> nError
 // Array // SetupConnectionPoint( oOle:hObj, @hSink, aEvents, aExecEvent ) -> nError
 
 HB_FUNC( SETUPCONNECTIONPOINT )
 {
-   IConnectionPointContainer * pIConnectionPointContainerTemp = NULL;
-   IUnknown *                  pIUnknown = NULL;
-   IConnectionPoint *          m_pIConnectionPoint = NULL;
-   IEnumConnectionPoints *     m_pIEnumConnectionPoints;
-   HRESULT hr;
-   IID     rriid = {0};
-   register IEventHandler * selfobj;
-   DWORD dwCookie = 0;
+   // Declaration of local variables
+   IConnectionPointContainer  *pIConnectionPointContainerTemp = NULL;
+   IUnknown                   *pIUnknown = NULL;
+   IConnectionPoint           *m_pIConnectionPoint = NULL;
+   IEnumConnectionPoints      *m_pIEnumConnectionPoints;
+   HRESULT                    hr;
+   IID                        rriid = { 0 };
+   register IEventHandler     *selfobj;
+   DWORD                      dwCookie = 0;
 
-   device_interface * pdevice_interface = ( device_interface * ) HB_PARNL( 1 );
-   MyRealIEventHandler * pThis;
+   device_interface           *pdevice_interface = ( device_interface * ) HB_PARNL( 1 );
+   MyRealIEventHandler        *pThis;
 
-   // Allocate our IEventHandler object (actually a MyRealIEventHandler)
-   // intentional misrepresentation of size
-
+   // Allocate memory for the IEventHandler object (as a MyRealIEventHandler).
+   // Intentional misrepresentation of size to fit within allocated memory.
    selfobj = ( IEventHandler * ) GlobalAlloc( GMEM_FIXED, sizeof( MyRealIEventHandler ) );
 
-   if( ! selfobj )
+   if( !selfobj )
    {
+      // Memory allocation failed, return error code.
       hr = E_OUTOFMEMORY;
    }
    else
    {
-      // Store IEventHandler's VTable in the object
+      // Set up the IEventHandler object by assigning the correct VTable and initializing the reference count.
       selfobj->lpVtbl = ( IEventHandlerVtbl * ) &IEventHandler_Vtbl;
-
-      // Increment the reference count so we can call Release() below and
-      // it will deallocate only if there is an error with QueryInterface()
       ( ( MyRealIEventHandler * ) selfobj )->count = 0;
 
-      //((MyRealIEventHandler *) selfobj)->device_event_interface_iid = &riid;
+      // Assign the default interface GUID for events to IDispatch
       ( ( MyRealIEventHandler * ) selfobj )->device_event_interface_iid = IID_IDispatch;
 
-      // Query self object itself for its IUnknown pointer which will be used
-      // later to connect to the Connection Point of the device_interface object.
+      // Query the IUnknown pointer of self, used later to connect to the device_interface's Connection Point.
       hr = selfobj->lpVtbl->QueryInterface( selfobj, &IID_IUnknown, ( void ** ) ( void * ) &pIUnknown );
       if( hr == S_OK && pIUnknown )
       {
-
-         // Query the pdevice_interface for its connection point.
-         hr = pdevice_interface->lpVtbl->QueryInterface( pdevice_interface,
-                                                         &IID_IConnectionPointContainer, ( void ** ) ( void * ) &pIConnectionPointContainerTemp );
+         // Query the device interface for its connection point container interface
+         hr = pdevice_interface->lpVtbl->QueryInterface
+            (
+               pdevice_interface,
+               &IID_IConnectionPointContainer,
+               ( void ** ) ( void * ) &pIConnectionPointContainerTemp
+            );
 
          if( hr == S_OK && pIConnectionPointContainerTemp )
          {
+            // Retrieve the list of connection points available in the interface.
             hr = pIConnectionPointContainerTemp->lpVtbl->EnumConnectionPoints( pIConnectionPointContainerTemp, &m_pIEnumConnectionPoints );
 
             if( hr == S_OK && m_pIEnumConnectionPoints )
             {
                do
                {
+                  // Move to the next available connection point.
                   hr = m_pIEnumConnectionPoints->lpVtbl->Next( m_pIEnumConnectionPoints, 1, &m_pIConnectionPoint, NULL );
                   if( hr == S_OK )
                   {
+                     // Get the interface GUID from the connection point.
                      if( m_pIConnectionPoint->lpVtbl->GetConnectionInterface( m_pIConnectionPoint, &rriid ) == S_OK )
                      {
                         break;
                      }
                   }
-
                }
                while( hr == S_OK );
+
+               // Release the enumerator once finished.
                m_pIEnumConnectionPoints->lpVtbl->Release( m_pIEnumConnectionPoints );
             }
 
@@ -984,58 +1029,67 @@ HB_FUNC( SETUPCONNECTIONPOINT )
 
          if( hr == S_OK && m_pIConnectionPoint )
          {
-
             if( hr == S_OK )
             {
+               // Set the device event interface GUID to the retrieved GUID.
                ( ( MyRealIEventHandler * ) selfobj )->device_event_interface_iid = rriid;
             }
 
+            // Connect to the connection point and store the connection cookie.
             hr = m_pIConnectionPoint->lpVtbl->Advise( m_pIConnectionPoint, pIUnknown, &dwCookie );
             ( ( MyRealIEventHandler * ) selfobj )->pIConnectionPoint = m_pIConnectionPoint;
-            ( ( MyRealIEventHandler * ) selfobj )->dwEventCookie     = dwCookie;
-
+            ( ( MyRealIEventHandler * ) selfobj )->dwEventCookie = dwCookie;
          }
 
+         // Release the IUnknown pointer.
          pIUnknown->lpVtbl->Release( pIUnknown );
          pIUnknown = NULL;
-
       }
    }
 
    if( selfobj )
    {
+      // If successful, store the events list from parameters and assign to the object.
       pThis = ( MyRealIEventHandler * ) selfobj;
 
 #ifndef __USEHASHEVENTS
       pThis->pEventsExec = hb_itemNew( hb_param( 4, HB_IT_ANY ) );
 #endif
-
       pThis->pEvents = hb_itemNew( hb_param( 3, HB_IT_ANY ) );
       HB_STORNL( ( LONG_PTR ) pThis, 2 );
-
    }
 
+   // Return the HRESULT result code from the setup process.
    hb_retnl( hr );
-
 }
 
+//------------------------------------------------------------------------------
+// Disconnect and clean up the connection point, removing the event sink.
+//------------------------------------------------------------------------------
 HB_FUNC( SHUTDOWNCONNECTIONPOINT )
 {
-   MyRealIEventHandler * self = ( MyRealIEventHandler * ) HB_PARNL( 1 );
+   MyRealIEventHandler  *self = ( MyRealIEventHandler * ) HB_PARNL( 1 );
 
    if( self->pIConnectionPoint )
    {
+      // Unadvise the connection point, releasing the event sink.
       self->pIConnectionPoint->lpVtbl->Unadvise( self->pIConnectionPoint, self->dwEventCookie );
       self->dwEventCookie = 0;
+
+      // Release the connection point object.
       self->pIConnectionPoint->lpVtbl->Release( self->pIConnectionPoint );
       self->pIConnectionPoint = NULL;
    }
 }
 
+//------------------------------------------------------------------------------
+// Release a previously acquired IDispatch interface pointer to clean up.
+//------------------------------------------------------------------------------
 HB_FUNC( RELEASEDISPATCH )
 {
-   IDispatch * pObj;
+   IDispatch   *pObj;
 
+   // Retrieve the IDispatch pointer from parameters and release it.
    pObj = ( IDispatch * ) HB_PARNL( 1 );
    pObj->lpVtbl->Release( pObj );
 }

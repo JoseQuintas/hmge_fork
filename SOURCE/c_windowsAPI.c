@@ -44,88 +44,118 @@
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
  ---------------------------------------------------------------------------*/
+
+// Define minimum Internet Explorer version as 5.01
 #define _WIN32_IE 0x0501
 
+// Include custom MiniGUI definitions
 #include <mgdefs.h>
+
+// Ensure compatibility for specific compilers (MINGW or XCC) with minimum Windows version NT 5.0
 #if ( defined( __MINGW32__ ) || defined( __XCC__ ) ) && ( _WIN32_WINNT < 0x0500 )
 #define _WIN32_WINNT 0x0500
 #endif
+
+// Include Windows common controls for GUI elements
 #include <commctrl.h>
+
+// Manage compiler-specific warnings for Microsoft Visual C++ compiler
 #if defined( _MSC_VER )
 #pragma warning( push )
-#pragma warning( disable : 4201 )
+#pragma warning( disable : 4201 )   // Suppress warning 4201 (nonstandard extension used: nameless struct/union)
 #endif
+
+// Include support for rich text formatting
 #include <richedit.h>
+
 #if defined( _MSC_VER )
-#pragma warning( pop )
+#pragma warning( pop )              // Restore previous warning settings
 #endif
+
+// Include support for shell operations
 #include <shellapi.h>
 
+// Include Harbour API functions
 #include "hbapiitm.h"
 #include "hbapierr.h"
 #include "hbvm.h"
 
+// Define additional compatibility settings for older Borland compilers
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ <= 1410 )
-#define ES_AWAYMODE_REQUIRED  ( ( DWORD ) 0x00000040 )
+#define ES_AWAYMODE_REQUIRED  ( ( DWORD ) 0x00000040 )   // Enable away mode (sleep with display off) setting
 #endif
+
+// Custom message identifier for a taskbar-related operation
 #define WM_TASKBAR   WM_USER + 1043
 
-// extern functions
+// External function declarations
 #ifdef UNICODE
-LPWSTR            AnsiToWide( LPCSTR );
-LPSTR             WideToAnsi( LPWSTR );
+LPWSTR            AnsiToWide( LPCSTR );                  // Convert ANSI string to wide string
+LPSTR             WideToAnsi( LPWSTR );                  // Convert wide string to ANSI
 #endif
+
+// Retrieve application resources
 HINSTANCE         GetResources( void );
+
+// Function to get the address of a specified procedure within a DLL
 extern HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName );
+
+// Function to handle errors, displaying a message and optionally exiting the application
 extern void       hmg_ErrorExit( LPCTSTR lpMessage, DWORD dwError, BOOL bExit );
+
+// Load an image from a specified file and return an HBITMAP handle
 extern HBITMAP    HMG_LoadImage( const char *FileName );
 
-// Minigui Resources control system
+// MiniGUI resource control for registering a resource with a specified type
 void              RegisterResource( HANDLE hResource, LPCSTR szType );
 
-// local  function
+// Convert a bitmap image into a region based on transparent color and tolerance
 HRGN              BitmapToRegion( HBITMAP hBmp, COLORREF cTransparentColor, COLORREF cTolerance );
 
-// global variables
-HWND              g_hWndMain = NULL;
-HACCEL            g_hAccel = NULL;
+// Global variables for managing main window and keyboard accelerator table
+HWND              g_hWndMain = NULL;                     // Handle to the main application window
+HACCEL            g_hAccel = NULL;  // Handle to the keyboard accelerator table
 
-// static variables
+// Static variable for modeless dialog window handle, initially NULL
 static HWND       hDlgModeless = NULL;
 
+// Set the main window and accelerator table handles for the application
 BOOL SetAcceleratorTable( HWND hWnd, HACCEL hHaccel )
 {
-   g_hWndMain = hWnd;
-   g_hAccel = hHaccel;
-
-   return TRUE;
+   g_hWndMain = hWnd;               // Assign the main window handle
+   g_hAccel = hHaccel;              // Assign the accelerator table handle
+   return TRUE;                     // Return TRUE indicating successful assignment
 }
 
+// Main application message loop for processing messages
 HB_FUNC( DOMESSAGELOOP )
 {
-   MSG   Msg;
-   int   status;
+   MSG   Msg;              // Structure to store message information
+   int   status;           // Status of the message retrieval
 
+   // Continue retrieving messages until GetMessage returns 0 or an error occurs
    while( ( status = GetMessage( &Msg, NULL, 0, 0 ) ) != 0 )
    {
-      if( status == -1 )   // Exception
+      if( status == -1 )   // If there's an error retrieving the message
       {
-         // handle the error and possibly exit
+         // If specified, handle the error and optionally exit the application
          if( hb_parldef( 1, HB_TRUE ) )
          {
-            hmg_ErrorExit( TEXT( "DOMESSAGELOOP" ), 0, TRUE );
+            hmg_ErrorExit( TEXT( "DOMESSAGELOOP" ), 0, TRUE ); // Error handling function
          }
       }
       else
       {
+         // Retrieve the current active window handle (for modeless dialogs)
          hDlgModeless = GetActiveWindow();
 
+         // Process the message if it's not an accelerator key or dialog message
          if( hDlgModeless == ( HWND ) NULL || !TranslateAccelerator( g_hWndMain, g_hAccel, &Msg ) )
          {
-            if( !IsDialogMessage( hDlgModeless, &Msg ) )
+            if( !IsDialogMessage( hDlgModeless, &Msg ) ) // If not a dialog message, translate and dispatch it
             {
-               TranslateMessage( &Msg );
-               DispatchMessage( &Msg );
+               TranslateMessage( &Msg );                 // Prepare message for handling
+               DispatchMessage( &Msg );                  // Dispatch message to the window procedure
             }
          }
       }
@@ -142,7 +172,7 @@ HB_FUNC( DOEVENTS )
 {
    MSG   Msg;
 
-   while( PeekMessage( ( LPMSG ) &Msg, 0, 0, 0, PM_REMOVE ) )
+   while( PeekMessage( ( LPMSG ) & Msg, 0, 0, 0, PM_REMOVE ) )
    {
       hDlgModeless = GetActiveWindow();
 
@@ -783,7 +813,7 @@ HB_FUNC( GETPARENT )
 
 HB_FUNC( SETPARENT )
 {
-   HWND hWnd = SetParent( hmg_par_raw_HWND( 1 ), hmg_par_raw_HWND( 2 ) );
+   HWND  hWnd = SetParent( hmg_par_raw_HWND( 1 ), hmg_par_raw_HWND( 2 ) );
    hmg_ret_raw_HWND( hWnd );
 }
 
@@ -840,22 +870,27 @@ HB_FUNC( C_ENUMCHILDWINDOWS )
 //        IsWow64Process ( [ nProcessID ] ) --> return lBoolean
 HB_FUNC( ISWOW64PROCESS )
 {
-   typedef BOOL ( WINAPI * LPFN_ISWOW64PROCESS )( HANDLE, PBOOL );
+   typedef BOOL ( WINAPI *LPFN_ISWOW64PROCESS ) ( HANDLE, PBOOL );
+
    static LPFN_ISWOW64PROCESS fnIsWow64Process = NULL;
 
-   BOOL IsWow64 = FALSE;
+   BOOL                       IsWow64 = FALSE;
 
    if( fnIsWow64Process == NULL )
+   {
       fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( GetModuleHandle( TEXT( "kernel32" ) ), "IsWow64Process" );
+   }
 
    if( fnIsWow64Process != NULL )
    {
       if( HB_ISNUM( 1 ) == FALSE )
+      {
          fnIsWow64Process( GetCurrentProcess(), &IsWow64 );
+      }
       else
       {
-         DWORD  ProcessID = hmg_par_DWORD( 1 );
-         HANDLE hProcess  = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
+         DWORD    ProcessID = hmg_par_DWORD( 1 );
+         HANDLE   hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
          if( hProcess != NULL )
          {
             fnIsWow64Process( hProcess, &IsWow64 );
@@ -863,6 +898,7 @@ HB_FUNC( ISWOW64PROCESS )
          }
       }
    }
+
    hb_retl( IsWow64 );
 }
 
@@ -875,35 +911,40 @@ HB_FUNC( GETCURRENTPROCESSID )
 //        EnumProcessesID () ---> return array { nProcessID1, nProcessID2, ... }
 HB_FUNC( ENUMPROCESSESID )
 {
-   typedef BOOL ( WINAPI * Func_EnumProcesses )( DWORD *, DWORD, DWORD * );
-   static Func_EnumProcesses pEnumProcesses = NULL;
+   typedef BOOL ( WINAPI *Func_EnumProcesses ) ( DWORD *, DWORD, DWORD * );
 
-   DWORD        aProcessesID[ 1024 ], cbNeeded, nProcesses;
-   unsigned int i;
+   static Func_EnumProcesses  pEnumProcesses = NULL;
 
-   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+   DWORD                      aProcessesID[1024], cbNeeded, nProcesses;
+   unsigned int               i;
+
+   PHB_ITEM                   pArray = hb_itemArrayNew( 0 );
 
    if( pEnumProcesses == NULL )
    {
-      HMODULE hLib = LoadLibrary( TEXT( "Psapi.dll" ) );
+      HMODULE  hLib = LoadLibrary( TEXT( "Psapi.dll" ) );
       pEnumProcesses = ( Func_EnumProcesses ) wapi_GetProcAddress( hLib, "EnumProcesses" );
    }
 
    if( pEnumProcesses == NULL )
+   {
       return;
+   }
 
    // Get the list of process identifiers.
    if( pEnumProcesses( aProcessesID, sizeof( aProcessesID ), &cbNeeded ) == FALSE )
+   {
       return;
+   }
 
    // Calculate how many process identifiers were returned.
    nProcesses = cbNeeded / sizeof( DWORD );
 
    for( i = 0; i < nProcesses; i++ )
    {
-      if( aProcessesID[ i ] != 0 )
+      if( aProcessesID[i] != 0 )
       {
-         PHB_ITEM pItem = hb_itemPutNL( NULL, ( LONG ) aProcessesID[ i ] );
+         PHB_ITEM pItem = hb_itemPutNL( NULL, ( LONG ) aProcessesID[i] );
          hb_arrayAddForward( pArray, pItem );
          hb_itemRelease( pItem );
       }
@@ -920,57 +961,70 @@ HB_FUNC( GETWINDOWTHREADPROCESSID )
    nThread = GetWindowThreadProcessId( hmg_par_raw_HWND( 1 ), &nProcessID );
 
    if( HB_ISBYREF( 2 ) )
+   {
       hb_storni( nThread, 2 );
+   }
+
    if( HB_ISBYREF( 3 ) )
+   {
       hb_storni( nProcessID, 3 );
+   }
 }
 
 //        GetProcessName ( [ nProcessID ] ) --> return cProcessName
 HB_FUNC( GETPROCESSNAME )
 {
-   typedef BOOL ( WINAPI * Func_EnumProcessModules )( HANDLE, HMODULE *, DWORD, LPDWORD );
-   static Func_EnumProcessModules pEnumProcessModules = NULL;
+   typedef BOOL ( WINAPI *Func_EnumProcessModules ) ( HANDLE, HMODULE *, DWORD, LPDWORD );
 
-   typedef DWORD ( WINAPI * Func_GetModuleBaseName )( HANDLE, HMODULE, LPTSTR, DWORD );
+   static Func_EnumProcessModules   pEnumProcessModules = NULL;
+
+   typedef DWORD ( WINAPI *Func_GetModuleBaseName ) ( HANDLE, HMODULE, LPTSTR, DWORD );
+
    static Func_GetModuleBaseName pGetModuleBaseName = NULL;
 
 #ifdef UNICODE
-   LPSTR pStr;
+   LPSTR                         pStr;
 #endif
-   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
-   TCHAR  cProcessName[ MAX_PATH ] = _TEXT( "" );
-   HANDLE hProcess;
+   DWORD                         ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   TCHAR                         cProcessName[MAX_PATH] = _TEXT( "" );
+   HANDLE                        hProcess;
 
    if( pEnumProcessModules == NULL )
    {
-      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+      HMODULE  hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
       pEnumProcessModules = ( Func_EnumProcessModules ) wapi_GetProcAddress( hLib, "EnumProcessModules" );
    }
 
    if( pEnumProcessModules == NULL )
-      return;
-
-   if( pGetModuleBaseName == NULL )
    {
-      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
-
-       #ifdef UNICODE
-      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameW" );
-       #else
-      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameA" );
-       #endif
+      return;
    }
 
    if( pGetModuleBaseName == NULL )
+   {
+      HMODULE  hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+
+#ifdef UNICODE
+      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameW" );
+#else
+      pGetModuleBaseName = ( Func_GetModuleBaseName ) wapi_GetProcAddress( hLib, "GetModuleBaseNameA" );
+#endif
+   }
+
+   if( pGetModuleBaseName == NULL )
+   {
       return;
+   }
 
    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
    if( hProcess != NULL )
    {
-      HMODULE hMod;
-      DWORD   cbNeeded;
+      HMODULE  hMod;
+      DWORD    cbNeeded;
       if( pEnumProcessModules( hProcess, &hMod, sizeof( hMod ), &cbNeeded ) )
+      {
          pGetModuleBaseName( hProcess, hMod, cProcessName, sizeof( cProcessName ) / sizeof( TCHAR ) );
+      }
 
       CloseHandle( hProcess );
 #ifndef UNICODE
@@ -986,49 +1040,57 @@ HB_FUNC( GETPROCESSNAME )
 //        GetProcessFullName ( [ nProcessID ] ) --> return cProcessFullName
 HB_FUNC( GETPROCESSFULLNAME )
 {
-   typedef BOOL ( WINAPI * Func_EnumProcessModules )( HANDLE, HMODULE *, DWORD, LPDWORD );
-   static Func_EnumProcessModules pEnumProcessModules = NULL;
+   typedef BOOL ( WINAPI *Func_EnumProcessModules ) ( HANDLE, HMODULE *, DWORD, LPDWORD );
 
-   typedef DWORD ( WINAPI * Func_GetModuleFileNameEx )( HANDLE, HMODULE, LPTSTR, DWORD );
-   static Func_GetModuleFileNameEx pGetModuleFileNameEx = NULL;
+   static Func_EnumProcessModules   pEnumProcessModules = NULL;
+
+   typedef DWORD ( WINAPI *Func_GetModuleFileNameEx ) ( HANDLE, HMODULE, LPTSTR, DWORD );
+
+   static Func_GetModuleFileNameEx  pGetModuleFileNameEx = NULL;
 
 #ifdef UNICODE
-   LPSTR pStr;
+   LPSTR                            pStr;
 #endif
-   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
-   TCHAR  cProcessFullName[ MAX_PATH ] = _TEXT( "" );
-   HANDLE hProcess;
+   DWORD                            ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   TCHAR                            cProcessFullName[MAX_PATH] = _TEXT( "" );
+   HANDLE                           hProcess;
 
    if( pEnumProcessModules == NULL )
    {
-      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+      HMODULE  hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
       pEnumProcessModules = ( Func_EnumProcessModules ) wapi_GetProcAddress( hLib, "EnumProcessModules" );
    }
 
    if( pEnumProcessModules == NULL )
-      return;
-
-   if( pGetModuleFileNameEx == NULL )
    {
-      HMODULE hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
-
-       #ifdef UNICODE
-      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExW" );
-       #else
-      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExA" );
-       #endif
+      return;
    }
 
    if( pGetModuleFileNameEx == NULL )
+   {
+      HMODULE  hLib = LoadLibrary( _TEXT( "Psapi.dll" ) );
+
+#ifdef UNICODE
+      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExW" );
+#else
+      pGetModuleFileNameEx = ( Func_GetModuleFileNameEx ) wapi_GetProcAddress( hLib, "GetModuleFileNameExA" );
+#endif
+   }
+
+   if( pGetModuleFileNameEx == NULL )
+   {
       return;
+   }
 
    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
    if( hProcess != NULL )
    {
-      HMODULE hMod;
-      DWORD   cbNeeded;
+      HMODULE  hMod;
+      DWORD    cbNeeded;
       if( pEnumProcessModules( hProcess, &hMod, sizeof( hMod ), &cbNeeded ) )
+      {
          pGetModuleFileNameEx( hProcess, hMod, cProcessFullName, sizeof( cProcessFullName ) / sizeof( TCHAR ) );
+      }
 
       CloseHandle( hProcess );
 #ifndef UNICODE
@@ -1044,14 +1106,16 @@ HB_FUNC( GETPROCESSFULLNAME )
 //        TerminateProcess ( [ nProcessID ] , [ nExitCode ] )
 HB_FUNC( TERMINATEPROCESS )
 {
-   DWORD  ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
-   UINT   uExitCode = hmg_par_UINT( 2 );
-   HANDLE hProcess  = OpenProcess( PROCESS_TERMINATE, FALSE, ProcessID );
+   DWORD    ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
+   UINT     uExitCode = hmg_par_UINT( 2 );
+   HANDLE   hProcess = OpenProcess( PROCESS_TERMINATE, FALSE, ProcessID );
 
    if( hProcess != NULL )
    {
       if( TerminateProcess( hProcess, uExitCode ) == FALSE )
+      {
          CloseHandle( hProcess );
+      }
    }
 }
 
@@ -1142,7 +1206,7 @@ HB_FUNC( ADDSPLITBOXITEM )
       }
    }
 
-   SendMessage( hmg_par_raw_HWND( 2 ), RB_INSERTBAND, ( WPARAM ) - 1, ( LPARAM ) &rbBand );
+   SendMessage( hmg_par_raw_HWND( 2 ), RB_INSERTBAND, ( WPARAM ) - 1, ( LPARAM ) & rbBand );
 
 #ifdef UNICODE
    hb_xfree( lpText );

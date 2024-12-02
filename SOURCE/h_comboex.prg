@@ -281,7 +281,7 @@ FUNCTION _DefineComboEx ( ControlName, ParentForm, x, y, w, rows, value, ;
       displaychange, nItemHeight }
    _HMG_aControlMiscData2 [k] := ''
 
-   IF DisplayChange == .T.
+   IF DisplayChange
       // handle for ComboBoxEx edit window
       _hmg_acontrolrangemin [k] := SendMessage ( Controlhandle, CBEM_GETEDITCONTROL, 0, 0 )
       IF tooltip != NIL

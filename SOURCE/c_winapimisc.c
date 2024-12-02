@@ -1111,35 +1111,44 @@ HB_FUNC( WINVERSION )
 #define VER_SUITE_BLADE    0x00000400
 #endif
 
+   // Struct for OS version information and extended OS information
    OSVERSIONINFOEX   osvi;
    BOOL              bOsVersionInfoEx;
+
+   // Pointers to hold OS version, Service Pack, build number, and additional version info
    TCHAR             *szVersion = NULL;
    TCHAR             *szServicePack = NULL;
    TCHAR             *szBuild = NULL;
-   TCHAR             buffer[5];
+   TCHAR             buffer[5]; // For numeric conversions
 
    TCHAR             *szVersionEx = NULL;
 #ifdef UNICODE
-   LPSTR             pStr;
+   LPSTR             pStr; // Pointer for ANSI conversion in Unicode build
 #endif
+
    ZeroMemory( &osvi, sizeof( OSVERSIONINFOEX ) );
    osvi.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEX );
 
+   // Attempt to get extended version information (OSVERSIONINFOEX)
    bOsVersionInfoEx = GetVersionEx( ( OSVERSIONINFO * ) &osvi );
    if( !bOsVersionInfoEx )
    {
       osvi.dwOSVersionInfoSize = sizeof( OSVERSIONINFO );
+
+      // If extended info retrieval fails, try basic version info
       if( !GetVersionEx( ( OSVERSIONINFO * ) &osvi ) )
       {
          szVersion = TEXT( "Unknown Operating System" );
       }
    }
 
+   // Identify OS version and service pack based on version number and platform
    if( szVersion == NULL )
    {
       switch( osvi.dwPlatformId )
       {
          case VER_PLATFORM_WIN32_NT:
+            // Windows NT-based systems
             if( osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2 )
             {
                szVersion = TEXT( "Windows Server 2003 family " );
@@ -1160,10 +1169,12 @@ HB_FUNC( WINVERSION )
                szVersion = TEXT( "Windows NT " );
             }
 
+            // Additional OS version info if OSVERSIONINFOEX is supported
             if( bOsVersionInfoEx )
             {
                if( osvi.wProductType == VER_NT_WORKSTATION )
                {
+                  // Workstation versions
                   if( osvi.dwMajorVersion == 10 && osvi.dwBuildNumber >= 22000 )
                   {
                      szVersion = TEXT( "Windows 11 " );
@@ -1204,9 +1215,15 @@ HB_FUNC( WINVERSION )
                }
                else if( osvi.wProductType == VER_NT_SERVER )
                {
+                  // Server versions
                   if( osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 )
                   {
-                     szVersion = TEXT( "Windows Server 2016 " );
+                     if (osvi.dwBuildNumber >= 20348)
+                        szVersion = TEXT("Windows Server 2022");
+                     else if (osvi.dwBuildNumber >= 17763)
+                        szVersion = TEXT("Windows Server 2019");
+                     else
+                        szVersion = TEXT("Windows Server 2016");
                   }
                   else if( osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3 )
                   {
@@ -1271,8 +1288,10 @@ HB_FUNC( WINVERSION )
                   }
                }
             }
+            // Fallback registry-based check for pre-Windows 2000
             else
             {
+               // Open registry to identify server or workstation version
                HKEY  hKey;
                TCHAR szProductType[80];
                DWORD dwBufLen = 80;
@@ -1295,6 +1314,7 @@ HB_FUNC( WINVERSION )
 
                RegCloseKey( hKey );
 
+               // Determine server/workstation from registry value
                if( lstrcmpi( TEXT( "Unknown Operating System" ), szVersion ) != 0 )
                {
                   if( lstrcmpi( TEXT( "WINNT" ), szProductType ) == 0 )
@@ -1345,6 +1365,7 @@ HB_FUNC( WINVERSION )
             break;
 
          case VER_PLATFORM_WIN32_WINDOWS:
+            // Windows 9x-based systems
             if( ( osvi.dwMajorVersion == 4 ) && ( osvi.dwMinorVersion == 0 ) )
             {
                if( osvi.szCSDVersion[1] == TEXT( 'B' ) )
@@ -1394,6 +1415,7 @@ HB_FUNC( WINVERSION )
       }
    }
 
+   // Final storage and return of collected OS version details
    hb_reta( 4 );
 #ifndef UNICODE
    HB_STORC( szVersion, -1, 1 );
@@ -1952,45 +1974,31 @@ HB_FUNC( HMG_GETLOCALEINFO )
    Creates the actual 'lnk' file (assumes COM has been initialized).
 
    Parameters:
-   pszTargetfile    - File name of the link's target, must be a non-empty
-                     string.
-
-   pszTargetargs    - Command line arguments passed to link's target, may
-                     be an empty string.
-
-   pszLinkfile      - File name of the actual link file, must be a non-empty
-                     string.
-
-   pszDescription   - Description of the linked item. If this is an empty
-                     string the description is not set.
-
-   iShowmode        - ShowWindow() constant for the link's target. Use one of:
-                       1 (SW_SHOWNORMAL) = Normal window.
-                       3 (SW_SHOWMAXIMIZED) = Maximized.
-                       7 (SW_SHOWMINNOACTIVE) = Minimized.
-                     If this is zero the showmode is not set.
-
-   pszCurdir        - Working directory of the active link. If this is
-                     an empty string the directory is not set.
-
+   pszTargetfile    - File name of the link's target, must be a non-empty string.
+   pszTargetargs    - Command line arguments passed to link's target, may be an empty string.
+   pszLinkfile      - File name of the actual link file, must be a non-empty string.
+   pszDescription   - Description of the linked item. If this is an empty string, the description is not set.
+   iShowmode        - ShowWindow() constant for the link's target:
+                        1 (SW_SHOWNORMAL) = Normal window.
+                        3 (SW_SHOWMAXIMIZED) = Maximized.
+                        7 (SW_SHOWMINNOACTIVE) = Minimized.
+                      If zero, the showmode is not set.
+   pszCurdir        - Working directory of the active link. If this is an empty string, the directory is not set.
    pszIconfile      - File name of the icon file used for the link.
-                     If this is an empty string the icon is not set.
-
-   iIconindex       - Index of the icon in the icon file. If this is
-                     < 0 the icon is not set.
-
+                      If this is an empty string, the icon is not set.
+   iIconindex       - Index of the icon in the icon file. If < 0, the icon is not set.
    wHotKey          - The virtual key code is in the low-order byte,
-                     and the modifier flags are in the high-order byte.
+                      and the modifier flags are in the high-order byte.
 
    Returns:
    HRESULT value >= 0 for success, < 0 for failure.
    --------------------------------------------------------------------------------
- */
+*/
 #ifndef UNICODE
 static HRESULT CreateShortCut
    (
-      LPSTR pszTargetfile, LPSTR pszTargetargs, LPSTR pszLinkfile, LPSTR pszDescription, int iShowmode, LPSTR pszCurdir, LPSTR pszIconfile, int iIconindex, WORD
-         wHotKey
+      LPSTR pszTargetfile, LPSTR pszTargetargs, LPSTR pszLinkfile, LPSTR pszDescription, int iShowmode, LPSTR pszCurdir, LPSTR pszIconfile, int iIconindex,
+         WORD wHotKey
    )
 #else
 static HRESULT CreateShortCut
@@ -2000,38 +2008,24 @@ static HRESULT CreateShortCut
    )
 #endif
 {
-   HRESULT        hRes; /* Returned COM result code */
-   IShellLink     *pShellLink;            /* IShellLink object pointer */
-   IPersistFile   *pPersistFile;          /* IPersistFile object pointer */
-   WORD           wszLinkfile[MAX_PATH];  /* pszLinkfile as Unicode string */
+   HRESULT        hRes = E_INVALIDARG;             // Default return value for invalid arguments
+   IShellLink     *pShellLink = NULL;              // Pointer to IShellLink object
+   IPersistFile   *pPersistFile = NULL;            // Pointer to IPersistFile object
+   WCHAR          wszLinkfile[MAX_PATH] = { 0 };   // Buffer for wide-char link file name
 
-   hRes = E_INVALIDARG;
-   if
-   (
-      ( pszTargetfile != NULL )
-   && ( lstrlen( pszTargetfile ) > 0 )
-   && ( pszTargetargs != NULL )
-   && ( pszLinkfile != NULL )
-   && ( lstrlen( pszLinkfile ) > 0 )
-   && ( pszDescription != NULL )
-   && ( iShowmode >= 0 )
-   && ( pszCurdir != NULL )
-   && ( pszIconfile != NULL )
-   && ( iIconindex >= 0 )
-   )
+   // Validate mandatory parameters
+   if( pszTargetfile && *pszTargetfile && pszLinkfile && *pszLinkfile )
    {
-      hRes = CoCreateInstance
-         (
-            &CLSID_ShellLink, /* pre-defined CLSID of the IShellLink object */ NULL,                     /* pointer to parent interface if part of aggregate */
-               CLSCTX_INPROC_SERVER, /* caller and called code are in same process */ &IID_IShellLink,   /* pre-defined interface of the IShellLink object */
-                  ( LPVOID * ) &pShellLink   /* Returns a pointer to the IShellLink object */
-         );
-      if( SUCCEEDED( hRes ) )
+      // Create IShellLink instance
+      hRes = CoCreateInstance( &CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLink, ( LPVOID * ) &pShellLink );
+
+      if( SUCCEEDED( hRes ) && pShellLink )
       {
-         /* Set the fields in the IShellLink object */
+         // Set link properties
          pShellLink->lpVtbl->SetPath( pShellLink, pszTargetfile );
          pShellLink->lpVtbl->SetArguments( pShellLink, pszTargetargs );
-         if( lstrlen( pszDescription ) > 0 )
+
+         if( pszDescription && *pszDescription )
          {
             pShellLink->lpVtbl->SetDescription( pShellLink, pszDescription );
          }
@@ -2039,11 +2033,11 @@ static HRESULT CreateShortCut
          {
             pShellLink->lpVtbl->SetShowCmd( pShellLink, iShowmode );
          }
-         if( lstrlen( pszCurdir ) > 0 )
+         if( pszCurdir && *pszCurdir )
          {
             pShellLink->lpVtbl->SetWorkingDirectory( pShellLink, pszCurdir );
          }
-         if( lstrlen( pszIconfile ) > 0 && iIconindex >= 0 )
+         if( pszIconfile && *pszIconfile && iIconindex >= 0 )
          {
             pShellLink->lpVtbl->SetIconLocation( pShellLink, pszIconfile, iIconindex );
          }
@@ -2052,9 +2046,10 @@ static HRESULT CreateShortCut
             pShellLink->lpVtbl->SetHotkey( pShellLink, wHotKey );
          }
 
-         /* Use the IPersistFile object to save the shell link */
-         hRes = pShellLink->lpVtbl->QueryInterface( pShellLink, /* existing IShellLink object */ &IID_IPersistFile, /* pre-defined interface of the IPersistFile object */ ( LPVOID * ) &pPersistFile ); /* returns a pointer to the IPersistFile object */
-         if( SUCCEEDED( hRes ) )
+         // Save the link using IPersistFile
+         hRes = pShellLink->lpVtbl->QueryInterface( pShellLink, &IID_IPersistFile, ( LPVOID * ) &pPersistFile );
+
+         if( SUCCEEDED( hRes ) && pPersistFile )
          {
 #ifndef UNICODE
             MultiByteToWideChar( CP_ACP, 0, pszLinkfile, -1, wszLinkfile, MAX_PATH );
@@ -2064,6 +2059,8 @@ static HRESULT CreateShortCut
             hRes = pPersistFile->lpVtbl->Save( pPersistFile, wszLinkfile, TRUE );
             pPersistFile->lpVtbl->Release( pPersistFile );
          }
+
+         // Release IShellLink object
          pShellLink->lpVtbl->Release( pShellLink );
       }
    }
@@ -2072,16 +2069,17 @@ static HRESULT CreateShortCut
 
 /***************************************************************************/
 #if defined( __BORLANDC__ ) && ! defined( _WIN64 )
-#pragma warn -prc         /* suggest parentheses to clarify precedence */
+#pragma warn -prc          /* suggest parentheses to clarify precedence */
 #endif
+
 HB_FUNC( C_CREATELINK )
 {
    int      iShowmode;     /* <Showmode> (optional) */
    int      iIconindex;    /* <Iconindex> (optional) */
    WORD     wHotKey;       /* Virtual key code (optional) */
    BYTE     uVirtualKeyCode;
-   BYTE     uModifiers;    /* modifier flags */
-   HRESULT  hRes;          /* result of calling COM functions */
+   BYTE     uModifiers;    /* Modifier flags */
+   HRESULT  hRes;          /* Result of calling COM functions */
 
 #ifndef UNICODE
    LPSTR    szTargetfile;  /* <Targetfile> */
@@ -2090,6 +2088,8 @@ HB_FUNC( C_CREATELINK )
    LPSTR    szDescription; /* <Description> */
    LPSTR    szCurdir;      /* <Curdir> (optional) */
    LPSTR    szIconfile;    /* <Iconfile> (optional) */
+
+   // Assign parameters with fallback values for optional fields
    szTargetfile = ( char * ) hb_parc( 1 );
    szTargetargs = HB_ISCHAR( 2 ) ? ( char * ) hb_parc( 2 ) : "";
    szLinkfile = ( char * ) hb_parc( 3 );
@@ -2103,6 +2103,8 @@ HB_FUNC( C_CREATELINK )
    LPWSTR   szDescription; /* <Description> */
    LPWSTR   szCurdir;      /* <Curdir> (optional) */
    LPWSTR   szIconfile;    /* <Iconfile> (optional) */
+
+   // Convert ANSI strings to wide strings for Unicode builds
    szTargetfile = AnsiToWide( ( char * ) hb_parc( 1 ) );
    szTargetargs = HB_ISCHAR( 2 ) ? AnsiToWide( ( char * ) hb_parc( 2 ) ) : TEXT( "" );
    szLinkfile = AnsiToWide( ( char * ) hb_parc( 3 ) );
@@ -2110,40 +2112,45 @@ HB_FUNC( C_CREATELINK )
    szCurdir = HB_ISCHAR( 6 ) ? AnsiToWide( ( char * ) hb_parc( 6 ) ) : TEXT( "" );
    szIconfile = HB_ISCHAR( 7 ) ? AnsiToWide( ( char * ) hb_parc( 7 ) ) : TEXT( "" );
 #endif
+
+   // Retrieve optional numeric parameters with defaults
    iShowmode = hb_parnidef( 5, 0 );
    iIconindex = hb_parnidef( 8, 0 );
+
+   // Retrieve virtual key and modifier byte parameters for hotkey
    uVirtualKeyCode = hmg_par_BYTE( 9 );
    uModifiers = hmg_par_BYTE( 10 );
    wHotKey = MAKEWORD( uVirtualKeyCode, uModifiers );
 
-   /* Call CoInitialize() and create the link if OK. */
+   // Initialize COM library
    hRes = CoInitialize( NULL );
    if( SUCCEEDED( hRes ) )
    {
+      // Call CreateShortCut to create the shortcut file
       hRes = CreateShortCut
          (
             szTargetfile,  /* Target file */
             szTargetargs,  /* Target arguments */
-            szLinkfile,    /* Short-cut filename */
-            szDescription, /* Short-cut description */
+            szLinkfile,    /* Shortcut filename */
+            szDescription, /* Shortcut description */
             iShowmode,     /* Showmode constant */
             szCurdir,      /* Working directory for linked file */
             szIconfile,    /* Icon file shown for the link */
             iIconindex,    /* Index of icon in the file */
             wHotKey        /* Virtual key code */
          );
-      if( SUCCEEDED( hRes ) )
-      {
-         hmg_ret_HRESULT( hRes );
-      }
+
+      // Return the HRESULT of the operation
+      hmg_ret_HRESULT( hRes );
+
+      // Uninitialize COM library
+      CoUninitialize();
    }
    else
    {
+      // Return the HRESULT if COM initialization failed
       hmg_ret_HRESULT( hRes );
    }
-
-   /* call CoUninitialize() and exit the program. */
-   CoUninitialize();
 }
 
 #ifdef __XCC__

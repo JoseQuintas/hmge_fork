@@ -1,23 +1,29 @@
 /*
-frm_EventValid - valid used on getbox, edit, textbox
-called from frm_class
+frm_EditValidate - valid used on getbox, edit, textbox
+part of frm_class
 */
 
 #include "frm_class.ch"
 
-FUNCTION frm_EventValid( Self, aItem )
+FUNCTION frm_EditValidate( Self, aItem )
 
-   LOCAL nSelect, lFound := .T., xValue, nPos
+   LOCAL nSelect, lValid := .T., xValue, nPos
+
+   // button on get
+   IF GUI():LibName() == "HMGE"
+      IF GUI():IsCurrentFocus( ::xDlg, aItem[ CFG_FCONTROL ] )
+         RETURN .F.
+      ENDIF
+   ENDIF
 
    // not ok for all libraries
-   // IF ! GUI():LibName() $ "HWGUI" .AND. ! GUI():IsCurrentFocus( ::xDlg )
+   // IF ! GUI():LibName() $ "HWGUI,FIVEWIN" .AND. ! GUI():IsCurrentFocus( ::xDlg )
       //this affects external programs
       //GUI():MsgBox( "ENTER" )
       //GUI():SetFocus( ::xDlg, aItem[ CFG_FCONTROL ] )
       //RETURN .F.
    // ENDIF
 
-   // if btn cancel abort validate (current on hwgui only)
    nPos := hb_AScan( ::aControlList, { | e | e[ CFG_CTLTYPE ] == TYPE_BUTTON .AND. ;
       e[ CFG_CAPTION ] == "Cancel" } )
    IF nPos != 0
@@ -25,7 +31,6 @@ FUNCTION frm_EventValid( Self, aItem )
          RETURN .T.
       ENDIF
    ENDIF
-
    xValue := GUI():ControlGetValue( ::xDlg, aItem[ CFG_FCONTROL ] )
    IF aItem[ CFG_ISKEY ]
       IF ::lIsSQL
@@ -91,8 +96,8 @@ FUNCTION frm_EventValid( Self, aItem )
          ::cnSQL:cSQL += " FROM " + aItem[ CFG_VTABLE ]
          ::cnSQL:cSQL += " WHERE " + aItem[ CFG_VFIELD ] + " = " + hb_ValToExp( xValue )
          ::cnSQL:Execute()
-         lFound := ! ::cnSQL:Eof()
-         IF ! lFound
+         lValid := ! ::cnSQL:Eof()
+         IF ! lValid
             IF GUI():MsgYesNo( "Code does not exists. Create new one?" )
                frm_funcMain( aItem[ CFG_VTABLE ], AClone( ::aAllSetup ), .T. )
             ENDIF
@@ -113,8 +118,8 @@ FUNCTION frm_EventValid( Self, aItem )
          ELSE
             SEEK xValue
          ENDIF
-         lFound := ! Eof()
-         IF ! lFound
+         lValid := ! Eof()
+         IF ! lValid
             IF GUI():MsgYesNo( "Code does not exists. Create new one?" )
                frm_funcMain( aItem[ CFG_VTABLE ], AClone( ::aAllSetup ), .T. )
             ENDIF
@@ -129,4 +134,4 @@ FUNCTION frm_EventValid( Self, aItem )
       ENDIF
    ENDIF
 
-   RETURN lFound
+   RETURN lValid

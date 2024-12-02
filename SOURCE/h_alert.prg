@@ -48,7 +48,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #ifdef __XHARBOUR__
 #define __MINIPRINT__
 #else
- SET PROCEDURE TO alerts.prg
+   SET PROCEDURE TO alerts.prg
 #endif
 
 #include "hmg.ch"
@@ -384,9 +384,9 @@ STATIC FUNCTION FillDlg( cMsg, aOptions, nLineas, cIcoFile, nIcoSize, aBtnColors
    nHeightCli := ( Min( nMaxLines, nLineas ) + iif( nLineas == 1, 4, 3 ) ) * nChrHeight + nVMARGIN_BUTTON + nHeightBtn + GetBorderHeight()
    nHeightDlg := nHeightCli + GetTitleHeight() + SEP_BUTTON + GetBorderHeight() / iif( lIsWin10, 2.5, 1 )
 
-   IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      nWidthDlg += 10
-      nHeightDlg += 10
+   IF ( ( n := ( MSC_VER() > 0 ) ) .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
+      nWidthDlg += iif( n, GetBorderWidth(), 4 * GetBorderWidth() - 2 )
+      nHeightDlg += iif( n, GetBorderHeight() / 2, 3 * GetBorderHeight() )
    ENDIF
 
    IF nHeightDlg > GetDesktopRealHeight()

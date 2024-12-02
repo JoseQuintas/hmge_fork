@@ -225,6 +225,9 @@ PROCEDURE _ReleaseWebCam ( cWindow, cControl )
 
 RETURN
 
+/*
+ * C-level
+ */
 #pragma BEGINDUMP
 
 #include <mgdefs.h>

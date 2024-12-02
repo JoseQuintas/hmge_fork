@@ -95,7 +95,7 @@ PROCEDURE Init
    _HMG_IsXP := os_isWinXP()
    _HMG_IsXPorLater := IsWinXPorLater ()
    _HMG_IsThemed := IsThemed ()
-   _HMG_IsBcc77 := iif( IsExe64(), ( "7.7" $ hb_Ccompiler() ), ( "7.7" $ hb_compiler() ) )
+   _HMG_IsBcc77 := ( "7.7" $ iif( IsExe64(), hb_Ccompiler(), hb_compiler() ) )
 
    _HMG_LANG_ID := ''
 

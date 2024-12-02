@@ -3,17 +3,19 @@
  *
  * Copyright 2016 P.Chornyj <myorg63@mail.ru>
  */
-#include "hbapi.h"
 
+#include "hbapi.h"                  // Include Harbour API for extending Harbour with C functions
+
+// Define compatibility with specific Windows API versions if using Harbour, not xHarbour
 #if !defined( __XHARBOUR__ ) && ( __HARBOUR__ - 0 > 0x030000 )
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-
+#define _WIN32_WINNT 0x0600         // Define Windows version as Vista or later
 #undef NTDDI_VERSION
-#define NTDDI_VERSION   0x06000000
+#define NTDDI_VERSION   0x06000000  // Set NTDDI version for API compatibility
 
-#define UNICODE
+#define UNICODE                     // Enable Unicode for string handling
 
+// Definitions for resource handling in MinGW
 #if defined( __MINGW32__ )
 #define MAKEINTRESOURCEA( i ) ( ( LPSTR ) ( ( ULONG_PTR ) ( ( WORD ) ( i ) ) ) )
 #define MAKEINTRESOURCEW( i ) ( ( LPWSTR ) ( ( ULONG_PTR ) ( ( WORD ) ( i ) ) ) )
@@ -24,19 +26,20 @@
 #endif /* UNICODE */
 #endif /* __MINGW32__ */
 
-#include <hbwinuni.h>
+#include <hbwinuni.h>               // Include Harbour Windows Unicode support
+#include <mgdefs.h>                 // Include Minigui definitions
+#include <commctrl.h>               // Include common controls header for Windows
+#include "hbapicls.h"               // Include Harbour API for class handling
+#include "hbapierr.h"               // Include Harbour error API
+#include "hbapiitm.h"               // Include Harbour item API
+#include "hbvm.h"                   // Include Harbour virtual machine functions
 
-#include <mgdefs.h>
-#include <commctrl.h>
+#include "TaskDlgs.h"               // Include task dialog header for custom dialogs
 
-#include "hbapicls.h"
-#include "hbapierr.h"
-#include "hbapiitm.h"
-#include "hbvm.h"
-
-#include "TaskDlgs.h"
-
+// Define compatibility for specific compilers (Borland C++ or Pelles C)
 #if ( ( defined( __BORLANDC__ ) && __BORLANDC__ <= 1410 ) || defined( __POCC__ ) )
+
+// Custom implementation of TaskDialog to load from comctl32.dll if not available by default
 HRESULT TaskDialog
 (
    HWND                             hwndParent,
@@ -49,47 +52,59 @@ HRESULT TaskDialog
    int                              *pnButton
 )
 {
+   // Load the comctl32.dll library dynamically to use TaskDialog
    HMODULE  hCommCtl = LoadLibraryEx( TEXT( "comctl32.dll" ), NULL, 0 );
 
    if( hCommCtl )
    {
+      // Get the TaskDialog function pointer from the loaded library
       fnTaskDialog   pfn = ( fnTaskDialog ) GetProcAddress( hCommCtl, "TaskDialog" );
       HRESULT        hResult = ( int ) NULL;
 
       if( NULL != pfn )
       {
+         // Call TaskDialog through the function pointer
          hResult = pfn( hwndParent, hInstance, pszWindowTitle, pszMainInstruction, pszContent, dwCommonButtons, pszIcon, pnButton );
       }
 
+      // Free the library after usage
       FreeLibrary( hCommCtl );
+
       return hResult;
    }
 
-   return -1;
+   return -1;  // Return error if library could not be loaded
 }
 
+// Similar to TaskDialog, but uses TaskDialogIndirect for more customizable options
 HRESULT TaskDialogIndirect( const TASKDIALOGCONFIG *pTaskConfig, int *pnButton, int *pnRadioButton, BOOL *pfVerificationFlagChecked )
 {
+   // Load the comctl32.dll library
    HMODULE  hCommCtl = LoadLibraryEx( TEXT( "comctl32.dll" ), NULL, 0 );
 
    if( hCommCtl )
    {
+      // Get the TaskDialogIndirect function pointer
       fnTaskDialogIndirect pfn = ( fnTaskDialogIndirect ) GetProcAddress( hCommCtl, "TaskDialogIndirect" );
       HRESULT              hResult = ( int ) NULL;
 
       if( NULL != pfn )
       {
+         // Call TaskDialogIndirect using the function pointer
          hResult = pfn( pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked );
       }
 
+      // Free the library after usage
       FreeLibrary( hCommCtl );
+
       return hResult;
    }
 
-   return -1;
+   return -1;  // Return error if library or function is unavailable
 }
-#endif /* defined( __BORLANDC__ ) || defined( __POCC__ ) */
+#endif /* __BORLANDC__ .OR. __POCC__ */
 
+// Wrapper function to display a TaskDialog from Harbour code with various parameters
 HB_FUNC( WIN_TASKDIALOG0 )
 {
    HWND                             hWndParent = NULL;
@@ -103,7 +118,6 @@ HB_FUNC( WIN_TASKDIALOG0 )
 
    HRESULT                          hResult;
 
-   /*TODO*/
    void                             **hText = ( void ** ) hb_xgrab( sizeof( void * ) * 3 );
    int                              iText = 0;
 
@@ -184,6 +198,7 @@ HB_FUNC( WIN_TASKDIALOG0 )
    hb_xfree( hText );
 }
 
+// Main function that configures and invokes a Task Dialog.
 HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
 {
    PHB_ITEM pConfig = hb_param( 1, HB_IT_ARRAY );
@@ -214,8 +229,6 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
       // 1 UINT cbSize
       config.cbSize = sizeof( config );
 
-      /*TODO ( HWND )( HB_PTRUINT ) hb_parnint/hb_arrayGetNInt () */
-
       // 2 HWND hwndParent
       if( hb_arrayGetType( pConfig, TDC_HWND ) & HB_IT_NUMERIC )
       {
@@ -225,8 +238,6 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
       {
          config.hwndParent = NULL;
       }
-
-      /*TODO*/
 
       // 3 HINSTANCE hInstance
       if( hb_arrayGetType( pConfig, TDC_HINSTANCE ) & HB_IT_NUMERIC )
@@ -264,8 +275,6 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
       {
          config.pszWindowTitle = NULL;
       }
-
-      /*TODO*/
 
       // 7 union { HICON  hMainIcon; PCWSTR pszMainIcon; };
       iType = hb_arrayGetType( pConfig, TDC_MAINICON );
@@ -448,8 +457,6 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
          config.pszCollapsedControlText = MAKEINTRESOURCE( hb_arrayGetNI( pConfig, TDC_COLLAPSEDCONTROLTEXT ) );
       }
 
-      /*TODO*/
-
       // 20 union { HICON  hFooterIcon; PCWSTR pszFooterIcon; }
       iType = hb_arrayGetType( pConfig, TDC_FOOTERICON );
       if( iType & HB_IT_NUMERIC )
@@ -513,10 +520,12 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
       // 24 UINT cxWidth;
       config.cxWidth = ( hb_arrayGetType( pConfig, TDC_WIDTH ) & HB_IT_NUMERIC ) ? hb_arrayGetNI( pConfig, TDC_WIDTH ) : 0;
 
-      ////////////////////////////////////////////////////////////////////////////////////////////
+      // Set default button, radio button, and other properties using values from pConfig array.
+      // Set up callback function and width if defined.
+      // Execute TaskDialogIndirect with the configured parameters.
       hResult = TaskDialogIndirect( &config, &nButton, &nRadioButton, &fVerificationFlagChecked );
 
-      ////////////////////////////////////////////////////////////////////////////////////////////
+      // Free allocated memory for text and button arrays.
       while( --iText >= 0 )
       {
          hb_strfree( hText[iText] );
@@ -549,6 +558,7 @@ HB_FUNC( WIN_TASKDIALOGINDIRECT0 )
          hb_itemRelease( ( PHB_ITEM ) config.lpCallbackData );
       }
 
+      // Store the resulting button, radio button, and verification flag values if the dialog succeeded.
       if( hResult == S_OK )
       {
          if( nButton )
@@ -709,21 +719,22 @@ HRESULT CALLBACK __ClsCBFunc( HWND hWnd, UINT uiNotification, WPARAM wParam, LPA
    return S_OK;
 }
 
+// Converts a notification identifier to its corresponding message name, if it exists for pObj.
 static const char *TD_NotifyToMsg( UINT uiNotification, PHB_ITEM pObj )
 {
+   // Define a structure to map notifications to message names
    typedef struct
    {
       UINT        Notification;
       const char  *MsgName;
    } NOTIFY_MSG;
 
+   // Define an array of known notifications and their corresponding message names
    static const NOTIFY_MSG s_NOTIFY_MSG[] =
    {
       { TDN_CREATED, "ONCREATED" },
       { TDN_DIALOG_CONSTRUCTED, "ONCONSTRUCTED" },
       { TDN_DESTROYED, "ONDESTROYED" },
-
-      /* { TDN_NAVIGATED, "ONNAVIGATED" }, */
       { TDN_BUTTON_CLICKED, "ONBUTTONCLICKED" },
       { TDN_HYPERLINK_CLICKED, "ONHYPERLINKCLICKED" },
       { TDN_TIMER, "ONTIMER" },
@@ -736,6 +747,7 @@ static const char *TD_NotifyToMsg( UINT uiNotification, PHB_ITEM pObj )
    UINT                    uiPos;
    const char              *sMsgName = NULL;
 
+   // Iterate through the notification-message pairs to find a match for uiNotification
    for( uiPos = 0; uiPos < ( UINT ) HB_SIZEOFARRAY( s_NOTIFY_MSG ); ++uiPos )
    {
       if( s_NOTIFY_MSG[uiPos].Notification == uiNotification )
@@ -745,6 +757,7 @@ static const char *TD_NotifyToMsg( UINT uiNotification, PHB_ITEM pObj )
       }
    }
 
+   // If the message exists for pObj, return the message name, otherwise return "LISTENER"
    if( ( NULL != sMsgName ) && hb_objHasMsg( pObj, sMsgName ) )
    {
       return sMsgName;
@@ -753,16 +766,19 @@ static const char *TD_NotifyToMsg( UINT uiNotification, PHB_ITEM pObj )
    return ( const char * ) "LISTENER";
 }
 
+// Sends a message to the specified object with optional parameters and stores the result in hRes.
 static BOOL TD_objSendMsg( PHB_ITEM pObject, const char *sMsgName, HRESULT *hRes, HWND hWnd, UINT uiNotification, WPARAM wParam, LPARAM lParam )
 {
    if( hb_objHasMsg( pObject, sMsgName ) )
    {
+      // Create item handles for message parameters
       PHB_ITEM itmHWND = hb_itemPutNInt( NULL, ( HB_MAXINT ) ( HB_PTRUINT ) hWnd );
       PHB_ITEM itmNotify = hb_itemPutNInt( NULL, uiNotification );
       PHB_ITEM itmWParam = hb_itemPutNInt( NULL, wParam );
       PHB_ITEM itmLParam = hb_itemNew( NULL );
       PHB_ITEM itmResult;
 
+      // Set itmLParam based on notification type
       if( uiNotification == TDN_HYPERLINK_CLICKED )
       {
          HB_ITEMPUTSTR( itmLParam, ( HB_WCHAR * ) lParam );
@@ -772,13 +788,16 @@ static BOOL TD_objSendMsg( PHB_ITEM pObject, const char *sMsgName, HRESULT *hRes
          hb_itemPutNInt( itmLParam, lParam );
       }
 
+      // Send the message to pObject and retrieve the result
       itmResult = hb_objSendMsg( pObject, sMsgName, 4, itmHWND, itmNotify, itmWParam, itmLParam );
 
+      // Store the success result in hRes if provided
       if( NULL != hRes )
       {
          ( *hRes ) = ( hb_itemGetL( itmResult ) == HB_TRUE ? S_OK : S_FALSE );
       }
 
+      // Release all allocated item handles
       hb_itemRelease( itmResult );
       hb_itemRelease( itmHWND );
       hb_itemRelease( itmNotify );
@@ -791,17 +810,21 @@ static BOOL TD_objSendMsg( PHB_ITEM pObject, const char *sMsgName, HRESULT *hRes
    return FALSE;
 }
 
+// Function to set the window title for a specified window handle
 HB_FUNC( _SETWINDOWTITLE )
 {
    void     *hText = NULL;
    PCWSTR   pszText;
 
+   // Retrieve the title from parameter 2
    if( HB_ISCHAR( 2 ) || HB_ISNUM( 2 ) )
    {
       pszText = HB_ISCHAR( 2 ) ? HB_PARSTRDEF( 2, &hText, NULL ) : MAKEINTRESOURCE( hb_parni( 2 ) );
 
+      // Set the window title
       SetWindowText( hmg_par_raw_HWND( 1 ), pszText );
 
+      // Free the allocated memory if the title was a string
       if( HB_ISCHAR( 2 ) )
       {
          hb_strfree( hText );
@@ -809,45 +832,43 @@ HB_FUNC( _SETWINDOWTITLE )
    }
 }
 
-/* Task Dialog Messages  */
-
-// TDM_CLICK_BUTTON - Simulates the action of a button click in a task dialog
+// Task Dialog button click simulation
 HB_FUNC( _CLICKBUTTON )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_CLICK_BUTTON, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) 0 );
 }
 
-// TDM_CLICK_RADIO_BUTTON - Simulates the action of a radio button click in a task dialog
+// Task Dialog radio button click simulation
 HB_FUNC( _CLICKRADIOBUTTON )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_CLICK_RADIO_BUTTON, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) 0 );
 }
 
-// TDM_CLICK_VERIFICATION - Simulates a click of the verification checkbox of a task dialog, if it exists.
+// Task Dialog verification checkbox click simulation
 HB_FUNC( _CLICKVERIFICATION )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_CLICK_VERIFICATION, ( WPARAM ) ( BOOL ) hb_parl( 2 ), ( LPARAM ) ( BOOL ) hb_parl( 3 ) );
 }
 
-// TDM_ENABLE_BUTTON - Enables or disables a push button in a task dialog
+// Enables/disables a push button in a Task Dialog
 HB_FUNC( _ENABLEBUTTON )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_ENABLE_BUTTON, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) ( BOOL ) hb_parl( 3 ) );
 }
 
-// TDM_ENABLE_RADIO_BUTTON - Enables or disables a push button in a task dialog
+// Enables/disables a radio button in a Task Dialog
 HB_FUNC( _ENABLERADIOBUTTON )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_ENABLE_RADIO_BUTTON, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) ( BOOL ) hb_parl( 3 ) );
 }
 
-// TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE - Specifies whether a given task dialog button or command link should have a UAC shield icon
+// Sets the elevation-required state for a button in a Task Dialog
 HB_FUNC( _SETBUTTONELEVATIONREQUIRED )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) ( BOOL ) hb_parl( 3 ) );
 }
 
-// TDM_SET_ELEMENT_TEXT - Updates a text element in a task dialog
+// Sets the main instruction text in a Task Dialog
 HB_FUNC( _SETMAININSTRUCTION )
 {
    void     *hText = NULL;
@@ -861,6 +882,7 @@ HB_FUNC( _SETMAININSTRUCTION )
    }
 }
 
+// Sets the content text in a Task Dialog
 HB_FUNC( _SETCONTENT )
 {
    void     *hText = NULL;
@@ -874,6 +896,7 @@ HB_FUNC( _SETCONTENT )
    }
 }
 
+// Sets the footer text in a Task Dialog
 HB_FUNC( _SETFOOTER )
 {
    void     *hText = NULL;
@@ -887,6 +910,7 @@ HB_FUNC( _SETFOOTER )
    }
 }
 
+// Sets the expanded information text in a Task Dialog
 HB_FUNC( _SETEXPANDEDINFORMATION )
 {
    void     *hText = NULL;
@@ -900,13 +924,13 @@ HB_FUNC( _SETEXPANDEDINFORMATION )
    }
 }
 
-// TDM_SET_PROGRESS_BAR_POS - Sets the position of the progress bar in a task dialog
+// Sets the position of the progress bar in a task dialog
 HB_FUNC( _SETPROGRESSBARPOS )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_PROGRESS_BAR_POS, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) 0 );
 }
 
-// TDM_SET_PROGRESS_BAR_RANGE - Sets the minimum and maximum values for the progress bar in a task dialog
+// Sets the minimum and maximum values for the progress bar in a task dialog
 HB_FUNC( _SETPROGRESSBARRANGE )
 {
    LPARAM   range = MAKELPARAM( ( hmg_par_WORD( 2 ) ), ( hmg_par_WORD( 3 ) ) );
@@ -914,26 +938,26 @@ HB_FUNC( _SETPROGRESSBARRANGE )
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_PROGRESS_BAR_RANGE, ( WPARAM ) 0, range );
 }
 
-// TDM_SET_PROGRESS_BAR_STATE - Sets the state of the progress bar in a task dialog.
+// Sets the state of the progress bar in a task dialog.
 HB_FUNC( _SETPROGRESSBARSTATE )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_PROGRESS_BAR_STATE, ( WPARAM ) hb_parni( 2 ), ( LPARAM ) 0 );
 }
 
-// TDM_SET_PROGRESS_BAR_MARQUEE - Starts and stops the marquee display of the progress bar in a task dialog,
-//                                and sets the speed of the marquee.
+// Starts and stops the marquee display of the progress bar in a task dialog,
+// and sets the speed of the marquee.
 HB_FUNC( _SETPROGRESSBARMARQUEE )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_PROGRESS_BAR_MARQUEE, ( WPARAM ) hb_parl( 2 ), ( LPARAM ) hb_parni( 3 ) );
 }
 
-// TDM_SET_MARQUEE_PROGRESS_BAR - Indicates whether the hosted progress bar of a task dialog should be displayed in marquee mode
+// Indicates whether the hosted progress bar of a task dialog should be displayed in marquee mode
 HB_FUNC( _SETMARQUEEPROGRESSBAR )
 {
    SendMessage( hmg_par_raw_HWND( 1 ), TDM_SET_MARQUEE_PROGRESS_BAR, ( WPARAM ) hb_parl( 2 ), ( LPARAM ) 0 );
 }
 
-// TDM_UPDATE_ELEMENT_TEXT - Updates a text element in a task dialog
+// Updates the text element in a task dialog
 HB_FUNC( _UPDATEMAININSTRUCTION )
 {
    void     *hText = NULL;
@@ -947,6 +971,7 @@ HB_FUNC( _UPDATEMAININSTRUCTION )
    }
 }
 
+// Updates the content element in a task dialog
 HB_FUNC( _UPDATECONTENT )
 {
    void     *hText = NULL;
@@ -960,6 +985,7 @@ HB_FUNC( _UPDATECONTENT )
    }
 }
 
+// Updates the footer element in a task dialog
 HB_FUNC( _UPDATEFOOTER )
 {
    void     *hText = NULL;
@@ -973,6 +999,7 @@ HB_FUNC( _UPDATEFOOTER )
    }
 }
 
+// Updates the expanded information element in a task dialog
 HB_FUNC( _UPDATEEXPANDEDINFORMATION )
 {
    void     *hText = NULL;
@@ -986,7 +1013,7 @@ HB_FUNC( _UPDATEEXPANDEDINFORMATION )
    }
 }
 
-/* TODO */
+// Updates the main icon in a Task Dialog, setting it to a specified icon or image
 HB_FUNC( _UPDATEMAINICON )
 {
    if( HB_ISNUM( 2 ) )
@@ -1011,7 +1038,7 @@ HB_FUNC( _UPDATEMAINICON )
    }
 }
 
-/* TODO */
+// Updates the footer icon in a Task Dialog, setting it to a specified icon or image
 HB_FUNC( _UPDATEFOOTERICON )
 {
    if( HB_ISNUM( 2 ) )
@@ -1035,4 +1062,4 @@ HB_FUNC( _UPDATEFOOTERICON )
       SendMessage( hmg_par_raw_HWND( 1 ), TDM_UPDATE_ICON, ( WPARAM ) TDIE_ICON_FOOTER, ( LPARAM ) NULL );
    }
 }
-#endif /* __XHARBOUR__ */
+#endif /* ! __XHARBOUR__ */

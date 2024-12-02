@@ -2500,7 +2500,7 @@ RETURN NIL
 FUNCTION HPDF_CircleText( nRow, nCol, cFontName, nFontSize, nRColor, nGColor, nBColor, cText, lBold, lItalic, lColor, lFont, lSize, nRadial, lCircle, cAlign )
 
    /* text along a circle */
-   /* nRow, nCol wspolrzedne srodka */
+   /* nRow, nCol center coordinates */
 
    LOCAL /*nAngle1,*/ nAngle2, nRlen
    LOCAL i, nRad1, nRad2, x, y

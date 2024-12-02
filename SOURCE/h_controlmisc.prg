@@ -290,7 +290,7 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
       aTemp := _GetValue ( , , ix )
 
       IF ISARRAY ( aTemp ) .AND. T != "OBUTTON"
-         IF HMG_IsEqualArr ( aTemp, Value ) == .T.
+         IF HMG_IsEqualArr ( aTemp, Value )
             RETURN Nil
          ENDIF
       ENDIF
@@ -368,14 +368,14 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
 
    CASE T == "TIMER"
       x := _HMG_aControlIds [ix]
-      IF _HMG_aControlEnabled [ix] == .T.
+      IF _HMG_aControlEnabled [ix]
          KillTimer ( _HMG_aControlParentHandles [ix] , x )
       ENDIF
 
       FOR EACH h IN _HMG_aControlIds
          IF ISNUMERIC ( h ) .AND. h == x
-            IF _HMG_aControlEnabled [ix] == .T.
-               InitTimer ( GetFormHandle( ParentForm ) , h , Value )
+            IF _HMG_aControlEnabled [ix]
+               InitTimer ( GetFormHandle ( ParentForm ) , h , Value )
             ENDIF
             _HMG_aControlValue [ix] := value
             EXIT
@@ -399,7 +399,7 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
 
       IF _HMG_aControlSpacing [ix] == 1
          _SetControlWidth ( ControlName , ParentForm , GetTextWidth( NIL, Value, _HMG_aControlFontHandle [ix] ) + ;
-            iif( _HMG_aControlFontAttributes [ix] [1] == .T. .OR. _HMG_aControlFontAttributes [ix] [2] == .T., ;
+            iif( _HMG_aControlFontAttributes [ix] [1] .OR. _HMG_aControlFontAttributes [ix] [2], ;
             GetTextWidth( NIL, " ", _HMG_aControlFontHandle [ix] ), 0 ) + iif( "CHECK" $ T, _HMG_aControlRangeMin [ix] + ;
             iif( Len( Value ) > 0 .AND. _HMG_aControlRangeMax [ix] == .F., GetBorderWidth(), iif( _HMG_aControlRangeMax [ix], GetBorderWidth() / 2, 0 ) ), 0 ) )
          _SetControlHeight ( ControlName , ParentForm , iif( "CHECK" $ T .AND. _HMG_aControlFontSize [ix] < 13, 22, _HMG_aControlFontSize [ix] + ;
@@ -409,7 +409,7 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
       SetWindowText ( c , value )
 
       IF ISLOGICAL ( _HMG_aControlInputMask [ix] )
-         IF _HMG_aControlInputMask [ix] == .T.
+         IF _HMG_aControlInputMask [ix]
             RedrawWindowControlRect ( h , _HMG_aControlRow[ix] , _HMG_aControlCol[ix] , _HMG_aControlRow[ix] + _HMG_aControlHeight[ix] , _HMG_aControlCol[ix] + _HMG_aControlWidth [ix] )
          ENDIF
       ENDIF
@@ -419,7 +419,7 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
 
       IF T == "CHARMASKTEXT"
          IF ISLOGICAL ( _HMG_aControlHeadCLick [ix] )
-            IF _HMG_aControlHeadCLick [ix] == .T.
+            IF _HMG_aControlHeadCLick [ix]
                SetWindowText ( c , RTrim( DToC( hb_defaultValue( value, BLANK_DATE ) ) ) )
             ELSE
                SetWindowText ( c , RTrim( value ) )
@@ -458,11 +458,8 @@ FUNCTION _SetValue ( ControlName, ParentForm, Value, index )
       CASE _HMG_aControlSpacing [ix] .AND. value == NIL
          SendMessage ( c , BM_SETCHECK , BST_INDETERMINATE , 0 )
 
-      CASE value == .T.
-         SendMessage ( c , BM_SETCHECK , BST_CHECKED , 0 )
-
-      CASE value == .F.
-         SendMessage ( c , BM_SETCHECK , BST_UNCHECKED , 0 )
+      OTHERWISE
+         SendMessage ( c , BM_SETCHECK , iif( value, BST_CHECKED , BST_UNCHECKED ) , 0 )
 
       ENDCASE
 
@@ -858,7 +855,7 @@ FUNCTION _AddItem ( ControlName , ParentForm , Value , Parent , aImage , Id )
          ELSE
             _AddGridRow ( ControlName, ParentForm, value )
          ENDIF
-         IF _HMG_aControlEnabled [ix] == .T.
+         IF _HMG_aControlEnabled [ix]
             _UpdateGridColors ( ix )
          ENDIF
       ENDIF
@@ -1172,7 +1169,7 @@ FUNCTION _SetFocus ( ControlName , ParentForm , Index )
       ENDIF
 
    CASE T == 'BUTTON'
-      IF _HMG_aControlEnabled [i] == .T.
+      IF _HMG_aControlEnabled [i]
 
          ParentFormHandle := _HMG_aControlParentHandles [i]
          FOR EACH hControl IN _HMG_aControlHandles
@@ -1226,7 +1223,7 @@ FUNCTION _DisableControl ( ControlName , ParentForm , nPosition )
    c := GetControlHandle ( ControlName , ParentForm )
    y := GetControlIndex ( ControlName , ParentForm )
 
-   IF T == "BUTTON" .AND. _HMG_aControlEnabled [y] == .T.
+   IF T == "BUTTON" .AND. _HMG_aControlEnabled [y]
       SendMessage ( c , BM_SETSTYLE , LOWORD ( BS_PUSHBUTTON ) , 1 )
       RedrawWindow ( c )
       IF !Empty( _HMG_aControlInputMask [y] )
@@ -1239,7 +1236,7 @@ FUNCTION _DisableControl ( ControlName , ParentForm , nPosition )
 
       // HMG 1.0 Experimental build 9 (JK)
    CASE T == "BUTTON" .AND. !Empty( _HMG_aControlBrushHandle [y] ) .AND. ValType( _HMG_aControlPicture [y] ) == "A" .AND. _HMG_aControlMiscData1 [y] == 0
-      IF _HMG_aControlEnabled [y] == .T.
+      IF _HMG_aControlEnabled [y]
          IF _HMG_aControlDblClick [y] == .F. .AND. _HMG_IsThemed
             ImageList_Destroy( _HMG_aControlBrushHandle [y] )
             _HMG_aControlBrushHandle [y] := _SetMixedBtnPicture ( c , _HMG_aControlPicture [y][2] )
@@ -1252,7 +1249,7 @@ FUNCTION _DisableControl ( ControlName , ParentForm , nPosition )
       ENDIF
 
    CASE T == "BUTTON" .AND. !Empty( _HMG_aControlBrushHandle [y] ) .AND. ValType( _HMG_aControlPicture [y] ) == "C" .AND. _HMG_aControlMiscData1 [y] == 0
-      IF _HMG_aControlEnabled [y] == .T.
+      IF _HMG_aControlEnabled [y]
          IF _HMG_aControlDblClick [y] == .F. .AND. _HMG_IsThemed
             ImageList_Destroy( _HMG_aControlBrushHandle [y] )
             _HMG_aControlBrushHandle [y] := _SetMixedBtnPicture ( c , _HMG_aControlPicture [y] )
@@ -1265,7 +1262,7 @@ FUNCTION _DisableControl ( ControlName , ParentForm , nPosition )
       ENDIF
 
    CASE T == "CHECKBOX" .AND. !Empty( _HMG_aControlBrushHandle [y] ) .AND. ValType( _HMG_aControlPicture [y] ) == "C" .AND. _HMG_aControlMiscData1 [y] == 1
-      IF _HMG_aControlEnabled [y] == .T.
+      IF _HMG_aControlEnabled [y]
          IF _HMG_IsThemed
             ImageList_Destroy( _HMG_aControlBrushHandle [y] )
             _HMG_aControlBrushHandle [y] := _SetMixedBtnPicture ( c , _HMG_aControlPicture [y] , _HMG_aControlSpacing [y] )
@@ -1304,7 +1301,7 @@ FUNCTION _DisableControl ( ControlName , ParentForm , nPosition )
       _DisableMenuItem ( ControlName, ParentForm )
 
    CASE T == "TIMER"
-      IF _HMG_aControlEnabled [y] == .T.
+      IF _HMG_aControlEnabled [y]
          w := GetControlParentHandle ( ControlName, ParentForm )
          s := GetControlId ( ControlName, ParentForm )
          KillTimer ( w , s )
@@ -1506,7 +1503,7 @@ FUNCTION _ShowControl ( ControlName , ParentForm )
    c := GetControlHandle ( ControlName , ParentForm )
    y := GetControlIndex ( ControlName , ParentForm )
 
-   IF _HMG_aControlVisible [y] == .T.
+   IF _HMG_aControlVisible [y]
       RETURN Nil
    ENDIF
 
@@ -1609,7 +1606,7 @@ FUNCTION _ShowControl ( ControlName , ParentForm )
 
    NEXT i
 
-   IF TabHide == .T.
+   IF TabHide
       _HMG_aControlVisible [y] := .T.
       RETURN Nil
    ENDIF
@@ -1905,7 +1902,7 @@ FUNCTION _SetItem ( ControlName , ParentForm , Item , Value , index )
                   aTemp [ci] := Str ( VALUE [CI] )
 
                ELSEIF AEC == 'CHECKBOX'
-                  IF VALUE [CI] == .T.
+                  IF VALUE [CI]
                      aTemp [ci] := ALABELS [1]
                   ELSE
                      aTemp [ci] := ALABELS [2]
@@ -2809,7 +2806,7 @@ FUNCTION _SetPicture ( ControlName , ParentForm , FileName )
 
    OTHERWISE  // picture for [check]buttons
 
-      IF _HMG_aControlEnabled [i] == .T.
+      IF _HMG_aControlEnabled [i]
 
          IF ! Empty ( _HMG_aControlBrushHandle [i] )
             IF t <> "OBUTTON" .AND. _HMG_IsThemed
@@ -4120,13 +4117,13 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #endif
 
 #ifdef _HMG_COMPAT_
-   IF _RichEditBox_SetProperty ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 ) == .T.
+   IF _RichEditBox_SetProperty ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
       RETURN
    ENDIF
 #endif
 
 #ifdef _BT_
-   IF _ProgressWheel_SetProperty ( Arg1, Arg2, Arg3, Arg4 ) == .T.
+   IF _ProgressWheel_SetProperty ( Arg1, Arg2, Arg3, Arg4 )
       RETURN
    ENDIF
 #endif
@@ -4148,7 +4145,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN
             ENDIF
 
@@ -4238,11 +4235,11 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg2 == "VISIBLE"
 
-         iif ( Arg3 == .T. , _ShowWindow ( Arg1 ) , _HideWindow ( Arg1 ) )
+         iif ( Arg3 , _ShowWindow ( Arg1 ) , _HideWindow ( Arg1 ) )
 
       CASE Arg2 == "ENABLED"
 
-         iif ( Arg3 == .T. , EnableWindow ( GetFormHandle( Arg1 ) ) , DisableWindow ( GetFormHandle( Arg1 ) ) )
+         iif ( Arg3 , EnableWindow ( GetFormHandle( Arg1 ) ) , DisableWindow ( GetFormHandle( Arg1 ) ) )
 
       CASE Arg2 == "TOPMOST"
 
@@ -4317,7 +4314,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN
             ENDIF
 
@@ -4468,11 +4465,11 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg3 == "VISIBLE"
 
-         iif ( Arg4 == .T. , _ShowControl ( Arg2 , Arg1 ) , _HideControl ( Arg2 , Arg1 ) )
+         iif ( Arg4 , _ShowControl ( Arg2 , Arg1 ) , _HideControl ( Arg2 , Arg1 ) )
 
       CASE Arg3 == "ENABLED"
 
-         iif ( Arg4 == .T. , _EnableControl ( Arg2 , Arg1 ) , _DisableControl ( Arg2 , Arg1 ) )
+         iif ( Arg4 , _EnableControl ( Arg2 , Arg1 ) , _DisableControl ( Arg2 , Arg1 ) )
 
       CASE Arg3 == "CHECKED"
 
@@ -4487,7 +4484,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
          ELSE
 
-            iif ( Arg4 == .T. , _CheckMenuItem ( Arg2 , Arg1 ) , _UnCheckMenuItem ( Arg2 , Arg1 ) )
+            iif ( Arg4 , _CheckMenuItem ( Arg2 , Arg1 ) , _UnCheckMenuItem ( Arg2 , Arg1 ) )
 
          ENDIF
 
@@ -4499,13 +4496,13 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
             IF _HMG_aControlMiscData1 [ix] [2] == .T.
 
-               iif ( Arg4 == .T. , _EnableControl ( 'BlinkTimer' + hb_ntos( ix ) , Arg1 ) , _DisableControl ( 'BlinkTimer' + hb_ntos( ix ) , Arg1 ) )
+               iif ( Arg4 , _EnableControl ( 'BlinkTimer' + hb_ntos( ix ) , Arg1 ) , _DisableControl ( 'BlinkTimer' + hb_ntos( ix ) , Arg1 ) )
 
                IF _HMG_aControlMiscData1 [ix] [3] == .F.
                   _ShowControl ( Arg2 , Arg1 )
                ENDIF
 
-            ELSEIF Arg4 == .T.
+            ELSEIF Arg4
 
                _HMG_aControlMiscData1 [ix] [2] := Arg4
 
@@ -4526,7 +4523,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg3 == "REPEAT"
 
-         IF Arg4 == .T.
+         IF Arg4
             _SetPlayerRepeatOn ( Arg2 , Arg1 )
          ELSE
             _SetPlayerRepeatOff ( Arg2 , Arg1 )
@@ -4605,7 +4602,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #endif
       CASE Arg3 == "CHECKBOXENABLED"
 
-         IF Arg4 == .T.
+         IF Arg4
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , LVS_EX_CHECKBOXES , NIL )
          ELSE
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , NIL , LVS_EX_CHECKBOXES )
@@ -4614,7 +4611,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE "DOUBLEBUFFER" $ Arg3
 
-         IF Arg4 == .T.
+         IF Arg4
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ), LVS_EX_DOUBLEBUFFER, NIL )
          ELSE
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ), NIL, LVS_EX_DOUBLEBUFFER )
@@ -4622,7 +4619,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg3 == "HEADERDRAGDROP"
 
-         IF Arg4 == .T.
+         IF Arg4
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , LVS_EX_HEADERDRAGDROP , NIL )
          ELSE
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , NIL , LVS_EX_HEADERDRAGDROP )
@@ -4630,7 +4627,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg3 == "INFOTIP"
 
-         IF Arg4 == .T.
+         IF Arg4
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , LVS_EX_INFOTIP , NIL )
          ELSE
             ListView_ChangeExtendedStyle ( GetControlHandle( Arg2 , Arg1 ) , NIL , LVS_EX_INFOTIP )
@@ -4724,7 +4721,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN
             ENDIF
 
@@ -4819,7 +4816,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #endif
          CASE Arg3 == "ENABLED" // To ENABLE / DISABLE Radiobuttons and Tab pages
 
-            iif ( Arg5 == .T. , _EnableControl ( Arg2 , Arg1, Arg4 ) , _DisableControl ( Arg2 , Arg1, Arg4 ) )
+            iif ( Arg5 , _EnableControl ( Arg2 , Arg1, Arg4 ) , _DisableControl ( Arg2 , Arg1, Arg4 ) )
 
          CASE Arg3 == "RICHVALUE" // Kevin Carmody <i@kevincarmody.com> 2007.04.23
 
@@ -4987,7 +4984,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 #ifdef _HMG_COMPAT_
    LOCAL cHeader, nAlignHeader, cFooter, nAlingFooter, nState
 
-   IF _RichEditBox_GetProperty ( @xDATA, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 ) == .T.
+   IF _RichEditBox_GetProperty ( @xDATA, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
       RETURN xData
    ENDIF
 #else
@@ -4995,7 +4992,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 #endif
 
 #ifdef _BT_
-   IF _ProgressWheel_GetProperty ( @xDATA, Arg1, Arg2, Arg3 ) == .T.
+   IF _ProgressWheel_GetProperty ( @xDATA, Arg1, Arg2, Arg3 )
       RETURN xData
    ENDIF
 #endif
@@ -5017,7 +5014,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
             cMacro := cProc [3]
             RetVal := &cMacro ( Arg1 , Arg2 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN RetVal
             ENDIF
 
@@ -5186,7 +5183,7 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
             cMacro := cProc [3]
             RetVal := &cMacro ( Arg1 , Arg2 , Arg3 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN RetVal
             ENDIF
 
@@ -5874,7 +5871,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 #endif
 
 #ifdef _HMG_COMPAT_
-   IF _RichEditBox_DoMethod ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9 ) == .T.
+   IF _RichEditBox_DoMethod ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9 )
       RETURN NIL
    ENDIF
 #endif
@@ -5896,7 +5893,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -5949,7 +5946,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
          IF i > 0 .AND. i <= Len ( _HMG_aFormHandles )
 
-            IF _HMG_aFormActive [i] == .T.
+            IF _HMG_aFormActive [i]
                SetFocus ( _HMG_aFormHandles [i] )
             ENDIF
 
@@ -5981,7 +5978,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -6094,7 +6091,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -6188,7 +6185,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -6254,7 +6251,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -6296,7 +6293,7 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
 
             cMacro := cProc [2]
             &cMacro ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 )
-            IF _HMG_UserComponentProcess == .T.
+            IF _HMG_UserComponentProcess
                RETURN NIL
             ENDIF
 
@@ -7295,7 +7292,7 @@ FUNCTION GetFormIndexByHandle ( hWnd , /*@*/nFormSubIndex1 , /*@*/nFormSubIndex2
    FOR EACH FormHandle IN _HMG_aFormHandles
 
       x := hb_enumindex( FormHandle )
-      IF HMG_CompareHandle ( hWnd, FormHandle, @nFormSubIndex1, @nFormSubIndex2 ) == .T.
+      IF HMG_CompareHandle ( hWnd, FormHandle, @nFormSubIndex1, @nFormSubIndex2 )
          nIndex := x
          EXIT
       ENDIF
@@ -7314,7 +7311,7 @@ FUNCTION GetControlIndexByHandle ( hWnd , /*@*/nControlSubIndex1 , /*@*/nControl
    FOR EACH ControlHandle IN _HMG_aControlHandles
 
       x := hb_enumindex( ControlHandle )
-      IF HMG_CompareHandle ( hWnd, ControlHandle, @nControlSubIndex1, @nControlSubIndex2 ) == .T.
+      IF HMG_CompareHandle ( hWnd, ControlHandle, @nControlSubIndex1, @nControlSubIndex2 )
          nIndex := x
          EXIT
       ENDIF
@@ -8056,7 +8053,7 @@ STATIC PROCEDURE _SetRadioGroupReadOnly ( ControlName , ParentForm , aReadOnly )
 
    IF .NOT. lError
       _HMG_aControlPageMap [i] := aReadOnly
-      IF ( z := _GetValue ( , , i ) ) > 0 .AND. aReadOnly [z] == .T.
+      IF ( z := _GetValue ( , , i ) ) > 0 .AND. aReadOnly [z]
          _SetValue ( , , AScan ( aReadOnly , .F. ) , i )
       ENDIF
    ENDIF
@@ -8087,7 +8084,7 @@ STATIC PROCEDURE _SetTextEditReadOnly ( ControlName , ParentForm , Value )
 
    ENDIF
 
-   IF _HMG_aControlEnabled [i] == .T.
+   IF _HMG_aControlEnabled [i]
 
       IF t == "SPINNER"
          SendMessage ( _HMG_aControlHandles [i][1], EM_SETREADONLY, iif( lValue, 1, 0 ), 0 )
@@ -8379,7 +8376,7 @@ FUNCTION HMG_IsEqualArr ( aData1 , aData2 )
 
             IF ISARRAY ( aData1 [x] )
 
-               IF ( lEqual := HMG_IsEqualArr ( aData1 [x], aData2 [x] ) ) == .F.
+               IF !( lEqual := HMG_IsEqualArr ( aData1 [x], aData2 [x] ) )
 
                   EXIT
 

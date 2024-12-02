@@ -740,7 +740,7 @@ HB_FUNC( RICHEDITBOX_GETTEXT )
 #endif
    HWND              hWndControl = hmg_par_raw_HWND( 1 );
    BOOL              lSelect = ( BOOL ) hb_parl( 2 );
-   int               nLen;
+   LRESULT           nLen;
    GETTEXTLENGTHEX   GTL;
    GTL.flags = GTL_PRECISE;
 #ifdef UNICODE
@@ -755,7 +755,7 @@ HB_FUNC( RICHEDITBOX_GETTEXT )
       TCHAR       *cBuffer = ( TCHAR * ) hb_xgrab( ( nLen + 1 ) * sizeof( TCHAR ) );
 
       GETTEXTEX   GT;
-      GT.cb = ( nLen + 1 ) * sizeof( TCHAR );
+      GT.cb = ( DWORD ) ( ( nLen + 1 ) * sizeof( TCHAR ) ) ;
       GT.flags = ( lSelect ? GT_SELECTION : GT_DEFAULT );
 #ifdef UNICODE
       GT.codepage = CP_UNICODE;
@@ -801,7 +801,7 @@ HB_FUNC( RICHEDITBOX_GETTEXTRANGE )
    LPSTR            pStr;
 #endif
    HWND             hWndControl = hmg_par_raw_HWND( 1 );
-   int              nLength;
+   LRESULT          nLength;
    GETTEXTLENGTHEX  GTL;
    GTL.flags = GTL_PRECISE;
    #ifdef UNICODE

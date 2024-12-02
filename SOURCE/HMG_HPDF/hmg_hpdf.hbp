@@ -2,6 +2,8 @@
 # hmg_hpdf.hbp
 #
 
+{bcc}-env:DEBUG=yes
+
 -hblib
 -inc
 -o../../harbour/lib/hmg_hpdf
@@ -9,6 +11,8 @@
 -I../../include
 
 -w2 -es2 -ko -q0
+
+{!DEBUG&bcc|allmingw}-l
 
 {bcc}-hbx=../../include/hmg_hpdf.hbx
 

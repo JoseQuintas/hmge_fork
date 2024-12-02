@@ -1,19 +1,20 @@
-#define _WIN32_IE     0x0500
-#define _WIN32_WINNT  0x0400
+#define _WIN32_IE    0x0500
+#define _WIN32_WINNT 0x0400
 
 #include <mgdefs.h>
 #include <commctrl.h>
 
 #ifdef UNICODE
-   LPWSTR AnsiToWide( LPCSTR );
-   LPSTR  WideToAnsi( LPWSTR );
+LPWSTR               AnsiToWide( LPCSTR );
+LPSTR                WideToAnsi( LPWSTR );
 #endif
-BOOL Array2Rect( PHB_ITEM aRect, RECT * rc );
-PHB_ITEM             Rect2Array( RECT * rc );
 
-// Minigui Resources control system
-void RegisterResource( HANDLE hResource, LPCSTR szType );
-void pascal DelResource( HANDLE hResource );
+BOOL                 Array2Rect( PHB_ITEM aRect, RECT *rc );
+PHB_ITEM             Rect2Array( RECT *rc );
+
+// MiniGUI Resources control
+void                 RegisterResource( HANDLE hResource, LPCSTR szType );
+void pascal          DelResource( HANDLE hResource );
 
 static far BYTE HandXor[] = {
    0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
@@ -103,155 +104,163 @@ static far BYTE DragAnd[] = {
    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
-static far HCURSOR hHand  = NULL;
-static far HCURSOR hStop  = NULL;
-static far HCURSOR hCatch = NULL;
-static far HCURSOR hDrag  = NULL;
-/*
-HB_FUNC( NOR )
-{
-   int p = hb_pcount();
-   int n, ret = 0;
+static far HCURSOR   hHand = NULL;
+static far HCURSOR   hStop = NULL;
+static far HCURSOR   hCatch = NULL;
+static far HCURSOR   hDrag = NULL;
 
-   for( n = 1; n <= p; n++ )
-   {
-      ret = ret | hb_parni( n );
-   }
-
-   hb_retni( ret );
-}
-*/
+// Function to create a pen with specified style, width, and color
 HB_FUNC( CREATEPEN )
 {
-   int      fnPenStyle = hb_parni( 1 );         // pen style
-   int      nWidth     = hb_parni( 2 );         // pen width
-   COLORREF crColor    = hmg_par_COLORREF( 3 ); // pen color
+   int      fnPenStyle = hb_parni( 1 );      // Retrieve pen style parameter
+   int      nWidth = hb_parni( 2 );          // Retrieve pen width parameter
+   COLORREF crColor = hmg_par_COLORREF( 3 ); // Retrieve pen color parameter
 
+   // Create a pen using CreatePen API and return its handle
    hmg_ret_raw_HANDLE( CreatePen( fnPenStyle, nWidth, crColor ) );
 }
 
+// Function to move the drawing position to a specified point
 HB_FUNC( MOVETO )
 {
-   POINT pt;
+   POINT pt;               // Structure to store the previous position
 
+   // Call MoveToEx to move the drawing position and return the result as a boolean
    hb_retl( MoveToEx( hmg_par_raw_HDC( 1 ), hmg_par_INT( 2 ), hmg_par_INT( 3 ), &pt ) );
 }
 
+// Function to draw a line from the current position to the specified point
 HB_FUNC( LINETO )
 {
+   // Call LineTo to draw the line and return the result as a boolean
    hb_retl( LineTo( hmg_par_raw_HDC( 1 ), hmg_par_INT( 2 ), hmg_par_INT( 3 ) ) );
 }
 
+// Function to draw an icon at a specified position
 HB_FUNC( DRAWICON )
 {
+   // Call DrawIcon with HDC, position, and icon handle; return result as boolean
    hb_retl( DrawIcon( hmg_par_raw_HDC( 1 ), hb_parni( 2 ), hb_parni( 3 ), hmg_par_raw_HICON( 4 ) ) );
 }
 
+// Function to set the cursor to a horizontal resize cursor
 HB_FUNC( CURSORWE )
 {
+   // Load and set a horizontal resize cursor, returning its handle
    hmg_ret_raw_HANDLE( SetCursor( LoadCursor( 0, IDC_SIZEWE ) ) );
 }
 
+// Function to set the cursor to a "size all" cursor
 HB_FUNC( CURSORSIZE )
 {
+   // Load and set a "size all" cursor, returning its handle
    hmg_ret_raw_HANDLE( SetCursor( LoadCursor( 0, IDC_SIZEALL ) ) );
 }
 
+// Function to release the mouse capture
 HB_FUNC( RELEASECAPTURE )
 {
+   // Call ReleaseCapture to release mouse input capture, returning result as boolean
    hb_retl( ReleaseCapture() );
 }
 
+// Function to invert the colors in a rectangle
 HB_FUNC( INVERTRECT )
 {
-   RECT rc;
-
-   if( HB_ISARRAY( 2 ) )
+   RECT  rc;               // Rectangle structure
+   if( HB_ISARRAY( 2 ) )   // Check if second parameter is an array
    {
-      Array2Rect( hb_param( 2, HB_IT_ARRAY ), &rc );
-      InvertRect( hmg_par_raw_HDC( 1 ), &rc );
+      Array2Rect( hb_param( 2, HB_IT_ARRAY ), &rc );           // Convert array to RECT
+      InvertRect( hmg_par_raw_HDC( 1 ), &rc );                 // Invert the rectangle
    }
 }
 
+// Function to retrieve class information for a window class
 HB_FUNC( GETCLASSINFO )
 {
 #ifndef UNICODE
-   LPCSTR lpString = ( LPCSTR ) hb_parc( 2 );
+   LPCSTR   lpString = ( LPCSTR ) hb_parc( 2 );                // Retrieve class name as ANSI string
 #else
-   LPWSTR lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPSTR pStr;
+   LPWSTR   lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );  // Convert ANSI to wide string
+   LPSTR    pStr;
 #endif
    WNDCLASS WndClass;
 
+   // Retrieve class information using GetClassInfo API
    if( GetClassInfo( HB_ISNIL( 1 ) ? NULL : hmg_par_raw_HINSTANCE( 1 ), lpString, &WndClass ) )
    {
-   #ifdef UNICODE
-      hb_reta( 1 );
+#ifdef UNICODE
+      hb_reta( 1 );              // Return array for Unicode
       pStr = WideToAnsi( ( LPWSTR ) WndClass.lpszClassName );
-      HB_STORC( pStr, -1, 1 );
-      hb_xfree( pStr );
-   #else
-      hb_retclen( ( char * ) &WndClass, sizeof( WNDCLASS ) );
-   #endif
+      HB_STORC( pStr, -1, 1 );   // Store class name in return array
+      hb_xfree( pStr );          // Free temporary string
+#else
+      hb_retclen( ( char * ) &WndClass, sizeof( WNDCLASS ) );  // Return structure as string
+#endif
    }
 
 #ifdef UNICODE
-   hb_xfree( lpString );
+   hb_xfree( lpString );   // Free allocated wide string
 #endif
 }
 
+// Function to capture mouse input for a specified window
 HB_FUNC( SETCAPTURE )
 {
    hmg_ret_raw_HANDLE( SetCapture( hmg_par_raw_HWND( 1 ) ) );
 }
 
+// Function to get the current text color
 HB_FUNC( GETTEXTCOLOR )
 {
    hmg_ret_COLORREF( GetTextColor( hmg_par_raw_HDC( 1 ) ) );
 }
 
+// Function to get the current background color
 HB_FUNC( GETBKCOLOR )
 {
    hmg_ret_COLORREF( GetBkColor( hmg_par_raw_HDC( 1 ) ) );
 }
 
+// Function to move or rename a file
 HB_FUNC( MOVEFILE )
 {
 #ifndef UNICODE
-   LPCSTR lpExistingFileName = hb_parc( 1 );
-   LPCSTR lpNewFileName = hb_parc( 2 );
+   LPCSTR   lpExistingFileName = hb_parc( 1 );  // Get source file name (ANSI)
+   LPCSTR   lpNewFileName = hb_parc( 2 );       // Get destination file name (ANSI)
 #else
-   LPWSTR lpExistingFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPWSTR lpNewFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpExistingFileName = AnsiToWide( ( char * ) hb_parc( 1 ) ); // Convert to wide string
+   LPWSTR   lpNewFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-
-   hb_retl( MoveFile( lpExistingFileName, lpNewFileName ) );
-
+   hb_retl( MoveFile( lpExistingFileName, lpNewFileName ) );            // Perform the move operation
 #ifdef UNICODE
-   hb_xfree( lpExistingFileName );
+   hb_xfree( lpExistingFileName );        // Free allocated strings
    hb_xfree( lpNewFileName );
 #endif
 }
 
+// Function to get the current Windows code page
 HB_FUNC( GETACP )
 {
-   hmg_ret_UINT( GetACP() );
+   hmg_ret_UINT( GetACP() );              // Get the ANSI code page and return it
 }
 
+// Function to create and return a "hand" cursor
 HB_FUNC( GETCURSORHAND )
 {
-   if( ! hHand )
+   if( !hHand )                           // Check if hand cursor is not already created
    {
       hHand = CreateCursor( GetModuleHandle( NULL ), 6, 0, 32, 32, HandAnd, HandXor );
-      RegisterResource( hHand, "CUR" );
+      RegisterResource( hHand, "CUR" );   // Register the cursor as a resource
    }
 
-   hmg_ret_raw_HANDLE( hHand );
+   hmg_ret_raw_HANDLE( hHand );           // Return the handle
 }
 
+// Function to create and return a "drag" cursor
 HB_FUNC( GETCURSORDRAG )
 {
-   if( ! hDrag )
+   if( !hDrag )
    {
       hDrag = CreateCursor( GetModuleHandle( NULL ), 6, 0, 32, 32, DragAnd, DragXor );
       RegisterResource( hDrag, "CUR" );
@@ -260,9 +269,10 @@ HB_FUNC( GETCURSORDRAG )
    hmg_ret_raw_HANDLE( hDrag );
 }
 
+// Function to create and return a "catch" cursor
 HB_FUNC( GETCURSORCATCH )
 {
-   if( ! hCatch )
+   if( !hCatch )
    {
       hCatch = CreateCursor( GetModuleHandle( NULL ), 16, 16, 32, 32, CatchAnd, CatchXor );
       RegisterResource( hCatch, "CUR" );
@@ -271,9 +281,10 @@ HB_FUNC( GETCURSORCATCH )
    hmg_ret_raw_HANDLE( hCatch );
 }
 
+// Function to create and return a "stop" cursor
 HB_FUNC( GETCURSORSTOP )
 {
-   if( ! hStop )
+   if( !hStop )
    {
       hStop = CreateCursor( GetModuleHandle( NULL ), 6, 0, 32, 32, StopAnd, StopXor );
       RegisterResource( hStop, "CUR" );
@@ -282,38 +293,51 @@ HB_FUNC( GETCURSORSTOP )
    hmg_ret_raw_HANDLE( hStop );
 }
 
+// Function to set the "stop" cursor
 HB_FUNC( CURSORSTOP )
 {
-   if( ! hStop )
+   if( !hStop )         // Check if "stop" cursor is not already created
    {
       hStop = CreateCursor( GetModuleHandle( NULL ), 6, 0, 32, 32, StopAnd, StopXor );
    }
 
-   SetCursor( hStop );
+   SetCursor( hStop );  // Set the "stop" cursor
 }
 
+// Function to destroy a cursor and free associated resources
 HB_FUNC( DESTROYCURSOR )
 {
-   HCURSOR hCur = hmg_par_raw_HCURSOR( 1 );
+   HCURSOR  hCur = hmg_par_raw_HCURSOR( 1 ); // Get cursor handle to destroy
 
+   // Clear associated global variables if the cursor matches
    if( hCur == hDrag )
-      hDrag  = NULL;
+   {
+      hDrag = NULL;
+   }
    else if( hCur == hCatch )
+   {
       hCatch = NULL;
+   }
    else if( hCur == hStop )
-      hStop  = NULL;
+   {
+      hStop = NULL;
+   }
    else if( hCur == hHand )
-      hHand  = NULL;
+   {
+      hHand = NULL;
+   }
 
-   DelResource( hCur );
-   hb_retl( DestroyCursor( hCur ) );
+   DelResource( hCur );                // Unregister the cursor resource
+   hb_retl( DestroyCursor( hCur ) );   // Destroy the cursor and return result
 }
 
+// Function to get the number of scroll lines for the mouse wheel
 HB_FUNC( GETWHEELSCROLLLINES )
 {
-   UINT pulScrollLines;
+   UINT  pulScrollLines;
 
+   // Retrieve the number of lines per mouse wheel scroll
    SystemParametersInfo( SPI_GETWHEELSCROLLLINES, 0, &pulScrollLines, 0 );
 
-   hmg_ret_UINT( pulScrollLines );
+   hmg_ret_UINT( pulScrollLines );     // Return the result
 }

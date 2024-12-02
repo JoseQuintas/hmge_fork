@@ -11,13 +11,14 @@
 #include "tsbrowse.ch"
 #include "hbextcdp.ch"
 #include "hb_CodePage.ch"
+#include "i_winnls.ch"
 
 REQUEST DBFNTX, DBFDBT, DBFCDX, DBFFPT, SIXCDX, DBFNSX, HB_MEMIO
 REQUEST BMDBFNTX, BMDBFCDX, BMDBFNSX, BM_DBSEEKWILD
 
 #define PROGRAM  "MG DBF-view"
-#define PROGVER  "Version 0.83 (19.10.2024)"
-#define PROGINF  "Viewing dbf files for Harbour/Clipper/Foxpro/Six"
+#define PROGVER  "Version 0.87 (19.11.2024)"
+#define PROGINF  "Viewing dbf files for Harbour/Clipper/DbaseIV/Foxpro/Six"
 ///////////////////////////////////////////////////////////////////
 FUNCTION DimMenuMain()
    LOCAL oMenu := oHmgData()
@@ -143,10 +144,10 @@ FUNCTION Form_TsbView(aUse)
 
       owc:cRus  := "F2/F3-кодировка,   Ins-новая запись, Del-удалить/восстановить запись"
       owc:cEng  := "F2/F3-encoding,   Ins-new recno, Del-delete/restore recno"
-      //owc:cMsg3 += "F8/F9-Selector" + SPACE(3)
       owc:cMsg3 := IIF( App.Cargo:cLang == "RU", owc:cRus, owc:cEng)
-      @ nH1, nW1 + nG LABEL Lbl_3 VALUE owc:cMsg3 WIDTH nW2 HEIGHT owc:nH3Line SIZE owc:nFSize ;
-        FONTCOLOR WHITE TRANSPARENT VCENTERALIGN INVISIBLE
+      owc:cLang := "HB_LANGSELECT()=" + HB_LANGSELECT()
+      @ nH1, nW1 + nG LABEL Lbl_3 VALUE owc:cLang WIDTH nW2 HEIGHT owc:nH3Line SIZE owc:nFSize ;
+        FONTCOLOR WHITE TRANSPARENT VCENTERALIGN //INVISIBLE
       owc:aLblUp      := { "Lbl_1", "Lbl_2" , "Lbl_3"}        // строки подсказки
       owc:aLbSay      := { owc:cMsg1, owc:cMsg2, owc:cMsg3 }
       // координаты вывода меню
@@ -178,7 +179,7 @@ FUNCTION Form_TsbView(aUse)
 
       _o2log(owc, 15, ProcNL()+" -------------- Параметры объекта : => owc-Cargo", .T.)
 
-      ON KEY F1     ACTION NIL
+      ON KEY F1     ACTION _wPost("_Help", cForm,"_Help")
       ON KEY ESCAPE ACTION _wPost(99)
 
       // Установка событий на это окно программы
@@ -389,8 +390,8 @@ INIT PROCEDURE Sets_ENV()
 *----------------------------------------------------------------------------*
    LOCAL o, cLog, aFont, cIni := hb_FNameExtSet( App.ExeName, ".ini" )
 
-   SET CODEPAGE TO RUSSIAN
-   SET LANGUAGE TO RUSSIAN
+   SET CODEPAGE TO ENGLISH       // HB_CDPSELECT( "EN" )
+   SET LANGUAGE TO ENGLISH       // HB_LANGSELECT( "EN" )
 
    rddSetDefault( "DBFCDX" )
 
@@ -424,9 +425,6 @@ INIT PROCEDURE Sets_ENV()
    o:cLogFile       := ChangeFileExt( App.ExeName, '.log' )
    // для отладки - потом убрать
    cLog             := o:cLogFile
-   //o:cLogFile       := cFilePath( cLog ) + "\"
-   //o:cLogFile       += "_" + cFileNoPath( cLog )
-   //
    o:cIniFile       := cIni
    o:lLogDel        := .T.
    o:aDlgBColor     := { 141, 179, 226 }     // Alert* BackColor
@@ -480,6 +478,9 @@ INIT PROCEDURE Sets_ENV()
    IF o:lLogDel ; hb_FileDelete( o:cLogFile )
    ENDIF
 
+   ThisAboutProg()  // вывод в лог инфо о программе
+   ? o:cLogFile ; ?
+
    IF o:lDebug ; SET LOGERROR ON
    ELSE        ; SET LOGERROR OFF
    ENDIF
@@ -532,13 +533,6 @@ INIT PROCEDURE Sets_ENV()
 
    SetMenuBitmapHeight( o:nMenuBmpHeight )
 
-   ? PadC( " Program start - " + HB_TTOC( hb_DateTime() ) + " ", 80, "-" )
-   ? " Screen resolution:", HB_NtoS(GetDesktopWidth())+" x "+HB_NtoS(GetDesktopHeight())
-   ?? "LargeFontsMode()=", HB_NtoS( LargeFontsMode() )
-   ? "Free Open Software:", MiniGuiVersion()
-   ? "     Free Compiler:", hb_Ccompiler()
-   ? "  Free Gui library:", Version()
-
    Default o:oIni:INFO := oHmgData()
    Default o:oIni:INFO:Developed_in   := MiniGUIVersion()
    Default o:oIni:INFO:xBase_compiler := Version()
@@ -561,9 +555,46 @@ INIT PROCEDURE Sets_ENV()
    Default o:oIni:MAIN:CodePade       := "RU1251"
    Default o:oIni:MAIN:SetDeleted     := "OFF"
    Default o:oIni:MAIN:DrvDbf         := "DBFCDX"
+   Default o:oIni:MAIN:Rem            := "кодовая страница программы/program code page"
+   Default o:oIni:MAIN:SET_CODEPAGE   := "" //"RU1251"
+   Default o:oIni:MAIN:SET_LANGUAGE   := "" //"RU1251"
 
    // зададим язык из ини-файла
-   App.Cargo:cLang := o:oIni:MAIN:cLang                        // язык интерфейса программы
+   App.Cargo:cLang    := o:oIni:MAIN:cLang                        // язык интерфейса программы
+   App.Cargo:cSetCdpg := o:oIni:MAIN:SET_CODEPAGE
+   App.Cargo:cSetLang := o:oIni:MAIN:SET_LANGUAGE
+
+   IF LEN(App.Cargo:cSetCdpg) == 0
+      // это нигде не используется в программе, нет открытия баз по умолчанию
+      // this is not used anywhere in the program, there is no default database opening
+      App.Cargo:cSetCdpg := "RU1251"
+      App.Cargo:oIni:MAIN:SET_CODEPAGE := "RU1251"
+   ENDIF
+
+   ? ProcNL(), HMG_GetLocaleInfo( LOCALE_SENGLANGUAGE ), App.Cargo:cSetLang
+   IF !IsString(App.Cargo:cSetLang) .OR. !IsString(App.Cargo:cSetLang) .OR. ;
+      LEN(App.Cargo:cSetLang) == 0
+      // проверка языка в программе / Checking the language in the program
+      // язык на компьютере / language on computer
+      IF UPPER(HMG_GetLocaleInfo( LOCALE_SENGLANGUAGE )) == "RUSSIAN"
+         SET CODEPAGE TO RUSSIAN
+         SET LANGUAGE TO RUSSIAN
+      ELSE
+         // здесь можно поставить ваш язык, смотреть hb_CodePage.prg
+         // here you can set your language, see hb_CodePage.prg
+         // HB_CDPSELECT( "EN" )
+         // HB_LANGSELECT( "EN" )
+      ENDIF
+   ELSE
+      IF App.Cargo:cSetLang == "RU1251" .OR. App.Cargo:cSetLang == "RU866"
+         SET LANGUAGE TO RUSSIAN
+         SET CODEPAGE TO RUSSIAN
+      ELSE
+         HB_CDPSELECT ( App.Cargo:cSetCdpg )
+         HB_LANGSELECT( App.Cargo:cSetLang )
+      ENDIF
+   ENDIF
+   ? ProcNL(), "HB_LANGSELECT()=", HB_LANGSELECT(), "HB_CDPSELECT()=", HB_CDPSELECT()
 
    // TsBrowse
    Default o:oIni:TsBrowse := oHmgData()
@@ -638,6 +669,22 @@ STATIC FUNCTION ResizeForm( oWnd )
    ENDIF
 
    DO EVENTS
+
+RETURN NIL
+
+///////////////////////////////////////////////////////////////////////////////
+STATIC FUNCTION ThisAboutProg()
+
+   ? PadC( " Program start - " + HB_TTOC( hb_DateTime() ) + " ", 80, "-" )
+   ? App.Cargo:cTitle ; ? App.Cargo:cVersion
+   ? " Screen resolution:", HB_NtoS(GetDesktopWidth())+" x "+HB_NtoS(GetDesktopHeight())
+   ?? "LargeFontsMode()=", HB_NtoS( LargeFontsMode() )
+   ? "Free Open Software:", MiniGuiVersion()
+   ? "     Free Compiler:", hb_Ccompiler()
+   ? "  Free Gui library:", Version()
+   ? "   System language:", HMG_GetLocaleInfo( LOCALE_ILANGUAGE ), HMG_GetLocaleInfo( LOCALE_SLANGUAGE )
+   ?? HMG_GetLocaleInfo( LOCALE_SNATIVELANGNAME ), HMG_GetLocaleInfo( LOCALE_SENGLANGUAGE )
+   ? " Programm language:", hb_cdpSelect(), hb_langSelect() ; ?
 
 RETURN NIL
 

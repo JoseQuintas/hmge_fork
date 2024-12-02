@@ -1,4 +1,5 @@
-/* MINIGUI - Harbour Win32 GUI library source code
+/*
+   MINIGUI - Harbour Win32 GUI library source code
 
    Copyright 2002-2010 Roberto Lopez <harbourminigui@gmail.com>
    http://harbourminigui.googlepages.com/
@@ -47,79 +48,81 @@
    Parts  of  this  code  is contributed and used here under permission of his
    author: Copyright 2017 (C) P.Chornyj <myorg63@mail.ru>
  */
+
 #include <mgdefs.h>
+#include "hbapiitm.h"  // Harbour API for item manipulation
 
-#include "hbapiitm.h"
-
-#if defined( __BORLANDC__ ) || defined( __WATCOMC__ )
+// Define GdiFlush for certain compilers that may not have it
+#if ( defined( __BORLANDC__ ) && ( __BORLANDC__ <= 1410 ) ) || defined( __WATCOMC__ )
 WINGDIAPI BOOL WINAPI      GdiFlush( void );
 #endif
-extern HB_EXPORT BOOL      Array2ColorRef( PHB_ITEM aCRef, COLORREF *cr );
-extern HB_EXPORT BOOL      Array2Rect( PHB_ITEM aRect, RECT *rc );
-extern HB_EXPORT PHB_ITEM  Rect2Array( RECT *rc );
 
+// External functions for handling color references and rectangles
+extern HB_EXPORT BOOL      Array2ColorRef( PHB_ITEM aCRef, COLORREF *cr ); // Converts array to COLORREF
+extern HB_EXPORT BOOL      Array2Rect( PHB_ITEM aRect, RECT *rc );         // Converts array to RECT
+extern HB_EXPORT PHB_ITEM  Rect2Array( RECT *rc );                         // Converts RECT to array
+
+// Begins the paint process for a window, returning a device context handle.
 HB_FUNC( BEGINPAINT )
 {
-   HWND  hWnd = hmg_par_raw_HWND( 1 );
-
+   HWND  hWnd = hmg_par_raw_HWND( 1 );             // Retrieve the window handle from the function parameter
    if( IsWindow( hWnd ) )
    {
-      PAINTSTRUCT ps;
-
-      hmg_ret_raw_HDC( BeginPaint( hWnd, &ps ) );
-
-      hb_storclen( ( const char * ) &ps, sizeof( PAINTSTRUCT ), 2 );
+      PAINTSTRUCT ps;                              // Structure to hold paint information
+      hmg_ret_raw_HDC( BeginPaint( hWnd, &ps ) );  // Begin paint, return the handle to the HDC
+      hb_storclen( ( const char * ) &ps, sizeof( PAINTSTRUCT ), 2 ); // Store PAINTSTRUCT in function param
    }
    else
    {
-      hmg_ret_raw_HANDLE( NULL );
+      hmg_ret_raw_HANDLE( NULL );                     // Return null if window is invalid
    }
 }
 
+// Completes the paint process for a window, releasing the device context.
 HB_FUNC( ENDPAINT )
 {
-   HWND        hWnd = hmg_par_raw_HWND( 1 );
-   PAINTSTRUCT *pps = ( PAINTSTRUCT * ) hb_parc( 2 );
-
+   HWND        hWnd = hmg_par_raw_HWND( 1 );          // Retrieve window handle
+   PAINTSTRUCT *pps = ( PAINTSTRUCT * ) hb_parc( 2 ); // Retrieve PAINTSTRUCT pointer
    if( IsWindow( hWnd ) && pps )
    {
-      hmg_ret_L( EndPaint( hWnd, pps ) );
+      hmg_ret_L( EndPaint( hWnd, pps ) );             // End painting and return success
    }
    else
    {
-      hb_retl( HB_FALSE );
+      hb_retl( HB_FALSE ); // Return false if window or PAINTSTRUCT is invalid
    }
 }
 
+// Draws a focus rectangle inside a given item rectangle.
 HB_FUNC( DRAWFOCUSRECT )
 {
-   DRAWITEMSTRUCT *pps = hmg_par_raw_DITEMSTRUCT( 1 );
-
+   DRAWITEMSTRUCT *pps = hmg_par_raw_DITEMSTRUCT( 1 );   // Get DRAWITEMSTRUCT from parameter
    if( pps )
    {
-      InflateRect( &pps->rcItem, -3, -3 );
-      DrawFocusRect( pps->hDC, &pps->rcItem );
-      InflateRect( &pps->rcItem, +3, +3 );
+      InflateRect( &pps->rcItem, -3, -3 );               // Shrink the rectangle
+      DrawFocusRect( pps->hDC, &pps->rcItem );           // Draw focus rectangle on device context
+      InflateRect( &pps->rcItem, +3, +3 );               // Restore original rectangle size
    }
 }
 
+// Draws a state on a specified device context using a brush and optional flags.
 HB_FUNC( DRAWSTATE )
 {
-   HWND  hWnd = hmg_par_raw_HWND( 1 );
+   HWND  hWnd = hmg_par_raw_HWND( 1 );                   // Get the window handle
    HDC   hDC;
    BOOL  bDC = FALSE;
 
    if( IsWindow( hWnd ) )
    {
-      hDC = GetDC( hWnd );
+      hDC = GetDC( hWnd );          // Obtain device context if valid window
       bDC = TRUE;
    }
    else
    {
-      hDC = hmg_par_raw_HDC( 1 );
+      hDC = hmg_par_raw_HDC( 1 );   // Use existing HDC if window is invalid
    }
 
-   if( GetObjectType( ( HGDIOBJ ) hDC ) == OBJ_DC )
+   if( GetObjectType( ( HGDIOBJ ) hDC ) == OBJ_DC )         // Check if valid device context
    {
       HBRUSH   hBrush = ( HBRUSH ) NULL;
       COLORREF crBrush;
@@ -127,27 +130,24 @@ HB_FUNC( DRAWSTATE )
       WPARAM   wData = ( WPARAM ) hb_parclen( 4 );
       HB_ISIZ  fuFlags = hb_parns( 10 );
 
+      // Create a brush if color array is provided
       if( Array2ColorRef( hb_param( 2, HB_IT_ANY ), &crBrush ) )
       {
          hBrush = CreateSolidBrush( crBrush );
       }
 
-      if( wData > 0 )
-      {
-         lpData = ( LPARAM ) hb_parc( 4 );
-      }
-      else
-      {
-         lpData = ( LPARAM ) hmg_par_raw_LONG_PTR( 4 );
-      }
+      lpData = ( wData > 0 ) ? ( LPARAM ) hb_parc( 4 ) : ( LPARAM ) hmg_par_raw_LONG_PTR( 4 );
 
+      // Draw state with specified parameters
       hmg_ret_L( DrawState( hDC, hBrush, NULL, lpData, wData, hb_parni( 6 ), hb_parni( 7 ), hb_parni( 8 ), hb_parni( 9 ), ( UINT ) fuFlags ) );
 
+      // Release device context if acquired within function
       if( bDC )
       {
          ReleaseDC( hWnd, hDC );
       }
 
+      // Delete object if requested by parameter
       if( hb_parl( 11 ) )
       {
          if( GetObjectType( ( HGDIOBJ ) hDC ) == OBJ_BITMAP )
@@ -166,6 +166,7 @@ HB_FUNC( DRAWSTATE )
    }
 }
 
+// Retrieves the update rectangle for a window, returning it as an array if specified.
 HB_FUNC( GETUPDATERECT )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -182,7 +183,7 @@ HB_FUNC( GETUPDATERECT )
 
          hmg_ret_L( GetUpdateRect( hWnd, &rc, hb_parl( 3 ) ) );
 #ifndef __XHARBOUR__
-         hb_itemParamStoreRelease( 2, Rect2Array( &rc ) );
+         hb_itemParamStoreRelease( 2, Rect2Array( &rc ) );  // Convert RECT to array if Harbour
 #endif
       }
    }
@@ -192,24 +193,18 @@ HB_FUNC( GETUPDATERECT )
    }
 }
 
+// Forces all pending GDI operations to complete.
 HB_FUNC( GDIFLUSH )
 {
    hmg_ret_L( GdiFlush() );
 }
 
+// Draws grayed-out text, typically for disabled elements.
 HB_FUNC( GRAYSTRING )
 {
-   int   nCount = hb_parni( 5 );
-   int   nLen = ( int ) hb_parclen( 4 );
-
-   if( nCount > 0 )
-   {
-      nCount = HB_MIN( nCount, nLen );
-   }
-   else
-   {
-      nCount = nLen;
-   }
+   int   nCount = hb_parni( 5 );          // Number of characters to draw
+   int   nLen = ( int ) hb_parclen( 4 );  // Length of string
+   nCount = ( nCount > 0 ) ? HB_MIN( nCount, nLen ) : nLen;
 
    if( nLen > 0 )
    {
@@ -256,6 +251,7 @@ HB_FUNC( GRAYSTRING )
    }
 }
 
+// Marks a specific area of a window as needing to be redrawn.
 HB_FUNC( INVALIDATERECT )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -275,12 +271,11 @@ HB_FUNC( INVALIDATERECT )
             rc.top = hb_parni( 4 );
             rc.right = hb_parni( 5 );
             rc.bottom = hb_parni( 6 );
-
             bRect = TRUE;
          }
       }
 
-      hmg_ret_L( InvalidateRect( hWnd, bRect ? &rc : NULL, hb_parni( 2 ) /* erase-background flag */ ) );
+      hmg_ret_L( InvalidateRect( hWnd, bRect ? &rc : NULL, hb_parni( 2 ) ) );
    }
    else
    {
@@ -288,6 +283,7 @@ HB_FUNC( INVALIDATERECT )
    }
 }
 
+// Forces a window to redraw its content.
 HB_FUNC( REDRAWWINDOW )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -309,6 +305,7 @@ HB_FUNC( REDRAWWINDOW )
    }
 }
 
+// Sets the background color for a specified device context.
 HB_FUNC( C_SETBACKCOLOR )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -347,6 +344,7 @@ HB_FUNC( C_SETBACKCOLOR )
    }
 }
 
+// Sets the background drawing mode for text output (opaque or transparent).
 HB_FUNC( SETBKMODE )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -378,6 +376,7 @@ HB_FUNC( SETBKMODE )
    }
 }
 
+// Forces the window to repaint its client area.
 HB_FUNC( UPDATEWINDOW )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -392,6 +391,7 @@ HB_FUNC( UPDATEWINDOW )
    }
 }
 
+// Validates a specified rectangle, marking it as processed for painting.
 HB_FUNC( VALIDATERECT )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -411,7 +411,6 @@ HB_FUNC( VALIDATERECT )
             rc.top = hb_parni( 3 );
             rc.right = hb_parni( 4 );
             rc.bottom = hb_parni( 5 );
-
             bRect = TRUE;
          }
       }
@@ -424,6 +423,7 @@ HB_FUNC( VALIDATERECT )
    }
 }
 
+// Retrieves the window handle associated with a specified device context.
 HB_FUNC( WINDOWFROMDC )
 {
    hmg_ret_raw_HWND( WindowFromDC( hmg_par_raw_HDC( 1 ) ) );

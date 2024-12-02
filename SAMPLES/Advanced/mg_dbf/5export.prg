@@ -49,8 +49,8 @@ FUNCTION Menu5Export(oWnd,ky,cn,ob)
    AADD( aMenu, {                                                                                         } )
    AADD( aMenu, { ""      , "Open Office"     , .T. , ""               , ""    , 0,   ,    } )
    cFile := hb_FNameExtSet( aUse[1], ".ods" )
-   AADD( aMenu, { "iXls32", aLang[4] + " Ole-Calc-white  .ods" , .F. , "ToCalc7"      , cFile , 7, oWnd, ob } )
-   AADD( aMenu, { "iXls32", aLang[4] + " Ole-Calc-color  .ods" , .F. , "ToCalc7"      , cFile , 8, oWnd, ob } )
+   AADD( aMenu, { "iOOCalc32", aLang[4] + " Ole-Calc-white  .ods" , .F. , "ToCalc7"   , cFile , 7, oWnd, ob } )
+   AADD( aMenu, { "iOOCalc32", aLang[4] + " Ole-Calc-color  .ods" , .F. , "ToCalc7"   , cFile , 8, oWnd, ob } )
 
    nPos     := { nY, nX }
    nBmpSize := 32

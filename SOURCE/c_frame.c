@@ -45,59 +45,89 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
  */
-#include <mgdefs.h>
 
-#include <commctrl.h>
+#include <mgdefs.h>           // Include Minigui framework definitions
+#include <commctrl.h>         // Include common controls library for Windows
+
+// Define button control class for older versions of Borland C++ compilers
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
-
-// Button Class Name
-#define WC_BUTTON "Button"
+#define WC_BUTTON "Button"    // Button class name definition for backward compatibility
 #endif
-#include "hbapierr.h"
+#include "hbapierr.h"         // Include Harbour error handling API
 
+// Function prototypes
 #ifdef UNICODE
+// Prototype for a function to convert ANSI strings to wide strings (Unicode)
 LPWSTR      AnsiToWide( LPCSTR );
 #endif
+
+// Prototype for a function that retrieves the application instance
 HINSTANCE   GetInstance( void );
 
-/* Modified by P.Ch. 16.12. */
+/* Function: INITFRAME
+   Purpose: Initializes and creates a group box (frame) within a specified window.
+   
+   Parameters:
+      1. HWND hwnd         - Handle of the parent window.
+      2. HMENU hmenu       - Handle or identifier for the menu, optional for a group box.
+      3-6. int x, y, width, height - Coordinates and dimensions for positioning the frame.
+      7. LPCSTR windowTitle - Title or label text of the group box.
+      10. bool transparent - TRUE if the background should be opaque, FALSE for transparent.
+
+   Returns:
+      Handle to the created group box, or NULL if an error occurs.
+*/
 HB_FUNC( INITFRAME )
 {
+   // Retrieve the parent window handle from the function parameters
    HWND  hwnd = hmg_par_raw_HWND( 1 );
 
+   // Check if the provided window handle is valid
    if( IsWindow( hwnd ) )
    {
-      HMENU    hmenu = hmg_par_raw_HMENU( 2 );
-      DWORD    dwExStyle = hb_parl( 10 ) ? 0 : WS_EX_TRANSPARENT;
+      // Retrieve the menu handle or ID from parameters (optional for group boxes)
+      HMENU hmenu = hmg_par_raw_HMENU( 2 );
+
+      // Set extended window style based on transparency parameter
+      DWORD dwExStyle = hb_parl( 10 ) ? 0 : WS_EX_TRANSPARENT;
+
 #ifndef UNICODE
+      // Use ANSI string for the group box title if not compiling with Unicode
       LPCSTR   lpWindowName = hb_parc( 7 );
 #else
+      // Convert the ANSI title to Unicode if compiling with Unicode
       LPWSTR   lpWindowName = AnsiToWide( ( char * ) hb_parc( 7 ) );
 #endif
+
+      // Create the group box using the CreateWindowEx function
       hmg_ret_raw_HWND
       (
          CreateWindowEx
             (
-               dwExStyle,
-               WC_BUTTON,
-               lpWindowName,
-               WS_CHILD | WS_VISIBLE | BS_GROUPBOX | BS_NOTIFY,
-               hb_parni( 3 ),
-               hb_parni( 4 ),
-               hb_parni( 5 ),
-               hb_parni( 6 ),
-               hwnd,
-               ( IsMenu( hmenu ) ? hmenu : NULL ),
-               GetInstance(),
-               NULL
+               dwExStyle,     // Extended window style (transparency option)
+               WC_BUTTON,     // Class name for button control (used for group boxes)
+               lpWindowName,  // Title or label text for the group box
+               WS_CHILD | WS_VISIBLE | // Basic child and visible styles for the control
+               BS_GROUPBOX | BS_NOTIFY, // Group box style with notification enabled
+               hb_parni( 3 ), // X-coordinate of the frame
+               hb_parni( 4 ), // Y-coordinate of the frame
+               hb_parni( 5 ), // Width of the frame
+               hb_parni( 6 ), // Height of the frame
+               hwnd,          // Parent window handle
+               ( IsMenu( hmenu ) ? hmenu : NULL ), // Menu handle, or NULL if invalid
+               GetInstance(), // Handle to the application instance
+               NULL           // Additional data (not used)
             )
       );
+
+      // Free allocated memory for the title if UNICODE is used
 #ifdef UNICODE
       hb_xfree( ( TCHAR * ) lpWindowName );
 #endif
    }
    else
    {
+      // Raise an error if the window handle is invalid, specifying an argument error
       hb_errRT_BASE_SubstR( EG_ARG, 5001, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
    }
 }

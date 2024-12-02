@@ -1,5 +1,6 @@
 /*
 frm_DialogBrowse - browse
+part of frm_class
 */
 
 #include "frm_class.ch"
@@ -25,7 +26,7 @@ FUNCTION frm_DialogBrowse( Self, xDlg, xControl, cTable )
    FOR EACH aItem IN ::aAllSetup[ nPos, 2 ]
       IF ! Empty( aItem[ CFG_FNAME ] ) // aItem[ CFG_CTLTYPE ] == TYPE_TEXT
          AAdd( oTBrowse, { aItem[ CFG_CAPTION ], aItem[ CFG_FNAME ], aItem[ CFG_FPICTURE ], ;
-               aItem[ CFG_FTYPE ] } )
+               aItem[ CFG_FTYPE ], aItem[ CFG_FLEN ] } )
          IF aItem[ CFG_ISKEY ]
             cField := aItem[ CFG_FNAME ]
          ENDIF
@@ -50,21 +51,26 @@ FUNCTION DialogBrowse( oTBrowse, cTable, cField, xValue )
    LOCAL oThisForm, aItem
 
    oThisForm := frm_Class():New()
-   oThisForm:cOptions := ""
-   oThisForm:lNavigate := .F.
-   GUI():DialogCreate( @oThisForm:xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, cTable,, .T. )
-   frm_Button( oThisForm, .F. )
-   AAdd( oThisForm:aControlList, EmptyFrmClassItem() )
-   aItem := Atail( oThisForm:aControlList )
-   aItem[ CFG_CTLTYPE ] := TYPE_BROWSE
-   GUI():Browse( oThisForm:xDlg, oThisForm:xDlg, @aItem[ CFG_FCONTROL ], 70, 5, ;
-      APP_DLG_WIDTH - 10, APP_DLG_HEIGHT - 115, ;
-      oTbrowse, cField, @xValue, cTable, {}, oThisForm )
-   IF GUI():LibName() == "HWGUI"
-      aItem[ CFG_FCONTROL ]:lInFocus := .T.
-   ENDIF
-   // works for hmge from button
-   GUI():SetFocus( oThisForm:xDlg, aItem[ CFG_FCONTROL ] )
-   GUI():DialogActivate( oThisForm:xDlg, { || GUI():SetFocus( oThisForm:xDlg, aItem[ CFG_FCONTROL ] ) } )
+   WITH OBJECT oThisForm
+      :cOptions := ""
+      :lNavigate := .F.
+      AAdd( :aOptionList, { "Filter", { || GUI():MsgBox( "Filter" ) } } )
+      :cTitle := "BROWSE " + cTable
+      GUI():DialogCreate( oThisForm, @:xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, :cTitle,, .T. )
+      frm_ButtonCreate( oThisForm, .F. )
+      AAdd( :aControlList, EmptyFrmClassItem() )
+      aItem := Atail( :aControlList )
+      aItem[ CFG_CTLTYPE ] := TYPE_BROWSE
+      GUI():Browse( :xDlg, :xDlg, @aItem[ CFG_FCONTROL ], 70, 5, APP_DLG_WIDTH - 10, APP_DLG_HEIGHT - 115, ;
+         oTbrowse, cField, @xValue, cTable, {}, oThisForm )
+      IF GUI():LibName() == "HWGUI"
+         aItem[ CFG_FCONTROL ]:lInFocus := .T.
+      ELSEIF GUI():LibName() == "FIVEWIN"
+         GUI():SetBrowseKeyFilter( aItem[ CFG_FCONTROL ] )
+      ENDIF
+      // works for hmge from button
+      GUI():SetFocus( :xDlg, aItem[ CFG_FCONTROL ] )
+      GUI():DialogActivate( :xDlg, { || GUI():SetFocus( :xDlg, aItem[ CFG_FCONTROL ] ) } )
+   ENDWITH
 
    RETURN Nil

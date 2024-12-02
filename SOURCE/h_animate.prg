@@ -266,61 +266,74 @@ RETURN
 #include <mmsystem.h>
 #include <commctrl.h>
 
+// If compiled in UNICODE mode, declare a function to convert ANSI strings to wide-character strings
 #ifdef UNICODE
    LPWSTR AnsiToWide( LPCSTR );
 #endif
 
+// Harbour function to initialize and display an animated control (e.g., a loading animation)
 HB_FUNC( INITANIMATERES )
 {
-   HWND      AnimationCtrl;
-   HINSTANCE avi;
+   HWND AnimationCtrl;        // Handle for the animation control
+   HINSTANCE avi;             // Handle to the loaded library for the AVI resource
 #ifndef UNICODE
-   LPCSTR lpszDllName = hb_parc( 7 );
+   LPCSTR lpszDllName = hb_parc( 7 ); // Get the DLL name (resource file) from the 7th Harbour function parameter
 #else
-   LPWSTR lpszDllName = AnsiToWide( ( char * ) hb_parc( 7 ) );
+   LPWSTR lpszDllName = AnsiToWide( ( char * ) hb_parc( 7 ) ); // Convert to wide-character if in UNICODE mode
 #endif
 
+   // Define window style for the animation control
    DWORD Style = WS_CHILD | WS_VISIBLE | ACS_TRANSPARENT | ACS_CENTER | ACS_AUTOPLAY;
 
+   // Initialize the common controls for the animation class
    INITCOMMONCONTROLSEX i;
-
    i.dwSize = sizeof( INITCOMMONCONTROLSEX );
-   i.dwICC  = ICC_ANIMATE_CLASS;
-   InitCommonControlsEx( &i );
+   i.dwICC  = ICC_ANIMATE_CLASS; // Specify that we are using the animation control class
+   InitCommonControlsEx( &i ); // Load the necessary common controls
 
+   // Check if the 9th parameter indicates the animation should initially be hidden
    if( ! hb_parl( 9 ) )
    {
-      Style |= WS_VISIBLE;
+      Style |= WS_VISIBLE;    // Add visibility to the style if not hidden
    }
 
+   // Load the specified DLL containing the AVI resource
    avi = LoadLibrary( lpszDllName );
 
+   // Create the animation control window with the specified parameters
    AnimationCtrl = CreateWindowEx
                    (
-      0,                       // Style
-      ANIMATE_CLASS,           // Class Name
-      NULL,                    // Window name
-      Style,                   // Window Style
-      hb_parni( 3 ),           // Left
-      hb_parni( 4 ),           // Top
-      hb_parni( 5 ),           // Right
-      hb_parni( 6 ),           // Bottom
-      hmg_par_raw_HWND( 1 ),   // Handle of parent
-      hmg_par_raw_HMENU( 2 ),  // Menu
-      avi,                     // hInstance
-      NULL                     // User defined style
+      0,                       // Extended window style
+      ANIMATE_CLASS,           // Predefined class name for animation controls
+      NULL,                    // No window name
+      Style,                   // Style for the animation control
+      hb_parni( 3 ),           // Left position
+      hb_parni( 4 ),           // Top position
+      hb_parni( 5 ),           // Width
+      hb_parni( 6 ),           // Height
+      hmg_par_raw_HWND( 1 ),   // Parent window handle
+      hmg_par_raw_HMENU( 2 ),  // Handle to menu or child window ID
+      avi,                     // Instance handle of the loaded DLL
+      NULL                     // Additional parameters (not used here)
                    );
 
+   // Open and play the specified AVI resource in the animation control
    Animate_OpenEx( ( HWND ) AnimationCtrl, avi, MAKEINTRESOURCE( hb_parni( 8 ) ) );
 
+   // Store the library handle in the second return parameter
    HB_STORNL( ( LONG_PTR ) avi, 2 );
+
+   // Return the animation control handle to the caller
    hmg_ret_raw_HWND( AnimationCtrl );
 }
 
+// Harbour function to unload the library associated with an animation control
 HB_FUNC( UNLOADANIMATELIB )
 {
+   // Retrieve the handle of the library to unload from the function's first parameter
    HINSTANCE hLib = hmg_par_raw_HINSTANCE( 1 );
 
+   // If the library handle is valid, free the loaded library
    if( hLib )
    {
       FreeLibrary( hLib );

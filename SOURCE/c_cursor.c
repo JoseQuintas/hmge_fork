@@ -49,103 +49,155 @@
    File:           c_cursor.c
    Contributors:   Jacek Kubica <kubica@wssk.wroc.pl>
                    Grigory Filatov <gfilatov@gmail.com>
-   Description:    Mouse Cursor Shapes handling for MiniGUI
+   Description:    Handles mouse cursor shapes for MiniGUI.
    Status:         Public Domain
  */
-#include <mgdefs.h>
+
+#include <mgdefs.h>                 // Include required definitions and macros for the program
 
 #ifdef UNICODE
-LPWSTR      AnsiToWide( LPCSTR );
+LPWSTR      AnsiToWide( LPCSTR );   // Function declaration for converting ANSI to wide (Unicode) strings
 #endif
-HINSTANCE   GetInstance( void );
-HINSTANCE   GetResources( void );
+HINSTANCE   GetInstance( void );    // Function declaration to get the instance handle of the application
+HINSTANCE   GetResources( void );   // Function declaration to get the resources handle of the application
 
+// Helper function to get the cursor name as LPCSTR or LPCWSTR, depending on Unicode setting
+#ifdef UNICODE
+static LPCWSTR GetCursorNameWide( int paramIndex )
+{
+   // Convert ANSI string to wide if parameter is a string; otherwise, use as resource ID
+   if ( hb_parinfo( paramIndex ) & HB_IT_STRING )
+   {
+      return AnsiToWide( ( char * ) hb_parc( paramIndex ) );
+   }
+   else
+      return MAKEINTRESOURCE( hb_parni( paramIndex ) );
+}
+
+#else
+static LPCSTR GetCursorNameAnsi( int paramIndex )
+{
+   // Returns cursor name as ANSI string or as resource ID if the parameter is an integer
+   return( hb_parinfo( paramIndex ) & HB_IT_STRING ) ? hb_parc( paramIndex ) : MAKEINTRESOURCE( hb_parni( paramIndex ) );
+}
+#endif
+
+// Function to load a cursor by name or resource identifier
 HB_FUNC( LOADCURSOR )
 {
+   // Use NULL if no instance is specified; otherwise, get the instance handle
    HINSTANCE   hInstance = HB_ISNIL( 1 ) ? NULL : hmg_par_raw_HINSTANCE( 1 );
 
 #ifndef UNICODE
-   LPCSTR      lpCursorName = ( hb_parinfo( 2 ) & HB_IT_STRING ) ? hb_parc( 2 ) : MAKEINTRESOURCE( hb_parni( 2 ) );
-   hmg_ret_raw_HANDLE( LoadCursor( hInstance, lpCursorName ) );
+   LPCSTR      lpCursorName = GetCursorNameAnsi( 2 );             // Get ANSI cursor name
+   hmg_ret_raw_HANDLE( LoadCursor( hInstance, lpCursorName ) );   // Load and return cursor handle
 #else
-   LPWSTR   pW = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR  lpCursorName = HB_ISCHAR( 2 ) ? pW : ( LPCWSTR ) MAKEINTRESOURCE( hb_parni( 2 ) );
-
+   LPCWSTR  lpCursorName = GetCursorNameWide( 2 );                // Get Unicode cursor name
    hmg_ret_raw_HANDLE( LoadCursor( hInstance, lpCursorName ) );
-   hb_xfree( pW );
+   if ( HB_ISCHAR( 2 ) ) // Free memory only if it was allocated dynamically
+   {
+      hb_xfree( ( void * ) lpCursorName );
+   }
 #endif
 }
 
+// Function to load a cursor from a file path
 HB_FUNC( LOADCURSORFROMFILE )
 {
-#ifndef UNICODE
-   hmg_ret_raw_HANDLE( LoadCursorFromFile( ( LPCSTR ) hb_parc( 1 ) ) );
+#ifdef UNICODE
+   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );   // Convert ANSI path to wide string
+   hmg_ret_raw_HANDLE( LoadCursorFromFile( lpFileName ) );        // Load cursor from file and return handle
+   hb_xfree( ( TCHAR * ) lpFileName ); // Free the wide string after use
 #else
-   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   hmg_ret_raw_HANDLE( LoadCursorFromFile( lpFileName ) );
-   hb_xfree( ( TCHAR * ) lpFileName );
+   hmg_ret_raw_HANDLE( LoadCursorFromFile( ( LPCSTR ) hb_parc( 1 ) ) ); // Load cursor from ANSI path
 #endif
 }
 
+// Function to set a specified cursor as the active cursor
 HB_FUNC( SETRESCURSOR )
 {
-   hmg_ret_raw_HANDLE( SetCursor( hmg_par_raw_HCURSOR( 1 ) ) );
+   hmg_ret_raw_HANDLE( SetCursor( hmg_par_raw_HCURSOR( 1 ) ) );         // Set and return the specified cursor handle
 }
 
+// Load a cursor from file and set it as the active cursor
 HB_FUNC( FILECURSOR )
 {
-#ifndef UNICODE
-   hmg_ret_raw_HANDLE( SetCursor( LoadCursorFromFile( ( LPCSTR ) hb_parc( 1 ) ) ) );
+#ifdef UNICODE
+   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );         // Convert file path to Unicode if needed
+   hmg_ret_raw_HANDLE( SetCursor( LoadCursorFromFile( lpFileName ) ) ); // Load, set, and return cursor
+   hb_xfree( ( TCHAR * ) lpFileName ); // Free the wide string
 #else
-   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   hmg_ret_raw_HANDLE( SetCursor( LoadCursorFromFile( lpFileName ) ) );
-   hb_xfree( ( TCHAR * ) lpFileName );
+   hmg_ret_raw_HANDLE( SetCursor( LoadCursorFromFile( ( LPCSTR ) hb_parc( 1 ) ) ) );  // Load and set cursor from file
 #endif
 }
 
-HB_FUNC( CURSORHAND )
-{
-#if ( WINVER >= 0x0500 )
-   hmg_ret_raw_HANDLE( SetCursor( LoadCursor( NULL, IDC_HAND ) ) );
-#else
-   hmg_ret_raw_HANDLE( SetCursor( LoadCursor( GetInstance(), TEXT( "MINIGUI_FINGER" ) ) ) );
-#endif
-}
-
+// Function to set a specific window’s cursor
 HB_FUNC( SETWINDOWCURSOR )
 {
    HCURSOR  ch;
 
-#ifndef UNICODE
-   LPCSTR   lpCursorName = ( hb_parinfo( 2 ) & HB_IT_STRING ) ? hb_parc( 2 ) : MAKEINTRESOURCE( hb_parni( 2 ) );
+#ifdef UNICODE
+   LPCWSTR  lpCursorName = GetCursorNameWide( 2 );                // Get Unicode cursor name
 #else
-   LPWSTR   pW = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR  lpCursorName = HB_ISCHAR( 2 ) ? pW : ( LPCWSTR ) MAKEINTRESOURCE( hb_parni( 2 ) );
+   LPCSTR   lpCursorName = GetCursorNameAnsi( 2 );                // Get ANSI cursor name
 #endif
-   ch = LoadCursor( ( HB_ISCHAR( 2 ) ) ? GetResources() : NULL, lpCursorName );
 
-   if( ( ch == NULL ) && HB_ISCHAR( 2 ) )
+   // Load cursor either from resources or file
+   ch = LoadCursor( HB_ISCHAR( 2 ) ? GetResources() : NULL, lpCursorName );
+
+   // If cursor not found in resources, try loading from file
+   if( ch == NULL && HB_ISCHAR( 2 ) )
    {
       ch = LoadCursorFromFile( lpCursorName );
    }
 
+   // Set window class cursor if cursor is loaded successfully
    if( ch != NULL )
    {
-      SetClassLongPtr( hmg_par_raw_HWND( 1 ), // window handle
-      GCLP_HCURSOR, // change cursor
-      ( LONG_PTR ) ch );  // new cursor
+      SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HCURSOR, ( LONG_PTR ) ch );
    }
 
 #ifdef UNICODE
-   hb_xfree( pW );
+   if ( HB_ISCHAR( 2 ) ) // Free memory only if it was allocated dynamically
+      hb_xfree( ( void * ) lpCursorName );
 #endif
 }
 
-HB_FUNC( SETHANDCURSOR )
+// Function to load the hand cursor, falling back to arrow if not available
+static HCURSOR LoadHandCursor( void )
 {
 #if ( WINVER >= 0x0500 )
-   SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HCURSOR, ( LONG_PTR ) LoadCursor( NULL, IDC_HAND ) );
+   return LoadCursor( NULL, IDC_HAND );                           // Load system hand cursor if available
 #else
-   SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HCURSOR, ( LONG_PTR ) LoadCursor( GetInstance(), TEXT( "MINIGUI_FINGER" ) ) );
+   return LoadCursor( GetInstance(), TEXT( "MINIGUI_FINGER" ) );  // Custom cursor as fallback
 #endif
+}
+
+// Function to set the hand cursor as active and return previous cursor
+HB_FUNC( CURSORHAND )
+{
+   HCURSOR  hCursor = LoadHandCursor();         // Load the hand cursor
+   if( !hCursor )
+   {
+      hCursor = LoadCursor( NULL, IDC_ARROW );  // Fallback to arrow cursor if hand cursor unavailable
+   }
+
+   hmg_ret_raw_HANDLE( SetCursor( hCursor ) );  // Set and return the active cursor handle
+}
+
+// Function to set a specific window’s cursor to the hand cursor
+HB_FUNC( SETHANDCURSOR )
+{
+   HCURSOR  hCursor = LoadHandCursor();         // Load the hand cursor
+   if( hCursor )
+   {
+      HWND  hWnd = hmg_par_raw_HWND( 1 );       // Get the handle of the specified window
+
+      // Set window class cursor and return success status
+      hmg_ret_L( SetClassLongPtr( hWnd, GCLP_HCURSOR, ( LONG_PTR ) hCursor ) != 0 );
+   }
+   else
+   {
+      hb_retl( HB_FALSE ); // Return false if cursor was not set
+   }
 }

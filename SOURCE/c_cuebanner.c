@@ -44,69 +44,93 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ----------------------------------------------------------------------*/
+-------------------------------------------------------------------------*/
 
-/* P.Ch. 16.10. */
-#include <mgdefs.h>
-
-#include "hbapierr.h"
+#include <mgdefs.h>        // Include Minigui definitions and function prototypes
+#include "hbapierr.h"      // Include Harbour error handling
 
 #ifndef __XHARBOUR__
-#include "hbwinuni.h"
+#include "hbwinuni.h"      // Include Harbour-specific Windows Unicode support
 #else
-typedef wchar_t   HB_WCHAR;
+// Define HB_WCHAR as a wide-character type for compatibility with xHarbour
+typedef wchar_t HB_WCHAR;
 #endif
-#if ( !defined( EM_GETCUEBANNER ) )
-#if ( !defined( ECM_FIRST ) )
-#define ECM_FIRST 0x1500
+
+// Define EM_GETCUEBANNER if not defined in the system headers (for retrieving cue banner text)
+#if (!defined(EM_GETCUEBANNER))
+#if (!defined(ECM_FIRST))
+#define ECM_FIRST 0x1500                // Base constant for edit control messages
 #endif
-#define EM_GETCUEBANNER ( ECM_FIRST + 2 )
+#define EM_GETCUEBANNER (ECM_FIRST + 2) // Define EM_GETCUEBANNER as a message ID for retrieving cue banner text
 #endif
+
+// Function: GETCUEBANNERTEXT
+// Purpose: Retrieves the cue banner (placeholder text) of a specified edit control window.
+// Parameters: hwnd (window handle of the control)
+// Returns: Cue banner text as a string, or NULL if text is not set or an error occurs.
 HB_FUNC( GETCUEBANNERTEXT )
 {
-   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   HWND hwnd = hmg_par_raw_HWND( 1 ); // Get the window handle from the function parameters
 
-   if( IsWindow( hwnd ) )
+   if( IsWindow( hwnd ) ) // Check if the provided handle is a valid window
    {
+      // Allocate memory for a buffer to store the cue banner text as a wide string
       HB_WCHAR *lpWCStr = ( HB_WCHAR * ) hb_xgrab( 256 * sizeof( HB_WCHAR ) );
 
+      // Retrieve the cue banner text using the EM_GETCUEBANNER message, limited to 256 characters
       if( SendMessage( hwnd, EM_GETCUEBANNER, ( WPARAM ) ( LPWSTR ) lpWCStr, ( LPARAM ) 256 ) )
       {
 #ifdef __XHARBOUR__
+         // Convert the wide string to a multibyte string for xHarbour and return it
          hb_retc( ( const char * ) hb_wctomb( lpWCStr ) );
 #else
+         // Return the Unicode string directly for Harbour, specifying the encoding
          hb_retstrlen_u16( HB_CDP_ENDIAN_NATIVE, lpWCStr, 256 );
 #endif
       }
       else
       {
-         hb_retc_null();
+         hb_retc_null(); // Return NULL if cue banner retrieval fails
       }
 
-      hb_xfree( lpWCStr );
+      hb_xfree( lpWCStr ); // Free the allocated memory for the buffer
    }
    else
    {
-      hb_errRT_BASE_SubstR( EG_ARG, 0, "MiniGUI Err.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) );
+      // Error handling: Invalid window handle provided
+      hb_errRT_BASE_SubstR( EG_ARG, 0, "Invalid window handle.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) );
    }
 }
 
+// Function: SENDMESSAGESTRINGW
+// Purpose: Sends a Unicode (wide-character) string message to a specified window.
+// Parameters:
+//   hwnd (window handle of the control)
+//   message (UINT - the message ID to be sent)
+//   boolean flag (WPARAM - a flag that may be passed with the message)
+//   string (LPCWSTR - the string to send in the message)
+// Notes: This function sends a message only if hwnd is a valid window.
 HB_FUNC( SENDMESSAGESTRINGW )
 {
-   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   HWND hwnd = hmg_par_raw_HWND( 1 ); // Get the window handle from function parameters
 
-   if( IsWindow( hwnd ) )
+   if( IsWindow( hwnd ) ) // Check if the provided handle is a valid window
    {
+      // Convert the provided multibyte string to a wide string (Unicode) if it is not empty
       HB_WCHAR *lpWCStr = ( HB_WCHAR * ) ( hb_parclen( 4 ) == 0 ? NULL : hb_mbtowc( hb_parc( 4 ) ) );
 
+      // Send the Unicode message with the specified parameters to the window
       SendMessage( hwnd, hmg_par_UINT( 2 ), ( WPARAM ) hb_parl( 3 ), ( LPARAM ) ( LPCWSTR ) lpWCStr );
-      if( NULL != lpWCStr )
+
+      // Free the allocated memory for the wide string buffer if it was created
+      if( lpWCStr != NULL )
       {
          hb_xfree( lpWCStr );
       }
    }
    else
    {
-      hb_errRT_BASE_SubstR( EG_ARG, 0, "MiniGUI Err.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) );
+      // Error handling: Invalid window handle provided
+      hb_errRT_BASE_SubstR( EG_ARG, 0, "Invalid window handle.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) );
    }
 }

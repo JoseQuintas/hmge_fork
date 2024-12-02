@@ -40,6 +40,7 @@ bAddFile32        BITMAP       res\bAddFile32.bmp          // 5Config.prg
 bAddFile32x2      BITMAP       res\bAddFile32x2.bmp        // 5Config.prg   
 CheckF32          BITMAP       res\check_box_yellow_false32.bmp
 CheckT32          BITMAP       res\check_box_yellow_true32.bmp
+bDbfFile32        BITMAP       res\bDbfFile32.bmp
 iFFile32x1        ICON         res\iFindFile32x1.ico
 iFFile32x2        ICON         res\iFindFile32x2.ico
 iDBase64          ICON         res\iDBase64.ico
@@ -55,6 +56,7 @@ iUtf32            ICON         res\iUtf32.ico
 LogoMG            PNG          res\MiniGuiLogo.png
 iFilter48         ICON         res\iFilterx48.ico
 iFilterDel48      ICON         res\iFilterDelYell48.ico
+iOOCalc32         ICON         res\iOOCalc32.ico
 iSqlite32         ICON         res\iSqlite32.ico
 iFiltr64x1        ICON         res\iFilter64x1.ico
 iFiltr64x2        ICON         res\iFilter64x2.ico

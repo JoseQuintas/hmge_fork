@@ -43,10 +43,10 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
- ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 
 #ifdef __XHARBOUR__
-# pragma -w2
+#pragma -w2
 #endif
 
 #include "minigui.ch"
@@ -719,7 +719,7 @@ FUNCTION drawpiegraph( windowname, fromrow, fromcol, torow, tocol, series, aname
         col fromcol + iif( Len( ctitle ) * 8 > ( tocol - fromcol ), 0, 5 )
         width iif( Len( ctitle ) * 8 > ( tocol - fromcol ), Len( ctitle ) * 10, tocol - fromcol - 10 )
         height 16 + _HMG_DefaultFontSize
-//        fontbold .T.
+        fontbold .T.
         fontname _HMG_DefaultFontName
         fontsize _HMG_DefaultFontSize + 3
         centeralign ( Len( ctitle ) * 8 < ( tocol - fromcol ) )

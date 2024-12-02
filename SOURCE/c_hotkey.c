@@ -46,23 +46,43 @@
    ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
+// Function: INITHOTKEY
+// Registers a system-wide hotkey that sends a notification to the specified window when triggered.
+// Parameters:
+//   1. hwnd (window handle) - The handle of the window that will receive the hotkey notifications.
+//   2. fsModifiers (integer) - Modifier keys for the hotkey (e.g., ALT, CTRL, SHIFT).
+//   3. vk (integer) - Virtual key code for the main key in the hotkey combination.
+//   4. id (integer) - Unique identifier for this hotkey registration (used for management and lookup).
+// Returns:
+//   A logical (TRUE or FALSE) indicating if the hotkey was successfully registered.
 HB_FUNC( INITHOTKEY )
 {
    hb_retl
    (
       RegisterHotKey
          (
-            hmg_par_raw_HWND( 1 ),  // window to receive hot-key notification
-            hb_parni( 4 ),          // identifier of hot key
-            hb_parni( 2 ),          // key-modifier flags
-            hb_parni( 3 )           // virtual-key code
+            hmg_par_raw_HWND( 1 ),  // Window handle to receive hot-key notification
+            hb_parni( 4 ),          // Unique identifier for this hotkey
+            hb_parni( 2 ),          // Modifier flags (ALT, CTRL, SHIFT, etc.)
+            hb_parni( 3 )           // Virtual-key code
          )
    );
 }
 
+// Function: RELEASEHOTKEY
+// Unregisters a previously registered hotkey for the specified window and identifier.
+// Parameters:
+//   1. hwnd (window handle) - The handle of the window associated with the hotkey.
+//   2. id (integer) - The unique identifier of the hotkey to unregister.
+// Returns:
+//   A logical (TRUE or FALSE) indicating if the hotkey was successfully unregistered.
 HB_FUNC( RELEASEHOTKEY )
 {
-   hb_retl( UnregisterHotKey( hmg_par_raw_HWND( 1 ), // window associated with hot key
-   hb_parni( 2 ) // identifier of hot key
-   ) );
+   hb_retl( 
+      UnregisterHotKey
+      (
+         hmg_par_raw_HWND( 1 ),     // Window handle associated with the hotkey
+         hb_parni( 2 )              // Unique identifier of the hotkey
+      )
+   );
 }

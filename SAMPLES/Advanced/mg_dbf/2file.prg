@@ -72,6 +72,8 @@ FUNCTION OpenFileView(aUse,oWnd)
             // показ имени файла
             SetProperty(cForm, aObjLbl[2], "Value", cFile)   
             oWnd:Cargo:aLbSay[2] := cFile
+            // показ 3-строки подсказки
+            SetProperty(cForm, aObjLbl[3], "Value", oWnd:Cargo:aLbSay[3])   
          ENDIF
 
       ENDIF
@@ -195,6 +197,8 @@ FUNCTION Menu2OpenFile(oWnd,nKy,cn,oBrw)
             // показ имени файла
             SetProperty(cForm, aObjLbl[2], "Value", cFile)   
             oWnd:Cargo:aLbSay[2] := cFile
+            // показ 3-строки подсказки
+            SetProperty(cForm, aObjLbl[3], "Value", oWnd:Cargo:aLbSay[3])   
          ENDIF
 
       ENDIF

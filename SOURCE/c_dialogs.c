@@ -60,6 +60,12 @@
 LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
+
+/**
+ * Function: CHOOSEFONT
+ * Description: Displays a font selection dialog where users can choose font name,
+ *              size, style (bold/italic), color, and effects (underline, strikethrough).
+ */
 HB_FUNC( CHOOSEFONT )
 {
    CHOOSEFONT  cf;
@@ -79,64 +85,39 @@ HB_FUNC( CHOOSEFONT )
    hwnd = GetActiveWindow();
    hdc = GetDC( hwnd );
 
+   // Calculate font height in pixels
    lf.lfHeight = -MulDiv( hb_parnl( 2 ), GetDeviceCaps( hdc, LOGPIXELSY ), 72 );
 
-   if( hb_parl( 3 ) )
-   {
-      lf.lfWeight = FW_BOLD;
-   }
-   else
-   {
-      lf.lfWeight = FW_NORMAL;
-   }
+   // Set font style: Bold or normal weight
+   lf.lfWeight = hb_parl( 3 ) ? FW_BOLD : FW_NORMAL;
 
-   if( hb_parl( 4 ) )
-   {
-      lf.lfItalic = TRUE;
-   }
-   else
-   {
-      lf.lfItalic = FALSE;
-   }
+   // Set font style: Italic
+   lf.lfItalic = ( BYTE ) hb_parl( 4 );
 
-   if( hb_parl( 6 ) )
-   {
-      lf.lfUnderline = TRUE;
-   }
-   else
-   {
-      lf.lfUnderline = FALSE;
-   }
+   // Set font style: Underline
+   lf.lfUnderline = ( BYTE ) hb_parl( 6 );
 
-   if( hb_parl( 7 ) )
-   {
-      lf.lfStrikeOut = TRUE;
-   }
-   else
-   {
-      lf.lfStrikeOut = FALSE;
-   }
+   // Set font style: StrikeOut
+   lf.lfStrikeOut = ( BYTE ) hb_parl( 7 );
 
+   // Set character set or default to system charset
    lf.lfCharSet = HB_ISNIL( 8 ) ? ( BYTE ) DEFAULT_CHARSET : hmg_par_BYTE( 8 );
 
+   // Initialize the CHOOSEFONT structure
    ZeroMemory( &cf, sizeof( cf ) );
 
+   // Set font dialog properties
    cf.lStructSize = sizeof( CHOOSEFONT );
    cf.hwndOwner = hwnd;
    cf.hDC = ( HDC ) NULL;
-   cf.lpLogFont = &lf;
+   cf.lpLogFont = &lf;                    // Assign the LOGFONT structure
    cf.Flags = HB_ISNUM( 9 ) ? hb_parni( 9 ) : CF_SCREENFONTS | CF_EFFECTS | CF_INITTOLOGFONTSTRUCT;
-   cf.rgbColors = hmg_par_COLORREF( 5 );
-   cf.lCustData = 0L;
-   cf.lpfnHook = ( LPCFHOOKPROC ) NULL;
-   cf.hInstance = ( HINSTANCE ) NULL;
+   cf.rgbColors = hmg_par_COLORREF( 5 );  // Set initial color
    cf.nFontType = SCREEN_FONTTYPE;
-   cf.nSizeMin = 0;
-   cf.nSizeMax = 0;
 
    if( !ChooseFont( &cf ) )
    {
-      hb_reta( 8 );
+      hb_reta( 8 );                 // Return an empty array if dialog fails or is canceled
       HB_STORC( "", -1, 1 );
       HB_STORVNL( ( LONG ) 0, -1, 2 );
       HB_STORL( 0, -1, 3 );
@@ -149,8 +130,10 @@ HB_FUNC( CHOOSEFONT )
       return;
    }
 
+   // Convert font height back to point size
    PointSize = -MulDiv( lf.lfHeight, 72, GetDeviceCaps( hdc, LOGPIXELSY ) );
 
+   // Populate return array with selected font details
    hb_reta( 8 );
 #ifndef UNICODE
    HB_STORC( lf.lfFaceName, -1, 1 );
@@ -172,8 +155,11 @@ HB_FUNC( CHOOSEFONT )
 
 static TCHAR   s_szWinName[MAX_PATH + 1];
 
-// JK HMG 1.0 Experimental Build 8
-// --- callback function for C_BROWSEFORFOLDER(). Contributed By Andy Wos.
+/**
+ * Function: BrowseCallbackProc
+ * Description: callback function for C_BROWSEFORFOLDER().
+ * Contributed By Andy Wos.
+ */
 int CALLBACK BrowseCallbackProc( HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData )
 {
    TCHAR szPath[MAX_PATH];
@@ -207,7 +193,13 @@ int CALLBACK BrowseCallbackProc( HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpD
    return 0;
 }
 
-HB_FUNC( C_BROWSEFORFOLDER )  // Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[<nFlags>],[<nFolderType>],[<cInitPath>])
+/**
+ * Function: C_BROWSEFORFOLDER
+ * Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[<nFlags>],[<nFolderType>],[<cInitPath>])
+ * Description: Displays a folder selection dialog and returns the selected path.
+ *              Supports customization for initial path, dialog title, and flags.
+ */
+HB_FUNC( C_BROWSEFORFOLDER )
 {
    HWND           hWnd = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 );
    BROWSEINFO     BrowseInfo;
@@ -227,8 +219,10 @@ HB_FUNC( C_BROWSEFORFOLDER )  // Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[
 #endif
    }
 
+   // Get special folder location to start the browse dialog
    SHGetSpecialFolderLocation( hWnd, HB_ISNIL( 4 ) ? CSIDL_DRIVES : hb_parni( 4 ), &pidlBrowse );
 
+   // Setup browse dialog info
    BrowseInfo.hwndOwner = hWnd;
    BrowseInfo.pidlRoot = pidlBrowse;
    BrowseInfo.pszDisplayName = lpBuffer;
@@ -250,6 +244,7 @@ HB_FUNC( C_BROWSEFORFOLDER )  // Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[
 
    pidlBrowse = SHBrowseForFolder( &BrowseInfo );
 
+   // If folder selected, retrieve path
    if( pidlBrowse )
    {
       SHGetPathFromIDList( pidlBrowse, lpBuffer );
@@ -266,32 +261,38 @@ HB_FUNC( C_BROWSEFORFOLDER )  // Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[
       hb_retc( "" );
    }
 
-   CoTaskMemFree( pidlBrowse );
+   CoTaskMemFree( pidlBrowse );     // Free memory allocated by SHBrowseForFolder
 #ifdef UNICODE
    hb_xfree( pW );
    hb_xfree( pW2 );
 #endif
 }
 
+/**
+ * Function: CHOOSECOLOR
+ * Description: Displays a color selection dialog with an optional custom color palette.
+ */
 HB_FUNC( CHOOSECOLOR )
 {
    CHOOSECOLOR cc;
    COLORREF    crCustClr[16];
    int         i;
 
+   // Populate custom color array or default system color
    for( i = 0; i < 16; i++ )
    {
       crCustClr[i] = ( HB_ISARRAY( 3 ) ? hmg_parv_COLORREF( 3, i + 1 ) : GetSysColor( COLOR_BTNFACE ) );
    }
 
-   memset( &cc, 0, sizeof( cc ) );
+   memset( &cc, 0, sizeof( cc ) );  // Zero out CHOOSECOLOR structure
 
    cc.lStructSize = sizeof( CHOOSECOLOR );
    cc.hwndOwner = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 );
-   cc.rgbResult = hmg_par_COLORREF( 2 );
-   cc.lpCustColors = crCustClr;
+   cc.rgbResult = hmg_par_COLORREF( 2 );  // Set initial color
+   cc.lpCustColors = crCustClr;           // Set custom colors
    cc.Flags = HB_ISNIL( 4 ) ? CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT : hmg_par_DWORD( 4 );
 
+   // Return selected color or -1 on cancel
    if( ChooseColor( &cc ) )
    {
       hmg_ret_COLORREF( cc.rgbResult );
@@ -301,6 +302,7 @@ HB_FUNC( CHOOSECOLOR )
       hb_retni( -1 );
    }
 
+   // Update custom color array if passed by reference
    if( HB_ISBYREF( 3 ) )
    {
       PHB_ITEM pArray = hb_param( 3, HB_IT_ANY );
@@ -322,6 +324,10 @@ HB_FUNC( CHOOSECOLOR )
    }
 }
 
+/**
+ * Function: UNITSTOPIXELSX
+ * Description: Converts horizontal DLUs to pixels based on system metrics.
+ */
 HB_FUNC( UNITSTOPIXELSX )
 {
    int   UnitsX = hb_parni( 1 );
@@ -330,6 +336,10 @@ HB_FUNC( UNITSTOPIXELSX )
    hb_retni( MulDiv( UnitsX, LOWORD( dwDLU ), 4 ) );
 }
 
+/**
+ * Function: UNITSTOPIXELSY
+ * Description: Converts vertical DLUs to pixels based on system metrics.
+ */
 HB_FUNC( UNITSTOPIXELSY )
 {
    int   UnitsY = hb_parni( 1 );

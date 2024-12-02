@@ -1,11 +1,11 @@
 /*
-frm_Button - create the buttons
-called from frmclass
+frm_ButtonCreate - create the buttons
+part of frmclass
 */
 
 #include "frm_class.ch"
 
-FUNCTION frm_Button( Self )
+FUNCTION frm_ButtonCreate( Self )
 
    LOCAL nRow, nCol, nRowLine := 1, aItem, aList := {}
 
@@ -20,10 +20,10 @@ FUNCTION frm_Button( Self )
    ENDIF
    IF ::lNavigate
       AAdd( aList, { "View",     { || ::View_Click() } } )
-      AAdd( aList, { "First",    { || ::First_Click() } } )
-      AAdd( aList, { "Previous", { || ::Previous_Click() } } )
-      AAdd( aList, { "Next",     { || ::Next_Click() } } )
-      AAdd( aList, { "Last",     { || ::Last_Click() } } )
+      AAdd( aList, { "First",    { || ::Move_Click( "FIRST" ) } } )
+      AAdd( aList, { "Previous", { || ::Move_Click( "PREV" ) } } )
+      AAdd( aList, { "Next",     { || ::Move_Click( "NEXT" ) } } )
+      AAdd( aList, { "Last",     { || ::Move_Click( "LAST" ) } } )
    ENDIF
    IF "P" $ ::cOptions
       AAdd( aList, { "Print",    { || ::Print_Click() } } )
@@ -70,6 +70,7 @@ STATIC FUNCTION IconFromCaption( cCaption )
       { "Edit",     "icoEdit" }, ;
       { "View",     "icoGrid" }, ;
       { "Delete",   "icoTrash" }, ;
+      { "Filter",   "icoFilter" }, ;
       { "First",    "icoGoFirst" }, ;
       { "Previous", "icoGoLeft" }, ;
       { "Next",     "icoGoRight" }, ;

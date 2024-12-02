@@ -98,7 +98,8 @@ STATIC FUNCTION SuperHider(cCodePage)                   // Super Hider
    cCdPg    := IIF( LEN(cCodePage)==0, aUse[4], cCodePage )
    cPsw     := aUse[5]
    cSetDel  := aUse[6]
-   cSuperHd := "VIA: " + cRddDbf + ", CODEPAGE: " + cCdPg
+   cSuperHd := "HB_LANGSELECT()= " + HB_LANGSELECT() + SPACE(5)
+   cSuperHd += "VIA: " + cRddDbf + ", CODEPAGE: " + cCdPg
 
    IF cRddDbf == "DBFNSX"
       cSuperHd += ", PASSWORD: [" + cPsw + "]"

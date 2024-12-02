@@ -60,9 +60,9 @@
 #xtranslate This . <c> . <p:Value,Name,Address,BackColor,BackgroundColor,FontColor,Picture,Icon,HBitmap,ToolTip,FontName,FontSize,FontBold,FontUnderline,FontItalic,FontStrikeOut,Caption,Row,DisplayValue,Col,Width,Height,Visible,Enabled,Checked,ItemCount,RangeMin,RangeMax,Cargo,Tabstop> := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <n> )
 #xtranslate This . <c> . <p:ListWidth,Position,CaretPos,ForeColor,AllowAppend,AllowDelete,AllowEdit,InputItems,DisplayItems,FormatString,Indent,Linecolor,ItemHeight,ValidMessage,AutoFont,RichValue,Alignment,CaseConvert,Transparent,CueBanner,GradientFill,GradientOver,Object,ImageWidth,ImageHeight> => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> )
 #xtranslate This . <c> . <p:ListWidth,Position,CaretPos,ForeColor,AllowAppend,AllowDelete,AllowEdit,Blink,InputItems,DisplayItems,FormatString,Indent,Linecolor,ItemHeight,ValidMessage,AutoFont,RichValue,Alignment,CaseConvert,Transparent,ColumnWidthLimits,CueBanner,GradientFill,GradientOver,Increment,ImageWidth,ImageHeight> := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <n> )
-#xtranslate This . <c> . <p:Caption,Header,Image,Item,Icon,ToolTip,Width,ColumnWidth,Enabled,RichValue,HeaderImage,CheckboxItem,Cargo,Increment,ColumnDISPLAYPOSITION> (<arg>) => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg> )
+#xtranslate This . <c> . <p:Caption,Header,Image,Item,Icon,ToolTip,Width,ColumnWidth,Enabled,RichValue,HeaderImage,CheckboxItem,Cargo,Increment,ColumnHEADER,ColumnDISPLAYPOSITION> (<arg>) => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg> )
 #xtranslate This . <c> . <p:Velocity> := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , "Velocity" , <n> )
-#xtranslate This . <c> . <p:Caption,Header,Image,Item,Icon,ToolTip,Width,ColumnWidth,Enabled,RichValue,CheckboxItem,Cargo,ColumnDISPLAYPOSITION> (<arg>) := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg> , <n> )
+#xtranslate This . <c> . <p:Caption,Header,Image,Item,Icon,ToolTip,Width,ColumnWidth,Enabled,RichValue,CheckboxItem,Cargo,ColumnHEADER,ColumnDISPLAYPOSITION> (<arg>) := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg> , <n> )
 #xtranslate This . <c> . <p:Cell> (<arg1> , <arg2>) => GetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg1> , <arg2> )
 #xtranslate This . <c> . <p:Cell> (<arg1> , <arg2>) := <n> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg1> , <arg2> , <n> )
 #xtranslate This . <c> . <p:HeaderImage> (<arg1>) := <arg2> => SetProperty ( _HMG_THISFORMNAME, <(c)> , <"p"> , <arg1> , <arg2> )
@@ -134,8 +134,8 @@
 
 * Property with 1 argument
 
-#xtranslate This . <p:Item,Caption,Header,Icon,Width,ColumnWidth,ColumnDISPLAYPOSITION,Enabled> (<n>) => GetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> )
-#xtranslate This . <p:Item,Caption,Header,Icon,Width,ColumnWidth,ColumnDISPLAYPOSITION,Enabled> (<n>) := <arg> => SetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> , <arg> )
+#xtranslate This . <p:Item,Caption,Header,Icon,Width,ColumnWidth,ColumnHEADER,ColumnDISPLAYPOSITION,Enabled> (<n>) => GetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> )
+#xtranslate This . <p:Item,Caption,Header,Icon,Width,ColumnWidth,ColumnHEADER,ColumnDISPLAYPOSITION,Enabled> (<n>) := <arg> => SetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> , <arg> )
 
 #xtranslate This . <p:ColumnCONTROL,ColumnDYNAMICBACKCOLOR,ColumnDYNAMICFORECOLOR,ColumnJUSTIFY,ColumnVALID,ColumnWHEN,ColumnVALIDMESSAGE,ColumnONHEADCLICK,HeaderDYNAMICFONT,HeaderDYNAMICBACKCOLOR,HeaderDYNAMICFORECOLOR> (<n>) => GetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> )
 #xtranslate This . <p:ColumnCONTROL,ColumnDYNAMICBACKCOLOR,ColumnDYNAMICFORECOLOR,ColumnJUSTIFY,ColumnVALID,ColumnWHEN,ColumnVALIDMESSAGE,ColumnONHEADCLICK,HeaderDYNAMICFONT,HeaderDYNAMICBACKCOLOR,HeaderDYNAMICFORECOLOR> (<n>) := <arg> => SetProperty ( _HMG_THISFORMNAME , _HMG_THISCONTROLNAME , <"p"> , <n> , <arg> )

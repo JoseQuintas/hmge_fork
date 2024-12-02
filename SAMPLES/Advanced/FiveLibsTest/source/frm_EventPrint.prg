@@ -1,6 +1,6 @@
 /*
 frm_EventPrint - single report
-called from frm_class
+part of frm_class
 */
 
 #include "frm_class.ch"
@@ -59,7 +59,7 @@ FUNCTION frm_EventPrint( Self )
    SET PRINTER TO
 
    frm_Preview( "rel.lst", Self )
-   fErase( "rel.lst" )
+   //fErase( "rel.lst" )
 
    RETURN Nil
 

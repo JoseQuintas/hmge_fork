@@ -134,7 +134,7 @@ FUNCTION _DefineRichEditBoxEx ( ControlName, ;
    ENDIF
 
    IF _HMG_FrameLevel > 0
-      IF _HMG_ParentWindowActive == .F.
+      IF ! _HMG_ParentWindowActive
          x := x + _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
          y := y + _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
          ParentForm := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
@@ -470,7 +470,7 @@ FUNCTION RichEditBox_LoadFile( hWndControl, cFile, lSelection, nType )
 
    lSuccess := RichEditBox_RTFLoadResourceFile( hWndControl, cFile, lSelection )
 
-   IF lSuccess == .F.
+   IF ! lSuccess
       lSuccess := RichEditBox_StreamIn( hWndControl, cFile, lSelection, nType )
    ENDIF
 

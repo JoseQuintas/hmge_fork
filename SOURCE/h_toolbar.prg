@@ -220,11 +220,11 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
 
    HB_SYMBOL_UNUSED( Flat )
 
-   IF ProcedureName == NIL .AND. Dropdown == .T.
+   IF ProcedureName == NIL .AND. Dropdown
       MsgMiniGuiError ( "ToolBar DropDown buttons must have an associated action (Use WholeDropDown style for no action)." )
    ENDIF
 
-   IF ProcedureName != NIL .AND. WholeDropDown == .T.
+   IF ProcedureName != NIL .AND. WholeDropDown
       MsgMiniGuiError ( "ToolBar Action and WholeDropDown clauses can't be used simultaneously." )
    ENDIF
 
@@ -323,7 +323,7 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
 
    IF ( i := hb_UAt ( '&' , Caption ) ) > 0
 
-      IF WholeDropDown == .T.
+      IF WholeDropDown
          nToolBarIndex := AScan ( _HMG_aControlHandles , ParentForm )
          ProcedureName := { || _DropDownShortcut ( Id , hParentForm , nToolBarIndex , nPos ) }
       ENDIF
@@ -507,7 +507,7 @@ FUNCTION _CreatePopUpChevron ( hWnd, wParam, lParam )
                SetChevronImage ( hMenu, aBtnInfo [2], hImage )
             ENDIF
 
-            IF lEnable == .F.
+            IF ! lEnable
                xDisableMenuItem ( hMenu, aBtnInfo [2] )
             ENDIF
 

@@ -263,12 +263,12 @@ FUNCTION _DefineCheckBox ( ControlName, ParentFormName, x, y, Caption, Value, ;
    IF .NOT. lDialogInMemory
       IF threestate .AND. value == NIL
          SendMessage( Controlhandle , BM_SETCHECK , BST_INDETERMINATE , 0 )
-      ELSEIF value == .T.
+      ELSEIF value
          SendMessage( Controlhandle , BM_SETCHECK , BST_CHECKED , 0 )
       ENDIF
-      IF autosize == .T.
+      IF autosize
          _SetControlWidth ( ControlName , ParentFormName , GetTextWidth( NIL, Caption, FontHandle ) + ;
-            iif( bold == .T. .OR. italic == .T., GetTextWidth( NIL, " ", FontHandle ), 0 ) + 20 )
+            iif( bold .OR. italic, GetTextWidth( NIL, " ", FontHandle ), 0 ) + 20 )
          _SetControlHeight ( ControlName , ParentFormName , FontSize + iif( FontSize < 14, 12, 16 ) )
          RedrawWindow ( ControlHandle )
       ENDIF
@@ -451,7 +451,7 @@ FUNCTION _DefineCheckButton ( ControlName, ParentFormName, x, y, Caption, Value,
       Eval ( _HMG_bOnControlInit, k, mVar )
    ENDIF
 
-   IF value == .T. .AND. .NOT. lDialogInMemory
+   IF value .AND. .NOT. lDialogInMemory
       SendMessage( Controlhandle , BM_SETCHECK , BST_CHECKED , 0 )
    ENDIF
 
@@ -467,9 +467,9 @@ FUNCTION InitDialogCheckButton ( ParentName, ControlHandle, k )
    IF !Empty( BitMap ) .AND. ValType( ParentName ) <> 'U'
       _SetBtnPicture( ControlHandle, BitMap )
    ENDIF
-   IF value == .T.
+   IF threestate .AND. value == NIL
       SendMessage( Controlhandle , BM_SETCHECK , BST_CHECKED , 0 )
-   ELSEIF threestate .AND. value == NIL
+   ELSEIF value
       SendMessage( Controlhandle , BM_SETCHECK , BST_INDETERMINATE , 0 )
    ENDIF
 //JP 62
@@ -627,7 +627,7 @@ FUNCTION _DefineImageCheckButton ( ControlName, ParentFormName, x, y, BitMap, ;
       Eval ( _HMG_bOnControlInit, k, mVar )
    ENDIF
 
-   IF value == .T. .AND. .NOT. lDialogInMemory
+   IF value .AND. .NOT. lDialogInMemory
       SendMessage( Controlhandle , BM_SETCHECK , BST_CHECKED , 0 )
    ENDIF
 

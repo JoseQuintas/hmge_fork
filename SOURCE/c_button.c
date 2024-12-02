@@ -45,26 +45,27 @@
 
    Parts of this code is contributed and used here under permission of his author:
        Copyright 2005 (C) Jacek Kubica <kubica@wssk.wroc.pl>
-   ---------------------------------------------------------------------------*/
-#include <mgdefs.h>
+ ---------------------------------------------------------------------------*/
+#include <mgdefs.h>     // Minigui definitions
+#include <shellapi.h>   // Shell API for shell functions, e.g., icon extraction
+#include <commctrl.h>   // Common control functions
 
-#include <shellapi.h>
-#include <commctrl.h>
+// Define constants for compatibility with older Borland compilers
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
-
-// Button Class Name
-#define WC_BUTTON                      "Button"
-#define BUTTON_IMAGELIST_ALIGN_CENTER  4
+#define WC_BUTTON                      "Button" // Button class name
+#define BUTTON_IMAGELIST_ALIGN_CENTER  4        // Image alignment center
 #endif
-#include <math.h>
 
-#include "hbapiitm.h"
-#include "hbvm.h"
+#include <math.h>       // Math functions
+#include "hbapiitm.h"   // Harbour API for item management
+#include "hbvm.h"       // Harbour VM interaction
 
-#ifndef BCM_FIRST
+#ifndef BCM_FIRST       // Define BCM_FIRST for button message compatibility
 #define BCM_FIRST          0x1600
-#define BCM_SETIMAGELIST   ( BCM_FIRST + 0x0002 )
+#define BCM_SETIMAGELIST   ( BCM_FIRST + 0x0002 )                 // Set image list for button
 #endif
+
+// Function declarations (some for image manipulation and button customization)
 static HBRUSH     CreateGradientBrush( HDC hDC, INT nWidth, INT nHeight, COLORREF Color1, COLORREF Color2 );
 
 HBITMAP           HMG_LoadPicture
@@ -87,14 +88,15 @@ BOOL              bmp_SaveFile( HBITMAP hBitmap, TCHAR *FileName );
 LRESULT CALLBACK  OwnButtonProc( HWND hbutton, UINT msg, WPARAM wParam, LPARAM lParam );
 
 #ifdef UNICODE
-LPWSTR            AnsiToWide( LPCSTR );
+LPWSTR            AnsiToWide( LPCSTR );                           // Convert ANSI string to wide string
 #endif
-HINSTANCE         GetInstance( void );
-HINSTANCE         GetResources( void );
+HINSTANCE         GetInstance( void );                            // Get instance handle
+HINSTANCE         GetResources( void );                           // Get resource handle
 
-// Minigui Resources control system
+// Minigui resource management function
 void              RegisterResource( HANDLE hResource, LPCSTR szType );
 
+// Define structure for button image list for compatibility with Borland and MinGW compilers
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 ) || ( defined( __MINGW32__ ) && defined( __MINGW32_VERSION ) )
 typedef struct
 {
@@ -103,35 +105,39 @@ typedef struct
    UINT        uAlign;
 } BUTTON_IMAGELIST, *PBUTTON_IMAGELIST;
 #endif
+
+// Creates and initializes a basic button with configurable styles.
 HB_FUNC( INITBUTTON )
 {
 #ifndef UNICODE
-   LPCSTR   lpWindowName = hb_parc( 2 );
+   LPCSTR   lpWindowName = hb_parc( 2 );                          // Button text (ANSI)
 #else
-   LPCWSTR  lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPCWSTR  lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Button text (Unicode)
 #endif
    DWORD    Style = BS_NOTIFY | WS_CHILD | ( hb_parl( 14 ) ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON );
 
+   // Add optional styles based on parameters
    if( hb_parl( 10 ) )
    {
-      Style |= BS_FLAT;
+      Style |= BS_FLAT;                   // Flat style
    }
 
    if( !hb_parl( 11 ) )
    {
-      Style |= WS_TABSTOP;
+      Style |= WS_TABSTOP;                // Enable tab stop
    }
 
    if( !hb_parl( 12 ) )
    {
-      Style |= WS_VISIBLE;
+      Style |= WS_VISIBLE;                // Make button visible
    }
 
    if( hb_parl( 13 ) )
    {
-      Style |= BS_MULTILINE;
+      Style |= BS_MULTILINE;              // Multiline button text
    }
 
+   // Create button window
    hmg_ret_raw_HWND
    (
       CreateWindowEx
@@ -140,22 +146,24 @@ HB_FUNC( INITBUTTON )
             WC_BUTTON,
             lpWindowName,
             Style,
-            hb_parni( 4 ),
-            hb_parni( 5 ),
-            hb_parni( 6 ),
-            hb_parni( 7 ),
-            hmg_par_raw_HWND( 1 ),
-            hmg_par_raw_HMENU( 3 ),
-            GetInstance(),
+            hb_parni( 4 ),                // Button position (x-coordinate)
+            hb_parni( 5 ),                // Button position (y-coordinate)
+            hb_parni( 6 ),                // Button width
+            hb_parni( 7 ),                // Button height
+            hmg_par_raw_HWND( 1 ),        // Parent window handle
+            hmg_par_raw_HMENU( 3 ),       // Menu handle (used as control ID)
+            GetInstance(),                // Instance handle
             NULL
          )
    );
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpWindowName );
+   hb_xfree( ( TCHAR * ) lpWindowName );  // Free allocated memory for Unicode text
 #endif
 }
 
+// Creates and initializes a button with an image (icon or bitmap).
+// Supports both inline and image list-based image display.
 HB_FUNC( INITIMAGEBUTTON )
 {
    HWND        hbutton;
@@ -163,57 +171,62 @@ HB_FUNC( INITIMAGEBUTTON )
    HICON       hIcon;
 
 #ifndef UNICODE
-   LPCSTR      lpWindowName = hb_parc( 2 );
-   LPCSTR      lpIconName = hb_parc( 14 );
+   LPCSTR      lpWindowName = hb_parc( 2 );  // Button text (ANSI)
+   LPCSTR      lpIconName = hb_parc( 14 );   // Icon file name (ANSI)
 #else
-   LPWSTR      lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPWSTR      lpIconName = AnsiToWide( ( char * ) hb_parc( 14 ) );
+   LPWSTR      lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Button text (Unicode)
+   LPWSTR      lpIconName = AnsiToWide( ( char * ) hb_parc( 14 ) );  // Icon file name (Unicode)
 #endif
    HIMAGELIST  himl;
 
-   HWND        hwnd = hmg_par_raw_HWND( 1 );
+   HWND        hwnd = hmg_par_raw_HWND( 1 ); // Parent window handle
    DWORD       Style = BS_NOTIFY | WS_CHILD | ( hb_parl( 13 ) ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON ) | ( ( hb_parc( 14 ) == NULL ) ? BS_BITMAP : BS_ICON );
 
    if( hb_parl( 9 ) )
    {
-      Style |= BS_FLAT;
+      Style |= BS_FLAT;          // Flat button style
    }
 
    if( !hb_parl( 11 ) )
    {
-      Style |= WS_VISIBLE;
+      Style |= WS_VISIBLE;       // Make button visible
    }
 
    if( !hb_parl( 12 ) )
    {
-      Style |= WS_TABSTOP;
+      Style |= WS_TABSTOP;       // Enable tab stop
    }
 
+   // Create button window with specified style and parameters
    hbutton = CreateWindowEx
       (
          0,
          WC_BUTTON,
          lpWindowName,
          Style,
-         hb_parni( 4 ),
-         hb_parni( 5 ),
-         hb_parni( 6 ),
-         hb_parni( 7 ),
+         hb_parni( 4 ),          // Button position (x-coordinate)
+         hb_parni( 5 ),          // Button position (y-coordinate)
+         hb_parni( 6 ),          // Button width
+         hb_parni( 7 ),          // Button height
          hwnd,
-         hmg_par_raw_HMENU( 3 ),
-         GetInstance(),
+         hmg_par_raw_HMENU( 3 ), // Menu handle (used as control ID)
+         GetInstance(),          // Instance handle
          NULL
       );
 
 #ifdef UNICODE
-   hb_xfree( lpWindowName );
+   hb_xfree( lpWindowName );     // Free allocated memory for Unicode text
 #endif
+
+   // If no icon provided, load a bitmap as button image
    if( HB_ISNIL( 14 ) )
    {
       if( !hb_parl( 17 ) )
       {
+         // Load bitmap image
          himage = ( HWND ) HMG_LoadPicture( hb_parc( 8 ), -1, -1, hwnd, 0, hb_parl( 10 ) ? 0 : 1, -1, 0, HB_FALSE, 255 );
 
+         // Set the loaded bitmap as button image
          SendMessage( hbutton, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
 
          hb_reta( 2 );
@@ -222,6 +235,7 @@ HB_FUNC( INITIMAGEBUTTON )
       }
       else
       {
+         // Create an image list and set it to button
          himl = HMG_SetButtonImageList( hbutton, hb_parc( 8 ), hb_parl( 10 ) ? 0 : 1, BUTTON_IMAGELIST_ALIGN_CENTER );
 
          hb_reta( 2 );
@@ -229,10 +243,11 @@ HB_FUNC( INITIMAGEBUTTON )
          hmg_storvnl_HANDLE( himl, -1, 2 );
       }
    }
-   else
+   else  // If icon is provided
    {
       if( !hb_parl( 15 ) )
       {
+         // Load icon from resources or file
          hIcon = ( HICON ) LoadImage( GetResources(), lpIconName, IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR );
 
          if( hIcon == NULL )
@@ -242,6 +257,7 @@ HB_FUNC( INITIMAGEBUTTON )
       }
       else
       {
+         // Extract icon from specified file
          hIcon = ( HICON ) ExtractIcon( GetInstance(), lpIconName, hb_parni( 16 ) );
 
          if( hIcon == NULL )
@@ -251,14 +267,17 @@ HB_FUNC( INITIMAGEBUTTON )
       }
 
 #ifdef UNICODE
-      hb_xfree( lpIconName );
+      hb_xfree( lpIconName );             // Free allocated memory for Unicode text
 #endif
+
+      // Handle image list or single icon setting
       if( hb_parl( 17 ) )
       {
          BITMAP            bm;
          ICONINFO          sIconInfo;
          BUTTON_IMAGELIST  bi;
 
+         // Extract icon info to create an image list for the button
          if( GetIconInfo( hIcon, &sIconInfo ) )
          {
             GetObject( sIconInfo.hbmColor, sizeof( BITMAP ), ( LPVOID ) &bm );
@@ -273,12 +292,13 @@ HB_FUNC( INITIMAGEBUTTON )
                DeleteObject( sIconInfo.hbmColor );
             }
 
+            // Create image list and add icon
             himl = ImageList_Create( bm.bmWidth, bm.bmHeight, ILC_COLOR32 | ILC_MASK, 1, 0 );
-
             ImageList_AddIcon( himl, hIcon );
 
             DestroyIcon( hIcon );
 
+            // Set image list properties
             bi.himl = himl;
             bi.margin.left = 10;
             bi.margin.top = 10;
@@ -295,6 +315,7 @@ HB_FUNC( INITIMAGEBUTTON )
       }
       else
       {
+         // Set icon as button image
          SendMessage( hbutton, BM_SETIMAGE, ( WPARAM ) IMAGE_ICON, ( LPARAM ) hIcon );
 
          hb_reta( 2 );
@@ -304,29 +325,33 @@ HB_FUNC( INITIMAGEBUTTON )
    }
 }
 
+// Initialize a custom owner-drawn button with images or icons
 HB_FUNC( INITOWNERBUTTON )
 {
-   HWND     hbutton;
-   HWND     himage;
-   HICON    hIcon;
-
+   HWND     hbutton;                      // Handle to the button control
+   HWND     himage;                       // Handle to the image associated with the button (bitmap)
+   HICON    hIcon;                        // Handle to the icon associated with the button (icon)
 #ifndef UNICODE
-   LPCSTR   lpWindowName = hb_parc( 2 );
-   LPCSTR   lpImageName = hb_parc( 8 );
-   LPCSTR   lpIconName = hb_parc( 14 );
+   LPCSTR   lpWindowName = hb_parc( 2 );  // Button text in non-UNICODE mode
+   LPCSTR   lpImageName = hb_parc( 8 );   // Image file name (bitmap)
+   LPCSTR   lpIconName = hb_parc( 14 );   // Icon file name
 #else
-   LPCWSTR  lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR  lpImageName = AnsiToWide( ( char * ) hb_parc( 8 ) );
-   LPCWSTR  lpIconName = AnsiToWide( ( char * ) hb_parc( 14 ) );
+   LPCWSTR  lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Button text in UNICODE mode
+   LPCWSTR  lpImageName = AnsiToWide( ( char * ) hb_parc( 8 ) );  // Image file name (bitmap)
+   LPCWSTR  lpIconName = AnsiToWide( ( char * ) hb_parc( 14 ) );  // Icon file name
 #endif
-   DWORD    Style = BS_NOTIFY | WS_CHILD | BS_OWNERDRAW | ( hb_parl( 13 ) ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON ) | ( HB_ISNIL( 14 ) ? BS_BITMAP : BS_ICON );
-   UINT     ImgStyle = hb_parl( 10 ) ? 0 : LR_LOADTRANSPARENT;
 
+   // Button style configuration based on parameters
+   DWORD    Style = BS_NOTIFY | WS_CHILD | BS_OWNERDRAW | ( hb_parl( 13 ) ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON ) | ( HB_ISNIL( 14 ) ? BS_BITMAP : BS_ICON );
+   UINT     ImgStyle = hb_parl( 10 ) ? 0 : LR_LOADTRANSPARENT;    // Image transparency setting
+
+   // Apply flat button style if parameter 9 is true
    if( hb_parl( 9 ) )
    {
       Style |= BS_FLAT;
    }
 
+   // Set visibility and tabstop styles based on parameters
    if( !hb_parl( 11 ) )
    {
       Style |= WS_VISIBLE;
@@ -337,27 +362,31 @@ HB_FUNC( INITOWNERBUTTON )
       Style |= WS_TABSTOP;
    }
 
+   // Create the button window with specified styles and dimensions
    hbutton = CreateWindowEx
       (
-         0,
-         WC_BUTTON,
-         lpWindowName,
-         Style,
-         hb_parni( 4 ),
-         hb_parni( 5 ),
-         hb_parni( 6 ),
-         hb_parni( 7 ),
-         hmg_par_raw_HWND( 1 ),
-         hmg_par_raw_HMENU( 3 ),
-         GetInstance(),
-         NULL
+         0,             // Extended window style
+         WC_BUTTON,     // Window class (button)
+         lpWindowName,  // Button text
+         Style,         // Button style
+         hb_parni( 4 ), // X position
+         hb_parni( 5 ), // Y position
+         hb_parni( 6 ), // Width
+         hb_parni( 7 ), // Height
+         hmg_par_raw_HWND( 1 ),           // Parent window handle
+         hmg_par_raw_HMENU( 3 ),          // Button identifier
+         GetInstance(),                   // Application instance
+         NULL                             // Additional data
       );
 
+   // Subclass the button to use a custom window procedure
    SetProp( ( HWND ) hbutton, TEXT( "oldbtnproc" ), ( HWND ) GetWindowLongPtr( ( HWND ) hbutton, GWLP_WNDPROC ) );
    SubclassWindow2( hbutton, OwnButtonProc );
 
+   // Check if using a bitmap or icon and load accordingly
    if( HB_ISNIL( 14 ) )
    {
+      // Load bitmap image for the button
       himage = ( HWND ) LoadImage
          (
             GetResources(),
@@ -368,6 +397,7 @@ HB_FUNC( INITOWNERBUTTON )
             LR_LOADMAP3DCOLORS | ImgStyle
          );
 
+      // Fallback to loading from file if not found in resources
       if( himage == NULL )
       {
          himage = ( HWND ) LoadImage
@@ -381,12 +411,14 @@ HB_FUNC( INITOWNERBUTTON )
             );
       }
 
+      // Return handles for the button and image
       hb_reta( 2 );
       hmg_storvnl_HANDLE( hbutton, -1, 1 );
       hmg_storvnl_HANDLE( himage, -1, 2 );
    }
    else
    {
+      // Load icon for the button
       hIcon = ( HICON ) LoadImage
          (
             GetResources(),
@@ -397,6 +429,7 @@ HB_FUNC( INITOWNERBUTTON )
             LR_DEFAULTCOLOR
          );
 
+      // Fallback to loading icon from file if not found in resources
       if( hIcon == NULL )
       {
          hIcon = ( HICON ) LoadImage
@@ -410,33 +443,38 @@ HB_FUNC( INITOWNERBUTTON )
             );
       }
 
+      // Extract icon from file if LoadImage fails
       if( hIcon == NULL )
       {
          hIcon = ( HICON ) ExtractIcon( GetInstance(), lpIconName, 0 );
       }
 
+      // Return handles for the button and icon
       hb_reta( 2 );
       hmg_storvnl_HANDLE( hbutton, -1, 1 );
       hmg_storvnl_HANDLE( hIcon, -1, 2 );
    }
 
 #ifdef UNICODE
+   // Free allocated memory for UNICODE strings
    hb_xfree( ( TCHAR * ) lpWindowName );
    hb_xfree( ( TCHAR * ) lpImageName );
    hb_xfree( ( TCHAR * ) lpIconName );
 #endif
 }
 
+// Function to set a bitmap picture on an existing button
 HB_FUNC( _SETBTNPICTURE )
 {
-   HWND     hwnd = hmg_par_raw_HWND( 1 );
-   HWND     himage;
-
+   HWND     hwnd = hmg_par_raw_HWND( 1 ); // Handle to the button
+   HWND     himage;  // Handle to the loaded bitmap image
 #ifndef UNICODE
-   LPCSTR   lpImageName = hb_parc( 2 );
+   LPCSTR   lpImageName = hb_parc( 2 );   // Image file name in non-UNICODE
 #else
-   LPWSTR   lpImageName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpImageName = AnsiToWide( ( char * ) hb_parc( 2 ) );  // Image file name in UNICODE
 #endif
+
+   // Load the bitmap image from resources or file
    himage = ( HWND ) LoadImage
       (
          GetResources(),
@@ -460,46 +498,51 @@ HB_FUNC( _SETBTNPICTURE )
          );
    }
 
+   // Attempt to load as picture if LoadImage fails
    if( himage == NULL )
    {
       himage = ( HWND ) HMG_LoadPicture( hb_parc( 2 ), hb_parni( 3 ), hb_parni( 4 ), hwnd, 0, 1, -1, 0, HB_FALSE, 255 );
    }
 
+   // Set the loaded bitmap as the button's image
    SendMessage( hwnd, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
 
-   RegisterResource( himage, "BMP" );
-   hmg_ret_raw_HANDLE( himage );
-
+   RegisterResource( himage, "BMP" );  // Register the bitmap resource
+   hmg_ret_raw_HANDLE( himage );       // Return handle to the loaded image
 #ifdef UNICODE
-   hb_xfree( lpImageName );
+   hb_xfree( lpImageName );            // Free UNICODE image name memory
 #endif
 }
 
+// Retrieve a handle to the current button picture
 HB_FUNC( _GETBTNPICTUREHANDLE )
 {
    hmg_ret_raw_HWND( SendMessage( hmg_par_raw_HWND( 1 ), BM_GETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) 0 ) );
 }
 
+// Set a button image list with multiple images
 HB_FUNC( _SETMIXEDBTNPICTURE )
 {
    HIMAGELIST  himl;
 
-   himl = HMG_SetButtonImageList( hmg_par_raw_HWND( 1 ), hb_parc( 2 ), hb_parl( 3 ) ? 0 : 1, BUTTON_IMAGELIST_ALIGN_CENTER );
+   himl = HMG_SetButtonImageList( hmg_par_raw_HWND( 1 ), hb_parc( 2 ), hb_parl( 3 ) ? 0 : 1, hb_parnidef( 4, BUTTON_IMAGELIST_ALIGN_CENTER ) );
 
    RegisterResource( himl, "IMAGELIST" );
    hmg_ret_raw_HANDLE( himl );
 }
 
-// HMG 1.0 Experimental Build 8e
+// Set an icon for the button
 HB_FUNC( _SETBTNICON )
 {
    HICON    hIcon;
 
 #ifndef UNICODE
-   LPCSTR   lpIconName = hb_parc( 2 );
+   LPCSTR   lpIconName = hb_parc( 2 ); // Icon file name in non-UNICODE
 #else
-   LPWSTR   lpIconName = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpIconName = AnsiToWide( ( char * ) hb_parc( 2 ) );   // Icon file name in UNICODE
 #endif
+
+   // Load the icon from resources or file
    hIcon = ( HICON ) LoadImage( GetResources(), lpIconName, IMAGE_ICON, HB_MAX( hb_parnidef( 3, 0 ), 0 ), HB_MAX( hb_parnidef( 4, 0 ), 0 ), LR_DEFAULTCOLOR );
 
    if( hIcon == NULL )
@@ -515,16 +558,23 @@ HB_FUNC( _SETBTNICON )
          );
    }
 
+   // Extract icon if loading failed
+   if( hIcon == NULL )
+   {
+      hIcon = ( HICON ) ExtractIcon( GetInstance(), lpIconName, 0 );
+   }
+
+   // Set the icon as the button's image
    SendMessage( hmg_par_raw_HWND( 1 ), BM_SETIMAGE, ( WPARAM ) IMAGE_ICON, ( LPARAM ) hIcon );
 
-   RegisterResource( hIcon, "ICON" );
-   hmg_ret_raw_HANDLE( hIcon );
-
+   RegisterResource( hIcon, "ICON" );     // Register the icon resource
+   hmg_ret_raw_HANDLE( hIcon );           // Return handle to the loaded icon
 #ifdef UNICODE
-   hb_xfree( lpIconName );
+   hb_xfree( lpIconName );                // Free UNICODE icon name memory
 #endif
 }
 
+// Set a button icon list with multiple icons
 HB_FUNC( _SETMIXEDBTNICON )
 {
    BITMAP            bm;
@@ -582,6 +632,7 @@ HB_FUNC( _SETMIXEDBTNICON )
 #endif
 }
 
+// Handles custom drawing of the button, including different states (focused, clicked, etc.)
 HB_FUNC( DRAWBUTTON )
 {
    DRAWITEMSTRUCT *pps = hmg_par_raw_DITEMSTRUCT( 4 );
@@ -707,6 +758,7 @@ HB_FUNC( GETOWNBTNRECT )
    hb_itemReturnRelease( aMetr );
 }
 
+// Custom button procedure handling button events (e.g., mouse events)
 LRESULT CALLBACK OwnButtonProc( HWND hButton, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
    static PHB_SYMB   pSymbol = NULL;
@@ -779,27 +831,33 @@ LRESULT CALLBACK OwnButtonProc( HWND hButton, UINT Msg, WPARAM wParam, LPARAM lP
    return CallWindowProc( OldWndProc, hButton, Msg, wParam, lParam );
 }
 
-/*
- * Added in Build 16.12
- */
+// Creates a gradient brush for button backgrounds
 HB_FUNC( CREATEBUTTONBRUSH )
 {
+   // Create a gradient brush by calling the helper function CreateGradientBrush
+   // using the device context handle (HDC) and color values provided as arguments
    HBRUSH   hBrush = CreateGradientBrush( hmg_par_raw_HDC( 1 ), hb_parni( 2 ), hb_parni( 3 ), hmg_par_COLORREF( 4 ), hmg_par_COLORREF( 5 ) );
 
+   // Register the created brush as a resource so it can be managed and cleaned up
    RegisterResource( hBrush, "BRUSH" );
+
+   // Return the brush handle as the function's result
    hmg_ret_raw_HBRUSH( hBrush );
 }
 
+// Helper function that generates a gradient brush
 static HBRUSH CreateGradientBrush( HDC hDC, INT nWidth, INT nHeight, COLORREF Color1, COLORREF Color2 )
 {
-   HDC      hDCComp;
-   HBITMAP  hBitmap;
-   HBRUSH   hBrush, hBrushOld, hBrushPat;
-   RECT     rcF;
-   int      r1, g1, b1, r2, g2, b2;
-   int      nCount;
-   int      i;
+   // Variables to hold handles and color calculations
+   HDC      hDCComp;                      // Compatible device context for creating the gradient
+   HBITMAP  hBitmap;                      // Bitmap to hold the gradient pattern
+   HBRUSH   hBrush, hBrushOld, hBrushPat; // Brushes for gradient drawing and final pattern
+   RECT     rcF;                    // Rectangle for drawing gradient
+   int      r1, g1, b1, r2, g2, b2; // RGB values for start and end colors
+   int      nCount;                 // Number of gradient steps based on size
+   int      i;                   // Loop counter for gradient steps
 
+   // Extract RGB components of the two colors for gradient calculation
    r1 = GetRValue( Color1 );
    g1 = GetGValue( Color1 );
    b1 = GetBValue( Color1 );
@@ -807,56 +865,76 @@ static HBRUSH CreateGradientBrush( HDC hDC, INT nWidth, INT nHeight, COLORREF Co
    g2 = GetGValue( Color2 );
    b2 = GetBValue( Color2 );
 
+   // Create a compatible DC and bitmap for drawing the gradient pattern
    hDCComp = CreateCompatibleDC( hDC );
    hBitmap = CreateCompatibleBitmap( hDC, nWidth, nHeight );
    SelectObject( hDCComp, hBitmap );
 
+   // Initialize the rectangle to cover the entire button area
    rcF.left = 0;
    rcF.top = 0;
    rcF.right = nWidth;
    rcF.bottom = nHeight;
+
+   // Determine the number of gradient steps based on button size
    nCount = ( int ) ceil( ( double ) ( ( nWidth > nHeight ) ? nHeight : nWidth ) / 2 );
 
+   // Draw the gradient by gradually changing the color in each step
    for( i = 0; i < nCount; i++ )
    {
+      // Calculate the color at the current gradient step
       hBrush = CreateSolidBrush( RGB( r1 + ( i * ( r2 - r1 ) / nCount ), g1 + ( i * ( g2 - g1 ) / nCount ), b1 + ( i * ( b2 - b1 ) / nCount ) ) );
+
+      // Select the brush into the DC and fill the rectangle with it
       hBrushOld = SelectObject( hDCComp, hBrush );
       FillRect( hDCComp, &rcF, hBrush );
+
+      // Restore the previous brush and delete the created brush for the current step
       SelectObject( hDCComp, hBrushOld );
       DeleteObject( hBrush );
 
+      // Shrink the rectangle for the next gradient step
       InflateRect( &rcF, -1, -1 );
    }
 
+   // Create a pattern brush from the gradient bitmap to use as a button background
    hBrushPat = CreatePatternBrush( hBitmap );
 
+   // Clean up the compatible DC and bitmap after creating the brush
    DeleteDC( hDCComp );
    DeleteObject( hBitmap );
 
+   // Return the gradient pattern brush
    return hBrushPat;
 }
 
+// Loads an image into an image list for buttons
 HIMAGELIST HMG_SetButtonImageList( HWND hButton, const char *FileName, int Transparent, UINT uAlign )
 {
-   HBITMAP           hBitmap;
-   HIMAGELIST        hImageList;
-   BITMAP            Bmp;
-   BUTTON_IMAGELIST  bi;
-   TCHAR             TempPathFileName[MAX_PATH];
+   HBITMAP           hBitmap;    // Bitmap to hold the loaded image
+   HIMAGELIST        hImageList; // Image list to hold the button images
+   BITMAP            Bmp;        // Bitmap structure to get image details
+   BUTTON_IMAGELIST  bi;         // Structure to set image list for a button
+   TCHAR             TempPathFileName[MAX_PATH];   // Temporary file path for loading the image
 
+   // Load the image file into a bitmap object with transparency if needed
    hBitmap = HMG_LoadPicture( FileName, -1, -1, NULL, 0, 0, -1, 0, HB_TRUE, 255 );
    if( hBitmap == NULL )
    {
+      // If loading failed, return NULL
       return NULL;
    }
 
+   // Retrieve bitmap information (dimensions, color format, etc.)
    GetObject( hBitmap, sizeof( BITMAP ), &Bmp );
 
+   // Get a temporary path and file name for saving the loaded image
    GetTempPath( MAX_PATH, TempPathFileName );
    lstrcat( TempPathFileName, TEXT( "_MG_temp.BMP" ) );
    bmp_SaveFile( hBitmap, TempPathFileName );
    DeleteObject( hBitmap );
 
+   // Load the bitmap into an image list, using transparency if specified
    if( Transparent == 1 )
    {
       hImageList = ImageList_LoadImage
@@ -884,8 +962,10 @@ HIMAGELIST HMG_SetButtonImageList( HWND hButton, const char *FileName, int Trans
          );
    }
 
+   // Delete the temporary file after loading the image
    DeleteFile( TempPathFileName );
 
+   // Set up the BUTTON_IMAGELIST structure with margin and alignment details
    bi.himl = hImageList;
    bi.margin.left = 10;
    bi.margin.top = 10;
@@ -893,7 +973,9 @@ HIMAGELIST HMG_SetButtonImageList( HWND hButton, const char *FileName, int Trans
    bi.margin.right = 10;
    bi.uAlign = uAlign;
 
+   // Assign the image list to the button control
    SendMessage( hButton, BCM_SETIMAGELIST, ( WPARAM ) 0, ( LPARAM ) &bi );
 
+   // Return the handle to the created image list
    return hImageList;
 }

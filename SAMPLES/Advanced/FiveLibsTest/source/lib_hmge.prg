@@ -8,31 +8,17 @@ lib_hmge - HMG Extended source selected by lib.prg
 #include "i_winuser.ch"
 
 #ifndef DLGAUTO_AS_LIB
-   MEMVAR pGenPrg, pGenName
+   MEMVAR pGenPrg
 #else
    STATIC pGenPrg := ""
 #endif
 
-
-#ifndef DLGAUTO_AS_LIB
-THREAD STATIC oGUI
-
-FUNCTION GUI( xValue )
-
-   IF xValue != Nil
-      oGUI := xValue
-   ENDIF
-   IF oGUI == Nil
-      oGUI := HMGEClass():New()
-   ENDIF
-
-   RETURN oGUI
-#endif
+THREAD STATIC nWindow := 0
 
 CREATE CLASS HMGEClass
 
    /*--- init ---*/
-   METHOD LibName()             INLINE gui_LibName()
+   METHOD LibName()             INLINE "HMGE"
    METHOD Init()                INLINE gui_Init()
 
    /*--- dialog ---*/
@@ -50,12 +36,13 @@ CREATE CLASS HMGEClass
    METHOD SpinnerCreate(...)    INLINE gui_SpinnerCreate(...)
    METHOD LabelCreate(...)      INLINE gui_LabelCreate(...)
    METHOD MLTextCreate(...)     INLINE gui_MLTextCreate(...)
-   METHOD Statusbar(...)        INLINE gui_Statusbar(...)
+   METHOD StatusCreate(...)     INLINE gui_StatusCreate(...)
    METHOD TextCreate(...)       INLINE gui_TextCreate(...)
 
    /* browse */
    METHOD Browse(...)           INLINE gui_Browse(...)
    METHOD BrowseRefresh(...)    INLINE gui_BrowseRefresh(...)
+   METHOD SetBrowseKeyFilter(...) INLINE Nil
 
    /* tab */
    METHOD TabCreate(...)        INLINE gui_TabCreate(...)
@@ -87,15 +74,9 @@ STATIC FUNCTION gui_Init()
    SET NAVIGATION EXTENDED
    SET WINDOW MODAL PARENT HANDLE ON
 
-   //SET WINDOW MAIN OFF
-   Set( _SET_DEBUG, .F. )
-
-   pGenPrg += [   SET GETBOX FOCUS BACKCOLOR TO N2RGB( COLOR_YELLOW )] + hb_Eol()
-   pGenPrg += [   SET MENUSTYLE EXTENDED] + hb_Eol()
-   pGenPrg += [   SET NAVIGATION EXTENDED] + hb_Eol()
-   //pGenPrg += [   SET WINDOW MAIN OFF] + hb_Eol()
-   pGenPrg += [   Set( _SET_DEBUG, .F. )] + hb_Eol()
-   pGenPrg += hb_Eol()
+#ifdef DLGAUTO_AS_LIB
+   SET WINDOW MAIN OFF
+#endif
 
    RETURN Nil
 
@@ -103,7 +84,7 @@ STATIC FUNCTION gui_DlgMenu( xDlg, aMenuList, aAllSetup, cTitle )
 
    LOCAL aGroupList, cDBF
 
-   gui_DialogCreate( @xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, cTitle,,,.T. )
+   gui_DialogCreate( Nil, @xDlg, 0, 0, APP_DLG_WIDTH, APP_DLG_HEIGHT, cTitle,,,.T. )
 
    DEFINE MAIN MENU OF ( xDlg )
       FOR EACH aGroupList IN aMenuList
@@ -119,6 +100,7 @@ STATIC FUNCTION gui_DlgMenu( xDlg, aMenuList, aAllSetup, cTitle )
          MENUITEM "NoData Layout 3" ACTION frm_DialogFree(3)
       END POPUP
       DEFINE POPUP "Exit"
+         //MENUITEM "Test Default" ACTION DlgAuto_ShowDefault()
          MENUITEM "Exit" ACTION gui_DialogClose( xDlg ) ICON "ICODOOR"
       END POPUP
       DEFINE MONTHCALENDAR ( gui_NewName( "MON" ) )
@@ -133,7 +115,8 @@ STATIC FUNCTION gui_DlgMenu( xDlg, aMenuList, aAllSetup, cTitle )
 
    RETURN Nil
 
-STATIC FUNCTION gui_ButtonCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, cCaption, cResName, bAction )
+STATIC FUNCTION gui_ButtonCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, ;
+   nHeight, cCaption, cResName, bAction )
 
    IF Empty( xControl )
       xControl := gui_NewName( "BTN" )
@@ -160,27 +143,28 @@ STATIC FUNCTION gui_ButtonCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, n
       NOXPSTYLE  .T.
    END BUTTONEX
 
-   pGenPrg += [   DEFINE BUTTONEX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol()
-   pGenPrg += [      PARENT      ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol()
-   pGenPrg += [      ROW         ] + hb_ValToExp( nRow ) + hb_Eol()
-   pGenPrg += [      COL         ] + hb_ValToExp( nCol ) + hb_Eol()
-   pGenPrg += [      WIDTH       ] + hb_ValToExp( nWidth ) + hb_Eol()
-   pGenPrg += [      HEIGHT      ] + hb_ValToExp( nHeight ) + hb_Eol()
-   pGenPrg += [      ICON        ] + hb_ValToExp( cResName ) + hb_Eol()
-   pGenPrg += [      IMAGEWIDTH  -1] + hb_Eol()
-   pGenPrg += [      IMAGEHEIGHT -1] + hb_Eol()
-   pGenPrg += [      CAPTION      ] + hb_ValToExp( cCaption ) + hb_Eol()
-   pGenPrg += [      ACTION      Eval( ] + hb_ValToExp( bAction ) + hb_Eol()
-   pGenPrg += [      FONTNAME     ] + hb_ValToExp( APP_FONTNAME ) + hb_Eol()
-   pGenPrg += [      FONTSIZE     7] + hb_Eol()
-   pGenPrg += [      FONTBOLD     .T.] + hb_Eol()
-   pGenPrg += [      FONTCOLOR    ] + hb_ValToExp( COLOR_BLACK ) + hb_Eol()
-   pGenPrg += [      VERTICAL     .T.] + hb_Eol()
-   pGenPrg += [      BACKCOLOR    ] + hb_ValToExp( COLOR_WHITE ) + hb_Eol()
-   pGenPrg += [      FLAT         .T.] + hb_Eol()
-   pGenPrg += [      NOXPSTYLE] + hb_Eol()
-   pGenPrg += [   END BUTTONEX] + hb_Eol()
-   pGenPrg += hb_Eol()
+   pGenPrg += ;
+      [   DEFINE BUTTONEX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol() + ;
+      [      PARENT      ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol() + ;
+      [      ROW         ] + hb_ValToExp( nRow ) + hb_Eol() + ;
+      [      COL         ] + hb_ValToExp( nCol ) + hb_Eol() + ;
+      [      WIDTH       ] + hb_ValToExp( nWidth ) + hb_Eol() + ;
+      [      HEIGHT      ] + hb_ValToExp( nHeight ) + hb_Eol() + ;
+      [      ICON        ] + hb_ValToExp( cResName ) + hb_Eol() + ;
+      [      IMAGEWIDTH  -1] + hb_Eol() + ;
+      [      IMAGEHEIGHT -1] + hb_Eol() + ;
+      [      CAPTION      ] + hb_ValToExp( cCaption ) + hb_Eol() + ;
+      [      ACTION      Eval( ] + hb_ValToExp( bAction ) + hb_Eol() + ;
+      [      FONTNAME     ] + hb_ValToExp( APP_FONTNAME ) + hb_Eol() + ;
+      [      FONTSIZE     7] + hb_Eol() + ;
+      [      FONTBOLD     .T.] + hb_Eol() + ;
+      [      FONTCOLOR    ] + hb_ValToExp( COLOR_BLACK ) + hb_Eol() + ;
+      [      VERTICAL     .T.] + hb_Eol() + ;
+      [      BACKCOLOR    ] + hb_ValToExp( COLOR_WHITE ) + hb_Eol() + ;
+      [      FLAT         .T.] + hb_Eol() + ;
+      [      NOXPSTYLE] + hb_Eol() + ;
+      [   END BUTTONEX] + hb_Eol() + ;
+      hb_Eol()
 
    (xDlg)
 
@@ -190,11 +174,11 @@ STATIC FUNCTION gui_Browse( xDlg, xParent, xControl, nRow, nCol, nWidth, ;
    nHeight, oTbrowse, cField, xValue, workarea, aKeyDownList, oFrmClass )
 
    LOCAL aHeaderList := {}, aWidthList := {}, aFieldList := {}, aItem, aThisKey
-   LOCAL aBrowseBackColor := {}, aBrowseForeColor := {}, nPos
+   LOCAL aBrowseBackColor := {}, aBrowseForeColor := {}, nPos, cnSQL
 
-#ifdef DLGAUTO_AS_LIB
-      LOCAL cnSQL := ADOLocal()
-#endif
+   IF ofrmClass:lIsSQL
+      cnSQL := ADOLocal()
+   ENDIF
    IF Empty( xControl )
       xControl := gui_NewName( "BRW" )
    ENDIF
@@ -252,7 +236,7 @@ STATIC FUNCTION gui_Browse( xDlg, xParent, xControl, nRow, nCol, nWidth, ;
       AAdd( oFrmClass:aDlgKeyDown, { xControl, aItem[ 1 ], aItem[ 2 ] } )
    NEXT
 
-   (xDlg);(cField);(xValue);(workarea);(aKeyDownList)
+   (xDlg);(cField);(xValue);(workarea);(aKeyDownList);(cnSQL)
 
    RETURN Nil
 
@@ -314,15 +298,16 @@ STATIC FUNCTION gui_CheckboxCreate( xDlg, xParent, xControl, nRow, nCol, nWidth,
       CAPTION ""
    END CHECKBOX
 
-   pGenPrg += [   DEFINE CHECKBOX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol()
-   pGenPrg += [      PARENT     ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol()
-   pGenPrg += [      ROW        ] + hb_ValToExp( nRow ) + hb_Eol()
-   pGenPrg += [      COL        ] + hb_ValToExp( nCol ) + hb_Eol()
-   pGenPrg += [      WIDTH      ] + hb_ValToExp( nWidth ) + hb_Eol()
-   pGenPrg += [      HEIGHT     ] + hb_ValToExp( nHeight ) + hb_Eol()
-   pGenPrg += [      CAPTION    ""] + hb_Eol()
-   pGenPrg += [   END CHECKBOX] + hb_Eol()
-   pGenPrg += hb_Eol()
+   pGenPrg += ;
+      [   DEFINE CHECKBOX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol() + ;
+      [      PARENT     ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol() + ;
+      [      ROW        ] + hb_ValToExp( nRow ) + hb_Eol() + ;
+      [      COL        ] + hb_ValToExp( nCol ) + hb_Eol() + ;
+      [      WIDTH      ] + hb_ValToExp( nWidth ) + hb_Eol() + ;
+      [      HEIGHT     ] + hb_ValToExp( nHeight ) + hb_Eol() + ;
+      [      CAPTION    ""] + hb_Eol() + ;
+      [   END CHECKBOX] + hb_Eol() + ;
+      hb_Eol()
 
    (xDlg)
 
@@ -361,7 +346,7 @@ STATIC FUNCTION gui_SpinnerCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, 
       COL nCol
       VALUE nValue
       WIDTH nWidth
-      // Depending Windows version ?, do not accepts to change color
+      // Depending Windows version(*), do not accepts to change color
       // ON GOTFOCUS  SetProperty( xDlg, xControl, "BACKCOLOR", COLOR_YELLOW )
       // ON LOSTFOCUS SetProperty( xDlg, xControl, "BACKCOLOR", COLOR_WHITE )
       RANGEMIN aList[ 1 ]
@@ -384,7 +369,7 @@ STATIC FUNCTION gui_DatePickerCreate( xDlg, xParent, xControl, ;
       ROW	nRow
       COL	nCol
       VALUE dValue
-      // Depending Windows version ?, do not accepts to change color
+      // Depending Windows version(*), do not accepts to change color
       // ON GOTFOCUS SetProperty( xDlg, xControl, "BACKCOLOR", COLOR_YELLOW )
       // ON LOSTFOCUS SetProperty( xDlg, xControl, "BACKCOLOR", COLOR_WHITE )
       // DATEFORMAT "99/99/9999"
@@ -415,8 +400,7 @@ STATIC FUNCTION gui_DialogClose( xDlg )
 
    RETURN Nil
 
-STATIC FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lModal, lMain )
-
+STATIC FUNCTION gui_DialogCreate( oFrm, xDlg, nRow, nCol, nWidth, nHeight, cTitle, bInit, lModal, lMain )
 
    IF Empty( xDlg )
       xDlg := gui_NewName( "DLG" )
@@ -440,8 +424,23 @@ STATIC FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bIn
          FONT APP_FONTNAME SIZE APP_FONTSIZE_NORMAL ;
          MAIN ;
          ON INIT Eval( bInit )
-         gui_Statusbar( xDlg, "" )
+         gui_StatusCreate( xDlg, "" )
       END WINDOW
+
+      pGenPrg += ;
+         [   DEFINE WINDOW (] + hb_ValToExp( xDlg ) + [) ;] + hb_Eol() + ;
+         [      AT ] + hb_ValToExp( nCol ) + [, ] + hb_ValToExp( nRow ) + [;] + hb_Eol() + ;
+         [      WIDTH ] + hb_ValToExp( nWidth ) + [ ;] + hb_Eol() + ;
+         [      HEIGHT ] + hb_ValToExp( nHeight ) + [ ;] + hb_Eol() + ;
+         [      TITLE ] + hb_ValToExp( cTitle ) + [ ;] + hb_Eol() + ;
+         [      ICON "APPICON" ;] + hb_Eol() + ;
+         [      FONT ] + hb_ValToExp( APP_FONTNAME ) + [ SIZE ] + ;
+         hb_ValToExp( APP_FONTSIZE_NORMAL ) + [ ;] + hb_Eol() + ;
+         [      MAIN ;] + hb_Eol() + ;
+         [      ON INIT Eval( ] + hb_ValToExp( bInit ) + [ )] + hb_Eol() + ;
+         [   END WINDOW]       + hb_Eol() + ;
+         hb_Eol()
+
    ELSEIF lModal
       DEFINE WINDOW ( xDlg ) ;
          AT nCol, nRow ;
@@ -452,7 +451,7 @@ STATIC FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bIn
          FONT APP_FONTNAME SIZE APP_FONTSIZE_NORMAL ;
          MODAL ;
          ON INIT Eval( bInit )
-         gui_Statusbar( xDlg, "" )
+         gui_StatusCreate( xDlg, "" )
       END WINDOW
    ELSE
       DEFINE WINDOW ( xDlg ) ;
@@ -463,9 +462,11 @@ STATIC FUNCTION gui_DialogCreate( xDlg, nRow, nCol, nWidth, nHeight, cTitle, bIn
          ICON "APPICON" ;
          FONT APP_FONTNAME SIZE APP_FONTSIZE_NORMAL ;
          ON INIT Eval( bInit )
-         gui_Statusbar( xDlg, "" )
+         gui_StatusCreate( xDlg, "" )
       END WINDOW
    ENDIF
+
+   (oFrm)
 
    RETURN Nil
 
@@ -505,29 +506,30 @@ STATIC FUNCTION gui_LabelCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nH
       ENDIF
    END LABEL
 
-   pGenPrg += [   DEFINE LABEL ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol()
-   pGenPrg += [      PARENT ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol()
-   pGenPrg += [      COL ] + hb_ValToExp( nCol ) + hb_Eol()
-   pGenPrg += [      ROW ] + hb_ValToExp( nRow ) + hb_Eol()
-   pGenPrg += [      WIDTH ] + hb_ValToExp( nWidth ) + hb_Eol()
-   pGenPrg += [      HEIGHT ] + hb_ValToExp( nHeight ) + hb_Eol()
-   pGenPrg += [      VALUE ] + hb_ValToExp( xValue ) + hb_Eol()
-   pGenPrg += [      FONTNAME APP_FONT_NAME ] + hb_Eol()
-   pGenPrg += [      FONTSIZE ] + hb_ValToExp( nFontSize ) + hb_Eol()
+   pGenPrg += ;
+      [   DEFINE LABEL ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol() + ;
+      [      PARENT ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol() + ;
+      [      COL ] + hb_ValToExp( nCol ) + hb_Eol() + ;
+      [      ROW ] + hb_ValToExp( nRow ) + hb_Eol() + ;
+      [      WIDTH ] + hb_ValToExp( nWidth ) + hb_Eol() + ;
+      [      HEIGHT ] + hb_ValToExp( nHeight ) + hb_Eol() + ;
+      [      VALUE ] + hb_ValToExp( xValue ) + hb_Eol() + ;
+      [      FONTNAME APP_FONT_NAME ] + hb_Eol() + ;
+      [      FONTSIZE ] + hb_ValToExp( nFontSize ) + hb_Eol()
+
    IF lBorder
-      pGenPrg += [      BORDER ] + hb_ValToExp( lBorder ) + hb_Eol()
-      pGenPrg += [      BACKCOLOR N2RGB( COLOR_GREEN )] + hb_Eol()
+      pGenPrg += ;
+         [      BORDER ] + hb_ValToExp( lBorder ) + hb_Eol() + ;
+         [      BACKCOLOR N2RGB( COLOR_GREEN )] + hb_Eol()
+
    ENDIF
-   pGenPrg += [   END LABEL] + hb_Eol()
-   pGenPrg += hb_Eol()
+   pGenPrg += ;
+      [   END LABEL] + hb_Eol() + ;
+      hb_Eol()
 
    (xDlg)
 
    RETURN Nil
-
-STATIC FUNCTION gui_LibName()
-
-   RETURN "HMGE"
 
 STATIC FUNCTION gui_MLTextCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHeight, xValue )
 
@@ -569,7 +571,7 @@ STATIC FUNCTION gui_SetFocus( xDlg, xControl )
 
    RETURN Nil
 
-STATIC FUNCTION gui_Statusbar( xDlg, xControl )
+STATIC FUNCTION gui_StatusCreate( xDlg, xControl )
 
    IF Empty( xControl )
       xControl := gui_NewName( "STA" )
@@ -614,13 +616,13 @@ STATIC FUNCTION gui_TabNavigate( xDlg, xTab, aList )
 
    RETURN Nil
 
-STATIC FUNCTION gui_TabPageBegin( xDlg, xParent, xControl, xPage, nPageCount, cText )
+STATIC FUNCTION gui_TabPageBegin( xDlg, xParent, xTab, xPage, nPageCount, cText )
 
    PAGE ( cText ) IMAGE "bmpfolder"
 
    xPage := xDlg
    // BACKCOLOR { 50, 50, 50 }
-   (xDlg); (xControl); (cText); (nPageCount); (xParent)
+   (xDlg); (xTab); (cText); (nPageCount); (xParent)
 
    RETURN Nil
 
@@ -670,6 +672,8 @@ STATIC FUNCTION gui_TextCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHe
       ENDIF
       IF ! Empty( bValid )
          ON LOSTFOCUS Eval( bValid )
+         /* when call a dialog from bvalid, valid on next dialog does not works */
+         // VALID bValid
       ENDIF
       IF lPassword
          PASSWORD .T.
@@ -682,43 +686,53 @@ STATIC FUNCTION gui_TextCreate( xDlg, xParent, xControl, nRow, nCol, nWidth, nHe
          { || oFrmClass:Browse( xDlg, xControl, iif( aItem[ CFG_ISKEY ], oFrmClass:cDataTable, aItem[ CFG_VTABLE ] ) ) } } )
    ENDIF
 
-   pGenPrg += [   DEFINE GETBOX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol()
-   pGenPrg += [      PARENT    ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol()
-   pGenPrg += [      ROW       ] + hb_ValToExp( nRow ) + hb_Eol()
-   pGenPrg += [      COL       ] + hb_ValToExp( nCol ) + hb_Eol()
-   pGenPrg += [      HEIGHT    ] + hb_ValToExp( nHeight ) + hb_Eol()
-   pGenPrg += [      WIDTH     ] + hb_ValToExp( nWidth ) + hb_Eol()
-   pGenPrg += [      FONTNAME  ] + hb_ValToExp( APP_FONTNAME ) + hb_Eol()
-   pGenPrg += [      FONTSIZE  ] + hb_ValToExp( APP_FONTSIZE_NORMAL - 3 ) + hb_Eol()
+   pGenPrg += ;
+      [   DEFINE GETBOX ( ] + hb_ValToExp( xControl ) + [ )] + hb_Eol() + ;
+      [      PARENT    ( ] + hb_ValToExp( xParent ) + [ )] + hb_Eol() + ;
+      [      ROW       ] + hb_ValToExp( nRow ) + hb_Eol() + ;
+      [      COL       ] + hb_ValToExp( nCol ) + hb_Eol() + ;
+      [      HEIGHT    ] + hb_ValToExp( nHeight ) + hb_Eol() + ;
+      [      WIDTH     ] + hb_ValToExp( nWidth ) + hb_Eol() + ;
+      [      FONTNAME  ] + hb_ValToExp( APP_FONTNAME ) + hb_Eol() + ;
+      [      FONTSIZE  ] + hb_ValToExp( APP_FONTSIZE_NORMAL - 3 ) + hb_Eol()
    IF ValType( xValue ) == "N"
-      pGenPrg += [      NUMERIC   .T.] + hb_Eol()
-      pGenPrg += [      INPUTMASK ] + hb_ValToExp( cPicture ) + hb_Eol()
+      pGenPrg += ;
+         [      NUMERIC   .T.] + hb_Eol() + ;
+         [      INPUTMASK ] + hb_ValToExp( cPicture ) + hb_Eol()
    ELSEIF ValType( xValue ) == "D"
-      pGenPrg += [      DATE      .T.] + hb_Eol()
-      pGenPrg += [      DATEFORMAT ] + hb_ValToExp( cPicture ) + hb_Eol()
+      pGenPrg += ;
+         [      DATE      .T.] + hb_Eol() + ;
+         [      DATEFORMAT ] + hb_ValToExp( cPicture ) + hb_Eol()
    ELSEIF ValType( xValue ) == "L" // workaround to do not get error
       xValue := " "
    ELSEIF ValType( xValue ) == "C"
-      pGenPrg += [      MAXLENGTH ] + hb_ValToExp( nMaxLength ) + hb_Eol()
+      pGenPrg += ;
+         [      MAXLENGTH ] + hb_ValToExp( nMaxLength ) + hb_Eol()
    ENDIF
-   pGenPrg += [      VALUE ] + hb_ValToExp( xValue ) + hb_Eol()
+   pGenPrg += ;
+      [      VALUE ] + hb_ValToExp( xValue ) + hb_Eol()
    IF ! Empty( bAction )
-      pGenPrg += [      ACTION Eval( ] + hb_ValToExp( bAction ) + [ )] + hb_Eol()
+      pGenPrg += ;
+         [      ACTION Eval( ] + hb_ValToExp( bAction ) + [ )] + hb_Eol()
    ENDIF
    IF ! Empty( cImage )
-     pGenPrg += [      IMAGE    ] + hb_ValToExp( cImage ) + hb_Eol()
+     pGenPrg += ;
+        [      IMAGE    ] + hb_ValToExp( cImage ) + hb_Eol()
    ENDIF
    IF ! Empty( bValid )
-      pGenPrg += [      ON LOSTFOCUS Eval( ] + hb_ValToExp( bValid ) + [ )] + hb_Eol()
+      pGenPrg += ;
+         [      ON LOSTFOCUS Eval( ] + hb_ValToExp( bValid ) + [ )] + hb_Eol()
       /* when call a dialog from bvalid, valid on next dialog does not works */
       // VALID bValid
    ENDIF
    IF lPassword
-      pGenPrg += [      PASSWORD .T.] + hb_Eol()
-      pGenPrg += [      UPPERCASE .T.] + hb_Eol()
+      pGenPrg += ;
+         [      PASSWORD .T.] + hb_Eol() + ;
+         [      UPPERCASE .T.] + hb_Eol()
    ENDIF
-   pGenPrg += [   END GETBOX] + hb_Eol()
-   pGenPrg += hb_Eol()
+   pGenPrg += ;
+      [   END GETBOX] + hb_Eol() + ;
+      hb_Eol()
 
    (bValid)
 
@@ -767,4 +781,3 @@ FUNCTION gui_NewName( cPrefix )
    hb_Default( @cPrefix, "ANY" )
 
    RETURN cPrefix + hb_ValToExp( nCount )
-

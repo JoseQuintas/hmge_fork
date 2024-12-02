@@ -2765,7 +2765,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
          // RichEdit Selection Change ......................
 
-         IF _HMG_aControlType [i] == "RICHEDIT"
+         IF _HMG_aControlType [i] == "RICHEDIT" .AND. _HMG_aControlMiscData1 [i] == 0
 
             IF GetNotifyCode ( lParam ) == EN_MSGFILTER // for typing text
                IF ISBLOCK( _HMG_aControlChangeProcedure [i] )
@@ -2774,6 +2774,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                   Eval( _HMG_aControlChangeProcedure [i] )
                   _HMG_ThisIndex := 0
                   _HMG_ThisType := ''
+                  RETURN 0
                ENDIF
             ENDIF
 
@@ -2784,6 +2785,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                   Eval( _HMG_aControlChangeProcedure [i] )
                   _HMG_ThisIndex := 0
                   _HMG_ThisType := ''
+                  RETURN 0
                ENDIF
             ENDIF
 
@@ -2794,6 +2796,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                   Eval( _HMG_aControlDblClick [i] )
                   _HMG_ThisIndex := 0
                   _HMG_ThisType := ''
+                  RETURN 0
                ENDIF
             ENDIF
 

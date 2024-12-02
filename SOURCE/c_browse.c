@@ -43,172 +43,158 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #define _WIN32_IE 0x0501
 
 #ifdef __XCC__
-#define _WIN32_WINDOWS  0x0410
+   #define _WIN32_WINDOWS  0x0410
 #endif
 #include <mgdefs.h>
-
 #include <commctrl.h>
+
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
-
-// Scrollbar Class Name
-#define WC_SCROLLBAR "ScrollBar"
-
-// Static Class Name
-#define WC_STATIC "Static"
+   // Class definitions
+   #define WC_SCROLLBAR "ScrollBar"
+   #define WC_STATIC    "Static"
 #endif
+
 LRESULT APIENTRY  SubClassFunc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 static WNDPROC    lpfnOldWndProc;
 
 HINSTANCE         GetInstance( void );
 
+// Initializes a ListView control with custom styles
 HB_FUNC( INITBROWSE )
 {
-   HWND                 hbutton;
+   HWND                 hListView;
    DWORD                style = LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | LVS_REPORT;
 
-   INITCOMMONCONTROLSEX i;
+   // Initialize common controls for ListView
+   INITCOMMONCONTROLSEX icex;
+   icex.dwSize = sizeof( INITCOMMONCONTROLSEX );
+   icex.dwICC = ICC_LISTVIEW_CLASSES;
+   InitCommonControlsEx( &icex );
 
-   i.dwSize = sizeof( INITCOMMONCONTROLSEX );
-   i.dwICC = ICC_LISTVIEW_CLASSES;
-   InitCommonControlsEx( &i );
-
+   // Add WS_TABSTOP if hb_parl(7) is false
    if( !hb_parl( 7 ) )
    {
       style |= WS_TABSTOP;
    }
 
-   hbutton = CreateWindowEx
+   // Create the ListView control
+   hListView = CreateWindowEx
       (
-         WS_EX_CLIENTEDGE,
-         WC_LISTVIEW,
-         TEXT( "" ),
-         style,
-         hb_parni( 3 ),
-         hb_parni( 4 ),
-         hb_parni( 5 ),
-         hb_parni( 6 ),
-         hmg_par_raw_HWND( 1 ),
-         hmg_par_raw_HMENU( 2 ),
-         GetInstance(),
-         NULL
+         WS_EX_CLIENTEDGE,                 // Extended style with client edge
+         WC_LISTVIEW,                      // Class name for ListView
+         TEXT( "" ),                       // No text needed
+         style,                            // Combined style flags
+         hb_parni( 3 ),                    // X position
+         hb_parni( 4 ),                    // Y position
+         hb_parni( 5 ),                    // Width
+         hb_parni( 6 ),                    // Height
+         hmg_par_raw_HWND( 1 ),            // Parent window handle
+         hmg_par_raw_HMENU( 2 ),           // Menu handle
+         GetInstance(),                    // Module instance handle
+         NULL                              // Additional parameters
       );
 
-   lpfnOldWndProc = SubclassWindow1( hbutton, SubClassFunc );
-
-   hmg_ret_raw_HWND( hbutton );
+   // Subclass to intercept messages like WM_MOUSEWHEEL
+   lpfnOldWndProc = SubclassWindow1( hListView, SubClassFunc );
+   hmg_ret_raw_HWND( hListView );
 }
 
+// Message handling function to process WM_MOUSEWHEEL events
 LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    if( msg == WM_MOUSEWHEEL )
    {
-      // sprintf( res,"zDelta: %d", (short) HIWORD (wParam) );
-      // MessageBox( GetActiveWindow(), res, "", MB_OK | MB_ICONINFORMATION );
+      // Scroll up or down based on the wheel delta
       if( ( short ) HIWORD( wParam ) > 0 )
       {
-         keybd_event
-         (
-            VK_UP,   // virtual-key code
-            0,       // hardware scan code
-            0,       // flags specifying various function options
-            0        // additional data associated with keystroke
-         );
+         keybd_event( VK_UP, 0, 0, 0 );    // Simulate UP arrow key press
       }
       else
       {
-         keybd_event
-         (
-            VK_DOWN, // virtual-key code
-            0,       // hardware scan code
-            0,       // flags specifying various function options
-            0        // additional data associated with keystroke
-         );
+         keybd_event( VK_DOWN, 0, 0, 0 );  // Simulate DOWN arrow key press
       }
 
       return CallWindowProc( lpfnOldWndProc, hWnd, 0, 0, 0 );
    }
-   else
-   {
-      return CallWindowProc( lpfnOldWndProc, hWnd, msg, wParam, lParam );
-   }
+
+   return CallWindowProc( lpfnOldWndProc, hWnd, msg, wParam, lParam );
 }
 
+// Initializes a vertical scrollbar with a specified range
 HB_FUNC( INITVSCROLLBAR )
 {
-   HWND  hscrollbar;
+   HWND  hScrollbar;
 
-   hscrollbar = CreateWindowEx
+   hScrollbar = CreateWindowEx
       (
-         0,
-         WC_SCROLLBAR,
-         TEXT( "" ),
-         WS_CHILD | WS_VISIBLE | SBS_VERT,
-         hb_parni( 2 ),
-         hb_parni( 3 ),
-         hb_parni( 4 ),
-         hb_parni( 5 ),
-         hmg_par_raw_HWND( 1 ),
-         ( HMENU ) NULL,
-         GetInstance(),
-         NULL
+         0,                                // No extended styles
+         WC_SCROLLBAR,                     // Scrollbar control class
+         TEXT( "" ),                       // No window text
+         WS_CHILD | WS_VISIBLE | SBS_VERT, // Style for visible vertical scrollbar
+         hb_parni( 2 ),                    // X position
+         hb_parni( 3 ),                    // Y position
+         hb_parni( 4 ),                    // Width
+         hb_parni( 5 ),                    // Height
+         hmg_par_raw_HWND( 1 ),            // Parent window handle
+         ( HMENU ) NULL,                   // No menu handle
+         GetInstance(),                    // Module instance handle
+         NULL                              // Additional parameters
       );
 
-   SetScrollRange
-   (
-      hscrollbar,    // handle of window with scroll bar
-      SB_CTL,        // scroll bar flag
-      1,             // minimum scrolling position
-      100,           // maximum scrolling position
-      1              // redraw flag
-   );
-
-   hmg_ret_raw_HWND( hscrollbar );
+   // Set scroll range from 1 to 100, and allow immediate redraw
+   SetScrollRange( hScrollbar, SB_CTL, 1, 100, TRUE );
+   hmg_ret_raw_HWND( hScrollbar );
 }
 
+// Retrieves the maximum scroll range for a scrollbar
 HB_FUNC( GETSCROLLRANGEMAX )
 {
-   INT   MinPos, MaxPos;
+   int   minPos, maxPos;
 
-   GetScrollRange( hmg_par_raw_HWND( 1 ), hb_parni( 2 ), &MinPos, &MaxPos );
-
-   hmg_ret_NINT( MaxPos );
+   // Retrieve the range limits for the specified scrollbar
+   GetScrollRange( hmg_par_raw_HWND( 1 ), hb_parni( 2 ), &minPos, &maxPos );
+   hmg_ret_NINT( maxPos );
 }
 
+// Creates a static control styled as a button, typically to represent a scroll button
 HB_FUNC( INITVSCROLLBARBUTTON )
 {
    hmg_ret_raw_HWND
    (
       CreateWindow
          (
-            WC_STATIC,
-            TEXT( "" ),
-            WS_CHILD | WS_VISIBLE | SS_SUNKEN,
-            hb_parni( 2 ),
-            hb_parni( 3 ),
-            hb_parni( 4 ),
-            hb_parni( 5 ),
-            hmg_par_raw_HWND( 1 ),
-            ( HMENU ) NULL,
-            GetInstance(),
-            NULL
+            WC_STATIC,              // Static control class
+            TEXT( "" ),             // No text
+            WS_CHILD | WS_VISIBLE | SS_SUNKEN,  // Styles to display sunken look
+            hb_parni( 2 ),          // X position
+            hb_parni( 3 ),          // Y position
+            hb_parni( 4 ),          // Width
+            hb_parni( 5 ),          // Height
+            hmg_par_raw_HWND( 1 ),  // Parent window handle
+            ( HMENU ) NULL,         // No menu handle
+            GetInstance(),          // Module instance handle
+            NULL                    // Additional parameters
          )
    );
 }
 
+// Sets the scroll info for a scrollbar, including page size, position, and range
 HB_FUNC( SETSCROLLINFO )
 {
-   SCROLLINFO  lpsi;
+   SCROLLINFO  si = { 0 };
 
-   lpsi.cbSize = sizeof( SCROLLINFO );
-   lpsi.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
-   lpsi.nMin = 1;
-   lpsi.nMax = hb_parni( 2 );
-   lpsi.nPage = hb_parni( 4 );
-   lpsi.nPos = hb_parni( 3 );
+   // Configure scroll information
+   si.cbSize = sizeof( SCROLLINFO );
+   si.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
+   si.nMin = 1;
+   si.nMax = hb_parni( 2 );         // Maximum scroll range
+   si.nPage = hb_parni( 4 );        // Page size
+   si.nPos = hb_parni( 3 );         // Scroll position
 
-   hmg_ret_NINT( SetScrollInfo( hmg_par_raw_HWND( 1 ), SB_CTL, ( LPSCROLLINFO ) & lpsi, 1 ) );
+   // Apply scroll info and return success/failure
+   hmg_ret_NINT( SetScrollInfo( hmg_par_raw_HWND( 1 ), SB_CTL, &si, TRUE ) );
 }
