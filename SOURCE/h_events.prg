@@ -67,8 +67,6 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
    #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
    #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
-   #xtranslate hb_ULen( <c> ) => Len( <c> )
-   #xtranslate hb_USubStr( <c>, <n> [, <e>] ) => SubStr( <c>, <n> [, <e>] )
 #endif
 
 #ifdef _OBJECT_
@@ -1934,6 +1932,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                _HMG_DateTextBoxActive := .T.
 
                IF "E" $ _HMG_aControlPageMap [i]
+
                   Ts := GetWindowText ( _HMG_aControlHandles [i] )
                   IF "." $ _HMG_aControlPageMap [i]
                      DO CASE
@@ -1947,7 +1946,9 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                         ENDIF
                         SetWindowText ( _HMG_aControlhandles [i] , TmpStr )
                      ENDCASE
+
                   ELSE
+
                      DO CASE
                      CASE hb_UAt ( '.' , Ts ) !=  0
                         SetWindowText ( _HMG_aControlhandles [i] , Transform ( GetNumFromTextSP ( GetWindowText ( _HMG_aControlhandles [i] ) , i ) , _HMG_aControlInputMask [i] ) )
@@ -1958,14 +1959,17 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
                      OTHERWISE
                         SetWindowText ( _HMG_aControlhandles [i] , Transform ( GetNumFromText ( GetWindowText ( _HMG_aControlhandles [i] ) , i ) , _HMG_aControlInputMask [i] ) )
                      ENDCASE
+
                   ENDIF
 
                ELSE
+
                   TmpStr := Transform ( GetNumFromText ( GetWindowText ( _HMG_aControlhandles [i] ) , i ) , _HMG_aControlInputMask [i] )
                   IF Val ( TmpStr ) == 0
                      TmpStr := StrTran ( TmpStr , '0.' , ' .' )
                   ENDIF
                   SetWindowText ( _HMG_aControlhandles [i] , TmpStr )
+
                ENDIF
 
                SendMessage( _HMG_aControlhandles [i] , EM_SETSEL , 0 , -1 )
@@ -1976,13 +1980,14 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
             IF _HMG_aControlType [i] == 'CHARMASKTEXT'
 
                MaskStart := 1
-               FOR x := 1 TO hb_ULen ( _HMG_aControlInputMask [i] )
-                  z := hb_USubStr ( _HMG_aControlInputMask [i] , x , 1 )
-                  IF hmg_IsDigit( z ) .OR. hmg_IsAlpha( z ) .OR. z == '!'
-                     MaskStart := x
+
+               FOR EACH x IN _HMG_aControlInputMask [i]
+                  IF hmg_IsDigit( x ) .OR. hmg_IsAlpha( x ) .OR. x == '!'
+                     MaskStart := hb_enumindex( x )
                      EXIT
                   ENDIF
-               NEXT x
+               NEXT
+
                SendMessage( _HMG_aControlhandles [i] , EM_SETSEL , MaskStart - 1 , -1 )
 
             ENDIF

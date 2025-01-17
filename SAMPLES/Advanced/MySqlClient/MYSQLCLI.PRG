@@ -142,7 +142,7 @@ PROCEDURE Main()
 
          DEFINE POPUP " &Help "
             MENUITEM "About" ;
-               ACTION ShellAbout( "", PROGRAM + " v.2.0" + CRLF + "Cristobal Molla, Mitja Podgornik" )
+               ACTION ShellAbout( "", PROGRAM + " v.2.0 (client version " + mysql_get_client_info() + ")" + CRLF + "Cristobal Molla, Mitja Podgornik" )
          END POPUP
 
       END MENU
@@ -854,7 +854,7 @@ FUNCTION copy2dbf( cFolder, cFile )
       ENDIF
 
       IF File( cFileName )
-         IF ! msgyesno( "File " + cFileName + " allready exists! Overwrite?", PROGRAM )
+         IF ! msgyesno( "File " + cFileName + " already exists! Overwrite?", PROGRAM )
             RETURN NIL
          ENDIF
       ENDIF
@@ -1069,7 +1069,7 @@ FUNCTION dbf2sql( lCreateTable )
          cFileName := StrTran( Lower( Right( aDbfFiles[ f ], i ) ), ".dbf", "" )
 
          IF AScan( aTables, cFileName ) > 0
-            IF ! msgyesno( "Table " + cFileName + " allready exists! Overwrite?", PROGRAM )
+            IF ! msgyesno( "Table " + cFileName + " already exists! Overwrite?", PROGRAM )
                lError := .T.
                EXIT
             ENDIF

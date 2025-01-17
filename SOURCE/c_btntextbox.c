@@ -349,7 +349,7 @@ HB_FUNC( REDEFBTNTEXTBOX )
    SetProp( ( HWND ) hedit, TEXT( "oldbtntextproc" ), ( HWND ) GetWindowLongPtr( ( HWND ) hedit, GWLP_WNDPROC ) );
    SubclassWindow2( hedit, OwnBtnTextProc );
 
-   if( !( hb_parc( 2 ) == NULL ) )
+   if( hb_parc( 2 ) != NULL )
    {
 #ifndef UNICODE
       LPCSTR   lpImageName = hb_parc( 2 );
@@ -395,7 +395,7 @@ HB_FUNC( REDEFBTNTEXTBOX )
       himage = NULL;
    }
 
-   if( !( hb_parc( 4 ) == NULL ) )
+   if( hb_parc( 4 ) != NULL )
    {
 #ifndef UNICODE
       LPCSTR   lpImageName2 = hb_parc( 4 );
@@ -479,12 +479,12 @@ HB_FUNC( REDEFBTNTEXTBOX )
       hBtn2 = 0;
    }
 
-   if( !( himage == NULL ) )
+   if( himage != NULL )
    {
       SendMessage( hBtn1, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage );
    }
 
-   if( !( himage2 == NULL ) )
+   if( himage2 != NULL )
    {
       SendMessage( hBtn2, BM_SETIMAGE, ( WPARAM ) IMAGE_BITMAP, ( LPARAM ) himage2 );
    }

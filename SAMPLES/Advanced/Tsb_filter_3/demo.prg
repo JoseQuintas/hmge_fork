@@ -120,6 +120,9 @@ Function Main()
       oBrw1:GetColumn("ORDKEYNO"):nClrBack := CLR_YELLOW                    // цвет фона 1-колонки
       oBrw1:GetColumn("ORDKEYNO"):hFont    := GetFontHandle("Italic")
       oBrw1:nClrLine := CLR_ORANGE
+      IF IsArray(oBrw1:aCheck)
+         AEval(oBrw1:aCheck, {|h| iif( Empty(h), , DeleteObject(h) ) })
+      ENDIF
       oBrw1:aCheck   := { LoadImage("bCheckT24"), LoadImage("bCheckF24") }  // заменяем колонку CHECKBOX на свои картинки
       oBrw1:Refresh()
 

@@ -185,7 +185,7 @@ HB_FUNC( INITITEMBAR )
    }
 
    // Set the icon in the last part if successfully loaded.
-   if( !( hIcon == NULL ) )
+   if( hIcon != NULL )
    {
       SendMessage( hWndSB, SB_SETICON, ( WPARAM ) nrOfParts - 1, ( LPARAM ) hIcon );
    }
@@ -345,7 +345,7 @@ HB_FUNC( SETSTATUSITEMICON )
 {
    HWND     hwnd;
    RECT     rect;
-   HICON    hIcon;
+   HICON    hIcon = NULL;
    int      cx;
    int      cy;
 
@@ -363,13 +363,23 @@ HB_FUNC( SETSTATUSITEMICON )
    cy = rect.bottom - rect.top - 4; // Sets icon size based on status bar height.
    cx = cy;
 
-   hIcon = ( HICON ) LoadImage( GetResources(), lpIconName, IMAGE_ICON, cx, cy, 0 );   // Load icon from resources.
-   if( hIcon == NULL )  // If loading from resources failed, try loading from file.
+   if ( HB_ISCHAR( 3 ) )   // Load icon from resources.
    {
-      hIcon = ( HICON ) LoadImage( NULL, lpIconName, IMAGE_ICON, cx, cy, LR_LOADFROMFILE );
+      hIcon = ( HICON ) LoadImage( GetResources(), lpIconName, IMAGE_ICON, cx, cy, 0 );
+      if( hIcon == NULL )  // If loading from resources failed, try loading from file.
+      {
+         hIcon = ( HICON ) LoadImage( NULL, lpIconName, IMAGE_ICON, cx, cy, LR_LOADFROMFILE );
+      }
+   }
+   else if( HB_ISNUM( 4 ) ) // Get hIcon from 4th parameter.
+   {
+      hIcon = hmg_par_raw_HICON( 4 );
    }
 
-   SendMessage( hwnd, SB_SETICON, ( WPARAM ) hb_parni( 2 ) - 1, ( LPARAM ) hIcon ); // Sets the icon in the status bar.
+   if( hIcon != NULL )
+   {
+      SendMessage( hwnd, SB_SETICON, ( WPARAM ) hb_parni( 2 ) - 1, ( LPARAM ) hIcon ); // Sets the icon in the status bar.
+   }
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpIconName );             // Frees memory if Unicode conversion was used.
 #endif

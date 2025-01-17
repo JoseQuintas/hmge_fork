@@ -54,7 +54,8 @@
    Copyright 2016-2017 (C) Petr Chornyj  <myorg63@mail.ru>
  + EnumProps()
  + EnumPropsEx()
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
+
 #include <mgdefs.h>
 
 #include "hbapiitm.h"
@@ -64,14 +65,14 @@ LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
 
+/* Revised by P.Chornyj 16.11 */
+
 //------------------------------------------------------------------------------
 //                   General, universal GetProp/SetProp functions
 //------------------------------------------------------------------------------
 // usage: SetProp( hWnd, cPropName, xValue, [lHandle] ) -> lSuccess
 // [lHandle] is optional and indicates that no memory management is required
 //           if lHandle = .T., xValue must be numerical (integer)
-
-/* Revised by P.Chornyj 16.11 */
 HB_FUNC( SETPROP )
 {
    HWND     hwnd = hmg_par_raw_HWND( 1 );
@@ -88,55 +89,48 @@ HB_FUNC( SETPROP )
 #else
    LPWSTR   pW;
 #endif
+
    hb_retl( HB_FALSE );
 
-   // check params
+   // Validate parameters
    if( !IsWindow( hwnd ) || hb_parclen( 2 ) == 0 )
    {
       return;
    }
 
-   // check data
+   // Determine data type and size
    if( HB_ISCHAR( 3 ) )
    {
-      chType = 'C';     // character
+      chType = 'C';  // character
       nLen = ( int ) hb_parclen( 3 );
    }
    else if( HB_ISLOG( 3 ) )
    {
-      chType = 'L';     // logical
+      chType = 'L';  // logical
       nLen = sizeof( BOOL );
    }
    else if( HB_ISDATE( 3 ) )
    {
-      chType = 'D';     // date
-      nLen = 9;         // len of "yyyymmdd"
+      chType = 'D';  // date
+      nLen = 9;      // length of "yyyymmdd"
    }
    else if( HB_IS_NUMINT( hb_param( 3, HB_IT_ANY ) ) )
    {
-      if( ( BOOL ) hb_parldef( 4, HB_FALSE ) )
-      {
-         chType = 'X';  // if 'X' memory HANDLE passed
-      }
-      else
-      {
-         chType = 'I';  // int
-      }
-
+      chType = ( char ) ( hb_parldef( 4, HB_FALSE ) ? 'X' : 'I' );   // handle or integer
       nLen = sizeof( INT );
    }
    else if( HB_ISNUM( 3 ) )
    {
-      chType = 'F';     // float
+      chType = 'F';  // float
       nLen = sizeof( double );
    }
    else
    {
-      // unsupported type
+      // Unsupported type
       return;
    }
 
-   // direct assignment of a long value
+   // Direct assignment of a long value
    if( chType == 'X' )
    {
 #ifndef UNICODE
@@ -151,21 +145,21 @@ HB_FUNC( SETPROP )
       return;
    }
 
-   // type conversion
-   if( ( hMem = GlobalAlloc( GPTR, nLen + sizeof( int ) + 1 ) ) == NULL )
+   // Allocate memory
+   hMem = GlobalAlloc( GPTR, nLen + sizeof( int ) + 1 );
+   if( !hMem )
    {
       return;
    }
-   else
+
+   lpMem = ( char * ) GlobalLock( hMem );
+   if( !lpMem )
    {
-      lpMem = ( char * ) GlobalLock( hMem );
-      if( lpMem == NULL )
-      {
-         GlobalFree( hMem );
-         return;
-      }
+      GlobalFree( hMem );
+      return;
    }
 
+   // Set memory content
    lpMem[0] = chType;
    memcpy( lpMem + 1, ( char * ) &nLen, sizeof( int ) );
 
@@ -177,7 +171,7 @@ HB_FUNC( SETPROP )
 
       case 'L':
          bValue = hb_parl( 3 );
-         memcpy( lpMem + sizeof( int ) + 1, ( char * ) &bValue, sizeof( BOOL ) );
+         memcpy( lpMem + sizeof( int ) + 1, &bValue, sizeof( BOOL ) );
          break;
 
       case 'D':
@@ -186,12 +180,12 @@ HB_FUNC( SETPROP )
 
       case 'I':
          iValue = hmg_par_INT( 3 );
-         memcpy( lpMem + sizeof( int ) + 1, ( char * ) &iValue, sizeof( INT ) );
+         memcpy( lpMem + sizeof( int ) + 1, &iValue, sizeof( INT ) );
          break;
 
       case 'F':
          dValue = hb_parnd( 3 );
-         memcpy( lpMem + sizeof( int ) + 1, ( char * ) &dValue, sizeof( double ) );
+         memcpy( lpMem + sizeof( int ) + 1, &dValue, sizeof( double ) );
          break;
    }
 
@@ -225,7 +219,7 @@ HB_FUNC( GETPROP )
 #endif
    hb_ret();
 
-   // check params
+   // Validate parameters
    if( !IsWindow( hwnd ) || hb_parclen( 2 ) == 0 )
    {
       return;
@@ -244,21 +238,18 @@ HB_FUNC( GETPROP )
 #ifdef UNICODE
    hb_xfree( pW );
 #endif
-   if( NULL == hMem )
+   if( !hMem )
    {
       return;
    }
-   else
-   {
-      lpMem = ( char * ) GlobalLock( hMem );
 
-      if( lpMem == NULL )
-      {
-         return;
-      }
+   lpMem = ( char * ) GlobalLock( hMem );
+   if( !lpMem )
+   {
+      return;
    }
 
-   nLen = ( int ) * ( int * ) ( lpMem + 1 );
+   nLen = *( int * ) ( lpMem + 1 );
    switch( lpMem[0] )
    {
       case 'C':
@@ -266,7 +257,7 @@ HB_FUNC( GETPROP )
          break;
 
       case 'L':
-         hb_retl( ( BOOL ) * ( BOOL * ) ( lpMem + sizeof( int ) + 1 ) );
+         hb_retl( *( BOOL * ) ( lpMem + sizeof( int ) + 1 ) );
          break;
 
       case 'D':
@@ -274,11 +265,11 @@ HB_FUNC( GETPROP )
          break;
 
       case 'I':
-         hb_retni( ( INT ) * ( INT * ) ( lpMem + sizeof( int ) + 1 ) );
+         hb_retni( *( INT * ) ( lpMem + sizeof( int ) + 1 ) );
          break;
 
       case 'F':
-         hb_retnd( ( double ) * ( double * ) ( lpMem + sizeof( int ) + 1 ) );
+         hb_retnd( *( double * ) ( lpMem + sizeof( int ) + 1 ) );
          break;
    }
 

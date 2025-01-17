@@ -48,7 +48,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-  ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #include "hbapiitm.h"
@@ -517,8 +517,14 @@ HB_FUNC( SETWINDOWTHEME )
 {
    HRESULT  nRet = S_FALSE;
    HWND     hWnd = hmg_par_raw_HWND( 1 );
+#ifdef UNICODE
    LPCWSTR  pszSubAppName = ( LPCWSTR ) hb_parc( 2 );
    LPCWSTR  pszSubIdList = ( LPCWSTR ) hb_parc( 3 );
+#else
+   // Convert the provided multibyte string to a wide string (Unicode) if it is not empty
+   LPCWSTR  pszSubAppName = ( hb_parclen( 2 ) == 0 ?  ( LPCWSTR )hb_parc( 2 ) : hb_mbtowc( hb_parc( 2 ) ) );
+   LPCWSTR  pszSubIdList = ( hb_parclen( 3 ) == 0 ? ( LPCWSTR ) hb_parc( 3 ) : hb_mbtowc( hb_parc( 3 ) ) );
+#endif
 
    // Load the library if not already loaded.
    if( hUxTheme == NULL )

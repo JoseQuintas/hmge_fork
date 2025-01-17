@@ -75,8 +75,6 @@
 #endif /* _MATH_DEFINES_DEFINED */
 #endif /* __WATCOMC__ */
 
-#include <math.h>
-
 #ifdef __XHARBOUR__
 #define hb_parvni    hb_parni
 #define hb_parvnd    hb_parnd
@@ -84,11 +82,13 @@
 #define HB_STORVNI   hb_storni
 #else
 #define HB_STORVNI   hb_storvni
-#endif
+#endif /* __XHARBOUR__ */
+
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES
-#include <math.h>
 #endif /* _MSC_VER */
+
+#include <math.h>
 
 extern HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName );
 
@@ -3737,4 +3737,133 @@ HB_FUNC( BT_TEXTOUT_SIZE )
    SelectObject( hDC, hOldFont );
    DeleteObject( hFont );
    ReleaseDC( hWnd, hDC );
+}
+
+//        BT_MathCircumferenceY ( Radius, AngleInDegrees ) --> nRow
+HB_FUNC( BT_MATHCIRCUMFERENCEY )
+{
+   double   Radius = ( double ) hb_parnd( 1 );
+   double   AngleDegrees = ( double ) hb_parnd( 2 );
+   double   AngleRadians = ( 2 * M_PI ) * AngleDegrees / ( double ) 360.0;
+   double   y = sin( AngleRadians ) * Radius;
+
+   hb_retnd( ( double ) y );
+}
+
+//        BT_MathCircumferenceX ( Radius, AngleInDegrees ) --> nCol
+HB_FUNC( BT_MATHCIRCUMFERENCEX )
+{
+   double   Radius = ( double ) hb_parnd( 1 );
+   double   AngleDegrees = ( double ) hb_parnd( 2 );
+   double   AngleRadians = ( 2 * M_PI ) * AngleDegrees / ( double ) 360.0;
+   double   x = cos( AngleRadians ) * Radius;
+
+   hb_retnd( ( double ) x );
+}
+
+//        BT_MathCircumferenceArcAngle ( Radius, Arc ) --> AngleInDegrees
+HB_FUNC( BT_MATHCIRCUMFERENCEARCANGLE )
+{
+   double   Radius = ( double ) hb_parnd( 1 );
+   double   Arc = ( double ) hb_parnd( 2 );
+   double   Longitude = ( 2 * M_PI ) * Radius;
+   double   AngleDegrees = Arc * ( double ) 360.0 / Longitude;
+
+   hb_retnd( ( double ) AngleDegrees );
+}
+
+//        BT_SelectObject (hDC, hGDIobj)
+HB_FUNC( BT_SELECTOBJECT )
+{
+   HDC      hDC = hmg_par_raw_HDC( 1 );
+   HGDIOBJ  hGDIobj = ( HGDIOBJ ) hmg_par_raw_HANDLE( 2 );
+   HGDIOBJ  hGDIobjOld = SelectObject( hDC, hGDIobj );
+
+   hmg_ret_raw_HGDIOBJ( hGDIobjOld );
+}
+
+//        BT_DeleteObject (hGDIobj)
+HB_FUNC( BT_DELETEOBJECT )
+{
+   HGDIOBJ  hGDIobj = hmg_par_raw_HGDIOBJ( 1 );
+
+   hb_retl( ( BOOL ) DeleteObject( hGDIobj ) );
+}
+
+//        BT_RegionCreateElliptic (nCol1, nRow1, nCol2, nRow2)
+HB_FUNC( BT_REGIONCREATEELLIPTIC )
+{
+   HRGN  hRgn = CreateEllipticRgn( hb_parni( 1 ), hb_parni( 2 ), hb_parni( 3 ), hb_parni( 4 ) );
+
+   hmg_ret_raw_HANDLE( hRgn );
+}
+
+//        BT_RegionCombine ( @hRgnDest, hRgnSrc1, hRgnSrc2, nCombineMode ) --> nResult
+HB_FUNC( BT_REGIONCOMBINE )
+{
+   HRGN  hRgnSrc1 = hmg_par_raw_HRGN( 2 );
+   HRGN  hRgnSrc2 = hmg_par_raw_HRGN( 3 );
+   INT   nCombineMode = hmg_par_INT( 4 );
+   if( HB_ISBYREF( 1 ) )
+   {
+      HRGN  hRgnDest = CreateRectRgn( 0, 0, 0, 0 );            // This region must exist before CombineRgn() is called
+      INT   ret = CombineRgn( hRgnDest, hRgnSrc1, hRgnSrc2, nCombineMode );
+      if( ret == ERROR )
+      {
+         DeleteObject( hRgnDest );
+      }
+      else
+      {
+         HB_STORNL( ( LONG_PTR ) hRgnDest, 1 );
+      }
+
+      hb_retni( ( INT ) ret );
+   }
+   else
+   {
+      hb_retni( ( INT ) ERROR );
+   }
+}
+
+//        BT_RegionFrame (hDC, hRgn, aColor, nWidth, nHeight)
+HB_FUNC( BT_REGIONFRAME )
+{
+   HDC      hDC = hmg_par_raw_HDC( 1 );
+   HRGN     hRgn = hmg_par_raw_HRGN( 2 );
+   HBRUSH   hBrush = CreateSolidBrush( RGB( hb_parvni( 3, 1 ), hb_parvni( 3, 2 ), hb_parvni( 3, 3 ) ) );
+   INT      nWidth = hmg_par_INT( 4 );
+   INT      nHeight = hmg_par_INT( 5 );
+
+   hb_retl( ( BOOL ) FrameRgn( hDC, hRgn, hBrush, nWidth, nHeight ) );
+}
+
+/************************************************************************************************/
+HMG_DEFINE_DLL_FUNC( win_Shell_GetImageLists,                              // user function name
+                     TEXT( "Shell32.dll" ),                                // dll name
+                     BOOL,                                                 // function return type
+                     WINAPI,                                               // function type
+                     "Shell_GetImageLists",                                // dll function name
+                     ( HIMAGELIST * phimlLarge, HIMAGELIST * phimlSmall ), // dll function parameters (types and names)
+                     ( phimlLarge, phimlSmall ),                           // function parameters (only names)
+                     FALSE                                                 // return value if fail call function of dll
+                     )
+
+//        BT_ImageListGetSystemIcon () --> hImageList
+HB_FUNC( BT_IMAGELISTGETSYSTEMICON )
+{
+   HIMAGELIST himlSmall;
+
+   win_Shell_GetImageLists( NULL, &himlSmall );
+
+   hmg_ret_raw_HANDLE( himlSmall );
+}
+
+//       BT_ImageListExtractIcon
+HB_FUNC (BT_IMAGELISTEXTRACTICON)
+{
+   HIMAGELIST himl = hmg_par_raw_HIMAGELIST( 1 );
+   INT      nIndex = hmg_par_INT( 2 );
+   HICON     hIcon = ImageList_ExtractIcon( 0, himl, nIndex );
+
+   hmg_ret_raw_HANDLE( hIcon );
 }

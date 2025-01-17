@@ -57,7 +57,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 *------------------------------------------------------------------------------*
 PROCEDURE COMPRESSFILES ( cFileName, aDir, bBlock, lOverwrite, lStorePath, cPassword )
 *------------------------------------------------------------------------------*
-   LOCAL hZip, cZipFile, i
+   LOCAL hZip, cZipFile, cFullPath
 
    DEFAULT lOverwrite TO .T.
 
@@ -73,15 +73,15 @@ PROCEDURE COMPRESSFILES ( cFileName, aDir, bBlock, lOverwrite, lStorePath, cPass
 
    IF ! Empty( hZip )
 
-      FOR i := 1 TO Len ( aDir )
+      FOR EACH cFullPath IN aDir
 
          IF ValType ( bBlock ) == 'B'
-            Eval ( bBlock, aDir[ i ], i )
+            Eval ( bBlock, cFullPath, hb_enumindex( cFullPath ) )
          ENDIF
 
-         cZipFile := iif( lStorePath, aDir[ i ], cFileNoPath( aDir[ i ] ) )
+         cZipFile := iif( lStorePath, cFullPath, cFileNoPath( cFullPath ) )
 
-         hb_ZipStoreFile( hZip, aDir[ i ], cZipFile, cPassword )
+         hb_ZipStoreFile( hZip, cFullPath, cZipFile, cPassword )
 
       NEXT
 

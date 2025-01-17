@@ -11,6 +11,8 @@ Function Main
 
    Local hSplitWnd
 
+   SET EVENTS FUNCTION TO App_OnEvents
+
    DEFINE WINDOW Form_1 ;
       AT 0,0 ;
       WIDTH 640 HEIGHT 480 ;
@@ -126,100 +128,101 @@ LOCAL NewHeight := aRect [2] + DifHeight
 
 RETURN
 
+#include "i_winuser.ch"
+*---------------------------------------------*
+FUNCTION App_OnEvents( hWnd, nMsg, wParam, lParam )
+*---------------------------------------------*
+   LOCAL nResult
+   LOCAL ControlCount, i, k, x
 
-#pragma BEGINDUMP
+   SWITCH nMsg
 
-#include <mgdefs.h>
-#include <commctrl.h>
+   CASE WM_SIZE
 
-//*********************************************
-//    by Dr. Claudio Soto (July 2014)
-//*********************************************
+      ControlCount := Len ( _HMG_aControlHandles )
 
-HB_FUNC( REBAR_GETHEIGHT )
-{
-   HWND hWnd    = ( HWND ) HB_PARNL( 1 );
-   UINT nHeight = SendMessage( hWnd, RB_GETBARHEIGHT, 0, 0 );
+      i := AScan ( _HMG_aFormHandles, hWnd )
 
-   hb_retni( ( INT ) nHeight );
-}
+      IF i > 0
 
-HB_FUNC( REBAR_GETBANDCOUNT )
-{
-   HWND hWnd       = ( HWND ) HB_PARNL( 1 );
-   UINT nBandCount = SendMessage( hWnd, RB_GETBANDCOUNT, 0, 0 );
+            IF ( k := _HMG_aFormReBarHandle [i] ) > 0
 
-   hb_retni( ( INT ) nBandCount );
-}
+               SizeRebar ( k )
+               RebarHeight ( k )
+               RedrawWindow ( k )
 
-HB_FUNC( REBAR_GETBARRECT )
-{
-   HWND hWnd  = ( HWND ) HB_PARNL( 1 );
-   UINT nBand = ( UINT ) hb_parni( 2 );
-   RECT Rect;
+            ENDIF
 
-   SendMessage( hWnd, RB_GETRECT, ( WPARAM ) nBand, ( LPARAM ) &Rect );
+            FOR x := 1 TO ControlCount
 
-   hb_reta( 6 );
-   hb_storvnl( ( LONG ) Rect.left, -1, 1 );
-   hb_storvnl( ( LONG ) Rect.top, -1, 2 );
-   hb_storvnl( ( LONG ) Rect.right, -1, 3 );
-   hb_storvnl( ( LONG ) Rect.bottom, -1, 4 );
-   hb_storvnl( ( LONG ) ( Rect.right - Rect.left ), -1, 5 );   // nWidth
-   hb_storvnl( ( LONG ) ( Rect.bottom - Rect.top ), -1, 6 );   // nHeight
-}
+               IF _HMG_aControlParentHandles [x] == hWnd
 
-HB_FUNC( REBAR_GETBANDBORDERS )
-{
-   HWND hWnd  = ( HWND ) HB_PARNL( 1 );
-   UINT nBand = ( UINT ) hb_parni( 2 );
-   RECT Rect;
+                  IF _HMG_aControlType [x] == "MESSAGEBAR"
 
-   SendMessage( hWnd, RB_GETBANDBORDERS, ( WPARAM ) nBand, ( LPARAM ) &Rect );
+                     MoveWindow( _HMG_aControlHandles [x] , 0 , 0 , 0 , 0 , .T. )
+                     RefreshItemBar ( _HMG_aControlHandles [x] , _GetStatusItemWidth( hWnd, 1 ) )
 
-   hb_reta( 4 );
-   hb_storvnl( ( LONG ) Rect.left, -1, 1 );
-   hb_storvnl( ( LONG ) Rect.top, -1, 2 );
-   hb_storvnl( ( LONG ) Rect.right, -1, 3 );
-   hb_storvnl( ( LONG ) Rect.bottom, -1, 4 );
-}
+                     IF ( k := GetControlIndex( 'ProgressMessage', GetParentFormName( x ) ) ) != 0
+                        RefreshProgressItem ( _HMG_aControlMiscData1 [k, 1], _HMG_aControlHandles [k], _HMG_aControlMiscData1 [k, 2] )
+                     ENDIF
+                     EXIT
 
-HB_FUNC( REBAR_SETMINCHILDSIZE )
-{
-   HWND hWnd  = ( HWND ) HB_PARNL( 1 );
-   UINT nBand = ( UINT ) hb_parni( 2 );
-   UINT yMin  = ( UINT ) hb_parni( 3 );
+                  ENDIF
 
-   REBARBANDINFO rbbi;
+               ENDIF
 
-   rbbi.cbSize     = sizeof( REBARBANDINFO );
-   rbbi.fMask      = RBBIM_CHILDSIZE;
-   rbbi.cxMinChild = 0;
-   rbbi.cyMinChild = yMin;
-   rbbi.cx         = 0;
+            NEXT x
 
-   SendMessage( hWnd, RB_SETBANDINFO, ( WPARAM ) nBand, ( LPARAM ) &rbbi );
-}
+            IF _HMG_MainActive == .T.
 
-HB_FUNC( REBAR_GETBANDINFO )
-{
-   HWND hWnd  = ( HWND ) HB_PARNL( 1 );
-   UINT uBand = ( UINT ) hb_parni( 2 );
-   REBARBANDINFO rbbi;
+               IF wParam == SIZE_MAXIMIZED
 
-   rbbi.cbSize = sizeof( REBARBANDINFO );
-   rbbi.fMask  = RBBIM_CHILDSIZE | RBBIM_SIZE;
+                  _DoWindowEventProcedure ( _HMG_aFormMaximizeProcedure [i], i )
 
-   SendMessage( hWnd, RB_GETBANDINFO, ( WPARAM ) uBand, ( LPARAM ) &rbbi );
+                  IF _HMG_AutoAdjust .AND. _HMG_MainClientMDIHandle == 0
+                     _Autoadjust( hWnd )
+                  ENDIF
 
-   hb_reta( 7 );
-   hb_storvnl( ( LONG ) rbbi.cxMinChild, -1, 1 );
-   hb_storvnl( ( LONG ) rbbi.cyMinChild, -1, 2 );
-   hb_storvnl( ( LONG ) rbbi.cx, -1, 3 );
-   hb_storvnl( ( LONG ) rbbi.cyChild, -1, 4 );
-   hb_storvnl( ( LONG ) rbbi.cyMaxChild, -1, 5 );
-   hb_storvnl( ( LONG ) rbbi.cyIntegral, -1, 6 );
-   hb_storvnl( ( LONG ) rbbi.cxIdeal, -1, 7 );
-}
+               ELSEIF wParam == SIZE_MINIMIZED
 
-#pragma ENDDUMP
+                  _DoWindowEventProcedure ( _HMG_aFormMinimizeProcedure [i], i )
+
+               ELSEIF wParam == SIZE_RESTORED .AND. !IsWindowSized( hWnd )
+
+                  _DoWindowEventProcedure ( _HMG_aFormRestoreProcedure [i], i )
+
+               ELSE
+
+                  _DoWindowEventProcedure ( _HMG_aFormSizeProcedure [i], i )
+
+                  IF _HMG_AutoAdjust .AND. _HMG_MainClientMDIHandle == 0
+                     _Autoadjust( hWnd )
+                  ENDIF
+
+               ENDIF
+
+            ENDIF
+
+      ENDIF
+
+      FOR i := 1 TO ControlCount
+
+         IF _HMG_aControlParentHandles [i] == hWnd
+
+            IF _HMG_aControlType [i] == "TOOLBAR"
+               SendMessage ( _HMG_aControlHandles [i], TB_AUTOSIZE, 0, 0 )
+            ENDIF
+
+         ENDIF
+
+      NEXT i
+
+      nResult := 0
+      exit
+
+   OTHERWISE
+      nResult := Events( hWnd, nMsg, wParam, lParam )
+
+   END SWITCH
+
+RETURN nResult

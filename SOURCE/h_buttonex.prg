@@ -785,11 +785,10 @@ RETURN ( 1 )
 STATIC FUNCTION ToUnicode( cString )
 *-----------------------------------------------------------------------------*
    LOCAL cOutString As String
-   LOCAL nCount := Len( cString )
-   LOCAL i
+   LOCAL Char
 
-   FOR i := 1 TO nCount
-      cOutString += SubStr( cString, i, 1 ) + Chr( 0 )
+   FOR EACH Char IN cString
+      cOutString += Char + Chr( 0 )
    NEXT
 
 RETURN ( cOutString + Chr( 0 ) )

@@ -13,26 +13,6 @@ HB_FUNC( GETICOINDEX )
    hb_retni( sfi.iIcon );
 }
 
-HMG_DEFINE_DLL_FUNC( win_Shell_GetImageLists,                              // user function name
-                     "Shell32.dll",                                        // dll name
-                     BOOL,                                                 // function return type
-                     WINAPI,                                               // function type
-                     "Shell_GetImageLists",                                // dll function name
-                     ( HIMAGELIST * phimlLarge, HIMAGELIST * phimlSmall ), // dll function parameters (types and names)
-                     ( phimlLarge, phimlSmall ),                           // function parameters (only names)
-                     FALSE                                                 // return value if fail call function of dll
-                     )
-
-//        BT_ImageListGetSystemIcon ( [ lLargeIcon ] ) --> hImageList
-HB_FUNC( BT_IMAGELISTGETSYSTEMICON )
-{
-   HIMAGELIST himlSmall;
-
-   win_Shell_GetImageLists( NULL, &himlSmall );
-
-   hmg_ret_raw_HANDLE( himlSmall );
-}
-
 //        ListView_SetImageList ( hWnd , hImageList , [iImageList] )
 HB_FUNC( LISTVIEW_SETIMAGELIST )
 {

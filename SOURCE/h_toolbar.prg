@@ -250,6 +250,10 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
    __defaultNIL( @tooltip, "" )
    hb_default( @notrans, .F. )
 
+   IF ! Empty ( image ) .AND. Empty ( BmpSize( image ) [1] )
+      image := _GetDummyImage ( 16, 16 )
+   ENDIF
+
    IF imageindex != NIL
       aImage      := GetControlValue ( _HMG_ActiveToolBarName, cParentForm )
       imagelst    := aImage [1]
@@ -551,3 +555,17 @@ STATIC PROCEDURE _DropDownShortcut ( nToolButtonId , nParentWindowHandle , i , n
    ENDIF
 
 RETURN
+
+*-----------------------------------------------------------------------------*
+STATIC FUNCTION _GetDummyImage ( nWidth, nHeight )
+*-----------------------------------------------------------------------------*
+   LOCAL TempName := TempFile ( GetTempFolder(), 'BMP' )
+   LOCAL hBitmap
+
+   hBitmap := BT_BitmapCreateNew ( nWidth, nHeight, nRGB2Arr( GetSysColor( COLOR_BTNFACE ) ) )
+
+   BT_BitmapSaveFile ( hBitmap, TempName )
+
+   BT_BitmapRelease ( hBitmap )
+
+RETURN TempName

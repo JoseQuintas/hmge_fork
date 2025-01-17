@@ -1,3 +1,111 @@
+2025/01/14: HMG Extended Edition version 25.01.
+  * Fixed: Incorrect handling of string parameters in the SetWindowTheme() function:
+           - they should be converted to wide strings (Unicode) if they are not empty.
+           Contributed by Grigory Filatov
+  * Fixed: Bug in Numeric Textbox with Euro symbol format mask.
+           Contributed by Grigory Filatov
+           (see numeric.prg in folder \samples\Basic\INPUTMASK)
+  * Fixed: Missing images caused tool button images to be offset on the toolbar.
+           They will now be replaced with blank images.
+           Bug was reported by Ivanil Marcelino.
+           Contributed by Grigory Filatov
+  * New: Added a new method 'SetHeaderImages' for assigning of Header Images array
+           to Grid control at runtime:
+           - function syntax:
+             DoMethod ( Form, Grid, 'SetHeaderImages', aNewArray )
+           - pseudo-OOP syntax:
+             Form.Grid.SetHeaderImages( { 'MINIGUI_GRID_ASC', 'MINIGUI_GRID_DSC' } )
+           Contributed by Grigory Filatov
+  * Enhanced: StatusBar Item may accept an icon handle with new HICON property.
+           You can set this property at runtime:
+           - function syntax:
+             SetProperty ( FormName, 'StatusBar', 'hIcon', nItem, hIcon )
+           - pseudo-OOP syntax:
+             FormName.StatusBar.hIcon( 1 ) := hImage
+           where the icon handle was loaded with
+             hImage := LoadIconByName( cImageName, w, h )
+           Contributed by Grigory Filatov
+  * Updated: Synchronized Extended HMG for compatibility with Official HMG:
+           - added the following useful properties in the TREE control:
+             - FullRowSelect;
+             - HasLines;
+             - HasButton;
+             - ImageList;
+             - ImageIndex.
+           You can set/get these properties with functional and pseudo-OOP
+           syntax at runtime as usually.
+           Based upon a contribution of Claudio Soto.
+           Adapted for Minigui Extended by Grigory Filatov
+  * Modified: Useful SplitBox resize functions were moved to MiniGUI core.
+           Based upon a contribution of Claudio Soto.
+           Contributed by Grigory Filatov
+           (see demo8.prg in folder \samples\Basic\CONTAINERS\Splitbox)
+  * Updated: 'Bos Taurus' Graphics Library:
+           - added following C functions from the BOS TAURUS 1.0.6 (2016/04/26):
+             - BT_MathCircumferenceY ( Radius, AngleInDegrees ) --> nRow
+             - BT_MathCircumferenceX ( Radius, AngleInDegrees ) --> nCol
+             - BT_MathCircumferenceArcAngle ( Radius, Arc ) --> AngleInDegrees
+             - BT_SelectObject ( hDC, hGDIobj )
+             - BT_DeleteObject ( hGDIobj )
+             - BT_RegionCreateElliptic ( nCol1, nRow1, nCol2, nRow2 )
+             - BT_RegionCombine ( @hRgnDest, hRgnSrc1, hRgnSrc2, nCombineMode ) --> nResult
+             - BT_RegionFrame ( hDC, hRgn, aColor, nWidth, nHeight )
+             - BT_ImageListGetSystemIcon () --> hImageList
+             - BT_ImageListExtractIcon ( hImageList, nIndex ) --> hIcon
+           Based upon a contribution of Claudio Soto
+           (see source in folder \Source\BosTaurus)
+  * Updated: The SPLITTER library:
+           - added the ability to place a Splitter control in a Tab.
+           Requested of Hugo Hidalgo.
+           Contributed by Grigory Filatov
+           (see demo.prg in folder \samples\Advanced\Splitter)
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.47.2 (from 3.47.1).
+           Contributed by Grigory Filatov
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2024-12-29 00:28):
+           * Updated: HbSqldd library source code:
+             - added support for TimeStamp field when creating in-memory database.
+             (see in folder \Source\HbSqlDD)
+           Contributed by Grigory Filatov <gfilatov@gmail.com>
+           (look at ReadMe.txt in folder \harbour)
+  * New: 'RichEditBox with colored highlighting of keywords' sample.
+           Contributed by Ivanil Marcelino
+           (see in folder \samples\Advanced\RichColor)
+  * New: 'HMG Easy Build' utility with an interface similar to Explorer:
+           - using HMG IDE (ANSI or UNICODE) to open .HBP project;
+           - using .PRG or .HBP files to create applications.
+           Based upon a contribution of Claudio Soto.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder MiniGUI\HMG_EasyBuild) [PRO VERSION]
+  * New: 'HMG EasySQL' a simple HMG library to handle MySQL/MariaDB.
+           Based upon a contribution of HMG Founder Roberto Lopez.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Advanced\HMG_EasySQL) [PRO VERSION]
+  * New: 'Harbour Ide' utility by Antonio Linares:
+           - partial implementation of a console-based environment, including
+             a source code editor with color highlighting of Harbour keywords.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \Utils\hbide) [PRO VERSION]
+  * Updated: 'Charts DBF' sample is based on SELECTOR library:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\Charts_3)
+  * Updated: 'ListView with Extended styles' sample:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\ListViewEx)
+  * Updated: 'ButtonEx Builder' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\ButtonBuilder) [PRO VERSION]
+  * Updated: 'Simple Phone Book' sample:
+           - revised operating logic.
+           Contributed by Pierpaolo Martinello
+           (see in folder \samples\Applications\PHONE_BOOK) [PRO VERSION]
+  * Updated: MPM utility:
+           - use of the function hb_ADel() instead of local implementation.
+           Contributed by Grigory Filatov
+           (see in folder \Utils\MPM) [PRO VERSION]
+
 2024/12/02: HMG Extended Edition version 24.12.
   * Fixed: Wrong handling of ON CHANGE event in the RichEditBox(Ex) control.
            Bug was reported by Ivanil Marcelino

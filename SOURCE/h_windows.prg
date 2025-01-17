@@ -143,6 +143,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       ENDIF
 
    ENDIF
+
 #ifdef _PANEL_
    IF ValType( cPanelParent ) == 'C' .AND. panel == .F.
       MsgMiniGuiError( "Parent can be specified only for Panel windows." )
@@ -258,7 +259,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
    ENDIF
 
    IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      IF nosize
+      IF nosize .AND. !nocaption
          w += 10
          h += 10
       ENDIF

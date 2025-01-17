@@ -12,13 +12,14 @@
 
 FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, lNumber, lCenter )
 
-   LOCAL cFormName, oBrw, nSaveSelect, cDbf, cAlias, lEdit, cTable, o
+   LOCAL cFormName, oBrw, nSaveSelect, cDbf, cAlias, lEdit, cTable
    LOCAL lbSetUp := ! Empty( bSetUp ), lRec, nY, nX, bAfter, lCellBrw := .F.
    LOCAL oApp := oDlu4Font( _HMG_DefaultFontSize )
    LOCAL nGw := oApp:GapsWidth
    LOCAL nGh := oApp:GapsHeight
    LOCAL uParam, bRecord, nClr, oCol, nWrec, nHrec
    LOCAL aWinType := { "M", "C", "S" }, nWinType, cWinType
+   LOCAL lParam, cNam, nW, nH 
 
    IF HB_ISARRAY( nWidth )
       nWrec := nWidth[ 2 ]
@@ -56,13 +57,11 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       lModal := .F., ;
       lCenter := .T.
 
-   IF _HMG_lOOPEnabled
-      DEFAULT uParam := oHmgData()
-   ELSE
-      uParam := oHmgData()
+   DEFAULT uParam := oHmgData()
+     
+   IF ( lParam := uParam:ClassName != "TSBROWSE" )
+      DEFAULT uParam:uSelector := 20, uParam:cBrw := "oBrw"
    ENDIF
-   DEFAULT uParam:oTsb := oHmgData(), uParam:lIsDbf := .T. ; o := uParam:oTsb
-   DEFAULT o:uSelector := 20, o:cBrw := "oBrw"
 
    SWITCH ValType( lModal )
    CASE 'L'
@@ -151,7 +150,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
 
    ENDIF
 
-   This.Cargo := uParam
+   This.Cargo := iif( lParam, uParam, oHmgData() )
 
    nY := nGh
    nX := nGw
@@ -159,7 +158,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
    nWidth := This.ClientWidth - nX * 2
    nHeight := This.ClientHeight - nY * 2 - oApp:H1 - nGh
 
-      IF IsBlock(uParam:bWindow) ; EVal( uParam:bWindow )
+      IF lParam .AND. IsBlock(uParam:bWindow) ; EVal( uParam:bWindow )
       ENDIF
 
       DEFINE TBROWSE oBrw AT nY, nX Alias ( uAlias ) WIDTH nWidth HEIGHT nHeight ;
@@ -201,22 +200,31 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
             :lDrawFooters := .T.
             :nHeightFoot := :nHeightHead
             :InsColNumber()
-            :GetColumn( "ORDKEYNO" ):cFooting := hb_ntos( :nLen )
-            :GetColumn( "ORDKEYNO" ):lNoHilite := .T.
-            :nFreeze := :nColumn( "ORDKEYNO" )
-            :nCell := :nFreeze + 1
+             cNam := iif( :lIsArr, "ARRAYNO", "ORDKEYNO" ) 
+             :GetColumn( cNam ):cFooting := hb_ntos( :nLen ) 
+             :GetColumn( cNam ):lNoHilite := .T. 
+             :nFreeze := :nColumn( cNam ) 
             :lLockFreeze := .T.
          ENDIF
+          :nCell := :nFreeze + 1 
+          nH := iif( :hFontHead == NIL, :hFont, :hFontHead ) 
+          FOR EACH oCol IN :aColumns 
+              nH := iif( oCol:hFontHead == NIL, nH, oCol:hFontHead ) 
+              nW := GetTextWidth( NIL, oCol:cHeading, nH ) 
+              IF nW > oCol:nWidth ; oCol:nWidth := nW + 8 
+              ENDIF 
+          NEXT 
       END WITH
 
    END TBROWSE
 
    This.Cargo:oBrw := oBrw
 
-   IF oBrw:nColumn( "ORDKEYNO", .T. ) > 0
-      oBrw:GetColumn( "SELECTOR" ):nClrBack := nClr
-      oBrw:GetColumn( "ORDKEYNO" ):nClrHeadBack := nClr
-      oBrw:GetColumn( "ORDKEYNO" ):nClrFocuBack := oBrw:nClrPane
+   cNam := iif( oBrw:lIsArr, "ARRAYNO", "ORDKEYNO" )
+   IF oBrw:nColumn( cNam, .T. ) > 0
+      oBrw:GetColumn( cNam ):nClrBack := nClr
+      oBrw:GetColumn( cNam ):nClrHeadBack := nClr
+      oBrw:GetColumn( cNam ):nClrFocuBack := oBrw:nClrPane
    ENDIF
 
    nY := This.ClientHeight - nGh - oApp:H1
@@ -245,11 +253,13 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       oBrw:aColumns[ nY ]:lEdit := .F.
       oBrw:aColumns[ nY ]:cName := "VALUE"
       oBrw:lPickerMode := .T.
+      nW := 16
       FOR EACH oCol IN oBrw:aColumns
          oCol:cPicture := NIL
          oCol:nAlign := iif( oCol:cName == "KEY", DT_CENTER, DT_LEFT )
+         nW += iif( hb_enumindex(oCol) == nY, 0, oCol:nWidth )
       NEXT
-      oBrw:AdjColumns( nY )
+      oBrw:aColumns[ nY ]:nWidth := _GetClientRect( oBrw:hWnd )[3] - nW
       IF HB_ISOBJECT( oBrw:Cargo ) .AND. oBrw:ClassName == "TSBROWSE" .AND. oBrw:Cargo:lIsDbf
          oBrw:Cargo:lRecLockArea := .T.
          oCol := oBrw:GetColumn( "VALUE" )
@@ -315,8 +325,8 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
    ELSE ; Eval( bSetUp, oBrw, .T. )
    ENDIF
 
-      IF IsBlock(uParam:bWindow) ; EVal( uParam:bWindow, .T. )
-      ENDIF
+   IF lParam .AND. IsBlock(uParam:bWindow) ; EVal( uParam:bWindow, .T. )
+   ENDIF
 
    END WINDOW
 

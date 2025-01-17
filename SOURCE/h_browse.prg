@@ -766,7 +766,8 @@ RETURN
 FUNCTION _GetBrowseFieldValue ( cTemp, cPict ) // add jsz   param
 *-----------------------------------------------------------------------------*
    LOCAL cRet := 'Nil'
-   LOCAL cType := _TypeEx ( cTemp )
+   LOCAL aFldInfo := _TypeEx( cTemp )
+   LOCAL cType := aFldInfo [1]
 
    SWITCH Left( cType, 1 )
 
@@ -774,28 +775,34 @@ FUNCTION _GetBrowseFieldValue ( cTemp, cPict ) // add jsz   param
    CASE '+'
    CASE 'F'
    CASE 'I'
-   CASE 'B'
    CASE 'Y'
       cRet := Transform ( &cTemp, cPict ) // add jsz
       EXIT
+   CASE 'B'
+      cRet := Round( &cTemp, Min( Set( _SET_DECIMALS ), aFldInfo [2] ) )
+      cRet := hb_ntos( iif( Int ( cRet ) == cRet, Int( cRet ), cRet ) )
+      DO WHILE "." $ cRet .AND. Right( cRet, 1 ) == "0"
+         cRet := hb_StrShrink( cRet, 1 )
+      ENDDO
+      EXIT
    CASE 'D'
-      cRet := DToC ( &cTemp )
+      cRet := DToC( &cTemp )
       EXIT
    CASE 'T'
-      cRet := hb_TSToStr ( &cTemp, .T. )
+      cRet := hb_TSToStr( &cTemp, .T. )
       EXIT
    CASE 'C'
-      cRet := Transform ( RTrim ( &cTemp ), cPict ) // add jsz
+      cRet := Transform( RTrim( &cTemp ), cPict ) // add jsz
       EXIT
    CASE 'L'
-      cRet := iif ( &cTemp, '.T.', '.F.' )
+      cRet := iif( &cTemp, '.T.', '.F.' )
       EXIT
    CASE 'M'
-      cRet := iif ( Empty ( &cTemp ), '<memo>', '<Memo>' )
+      cRet := iif( Empty( &cTemp ), '<memo>', '<Memo>' )
       EXIT
    CASE 'V'
    CASE '@'
-      cRet := Transform ( RTrim( hb_ValToStr ( &cTemp ) ), cPict ) // add jsz
+      cRet := Transform( RTrim( hb_ValToStr( &cTemp ) ), cPict ) // add jsz
       EXIT
    CASE 'G'
       cRet := '<General>'
@@ -840,13 +847,23 @@ RETURN cRet
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION _TypeEx ( cTemp )
 *-----------------------------------------------------------------------------*
+   LOCAL aRet := Array( 2 )
    LOCAL aStruct
+   LOCAL cAlias
    LOCAL nFieldPos
 
    aStruct := dbStruct()
-   nFieldPos := AScan ( aStruct, {| x | x[ DBS_NAME ] == Upper( cTemp ) } )
 
-RETURN iif( nFieldPos > 0, aStruct[ nFieldPos ][ DBS_TYPE ], Type ( cTemp ) )
+   IF ( cAlias := Alias() ) $ cTemp
+      nFieldPos := AScan ( aStruct, {| x | cAlias + "->" + x[ DBS_NAME ] == Upper( cTemp ) } )
+   ELSE
+      nFieldPos := AScan ( aStruct, {| x | x[ DBS_NAME ] == Upper( cTemp ) } )
+   ENDIF
+
+   aRet[ 1 ] := iif( nFieldPos > 0, aStruct[ nFieldPos ][ DBS_TYPE ], Type( cTemp ) )
+   aRet[ 2 ] := iif( nFieldPos > 0, aStruct[ nFieldPos ][ DBS_DEC ], nFieldPos )
+
+RETURN aRet
 
 *-----------------------------------------------------------------------------*
 PROCEDURE _BrowseNext ( ControlName, ParentForm, z )
@@ -2046,7 +2063,7 @@ STATIC FUNCTION _BrowseInPlaceEdit ( GridHandle, aValid, aValidMessages, aReadOn
 
    FieldName := _GridFields[ CellColIndex ]
 
-   IF AScan( aEnabledTypes, ( _GridWorkArea )->( _TypeEx ( FieldName ) ) ) < 1
+   IF AScan( aEnabledTypes, ( _GridWorkArea )->( _TypeEx( FieldName )[ 1 ] ) ) < 1
       MsgAlert ( "Edit of this field is not supported.", _HMG_BRWLangError[ 10 ] )
       RETURN NIL
    ENDIF

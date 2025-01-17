@@ -1,40 +1,29 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
+ * Displays three different charts based on data from a DBF file.
+ * Includes functionality for drawing, printing, and switching between charts.
+ *
  * Copyright 2016-2018 Grigory Filatov <gfilatov@inbox.ru>
-*/
+ */
 
 #include "minigui.ch"
 #include "Selector.ch"
 
-STATIC aSer1, aSer2, aSer3
-STATIC aSerName1, aSerName2, aSerName3
-STATIC aSerVal1, aSerVal3
-STATIC aClrs, nGraphType
+// Global variables for chart data and settings
+STATIC aSer1, aSer2, aSer3             // Chart series data arrays
+STATIC aSerName1, aSerName2, aSerName3 // Chart series names
+STATIC aSerVal1, aSerVal3              // Y-values for specific charts
+STATIC aClrs, nGraphType               // Color palette and current graph type
 
+/* Main program entry point. Sets up the main window and UI elements. */
 PROCEDURE Main
 
-   aClrs := { RED, ;
-      LGREEN, ;
-      YELLOW, ;
-      BLUE, ;
-      WHITE, ;
-      GRAY, ;
-      FUCHSIA, ;
-      TEAL, ;
-      NAVY, ;
-      MAROON, ;
-      GREEN, ;
-      OLIVE, ;
-      PURPLE, ;
-      SILVER, ;
-      AQUA, ;
-      BLACK, ;
-      RED, ;
-      LGREEN, ;
-      YELLOW, ;
-      BLUE }
+   // Define color palette
+   aClrs := { RED, LGREEN, YELLOW, BLUE, WHITE, GRAY, FUCHSIA, TEAL, NAVY, MAROON, ;
+              GREEN, OLIVE, PURPLE, SILVER, AQUA, BLACK, RED, LGREEN, YELLOW, BLUE }
 
+   // Main application window
    DEFINE WINDOW GraphTest ;
       AT 0, 0 ;
       WIDTH 640 ;
@@ -45,41 +34,42 @@ PROCEDURE Main
       NOMAXIMIZE NOSIZE ;
       BACKCOLOR iif( ISVISTAORLATER(), { 220, 220, 220 }, Nil ) ;
       FONT "Tahoma" SIZE 9 ;
-      ON INIT OpenTable()
+      ON INIT OpenTable() // Initialize data when window loads
 
+   // Define buttons for UI
    Define Button Button_1
       Row 510
       Col 30
       Caption 'Chart &1'
-      Action  drawchart_1( aser1 )
+      Action  drawchart_1( aser1 ) // Draw first chart
    End Button
 
    Define Button Button_2
       Row 510
       Col 150
       Caption 'Chart &2'
-      Action  drawchart_2( aser2 )
+      Action  drawchart_2( aser2 ) // Draw second chart
    End Button
 
    Define Button Button_3
       Row 510
       Col 270
       Caption 'Chart &3'
-      Action  drawchart_3( aser3 )
+      Action  drawchart_3( aser3 ) // Draw third chart
    End Button
 
    Define Button Button_4
       Row 510
       Col 390
       Caption '&Print'
-      Action  PrintGraph( nGraphType )
+      Action  PrintGraph( nGraphType ) // Print the current chart
    End Button
 
    Define Button Button_5
       Row 510
       Col 510
       Caption 'E&xit'
-      Action  GraphTest.Release
+      Action  GraphTest.Release // Exit the program
    End Button
 
    END WINDOW
@@ -90,12 +80,14 @@ PROCEDURE Main
 
 RETURN
 
+/* Chart drawing routines */
 PROCEDURE DrawChart_1 ( aSer )
 
    nGraphType := 1
 
    ERASE WINDOW GraphTest
 
+   // Set up the first chart with a bar graph displaying population
    DRAW GRAPH       ;
       IN WINDOW GraphTest     ;
       AT 20, 20      ;
@@ -124,6 +116,7 @@ PROCEDURE DrawChart_2 ( aSer )
 
    ERASE WINDOW GraphTest
 
+   // Set up the second chart with a pie graph displaying area size
    DRAW GRAPH       ;
       IN WINDOW GraphTest     ;
       AT 20, 130      ;
@@ -148,6 +141,7 @@ PROCEDURE DrawChart_3 ( aSer )
 
    ERASE WINDOW GraphTest
 
+   // Set up the third chart with a bar graph displaying population density
    DRAW GRAPH       ;
       IN WINDOW GraphTest     ;
       AT 20, 0       ;
@@ -170,10 +164,12 @@ PROCEDURE DrawChart_3 ( aSer )
 
 RETURN
 
+/* Print the current chart */
 PROCEDURE PrintGraph()
 
    GraphTest.Button_4.SetFocus
 
+   // Print logic based on nGraphType
    SWITCH nGraphType
    CASE 1
       PRINT GRAPH       ;
@@ -234,6 +230,7 @@ PROCEDURE PrintGraph()
 
 RETURN
 
+/* Open and process the database file */
 PROCEDURE OpenTable
 
    LOCAL n
@@ -251,6 +248,8 @@ PROCEDURE OpenTable
       RETURN
    ENDIF
 
+   // Load data into arrays for charts
+   //
    // Request data for Chart 1
    //
    @ SELECT Name, Population GROUP FROM Country ALIAS t1

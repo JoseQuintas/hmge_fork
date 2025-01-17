@@ -43,9 +43,9 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
-#define _WIN32_IE 0x0501      // Define the minimum required Internet Explorer version for the application
+---------------------------------------------------------------------------*/
 
+#define _WIN32_IE 0x0501      // Define the minimum required Internet Explorer version for the application
 #include <mgdefs.h>           // Include application-specific definitions
 #include <commctrl.h>         // Include common control definitions and structures for UI elements
 
@@ -204,7 +204,7 @@ HB_FUNC( ADDTREEITEM )
 #ifndef UNICODE
    LPSTR             lpText = ( LPSTR ) hb_parc( 3 );    // ANSI text
 #else
-   LPWSTR            lpText = hb_osStrU16Encode( ( char * ) hb_parc( 3 ) ); // Unicode text
+   LPWSTR            lpText = hb_osStrU16Encode( ( char * ) hb_parc( 3 ) );   // Unicode text
 #endif
    TV_ITEM           tvi;
    TV_INSERTSTRUCT   is;
@@ -425,18 +425,51 @@ HB_FUNC( TREEVIEW_SETITEM )
 #endif
 }
 
+// TreeItem_GetImageIndex ( hWndTV, ItemHandle , @iUnSel , @iSelectedImage ) --> Return { iUnSel , iSelectedImage }
+HB_FUNC( TREEITEM_GETIMAGEINDEX )
+{
+   HWND        hWndTV = hmg_par_raw_HWND( 1 );
+   HTREEITEM   ItemHandle = hmg_par_raw_TREEITEM( 2 );
+
+   INT         iUnSel;
+   INT         iSelectedImage;
+   TV_ITEM     TreeItem;
+   TreeItem.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+   TreeItem.hItem = ItemHandle;
+   TreeItem.iImage = 0;
+   TreeItem.iSelectedImage = 0;
+   TreeView_GetItem( hWndTV, &TreeItem );
+
+   iUnSel = TreeItem.iImage;
+   iSelectedImage = TreeItem.iSelectedImage;
+
+   if( HB_ISBYREF( 3 ) )
+   {
+      hb_storni( iUnSel, 3 );
+   }
+
+   if( HB_ISBYREF( 4 ) )
+   {
+      hb_storni( iSelectedImage, 4 );
+   }
+
+   hb_reta( 2 );
+   HB_STORNI( iUnSel, -1, 1 );
+   HB_STORNI( iSelectedImage, -1, 2 );
+}
+
 // Function to set the image index of a TreeView item
 HB_FUNC( TREEITEM_SETIMAGEINDEX )
 {
-   HWND        TreeHandle = hmg_par_raw_HWND( 1 );     // Get the TreeView handle
-   HTREEITEM   ItemHandle = hmg_par_raw_TREEITEM( 2 ); // Get the item handle
+   HWND        TreeHandle = hmg_par_raw_HWND( 1 );       // Get the TreeView handle
+   HTREEITEM   ItemHandle = hmg_par_raw_TREEITEM( 2 );   // Get the item handle
    TV_ITEM     TreeItem;
 
-   TreeItem.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;    // Specify the item images
+   TreeItem.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;      // Specify the item images
    TreeItem.hItem = ItemHandle;
-   TreeItem.iImage = hb_parni( 3 );                    // Set the normal image index
-   TreeItem.iSelectedImage = hb_parni( 4 );            // Set the selected image index
-   TreeView_SetItem( TreeHandle, &TreeItem );          // Update the item with new images
+   TreeItem.iImage = hb_parni( 3 );                   // Set the normal image index
+   TreeItem.iSelectedImage = hb_parni( 4 );           // Set the selected image index
+   TreeView_SetItem( TreeHandle, &TreeItem );         // Update the item with new images
 }
 
 // Function to get the ID of the currently selected item in a TreeView
@@ -527,21 +560,29 @@ void TreeView_ExpandChildrenRecursive( HWND hWndTV, HTREEITEM ItemHandle, UINT n
    HTREEITEM   ChildItem;
    HTREEITEM   NextItem;
 
+   // Check if the given item is a valid TreeView node
    if( TreeView_IsNode( hWndTV, ItemHandle ) )
    {
+      // Expand or collapse the current item
       TreeView_Expand( hWndTV, ItemHandle, nExpand );
+      // Get the first child item of the current node
       ChildItem = TreeView_GetChild( hWndTV, ItemHandle );
 
+      // Iterate over all sibling child items
       while( ChildItem != NULL )
       {
+         // Recursively expand or collapse the child items
          TreeView_ExpandChildrenRecursive( hWndTV, ChildItem, nExpand );
 
+         // Get the next sibling of the current child item
          NextItem = TreeView_GetNextSibling( hWndTV, ChildItem );
          ChildItem = NextItem;
       }
    }
 }
 
+// Function: TREEVIEW_EXPANDCHILDRENRECURSIVE
+// HMG function to expand/collapse TreeView items with optional recursion
 HB_FUNC( TREEVIEW_EXPANDCHILDRENRECURSIVE )
 {
    HWND        hWndTV = hmg_par_raw_HWND( 1 );
@@ -553,14 +594,18 @@ HB_FUNC( TREEVIEW_EXPANDCHILDRENRECURSIVE )
 
    if( fRecurse == FALSE )
    {
+      // Expand or collapse only the specified item
       TreeView_Expand( hWndTV, ItemHandle, nExpand );
    }
    else
    {
+      // Temporarily disable the parent window to avoid flickering or user interaction
       EnableWindow( hWndParent, FALSE );
 
+      // Recursively expand/collapse all children of the specified item
       TreeView_ExpandChildrenRecursive( hWndTV, ItemHandle, nExpand );
 
+      // Restore the enabled state of the parent window
       if( lEnabled == TRUE )
       {
          EnableWindow( hWndParent, TRUE );
@@ -568,8 +613,6 @@ HB_FUNC( TREEVIEW_EXPANDCHILDRENRECURSIVE )
    }
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-// TreeView_SortChildrenRecursiveCB ( hWndTV, ItemHandle, fRecurse, lCaseSensitive, lAscendingOrder, nNodePosition )
 //---------------------------------------------------------------------------------------------------------------------
 #define SORTTREENODE_FIRST 0
 #define SORTTREENODE_LAST  1
@@ -583,8 +626,15 @@ typedef struct
    int   NodePosition;
 } HMG_StructTreeViewCompareInfo;
 
+// Function: TreeViewCompareFunc
+// Custom comparison function for sorting TreeView nodes
+// Parameters:
+//   LPARAM lParam1 - Item data for the first node
+//   LPARAM lParam2 - Item data for the second node
+//   LPARAM lParamSort - Additional sorting information
 int CALLBACK TreeViewCompareFunc( LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort )
 {
+   // Extract TreeView item data
    HMG_StructTreeItemLPARAM      *TreeItemLPARAM1 = ( HMG_StructTreeItemLPARAM * ) lParam1;
    HMG_StructTreeItemLPARAM      *TreeItemLPARAM2 = ( HMG_StructTreeItemLPARAM * ) lParam2;
 
@@ -633,30 +683,19 @@ int CALLBACK TreeViewCompareFunc( LPARAM lParam1, LPARAM lParam2, LPARAM lParamS
       CmpValue = CmpValue * ( -1 );
    }
 
+   // Handle special node position sorting
    if( TreeViewCompareInfo->NodePosition == SORTTREENODE_FIRST )
    {
-      if( IsTreeNode1 == TRUE && IsTreeNode2 == FALSE )
-      {
-         return -1;
-      }
+      if( IsTreeNode1 && !IsTreeNode2 ) return -1; // Nodes first
+      if( !IsTreeNode1 && IsTreeNode2 ) return +1; // Non-nodes after
 
-      if( IsTreeNode1 == FALSE && IsTreeNode2 == TRUE )
-      {
-         return +1;
-      }
    }
 
    if( TreeViewCompareInfo->NodePosition == SORTTREENODE_LAST )
    {
-      if( IsTreeNode1 == TRUE && IsTreeNode2 == FALSE )
-      {
-         return +1;
-      }
+      if( IsTreeNode1 && !IsTreeNode2 ) return +1; // Nodes last
+      if( !IsTreeNode1 && IsTreeNode2 ) return -1; // Non-nodes first
 
-      if( IsTreeNode1 == FALSE && IsTreeNode2 == TRUE )
-      {
-         return -1;
-      }
    }
 
    return CmpValue;
@@ -683,6 +722,9 @@ void TreeView_SortChildrenRecursiveCB( HWND hWndTV, TVSORTCB TVSortCB )
    }
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+// TreeView_SortChildrenRecursiveCB ( hWndTV, ItemHandle, fRecurse, lCaseSensitive, lAscendingOrder, nNodePosition )
+//---------------------------------------------------------------------------------------------------------------------
 HB_FUNC( TREEVIEW_SORTCHILDRENRECURSIVECB )
 {
    HWND                          hWndTV = hmg_par_raw_HWND( 1 );
@@ -730,6 +772,8 @@ HB_FUNC( TREEVIEW_GETROOT )
    hmg_ret_raw_HANDLE( RootItemHandle );
 }
 
+// Function: TREEITEM_GETID
+// Retrieves the ID associated with a TreeView item
 HB_FUNC( TREEITEM_GETID )
 {
    HWND        hWndTV = hmg_par_raw_HWND( 1 );
@@ -748,6 +792,8 @@ HB_FUNC( TREEITEM_GETID )
    }
 }
 
+// Function: TREEITEM_SETNODEFLAG
+// Sets the IsNodeFlag for a TreeView item
 HB_FUNC( TREEITEM_SETNODEFLAG )
 {
    HWND                       hWndTV = hmg_par_raw_HWND( 1 );
@@ -762,12 +808,15 @@ HB_FUNC( TREEITEM_SETNODEFLAG )
    TreeItem.lParam = ( LPARAM ) 0;
    TreeView_GetItem( hWndTV, &TreeItem );
 
+   // Update the IsNodeFlag in the lParam structure
    TreeItemLPARAM = ( HMG_StructTreeItemLPARAM * ) TreeItem.lParam;
    TreeItemLPARAM->IsNodeFlag = IsNodeFlag;
    TreeItem.lParam = ( LPARAM ) TreeItemLPARAM;
    TreeView_SetItem( hWndTV, &TreeItem );
 }
 
+// Function: TREEITEM_GETNODEFLAG
+// Retrieves the IsNodeFlag for a TreeView item
 HB_FUNC( TREEITEM_GETNODEFLAG )
 {
    HWND                       hWndTV = hmg_par_raw_HWND( 1 );
@@ -784,4 +833,48 @@ HB_FUNC( TREEITEM_GETNODEFLAG )
 
    TreeItemLPARAM = ( HMG_StructTreeItemLPARAM * ) TreeItem.lParam;
    hb_retl( TreeItemLPARAM->IsNodeFlag );
+}
+
+//        TreeView_SetImageList ( hWnd , hImageList , [iImageList] )
+HB_FUNC( TREEVIEW_SETIMAGELIST )
+{
+   HWND        hWnd = hmg_par_raw_HWND( 1 );
+   HIMAGELIST  hImageList = hmg_par_raw_HIMAGELIST( 2 );
+   int         iImageList = HB_ISNIL( 3 ) ? TVSIL_NORMAL : hb_parni( 3 );
+   HIMAGELIST  hImageListPrevious = TreeView_SetImageList( hWnd, hImageList, iImageList );
+   hmg_ret_raw_HANDLE( hImageListPrevious );
+}
+
+//        TreeView_GetImageList ( hWnd , [iImageList] ) --> hImageList
+HB_FUNC( TREEVIEW_GETIMAGELIST )
+{
+   HWND        hWnd = hmg_par_raw_HWND( 1 );
+   int         iImageList = HB_ISNIL( 2 ) ? TVSIL_NORMAL : hb_parni( 2 );
+   HIMAGELIST  hImageList = TreeView_GetImageList( hWnd, iImageList );
+   hmg_ret_raw_HANDLE( hImageList );
+}
+
+HB_FUNC( TREEVIEW_SETHASBUTTON )
+{
+   HWND        hWndTV = hmg_par_raw_HWND( 1 );
+   HTREEITEM   ItemHandle = hmg_par_raw_TREEITEM( 2 );
+   BOOL        lHasButton = ( BOOL ) hb_parl( 3 );
+
+   TV_ITEM     TreeItem;
+   TreeItem.mask = TVIF_CHILDREN;
+   TreeItem.hItem = ItemHandle;
+   TreeItem.cChildren = lHasButton ? 1 : 0;
+   TreeView_SetItem( hWndTV, &TreeItem );
+}
+
+HB_FUNC( TREEVIEW_GETHASBUTTON )
+{
+   HWND        hWndTV = hmg_par_raw_HWND( 1 );
+   HTREEITEM   ItemHandle = hmg_par_raw_TREEITEM( 2 );
+
+   TV_ITEM     TreeItem;
+   TreeItem.mask = TVIF_CHILDREN;
+   TreeItem.hItem = ItemHandle;
+   TreeView_GetItem( hWndTV, &TreeItem );
+   hmg_ret_L( TreeItem.cChildren == 0 );
 }

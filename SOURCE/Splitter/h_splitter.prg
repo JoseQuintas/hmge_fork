@@ -140,7 +140,7 @@ FUNCTION _DefineSplitter ( ControlName, ParentFormName, x, y, ;
    ENDIF
 
    IF ( w = 0 .OR. h = 0 .OR. x = -1 .OR. y = -1 )
-      dimensions := CalculateSizePos( aLeft, aRight, If( vertical, .T., .F. ), x, y, w, h) // add x, y, w, h
+      dimensions := CalculateSizePos( aLeft, aRight, iif( vertical, .T., .F. ), x, y, w, h) // add x, y, w, h
       x := dimensions[ 1 ]
       y := dimensions[ 2 ]
       w := dimensions[ 3 ]
@@ -171,6 +171,10 @@ FUNCTION _DefineSplitter ( ControlName, ParentFormName, x, y, ;
 
    ParentFormHandle := GetFormHandle ( ParentFormName )
    ControlHandle := InitSplitter ( ParentFormHandle, ControlName, 0, x, y, w, h )
+
+   IF _HMG_BeginTabActive
+      AAdd ( _HMG_ActiveTabCurrentPageMap, ControlHandle )
+   ENDIF
 
 #ifdef _NAMES_LIST_
    _SetNameList( mVar, k )
@@ -243,7 +247,7 @@ FUNCTION SPLITTEREVENTS( hWnd, nMsg, x, y )
 
    IF ( i := AScan( _HMG_aControlHandles, hWnd ) ) > 0 .AND. _HMG_aControlType[ i ] == "SPLITTER"
       splitter := _HMG_aControlMiscData1[ i ]
-      Switch nMsg
+      SWITCH nMsg
       CASE WM_LBUTTONDOWN
 
          CalculateLimits( hWnd )
@@ -343,7 +347,7 @@ FUNCTION SPLITTEREVENTS( hWnd, nMsg, x, y )
                x := splitter:nTo
                splitter:lRolled := .T.
             ELSE
-               x := If( splitter:nPosDblClick < splitter:nFrom, splitter:nFrom, splitter:nPosDblClick )
+               x := iif( splitter:nPosDblClick < splitter:nFrom, splitter:nFrom, splitter:nPosDblClick )
                splitter:nPosDblClick := splitter:nTo
                splitter:lRolled := .F.
             END
@@ -364,7 +368,7 @@ FUNCTION SPLITTEREVENTS( hWnd, nMsg, x, y )
                y := splitter:nTo
                splitter:lRolled := .T.
             ELSE
-               y := If( splitter:nPosDblClick < splitter:nFrom, splitter:nFrom, splitter:nPosDblClick )
+               y := iif( splitter:nPosDblClick < splitter:nFrom, splitter:nFrom, splitter:nPosDblClick )
                splitter:nPosDblClick := splitter:nTo
                splitter:lRolled := .F.
             END
@@ -518,7 +522,7 @@ FUNCTION DrawSplitter( hWnd, splitter, lHighlightOnHover )
          middleH := Floor( ( rect[ 4 ] - rect[ 2 ] ) / 2 )
 
          IF width >= 10 // width of the arrow is 6 pixels + 2 pixels on both sides
-            If ! splitter:lRolled
+            IF ! splitter:lRolled
                PolygonDraw( hWnd, { middleW - 3, middleW - 3, middleW + 3 }, { middleH - 8, middleH + 8, middleH }, { 0, 0, 0 }, 1, { 0, 0, 0 }, .T. )
             ELSE
                PolygonDraw( hWnd, { middleW + 3, middleW + 3, middleW - 3 }, { middleH - 8, middleH + 8, middleH }, { 0, 0, 0 }, 1, { 0, 0, 0 }, .T. )
@@ -534,7 +538,7 @@ FUNCTION DrawSplitter( hWnd, splitter, lHighlightOnHover )
          middleH := Floor( ( rect[ 4 ] - rect[ 2 ] ) / 2 )
 
          IF height >= 10 // height of the arrow is 6 pixels + 2 pixels on both sides
-            If ! splitter:lRolled
+            IF ! splitter:lRolled
                PolygonDraw( hWnd, { middleW - 8, middleW + 8, middleW }, { middleH - 3, middleH - 3, middleH + 3 }, { 0, 0, 0 }, 1, { 0, 0, 0 }, .T. )
             ELSE
                PolygonDraw( hWnd, { middleW - 8, middleW + 8, middleW }, { middleH + 3, middleH + 3, middleH - 3 }, { 0, 0, 0 }, 1, { 0, 0, 0 }, .T. )
@@ -731,21 +735,21 @@ FUNCTION CalculateSizePos( aLeft, aRight, lVertical, originX, originY, originWid
       IF originX != -1 .AND. (originX < nMaxLeftX .OR. originX > nMinRightX)
          MsgMiniGuiError( "ERROR: Cannot create a splitter with provided x coordinate" )
       END
-
       
-      height := If(originHeight = 0, height, originHeight)      
-      y := If(originY = -1, y, originY)
+      height := iif(originHeight = 0, height, originHeight)      
+      y := iif(originY = -1, y, originY)
 
-      If originX = -1 .AND. originWidth > 0
+      IF originX = -1 .AND. originWidth > 0
          gap := Floor((width - originWidth) / 2)
          x   := x + gap
       ELSE
-         x := If(originX = -1, x, originX)
+         x := iif(originX = -1, x, originX)
       END
 
-      width := If(originWidth = 0, width, originWidth)
+      width := iif(originWidth = 0, width, originWidth)
 
    ELSE
+
       nMaxLeftY := 0
       nMinLeftX := 10000
       nMaxLeftX := 0
@@ -803,17 +807,17 @@ FUNCTION CalculateSizePos( aLeft, aRight, lVertical, originX, originY, originWid
          MsgMiniGuiError( "ERROR: Cannot create a splitter with provided x coordinate" )
       END
 
-      x      := If(originX = -1, x, originX)
-      width := If(originWidth = 0, width, originWidth)
+      x      := iif(originX = -1, x, originX)
+      width := iif(originWidth = 0, width, originWidth)
 
-      If originY = -1 .AND. originHeight > 0
+      IF originY = -1 .AND. originHeight > 0
          gap := Floor((height - originHeight) / 2)
          y   := y + gap
       ELSE
-         y := If(originY = -1, y, originY)
+         y := iif(originY = -1, y, originY)
       END
 
-      height := If(originHeight = 0, height, originHeight)
+      height := iif(originHeight = 0, height, originHeight)
 
    END
 

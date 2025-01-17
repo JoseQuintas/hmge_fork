@@ -709,7 +709,7 @@ RETURN Nil
 FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
 *-----------------------------------------------------------------------------*
    LOCAL NewValue
-   LOCAL NewMap := {}
+   LOCAL NewMap
    LOCAL aMnemonic
    LOCAL ImageFlag := .F.
    LOCAL i , j , c
@@ -722,11 +722,8 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
       IF _GetValue ( ControlName , ParentForm ) == Position   // GF 07/17/2019
 
          FOR EACH NewValue IN _HMG_aControlPageMap [i]
-
             IF hb_enumindex( NewValue ) == position
-
                FOR EACH c IN NewValue
-
                   IF ! ISARRAY ( c )
                      HideWindow ( c )
                   ELSE
@@ -734,37 +731,32 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
                         HideWindow ( j )
                      NEXT
                   ENDIF
-
                NEXT
                EXIT
-
             ENDIF
-
          NEXT
 
       ENDIF
 
       // Control Map
-      FOR j := 1 TO Len ( _HMG_aControlPageMap [i] )
+      NewMap := {}
 
-         IF j <> position
-            AAdd ( NewMap , _HMG_aControlPageMap [i] [j] )
+      FOR EACH NewValue IN _HMG_aControlPageMap [i]
+         IF hb_enumindex( NewValue ) <> position
+            AAdd ( NewMap , NewValue )
          ENDIF
-
-      NEXT j
+      NEXT
 
       _HMG_aControlPageMap [i] := NewMap
 
       // Images
       NewMap := {}
 
-      FOR j := 1 TO Len ( _HMG_aControlPicture [i] )
-
-         IF j <> position
-            AAdd ( NewMap , _HMG_aControlPicture [i] [j] )
+      FOR EACH NewValue IN _HMG_aControlPicture [i]
+         IF hb_enumindex( NewValue ) <> position
+            AAdd ( NewMap , NewValue )
          ENDIF
-
-      NEXT j
+      NEXT
 
       _HMG_aControlPicture [i] := NewMap
 
@@ -782,13 +774,11 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
       // Captions
       NewMap := {}
 
-      FOR j := 1 TO Len ( _HMG_aControlCaption [i] )
-
-         IF j <> position
-            AAdd ( NewMap, _HMG_aControlCaption [i] [j] )
+      FOR EACH NewValue IN _HMG_aControlCaption [i]
+         IF hb_enumindex( NewValue ) <> position
+            AAdd ( NewMap , NewValue )
          ENDIF
-
-      NEXT j
+      NEXT
 
       _HMG_aControlCaption [i] := NewMap
 
@@ -796,24 +786,20 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
       aMnemonic := _HMG_aControlMiscData1 [i,3]
 
       FOR EACH c IN _HMG_aControlCaption [i]
-
          NewValue := Upper ( c )
          IF ( j := hb_UAt ( '&' , NewValue ) ) > 0
             _DefineLetterOrDigitHotKey ( NewValue, j, ParentForm, aMnemonic [ hb_enumindex( c ) ] )
          ENDIF
-
       NEXT
 
       // ToolTips
       NewMap := {}
 
-      FOR j := 1 TO Len ( _HMG_aControlTooltip [i] )
-
-         IF j <> position
-            AAdd ( NewMap, _HMG_aControlTooltip [i] [j] )
+      FOR EACH NewValue IN _HMG_aControlTooltip [i]
+         IF hb_enumindex( NewValue ) <> position
+            AAdd ( NewMap , NewValue )
          ENDIF
-
-      NEXT j
+      NEXT
 
       _HMG_aControlTooltip [i] := NewMap
 
@@ -821,25 +807,20 @@ FUNCTION _DeleteTabPage ( ControlName , ParentForm , Position )
 
       // JD 11/05/2006
       FOR EACH NewValue IN _HMG_aControlPicture [i]
-
          IF ValType ( NewValue ) == "C" .AND. !Empty ( NewValue )
             ImageFlag := .T.
             EXIT
          ENDIF
-
       NEXT
 
       _HMG_aControlMiscData1 [i,2] := ImageFlag   // JD 11/05/2006
 
       // JD 11/05/2006
       IF ImageFlag
-
          IF !Empty( _HMG_aControlInputMask [i] )
             IMAGELIST_DESTROY ( _HMG_aControlInputMask [i] )
          ENDIF
-
          _HMG_aControlInputMask [i] := AddTabBitMap ( _HMG_aControlHandles [i], _HMG_aControlPicture [i], _HMG_aControlMiscData1 [i, 8] )
-
       ENDIF
 
       NewValue := iif( Position-- > Len ( NewMap ), Max( 1, Len ( NewMap ) ), Position )

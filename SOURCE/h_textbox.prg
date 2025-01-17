@@ -352,7 +352,6 @@ FUNCTION _DefineMaskedTextbox ( ControlName, ParentFormName, x, y, inputmask, w,
    LOCAL Style
    LOCAL blInit
    LOCAL c
-   LOCAL i
    LOCAL lDialogInMemory
 
    HB_SYMBOL_UNUSED( RightAlign )
@@ -370,25 +369,17 @@ FUNCTION _DefineMaskedTextbox ( ControlName, ParentFormName, x, y, inputmask, w,
 
    __defaultNIL( @Format, "" )
 
-   FOR i := 1 TO hb_ULen ( InputMask )
-
-      c := hb_USubStr ( InputMask , i , 1 )
-
-      IF c != '9' .AND. c != '$' .AND. c != '*' .AND. c != '.' .AND. c != ',' .AND. c != ' ' .AND. c != '€'
+   FOR EACH c IN InputMask
+      IF c != '9' .AND. c != '$' .AND. c != '*' .AND. c != '.' .AND. c != ',' .AND. c != ' ' .AND. c != '€' .AND. c != 'ˆ'
          MsgMiniGuiError( "@...TEXTBOX: Wrong InputMask Definition." )
       ENDIF
+   NEXT
 
-   NEXT i
-
-   FOR i := 1 TO hb_ULen ( Format )
-
-      c := hb_USubStr ( Format , i , 1 )
-
+   FOR EACH c IN Format
       IF c != 'C' .AND. c != 'X' .AND. c != '(' .AND. c != 'E'
          MsgMiniGuiError( "@...TEXTBOX: Wrong Format Definition." )
       ENDIF
-
-   NEXT i
+   NEXT
 
    hb_default( @w, 120 )
    hb_default( @h, 24 )
@@ -599,17 +590,12 @@ FUNCTION GetNumFromText ( Text , i )
 *-----------------------------------------------------------------------------*
    LOCAL s As String
    LOCAL c
-   LOCAL x
 
-   FOR x := 1 TO hb_ULen ( Text )
-
-      c := hb_USubStr( Text, x, 1 )
-
+   FOR EACH c IN Text
       IF hmg_IsDigit( c ) .OR. c = '.' .OR. c = '-'
          s += c
       ENDIF
-
-   NEXT x
+   NEXT
 
    IF hb_ULeft ( AllTrim( Text ) , 1 ) == '(' .OR. hb_URight ( AllTrim( Text ) , 2 ) == 'DB'
       s := '-' + s
@@ -624,21 +610,15 @@ STATIC FUNCTION GetNumMask ( Text )
 *-----------------------------------------------------------------------------*
    LOCAL s As String
    LOCAL c
-   LOCAL i
 
-   FOR i := 1 TO hb_ULen ( Text )
-
-      c := hb_USubStr( Text, i, 1 )
-
+   FOR EACH c IN Text
       IF c == '9' .OR. c == '.'
          s += c
       ENDIF
-
       IF c == '$' .OR. c == '*'
          s += '9'
       ENDIF
-
-   NEXT i
+   NEXT
 
 RETURN s
 
@@ -899,12 +879,11 @@ PROCEDURE ProcessCharMask ( i , d )
    IF PCount() > 1
 
       // Point Count For Numeric InputMask
-      FOR x := 1 TO hb_ULen ( InBuffer )
-         CB := hb_USubStr ( InBuffer , x , 1 )
+      FOR EACH CB IN InBuffer
          IF CB == '.' .OR. CB == ','
             pc++
          ENDIF
-      NEXT x
+      NEXT
 
       // RL 89
       IF hb_ULeft ( InBuffer, 1 ) == '.' .OR. hb_ULeft ( InBuffer, 1 ) == ','
@@ -912,13 +891,12 @@ PROCEDURE ProcessCharMask ( i , d )
       ENDIF
 
       // Find First Non-Blank Position
-      FOR x := 1 TO hb_ULen ( InBuffer )
-         CB := hb_USubStr ( InBuffer , x , 1 )
+      FOR EACH CB IN InBuffer
          IF CB != ' '
-            fnb := x
+            fnb := hb_enumindex( CB )
             EXIT
          ENDIF
-      NEXT x
+      NEXT
 
    ENDIF
 
@@ -1096,7 +1074,7 @@ PROCEDURE ProcessCharMask ( i , d )
 RETURN
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION CharMaskTekstOK( cString, cMask )
+STATIC FUNCTION CharMaskTekstOK ( cString, cMask )
 *-----------------------------------------------------------------------------*
    LOCAL nCount := Min( hb_ULen( cString ), hb_ULen( cMask ) )
    LOCAL lPassed := .F.
@@ -1104,20 +1082,25 @@ STATIC FUNCTION CharMaskTekstOK( cString, cMask )
    LOCAL x
 
    FOR x := 1 TO nCount
-      CB := hb_USubStr( cString , x , 1 )
-      CM := hb_USubStr( cMask , x , 1 )
-      DO CASE  // JK
-      CASE CM == 'A'
+      CB := hb_USubStr ( cString , x , 1 )
+      CM := hb_USubStr ( cMask , x , 1 )
+      SWITCH CM  // JK
+      CASE 'A'
          lPassed := ( hmg_IsAlpha ( CB ) .OR. CB == ' ' )
-      CASE CM == 'N' .OR. CM == '!'
+         EXIT
+      CASE 'N'
+      CASE '!'
          lPassed := ( hmg_IsDigit ( CB ) .OR. hmg_IsAlpha ( CB ) .OR. CB == ' ' )
-      CASE CM == '9'
+         EXIT
+      CASE '9'
          lPassed := ( hmg_IsDigit ( CB ) .OR. CB == ' ' )
-      CASE CM == ' '
+         EXIT
+      CASE ' '
          lPassed := ( CB == ' ' )
-      OTHERWISE
+         EXIT
+      DEFAULT
          lPassed := !( CM == 'X' )  // GF 07/04/2022
-      ENDCASE
+      ENDSWITCH
       IF ! lPassed
          EXIT
       ENDIF
@@ -1171,7 +1154,6 @@ PROCEDURE ProcessNumText ( i )
    LOCAL InBuffer
    LOCAL BackInBuffer
    LOCAL icp
-   LOCAL x
    LOCAL CB
    LOCAL fnb
 
@@ -1184,34 +1166,22 @@ PROCEDURE ProcessNumText ( i )
    BackInBuffer := InBuffer
 
    // Find First Non-Blank Position
-   FOR x := 1 TO hb_ULen ( InBuffer )
-
-      CB := hb_USubStr ( InBuffer , x , 1 )
-
+   FOR EACH CB IN InBuffer
       IF CB != ' '
-         fnb := x
+         fnb := hb_enumindex( CB )
          EXIT
       ENDIF
-
-   NEXT x
+   NEXT
 
    // Process Mask
-   FOR x := 1 TO hb_ULen ( InBuffer )
-
-      CB := hb_USubStr ( InBuffer , x , 1 )
-
-      IF IsDigit ( CB ) .OR. ( CB == '-' .AND. x == fnb ) .OR. ;
+   FOR EACH CB IN InBuffer
+      IF IsDigit ( CB ) .OR. ( CB == '-' .AND. hb_enumindex( CB ) == fnb ) .OR. ;
          ( ( CB == '.' .OR. CB == ',' ) .AND. hb_UAt ( '.', OutBuffer ) == 0 )
-
          OutBuffer += CB
-
       ELSE
-
          BadEntry := .T.
-
       ENDIF
-
-   NEXT x
+   NEXT
 
    IF BadEntry
       icp--
@@ -1228,16 +1198,14 @@ PROCEDURE ProcessNumText ( i )
 RETURN
 
 *-----------------------------------------------------------------------------*
-FUNCTION GETNumFromTextSP( Text, i )
+FUNCTION GETNumFromTextSP ( Text, i )
 *-----------------------------------------------------------------------------*
    LOCAL s As String
-   LOCAL x , c
+   LOCAL c
 
-   FOR x := 1 TO hb_ULen ( Text )
+   FOR EACH c IN Text
 
-      c := hb_USubStr ( Text, x, 1 )
-
-      IF hmg_IsDigit( c ) .OR. c = ',' .OR. c = '-' .OR. c = '.'
+      IF hmg_IsDigit ( c ) .OR. c = ',' .OR. c = '-' .OR. c = '.'
 
          IF c == '.'
             c := ''
@@ -1251,7 +1219,7 @@ FUNCTION GETNumFromTextSP( Text, i )
 
       ENDIF
 
-   NEXT x
+   NEXT
 
    IF hb_ULeft ( AllTrim( Text ) , 1 ) == '(' .OR. hb_URight ( AllTrim( Text ) , 2 ) == 'DB'
       s := '-' + s

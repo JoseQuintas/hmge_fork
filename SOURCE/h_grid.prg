@@ -57,8 +57,6 @@ STATIC _lTabKeyPressed := .F., _lShiftTabKeyPressed := .F.
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
 #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
 #xtranslate hb_URight( <c>, <n> ) => Right( <c>, <n> )
-#xtranslate hb_ULen( <c> ) => Len( <c> )
-#xtranslate hb_USubStr( <c>, <n> [, <e>] ) => SubStr( <c>, <n> [, <e>] )
 #endif
 
 *-----------------------------------------------------------------------------*
@@ -1479,17 +1477,15 @@ RETURN
 FUNCTION GetNumFromCellText ( Text )
 *-----------------------------------------------------------------------------*
    LOCAL s AS String
-   LOCAL x, c
+   LOCAL c
 
-   FOR x := 1 TO hb_ULen ( Text )
+   FOR EACH c IN Text
 
-      c := hb_USubStr ( Text, x, 1 )
-
-      IF c = '0' .OR. c = '1' .OR. c = '2' .OR. c = '3' .OR. c = '4' .OR. c = '5' .OR. c = '6' .OR. c = '7' .OR. c = '8' .OR. c = '9' .OR. c = '.' .OR. c = '-'
+      IF hmg_IsDigit( c ) .OR. c = '.' .OR. c = '-'
          s += c
       ENDIF
 
-   NEXT x
+   NEXT
 
    IF hb_ULeft ( AllTrim( Text ), 1 ) == '(' .OR. hb_URight ( AllTrim( Text ), 2 ) == 'DB'
       s := '-' + s
@@ -1501,13 +1497,11 @@ RETURN Val( s )
 FUNCTION GETNumFromCellTextSP ( Text )
 *-----------------------------------------------------------------------------*
    LOCAL s AS String
-   LOCAL x, c
+   LOCAL c
 
-   FOR x := 1 TO hb_ULen ( Text )
+   FOR EACH c IN Text
 
-      c := hb_USubStr ( Text, x, 1 )
-
-      IF c = '0' .OR. c = '1' .OR. c = '2' .OR. c = '3' .OR. c = '4' .OR. c = '5' .OR. c = '6' .OR. c = '7' .OR. c = '8' .OR. c = '9' .OR. c = ',' .OR. c = '-' .OR. c = '.'
+      IF hmg_IsDigit( c ) .OR. c = ',' .OR. c = '-' .OR. c = '.'
 
          IF c == '.'
             c := ''
@@ -1521,7 +1515,7 @@ FUNCTION GETNumFromCellTextSP ( Text )
 
       ENDIF
 
-   NEXT x
+   NEXT
 
    IF hb_ULeft ( AllTrim( Text ), 1 ) == '(' .OR. hb_URight ( AllTrim( Text ), 2 ) == 'DB'
       s := '-' + s
@@ -1535,9 +1529,7 @@ FUNCTION _GetGridCellValue ( ControlName, ParentForm, Row, Col )
    LOCAL A := {}
 
    IF Row > 0
-
       A := _GetItem ( ControlName, ParentForm, Row )
-
    ENDIF
 
 RETURN iif( Col > 0 .AND. Col <= Len( A ), A[ Col ], NIL )
@@ -1548,11 +1540,8 @@ PROCEDURE _SetGridCellValue ( ControlName, ParentForm, Row, Col, CellValue )
    LOCAL A := _GetItem ( ControlName, ParentForm, Row )
 
    IF Col > 0 .AND. Col <= Len( A )
-
       A[ Col ] := CellValue
-
       _SetItem ( ControlName, ParentForm, Row, A )
-
    ENDIF
 
 RETURN
@@ -1582,13 +1571,13 @@ FUNCTION _GetColumnWidth( ControlName, ParentForm, nColumnNo )
    LOCAL nWidth := -1
    LOCAL i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
    Assign z := nColumnNo
 
    IF z > 0 .AND. z <= ListView_GetColumnCount ( h )
-      nWidth := ListView_GetColumnWidth( h, z - 1 )
+      nWidth := ListView_GetColumnWidth ( h, z - 1 )
    ENDIF
 
 RETURN nWidth
@@ -1600,13 +1589,13 @@ FUNCTION _SetColumnWidth( ControlName, ParentForm, nColumnNo, nWidth )
    LOCAL lSuccess := .F.
    LOCAL i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
    Assign z := nColumnNo
 
    IF z > 0 .AND. z <= ListView_GetColumnCount ( h )
-      lSuccess := ListView_SetColumnWidth( h, z - 1, nWidth )
+      lSuccess := ListView_SetColumnWidth ( h, z - 1, nWidth )
    ENDIF
 
 RETURN lSuccess
@@ -1618,13 +1607,13 @@ FUNCTION _SetColumnWidthAuto( ControlName, ParentForm, nColumnNo )
    LOCAL lSuccess := .F.
    LOCAL i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
    Assign z := nColumnNo
 
    IF z > 0 .AND. z <= ListView_GetColumnCount ( h )
-      lSuccess := ListView_SetColumnWidthAuto( h, z - 1 )
+      lSuccess := ListView_SetColumnWidthAuto ( h, z - 1 )
    ENDIF
 
 RETURN lSuccess
@@ -1636,13 +1625,13 @@ FUNCTION _SetColumnWidthAutoH( ControlName, ParentForm, nColumnNo )
    LOCAL lSuccess := .F.
    LOCAL i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
    Assign z := nColumnNo
 
    IF z > 0 .AND. z <= ListView_GetColumnCount ( h )
-      lSuccess := ListView_SetColumnWidthAutoH( h, z - 1 )
+      lSuccess := ListView_SetColumnWidthAutoH ( h, z - 1 )
    ENDIF
 
 RETURN lSuccess
@@ -1654,12 +1643,12 @@ FUNCTION _SetColumnsWidthAuto( ControlName, ParentForm )
    LOCAL lSuccess := .F.
    LOCAL z, i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
-   IF ( ColumnCount := ListView_GetColumnCount( h ) ) > 0
+   IF ( ColumnCount := ListView_GetColumnCount ( h ) ) > 0
       FOR z := 1 TO ColumnCount
-         lSuccess := ListView_SetColumnWidthAuto( h, z - 1 )
+         lSuccess := ListView_SetColumnWidthAuto ( h, z - 1 )
       NEXT z
    ENDIF
 
@@ -1672,12 +1661,12 @@ FUNCTION _SetColumnsWidthAutoH( ControlName, ParentForm )
    LOCAL lSuccess := .F.
    LOCAL z, i, h
 
-   i := GetControlIndex( ControlName, ParentForm )
+   i := GetControlIndex ( ControlName, ParentForm )
    h := _HMG_aControlHandles[ i ]
 
-   IF ( ColumnCount := ListView_GetColumnCount( h ) ) > 0
+   IF ( ColumnCount := ListView_GetColumnCount ( h ) ) > 0
       FOR z := 1 TO ColumnCount
-         lSuccess := ListView_SetColumnWidthAutoH( h, z - 1 )
+         lSuccess := ListView_SetColumnWidthAutoH ( h, z - 1 )
       NEXT z
    ENDIF
 
@@ -1687,7 +1676,7 @@ RETURN lSuccess
 *-----------------------------------------------------------------------------*
 PROCEDURE _GridPgDn ( ControlName, ParentForm, z )
 *-----------------------------------------------------------------------------*
-   LOCAL i, PageLength, _DeltaScroll, s, GridHandle
+   LOCAL i, PageLength, _DeltaScroll, _BottomPos, s, GridHandle
 
    i := iif( PCount() == 2, GetControlIndex ( ControlName, ParentForm ), z )
 
@@ -1695,12 +1684,13 @@ PROCEDURE _GridPgDn ( ControlName, ParentForm, z )
    _DeltaScroll := ListView_GetSubItemRect ( GridHandle, 0, 0 )
    s := LISTVIEW_GETFIRSTITEM ( GridHandle )
    PageLength := LISTVIEWGETCOUNTPERPAGE ( GridHandle )
-   IF s + PageLength <= LISTVIEWGETITEMCOUNT( GridHandle )
+   _BottomPos := ListViewGetItemCount ( GridHandle )
+   IF s + PageLength <= _BottomPos
       ListView_SetCursel ( GridHandle, s + PageLength )
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * PageLength )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * PageLength )
    ELSE
-      ListView_SetCursel ( GridHandle, LISTVIEWGETITEMCOUNT( GridHandle ) )
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( LISTVIEWGETITEMCOUNT( GridHandle ) - s ) )
+      ListView_SetCursel ( GridHandle, _BottomPos )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( _BottomPos - s ) )
    ENDIF
 
 RETURN
@@ -1716,13 +1706,12 @@ PROCEDURE _GridPgUp ( ControlName, ParentForm, z )
    _DeltaScroll := ListView_GetSubItemRect ( GridHandle, 0, 0 )
    s := LISTVIEW_GETFIRSTITEM ( GridHandle )
    PageLength := LISTVIEWGETCOUNTPERPAGE ( GridHandle )
-
    IF s - PageLength >= 1
       ListView_SetCursel ( GridHandle, s - PageLength )
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * PageLength * ( -1 ) )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * PageLength * ( -1 ) )
    ELSE
       ListView_SetCursel ( GridHandle, 1 )
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * s * ( -1 ) )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * s * ( -1 ) )
    ENDIF
 
 RETURN
@@ -1737,9 +1726,7 @@ PROCEDURE _GridHome ( ControlName, ParentForm, z )
    GridHandle := _HMG_aControlHandles[ i ]
    _DeltaScroll := ListView_GetSubItemRect ( GridHandle, 0, 0 )
    s := LISTVIEW_GETFIRSTITEM ( GridHandle )
-
-   ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) * s )
-
+   ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) * s )
    ListView_SetCursel ( GridHandle, 1 )
 
 RETURN
@@ -1753,11 +1740,9 @@ PROCEDURE _GridEnd ( ControlName, ParentForm, z )
 
    GridHandle := _HMG_aControlHandles[ i ]
    _DeltaScroll := ListView_GetSubItemRect ( GridHandle, 0, 0 )
-   _BottomPos := LISTVIEWGETITEMCOUNT( GridHandle )
+   _BottomPos := ListViewGetItemCount ( GridHandle )
    s := LISTVIEW_GETFIRSTITEM ( GridHandle )
-
-   ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( _BottomPos - s ) )
-
+   ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( _BottomPos - s ) )
    ListView_SetCursel ( GridHandle, _BottomPos )
 
 RETURN
@@ -1772,12 +1757,10 @@ PROCEDURE _GridPrior ( ControlName, ParentForm, z )
    GridHandle := _HMG_aControlHandles[ i ]
    _DeltaScroll := ListView_GetSubItemRect ( GridHandle, 0, 0 )
    TopInx := LISTVIEW_GETTOPINDEX ( GridHandle )
-
    s := LISTVIEW_GETFIRSTITEM ( GridHandle )
    ListView_SetCursel ( GridHandle, s - 1 )
-
    IF s <= TopInx + 1
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) )
    ENDIF
 
 RETURN
@@ -1795,9 +1778,8 @@ PROCEDURE _GridNext ( ControlName, ParentForm, z )
    TopInx := LISTVIEW_GETTOPINDEX ( GridHandle )
    PageLength := LISTVIEWGETCOUNTPERPAGE ( GridHandle )
    ListView_SetCursel ( GridHandle, s + 1 )
-
    IF s - TopInx == PageLength
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] )
    ENDIF
 
 RETURN
@@ -1816,10 +1798,10 @@ PROCEDURE _GridScrollToPos ( ControlName, ParentForm, z )
    PageLength := LISTVIEWGETCOUNTPERPAGE ( GridHandle )
    IF topInx < s
       IF s - TopInx > PageLength
-         ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( s - TopInx - PageLength ) )
+         ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( s - TopInx - PageLength ) )
       ENDIF
    ELSE
-      ListView_Scroll( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) * ( s - TopInx ) )
+      ListView_Scroll ( GridHandle, 0, _DeltaScroll[ 4 ] * ( -1 ) * ( s - TopInx ) )
    ENDIF
 
 RETURN

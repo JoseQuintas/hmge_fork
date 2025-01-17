@@ -361,6 +361,9 @@ FUNCTION ABM2( cArea, cTitulo, aNombreCampo, ;
    if ! lSalida
       aAvisoCampo := {}
       FOR i := 1 TO nEstructura
+         IF ! _aEstructura[ i, DBS_TYPE ] $ "CDNLM"
+            _aEstructura[ i, DBS_TYPE ] := Type( ( _cArea )->( _aEstructura[ i, DBS_NAME ] ) )
+         ENDIF
          DO CASE
          CASE _aEstructura[ i, DBS_TYPE ] == "C"
             AAdd( aAvisoCampo, _HMG_aLangUser[ 2 ] )

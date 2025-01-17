@@ -47,7 +47,7 @@
 
    Parts  of  this  code  is contributed and used here under permission of his
    author: Copyright 2016-2017 (C) P.Chornyj <myorg63@mail.ru>
- */
+*/
 #define _WIN32_IE 0x0501
 
 #if defined( __MINGW32__ ) || defined( __XCC__ ) || defined( __POCC__ )
@@ -57,6 +57,7 @@
 #include <mgdefs.h>
 
 #include <commctrl.h>
+
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 
 // Static Class Name
@@ -108,6 +109,7 @@ typedef struct tagMyUserData
 {
    UINT     cbSize;
    MYPARAMS myParam;
+
 #if defined( _WIN64 )
 } MYUSERDATA, *PMYUSERDATA;
 #else
@@ -1572,6 +1574,96 @@ HB_FUNC( UNREGISTERWINDOW )
 #ifndef __XHARBOUR__
    hb_strfree( hClassName );
 #endif
+}
+
+//*********************************************
+//    by Dr. Claudio Soto (July 2014)
+//*********************************************
+
+HB_FUNC( REBAR_GETHEIGHT )
+{
+   HWND hWnd    = hmg_par_raw_HWND( 1 );
+   UINT nHeight = ( UINT ) SendMessage( hWnd, RB_GETBARHEIGHT, 0, 0 );
+
+   hmg_ret_UINT( nHeight );
+}
+
+HB_FUNC( REBAR_GETBANDCOUNT )
+{
+   HWND hWnd       = hmg_par_raw_HWND( 1 );
+   UINT nBandCount = ( UINT ) SendMessage( hWnd, RB_GETBANDCOUNT, 0, 0 );
+
+   hmg_ret_UINT( nBandCount );
+}
+
+HB_FUNC( REBAR_GETBARRECT )
+{
+   HWND hWnd  = hmg_par_raw_HWND( 1 );
+   UINT nBand = hmg_par_UINT( 2 );
+   RECT Rect;
+
+   SendMessage( hWnd, RB_GETRECT, ( WPARAM ) nBand, ( LPARAM ) &Rect );
+
+   hb_reta( 6 );
+   HB_STORVNL( ( LONG ) Rect.left, -1, 1 );
+   HB_STORVNL( ( LONG ) Rect.top, -1, 2 );
+   HB_STORVNL( ( LONG ) Rect.right, -1, 3 );
+   HB_STORVNL( ( LONG ) Rect.bottom, -1, 4 );
+   HB_STORVNL( ( LONG ) ( Rect.right - Rect.left ), -1, 5 );   // nWidth
+   HB_STORVNL( ( LONG ) ( Rect.bottom - Rect.top ), -1, 6 );   // nHeight
+}
+
+HB_FUNC( REBAR_GETBANDBORDERS )
+{
+   HWND hWnd  = hmg_par_raw_HWND( 1 );
+   UINT nBand = hmg_par_UINT( 2 );
+   RECT Rect;
+
+   SendMessage( hWnd, RB_GETBANDBORDERS, ( WPARAM ) nBand, ( LPARAM ) &Rect );
+
+   hb_reta( 4 );
+   HB_STORVNL( ( LONG ) Rect.left, -1, 1 );
+   HB_STORVNL( ( LONG ) Rect.top, -1, 2 );
+   HB_STORVNL( ( LONG ) Rect.right, -1, 3 );
+   HB_STORVNL( ( LONG ) Rect.bottom, -1, 4 );
+}
+
+HB_FUNC( REBAR_SETMINCHILDSIZE )
+{
+   HWND hWnd  = hmg_par_raw_HWND( 1 );
+   UINT nBand = hmg_par_UINT( 2 );
+   UINT yMin  = hmg_par_UINT( 3 );
+
+   REBARBANDINFO rbbi;
+
+   rbbi.cbSize     = sizeof( REBARBANDINFO );
+   rbbi.fMask      = RBBIM_CHILDSIZE;
+   rbbi.cxMinChild = 0;
+   rbbi.cyMinChild = yMin;
+   rbbi.cx         = 0;
+
+   SendMessage( hWnd, RB_SETBANDINFO, ( WPARAM ) nBand, ( LPARAM ) &rbbi );
+}
+
+HB_FUNC( REBAR_GETBANDINFO )
+{
+   HWND hWnd  = hmg_par_raw_HWND( 1 );
+   UINT uBand = hmg_par_UINT( 2 );
+   REBARBANDINFO rbbi;
+
+   rbbi.cbSize = sizeof( REBARBANDINFO );
+   rbbi.fMask  = RBBIM_CHILDSIZE | RBBIM_SIZE;
+
+   SendMessage( hWnd, RB_GETBANDINFO, ( WPARAM ) uBand, ( LPARAM ) &rbbi );
+
+   hb_reta( 7 );
+   HB_STORVNL( ( LONG ) rbbi.cxMinChild, -1, 1 );
+   HB_STORVNL( ( LONG ) rbbi.cyMinChild, -1, 2 );
+   HB_STORVNL( ( LONG ) rbbi.cx, -1, 3 );
+   HB_STORVNL( ( LONG ) rbbi.cyChild, -1, 4 );
+   HB_STORVNL( ( LONG ) rbbi.cyMaxChild, -1, 5 );
+   HB_STORVNL( ( LONG ) rbbi.cyIntegral, -1, 6 );
+   HB_STORVNL( ( LONG ) rbbi.cxIdeal, -1, 7 );
 }
 
 HB_FUNC( MSC_VER )

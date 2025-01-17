@@ -769,6 +769,22 @@ FUNCTION TreeItemGetNodeFlag ( ControlName , ParentForm , nItem )
 
 RETURN TREEITEM_GETNODEFLAG ( nControlHandle, ItemHandle )
 
+*-----------------------------------------------------------------------------*
+FUNCTION TreeItemSetImageIndex ( ControlName , ParentForm , nItem , aSel )
+*-----------------------------------------------------------------------------*
+   LOCAL nControlHandle := GetControlHandle ( ControlName , ParentForm )
+   LOCAL ItemHandle := TreeItemGetHandle ( ControlName , ParentForm , nItem )
+
+RETURN TREEITEM_SETIMAGEINDEX ( nControlHandle , ItemHandle , aSel[1] , aSel[2] )
+
+*-----------------------------------------------------------------------------*
+FUNCTION TreeItemGetImageIndex ( ControlName , ParentForm , nItem )
+*-----------------------------------------------------------------------------*
+   LOCAL nControlHandle := GetControlHandle ( ControlName , ParentForm )
+   LOCAL ItemHandle := TreeItemGetHandle ( ControlName , ParentForm , nItem )
+
+RETURN TREEITEM_GETIMAGEINDEX ( nControlHandle , ItemHandle )
+
 #define TVIS_EXPANDED   32
 *-----------------------------------------------------------------------------*
 FUNCTION TreeItemIsExpand ( ControlName , ParentForm , nItem )
