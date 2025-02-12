@@ -243,7 +243,12 @@ Function IniGetParam()
    LOCAL oPrj := App.Cargo:oIni:MergePrj   // секция [MergePrj]
    или
    LOCAL o := oIni:MergePrj */
-
+   /* ------------ как писать даты ---------
+   cDate := "0d"+Dtos(Date())
+   cDate := hb_valtoexp(Date())
+   cDateTime := hb_Valtoexp(hb_DataTime())
+   cDateTime := "t"+hb_TtoS(hb_DataTime())
+   */
    // добавляем руками в oIni
    oIni:Data_Source := oHmgData()  // секцию добавили (строим дерево контейнеров)
    oIni:Data_Source:cFile := cFileNoPath(cFileIni)

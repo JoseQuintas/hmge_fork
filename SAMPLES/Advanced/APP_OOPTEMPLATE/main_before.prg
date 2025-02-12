@@ -14,6 +14,7 @@ FUNCTION BeforeStartingMain()
    LOCAL aDim, aTmp, nI, cTemp
    LOCAL cPathTemo := GetUserTempFolder() + "\"
    LOCAL cPath     := GetStartupFolder()  + "\"
+   LOCAL cPathExe  := GetStartupFolder()  + "\"
 
    ? SPACE(3)+ProcNL(), "Перед запуском основной формы / Before starting the main form" ; ?
 
@@ -29,14 +30,16 @@ FUNCTION BeforeStartingMain()
       NEXT
    ENDIF
    ? SPACE(3) + "M->aPubListFrom=",M->aPubListFrom,HB_ValToExp(M->aPubListFrom)
+   aDim := {}
+   aTmp := {}
 
-   aDim := Directory( cPath + "*.exe" )
+   aDim := Directory( cPathExe + "*.exe" )
    aMerge( aDim, aTmp )
-   aTmp := Directory( cPath + "*.hbp" )
+   aTmp := Directory( cPathExe + "*.hbp" )
    aMerge( aDim, aTmp )
-   aTmp := Directory( cPath + "*.rc"  )
+   aTmp := Directory( cPathExe + "*.rc"  )
    aMerge( aDim, aTmp )
-   aTmp := Directory( cPath + "*.lib" )
+   aTmp := Directory( cPathExe + "*.lib" )
    aMerge( aDim, aTmp )
 
    M->aPubListTo := {}

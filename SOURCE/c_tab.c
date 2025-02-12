@@ -269,8 +269,8 @@ HB_FUNC( ADDTABBITMAP )
    PHB_ITEM    hArray;                    // Array of image filenames.
    char        *FileName;
    int         nCount, i;
-   int         cx = -1;
-   int         cy = -1;
+   int         cx = HB_ISNUM( 4 ) ? hb_parni( 4 ) : -1;
+   int         cy = HB_ISNUM( 5 ) ? hb_parni( 5 ) : -1;
 
    nCount = ( int ) hb_parinfa( 2, 0 );   // Number of images in the array.
    if( nCount > 0 )  // Check if there are images to add.

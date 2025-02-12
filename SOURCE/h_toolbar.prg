@@ -251,7 +251,7 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
    hb_default( @notrans, .F. )
 
    IF ! Empty ( image ) .AND. Empty ( BmpSize( image ) [1] )
-      image := _GetDummyImage ( 16, 16 )
+      image := _GetDummyImage()
    ENDIF
 
    IF imageindex != NIL
@@ -281,7 +281,7 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
    _HMG_aControlType [k] := "TOOLBUTTON"
    _HMG_aControlNames  [k] :=  ControlName
    _HMG_aControlHandles  [k] :=  ControlHandle
-   _HMG_aControlParenthandles [k] :=   hParentForm
+   _HMG_aControlParenthandles [k] :=  hParentForm
    _HMG_aControlIds  [k] :=  id
    _HMG_aControlProcedures  [k] :=  ProcedureName
    _HMG_aControlPageMap  [k] :=  {}
@@ -325,21 +325,21 @@ FUNCTION _DefineToolButton ( ControlName, ParentControl, x, y, Caption, Procedur
 
    Caption := Upper ( Caption )
 
-   IF ( i := hb_UAt ( '&' , Caption ) ) > 0
+   IF ( i := hb_UAt ( '&', Caption ) ) > 0
 
       IF WholeDropDown
-         nToolBarIndex := AScan ( _HMG_aControlHandles , ParentForm )
-         ProcedureName := { || _DropDownShortcut ( Id , hParentForm , nToolBarIndex , nPos ) }
+         nToolBarIndex := AScan ( _HMG_aControlHandles, ParentForm )
+         ProcedureName := { || _DropDownShortcut ( Id, hParentForm, nToolBarIndex, nPos ) }
       ENDIF
 
-      _DefineLetterOrDigitHotKey ( Caption , i , cParentForm , ProcedureName )
+      _DefineLetterOrDigitHotKey ( Caption, i, cParentForm, ProcedureName )
 
    ENDIF
 
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION _AddToolBarToSplitBox ( ControlName , break , Caption , ParentForm )
+STATIC FUNCTION _AddToolBarToSplitBox ( ControlName, break, Caption, ParentForm )
 *-----------------------------------------------------------------------------*
    LOCAL MinWidth, MinHeight
    LOCAL i, c, w, ix
@@ -535,32 +535,34 @@ FUNCTION _CreatePopUpChevron ( hWnd, wParam, lParam )
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-STATIC PROCEDURE _DropDownShortcut ( nToolButtonId , nParentWindowHandle , i , nButtonPos )
+STATIC PROCEDURE _DropDownShortcut ( nToolButtonId, nParentWindowHandle, i, nButtonPos )
 *-----------------------------------------------------------------------------*
    LOCAL aPos, aSize
    LOCAL x
 
-   IF ( x := AScan ( _HMG_aControlIds , nToolButtonId ) ) > 0 .AND. _HMG_aControlType [x] == "TOOLBUTTON"
+   IF ( x := AScan ( _HMG_aControlIds, nToolButtonId ) ) > 0 .AND. _HMG_aControlType [x] == "TOOLBUTTON"
       aPos := { 0, 0, 0, 0 }
       GetWindowRect ( _HMG_aControlHandles [i] , aPos )
 
-      SendMessage( _HMG_aControlHandles [i] , TB_SETHOTITEM , nButtonPos - 1 , 0 )
+      SendMessage ( _HMG_aControlHandles [i] , TB_SETHOTITEM , nButtonPos - 1 , 0 )
 
       aSize := GetButtonBarRect ( _HMG_aControlHandles [i] , nButtonPos - 1 )
 
       TrackPopupMenu ( _HMG_aControlRangeMax [x] , aPos [1] + LoWord( aSize ) , aPos [2] + HiWord( aSize ) + ;
          iif( _HMG_ActiveSplitBoxInverted, 0, ( aPos [4] - aPos [2] - HiWord( aSize ) ) / 2 ), nParentWindowHandle )
 
-      SendMessage( _HMG_aControlHandles [i] , TB_SETHOTITEM , -1 , 0 )
+      SendMessage ( _HMG_aControlHandles [i] , TB_SETHOTITEM , -1 , 0 )
    ENDIF
 
 RETURN
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION _GetDummyImage ( nWidth, nHeight )
+FUNCTION _GetDummyImage ( nWidth, nHeight )
 *-----------------------------------------------------------------------------*
    LOCAL TempName := TempFile ( GetTempFolder(), 'BMP' )
    LOCAL hBitmap
+
+   DEFAULT nWidth := 16, nHeight := 16
 
    hBitmap := BT_BitmapCreateNew ( nWidth, nHeight, nRGB2Arr( GetSysColor( COLOR_BTNFACE ) ) )
 

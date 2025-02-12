@@ -205,13 +205,6 @@ FUNCTION Tbrowse_Customization( oBrw, oTsb )    // донастройка таблицы
                            MsgDebug("Super:",Ypix,Xpix,nAt,ob:cAlias))}
    NEXT
 
-   // правим Super Header
-   IF oBrw:lSelector .and. oBrw:nColumn( "ORDKEYNO", .T. ) > 0
-      FOR nI := 1 TO Len( oBrw:aSuperHead )  // с первой или со 2-ой колонки менять
-          oBrw:aSuperHead[ nI ][2] += 1
-      NEXT
-   ENDIF
-
 RETURN NIL
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -17,7 +17,7 @@ REQUEST HB_CODEPAGE_UA1251, HB_CODEPAGE_UA866    // украинский €зык
 REQUEST HB_CODEPAGE_RU1251, HB_CODEPAGE_RU866    // русский €зык
 
 #define  SHOW_TITLE  "TsbViewer(c)"
-#define  SHOW_VERS   SPACE(5) + "Ver 1.0 - 03.12.23"
+#define  SHOW_VERS   SPACE(5) + "Ver 1.3 - 02.02.25"
 ////////////////////////////////////////////////////////////////////////////////////
 FUNCTION TsbObjViewer(oWin, oUse, oIndx, oMenu, oTsb, aEvent, bInitForm)
    LOCAL cWait, cAlias, nY, nX, nW, nH, lCenter, aBClr, lTopmost
@@ -58,7 +58,7 @@ RETURN NIL
 FUNCTION TsbViewer( aTsbPar, aWinPar, oUse, oIndx, oMenu, oTsb, aEvent, bInitForm, aCurrLang)
    LOCAL nWBrw, nHBrw, nYBrw, nXBrw, nWGaps, nHGaps, cForm, oThis, lTsb2
    LOCAL cTitle, cIcon, lModal, cSetCP, cSelCdp, cLngSel, lTsb, aBClr
-   LOCAL cWait, cAlias, cDbfCP, c2Title, nY, nX, nW, nH, lCenter
+   LOCAL cWait, cAlias, cDbfCP, c2Title, nY, nX, nW, nH, lCenter, cPath
    LOCAL nSel, cErr, aPosiW, aEve, aEditFunc, cPrev := ALIAS()
    LOCAL lTopmst, bOnInit, bOnRele, bIClose, nHDown, aWndDown
    LOCAL cObj, cInitForm, lInitForm, lMainWnd, cMsg, cIcoWin
@@ -114,7 +114,9 @@ FUNCTION TsbViewer( aTsbPar, aWinPar, oUse, oIndx, oMenu, oTsb, aEvent, bInitFor
    aPosiW  := { 0, 0, 0, 0 }
 
    IF LEN(cTitle) == 0 .AND. LEN(cAlias) > 0
-      cTitle := cAlias + " " + DBINFO( DBI_FULLPATH ) + " " + RddName()
+      cPath  := DBINFO( DBI_FULLPATH )
+      cPath  := IIF( !IsString(cPath) , "" , cPath )
+      cTitle := cAlias + " " +  + " " + RddName()
       cTitle += " [" + cSetCP + "/" + cSelCdp + "/" + cLngSel + "]"
    ENDIF
 
@@ -1110,7 +1112,6 @@ STATIC FUNCTION Tbrowse_Customization( oBrw, oTsb )   // донастройка таблицы
       IF cCol == "ORDKEYNO" .OR. cCol == "SELECTOR"
       ELSE
          // картинка в шапке колонок таблицы - стрелка_вниз  20x20
-         // {|| hArrDown } - так нельз€
          oCol:uBmpHead := {|nc,ob| nc := ob:Cargo, nc:hArrDown }
          oCol:nHAlign  := nMakeLong( DT_CENTER, DT_RIGHT  )
          // картинка в подвале колонок таблицы - стрелка_вверх 20x20
@@ -1121,7 +1122,6 @@ STATIC FUNCTION Tbrowse_Customization( oBrw, oTsb )   // донастройка таблицы
          //oCol:nSAlign   := nMakeLong( DT_CENTER, DT_RIGHT  )
       ENDIF
       // маска показа картинок
-      //IF oCol:lVisible
          //oCol:nBmpMaskHead := 0x00CC0020    // SRCCOPY - резерв
          //oCol:nBmpMaskFoot := 0x00CC0020    // SRCCOPY - резерв
          oCol:nBmpMaskHead   := 0x00BB0226    // MERGEPAINT
@@ -1129,15 +1129,7 @@ STATIC FUNCTION Tbrowse_Customization( oBrw, oTsb )   // донастройка таблицы
          oCol:nBmpMaskSpcHd  := 0x00CC0020    // SRCCOPY
          //oCol:nBmpMaskCell := 0x00CC0020    // SRCCOPY - €чейки таблицы пропустить
          //oCol:nBmpMaskCell := 0x00BB0226    // MERGEPAINT - €чейки таблицы
-      //ENDIF
    NEXT
-
-   // правим Super Header
-   IF oBrw:lSelector .and. oBrw:nColumn( "ORDKEYNO", .T. ) > 0
-      FOR nI := 1 TO Len( oBrw:aSuperHead )  // с первой или со 2-ой колонки мен€ть
-         oBrw:aSuperHead[ nI ][2] += 1
-      NEXT
-   ENDIF
 
    // обработка колонок таблицы - внешн€€ функци€
    IF hb_IsArray(oTsb:aEditFunc)

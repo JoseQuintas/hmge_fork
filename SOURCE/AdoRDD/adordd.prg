@@ -252,7 +252,7 @@ STATIC FUNCTION ADO_OPEN( nWA, aOpenInfo )
       aWAData[ WA_CONNECTION ]:Open( "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + aOpenInfo[ UR_OI_NAME ] + ";Extended Properties='Excel 8.0;HDR=YES';Persist Security Info=False" )
 
    CASE Lower( Right( aOpenInfo[ UR_OI_NAME ], 4 ) ) == ".dbf"
-      aWAData[ WA_CONNECTION ]:Open( "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + aOpenInfo[ UR_OI_NAME ] + ";Extended Properties=dBASE IV;User ID=Admin;Password=;" )
+      aWAData[ WA_CONNECTION ]:Open( "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + cFilePath(aOpenInfo[ UR_OI_NAME ]) + ";Extended Properties=dBASE IV;User ID=Admin;Password=;" )
 
    CASE Lower( Right( aOpenInfo[ UR_OI_NAME ], 3 ) ) == ".db"
       aWAData[ WA_CONNECTION ]:Open( "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + aOpenInfo[ UR_OI_NAME ] + ";Extended Properties='Paradox 3.x';" )
@@ -456,13 +456,28 @@ STATIC FUNCTION ADO_DELETE( nWA )
 
 RETURN SUCCESS
 
-STATIC FUNCTION ADO_RECID( nWA, nRecNo )
+STATIC FUNCTION ADO_RECNO( nWA, nRecNo )
 
    LOCAL oRecordSet := USRRDD_AREADATA( nWA )[ WA_RECORDSET ]
+   LOCAL nResult := HB_SUCCESS
 
-   nRecno := iif( oRecordSet:AbsolutePosition == -3, oRecordSet:RecordCount() + 1, oRecordSet:AbsolutePosition )
+   BEGIN SEQUENCE WITH {| oErr | Break( oErr ) }
+      IF USRRDD_AREADATA( nWA )[ WA_CONNECTION ]:State != adStateClosed
+         nRecno := iif( oRecordSet:AbsolutePosition == -3, oRecordSet:RecordCount() + 1, oRecordSet:AbsolutePosition )
+      ELSE
+         nRecno := 0
+         nResult := HB_FAILURE
+      ENDIF
+   RECOVER
+      nRecNo := 0
+      nResult := HB_FAILURE
+   END SEQUENCE
 
-RETURN SUCCESS
+   RETURN nResult
+
+STATIC FUNCTION ADO_RECID( nWA, nRecNo )
+
+   RETURN ADO_RECNO( nWA, @nRecNo )
 
 STATIC FUNCTION ADO_RECCOUNT( nWA, nRecords )
 

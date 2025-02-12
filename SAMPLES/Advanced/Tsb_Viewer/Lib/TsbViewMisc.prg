@@ -69,25 +69,6 @@ Function HMG_AppsUseTheme(lRet)
 RETURN IIF(lRet,cRet,i)
 
 ///////////////////////////////////////////////////////////////////
-// получить Width текста
-FUNCTION GetTxtWidth( cText, nFontSize, cFontName, lBold )
-   LOCAL hFont, nWidth
-   DEFAULT cText     := REPL('A', 2)        ,  ;
-           cFontName := _HMG_DefaultFontName,  ;   // из MiniGUI.Init()
-           nFontSize := _HMG_DefaultFontSize,  ;   // из MiniGUI.Init()
-           lBold     := .F.
-
-   IF Valtype(cText) == 'N'
-      cText := repl('A', cText)
-   ENDIF
-
-   hFont  := InitFont(cFontName, nFontSize, lBold)
-   nWidth := GetTextWidth(0, cText, hFont)         // ширина текста
-   DeleteObject (hFont)
-
-RETURN nWidth
-
-///////////////////////////////////////////////////////////////////
 FUNCTION ProcNL(nVal)
    DEFAULT nVal := 0
 RETURN "Call from: " + ProcName( nVal + 1 ) + "(" + ;

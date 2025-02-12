@@ -2,13 +2,13 @@
 -prgflag=-w2 -es1
 
 # Enable multi/single-thread Harbour VM
-#-mt 
+-mt 
 
 # Incremental-compilation mode
 -inc
 
 # folder where are all the (*.obj) this project
--workdir=OBJ
+-workdir=OBJ\BCC
 
 # Name of output EXE-file
 -oDemo_timer
@@ -26,35 +26,34 @@ main_misc.prg
 main_other.prg
 main_timer.prg
 MainMenu_form.prg
-# main menu buttons - tables
 # кнопки главного меню - таблицы
 table12.prg
 table3.prg
 table4.prg
 table4menu.prg
 table4_card.prg
-# the auxiliary modules
 # вспомогательные модули
 menu_context.prg
 form_Password.prg
 form_CopyData.prg
 form_TimerShow.prg
-WaitWinGif.prg
 util_c_code.prg
 util_button.prg
 util_misc.prg
+util_font3.prg
 Users.prg
 ErrorSys3.prg
 IniLoad.prg
 IniConfig.prg
 other2fun.prg
+WaitThreadAvi.prg
+WaitThreadGif.prg
+WaitWinGif.prg
+# ACHOICE() меню на объекте ButtonEx
 test_achoice.prg
 util_achoice.prg
 
-# Resources for the project
-Resource\demo.rc
-Resource\demo_64.rc
-Resource\demo_128.rc
 
-# the auxiliary libraries (*.lib)
+#Path to the main and the auxiliary libraries (*.lib) for BCC
 -lTsbViewer
+-lhbmemio

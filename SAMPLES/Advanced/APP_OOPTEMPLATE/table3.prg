@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // Показ окна с таблицей / Show table window
 FUNCTION my_Standard3( cForm, nBtn, cAls, cWndMain )
-   LOCAL cVal, nI, hW, bInitForm, oCnf, cSection, aPost
+   LOCAL cVal, nI, hW, bInitForm, oCnf, cSection, aPost, aThrd
    LOCAL cPathDbf := App.Cargo:cPathDbf  //GetStartUpFolder()
    LOCAL oWin, oUse, oMenu, oTsb, aEvent, oIndx, cMsg, aCurrLang
    DEFAULT nBtn     := 3
@@ -37,7 +37,14 @@ FUNCTION my_Standard3( cForm, nBtn, cAls, cWndMain )
 
    //cAls += nBtn  // тестовая проверка ошибки при другом языке
 
-   my_WaitWindow('Create a table ...', 1, 5)
+   aThrd := WaitThreadAvi( 'Create a table ...',,,2 )  // создаём окно ожидания с потоком
+   // основной цикл вычислений/расчётов/созданий баз и т.д. - в качестве примера
+   FOR nI := 1 TO 20
+      wApi_Sleep( 70 )
+      DO EVENTS
+      cVal := hb_ntos( nI ) + "/" + "30"
+      WaitThreadAviSay( aThrd, cVal )
+   NEXT
 
    IF _IsWindowDefined( cWndMain )
       Domethod(cWndMain, "Minimize")
@@ -128,8 +135,11 @@ FUNCTION my_Standard3( cForm, nBtn, cAls, cWndMain )
    cMsg += "hb_CdpSelect()  = " + hb_CdpSelect() + ";"
    cMsg += "hb_LangSelect() = " + hb_LangSelect() + ";"
    //cMsg += ";" + ProcNL()
-   //AlertInfo(cMsg)
+   AlertInfo(cMsg)
    ? ProcNL(), cMsg
+
+   // закрыть окно ожидания с потоком
+   WaitThreadAviClose( aThrd )
    // окно с таблицей - показ окна зависит от описания в oWin
    TsbObjViewer(oWin, oUse, oIndx, oMenu, oTsb, aEvent, bInitForm)
    // исходники смотреть в \MiniGUI\SAMPLES\Advanced\Tsb_Viewer

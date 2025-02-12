@@ -9,6 +9,16 @@
 #include "hmg.ch"
 #include 'fileio.ch'
 
+#xtranslate MiniGuiVersionChar()  => Substr( MiniGuiVersion(), At(".", MiniGuiVersion()) - 2, 8 ) 
+#xtranslate MiniGuiVersionNumba() => Int( Val( MiniGuiVersionChar() ) * 10000 + Val( Right(MiniGuiVersionChar(), 2) ) ) 
+////////////////////////////////////////////////////////////////////////
+FUNCTION MGVersChar()
+   RETURN MiniGuiVersionChar()
+
+////////////////////////////////////////////////////////////////////////
+FUNCTION MGVersNumba()
+   RETURN MiniGuiVersionNumba()
+
 /*-----------------------------------------------------------------------------*
 * взято из h_ini.prg
 *-----------------------------------------------------------------------------*
@@ -570,7 +580,8 @@ FUNCTION AboutComputer()
    ? " Multi Thread:", IIF( HB_MultiThread(), "Yes", "No" )
 
    ? "Screen resolution: " + HB_NtoS(GetDesktopWidth())+" x "+HB_NtoS(GetDesktopHeight())
-   ? MiniGuiVersion()  ; ? Version() ; ? hb_Ccompiler()
+   ? MiniGuiVersion() , "<|>", MGVersChar(), MGVersNumba()
+   ? Version() ; ? hb_Ccompiler()
 
    cComp := GetComputerName()
    lRdp  := win_OsIsTSClient()

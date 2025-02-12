@@ -19,8 +19,9 @@ FUNCTION Form_Menu_Main(oMainWnd)
    LOCAL aBtnIco1, aBtnIco2, aBtnIco3, aBtnIco4, aBtnIco5, aBtnFClr1
    LOCAL aBtnClr1, aBtnClr2, aBtnClr3, aBtnClr4, aBtnClr5, cDisplay
    LOCAL cFont, nFSize, aLblBClr1, aLblBClr2, aBackColor, aBtnFntClr
-   LOCAL nH, nW, hIcon, cForm, cInfo, nBtnBase
-
+   LOCAL nH, nW, hIcon, cForm, cInfo, nBtnBase, nWLst, nXLst, nHBtn2
+   LOCAL aBtnIco6, aBtnClr6, aBtnIco7, aBtnClr7, nY2
+                                                
    ? ProcNL(), oMainWnd:Name, "Функция главной формы-меню задачи/Function of the main task menu form"
 
    cForm      := "Forma_Main"
@@ -46,8 +47,8 @@ FUNCTION Form_Menu_Main(oMainWnd)
    SetMenuBitmapHeight( 32 )           // set menu icons size to 32x32
 
    // для данного окна делаем так
-   nWForm        := 800
-   nHForm        := 540
+   nWForm := 850   
+   nHForm := 540
 
    DEFINE WINDOW &cForm AT nY,nX WIDTH nWForm HEIGHT nHForm            ;
       TITLE cTitle + cDisplay                                          ;
@@ -80,28 +81,32 @@ FUNCTION Form_Menu_Main(oMainWnd)
       @ 5,0 LABEL Label_1 OF &cForm VALUE cInfo WIDTH nWForm HEIGHT 60 ;
         SIZE 12 FONTCOLOR WHITE TRANSPARENT CENTERALIGN
 
-      @ 80, 120 LISTBOX List_1 OF &cForm WIDTH 180 HEIGHT 230 ;
-        ITEMS M->aPubListFrom VALUE 1 NOTABSTOP               ;
-        FONT "Tahoma" SIZE 11 BACKCOLOR {82,242,210}          ;
+      nWLst := 220
+      nXLst := ( nW / 2 - nWLst ) / 2
+      @ 80, nXLst LISTBOX List_1 OF &cForm WIDTH nWLst HEIGHT 230 ;
+        ITEMS M->aPubListFrom VALUE 1 NOTABSTOP                   ;
+        FONT "Tahona" SIZE 11 BACKCOLOR {82,242,210}              ;
         ON CHANGE NIL ON DBLCLICK NIL
 
-      @ 80, 500 LISTBOX List_2 OF &cForm WIDTH 180 HEIGHT 230 ;
-        ITEMS M->aPubListTo VALUE 1     NOTABSTOP             ;
-        FONT "Tahoma" SIZE 11 BACKCOLOR {82,242,210}          ;
+      nXLst := nW / 2 + nWLst / 2
+      @ 80, nXLst LISTBOX List_2 OF &cForm WIDTH nWLst HEIGHT 230 ;
+        ITEMS M->aPubListTo VALUE 1     NOTABSTOP                 ;
+        FONT "Tahona" SIZE 11 BACKCOLOR {82,242,210}              ;
         ON CHANGE NIL ON DBLCLICK NIL
 
       nWBtn := (nW - 64) / 2
       hIcon := LoadIconByName( "1MG", 64, 64 )
       DRAW ICON IN WINDOW &cForm AT 60, nWBtn HICON hIcon WIDTH 64 HEIGHT 64 COLOR aBackColor
 
-      nWBtn     := 180
-      nHBtn     := 124
+      nWBtn     := 150
+      nG        := ( nW - nWBtn * 5 ) / 6  // между кнопками
+      nHBtn     := 72 * 2 + 5
       nY        := 140
-      nX        := 310
+      nX        := nW / 2 - nWBtn / 2
       aBtnIco1  := { "iPiople64x1", "iPiople64x2" }
       aBtnClr1  := { YELLOW, BLACK }
       aBtnFClr1 := { RED   , WHITE }
-      cCaption  := "Sample 1"
+      cCaption  := "Sample-1"
       @ nY, nX BUTTONEX Button_1 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco1[1]  ;
         CAPTION cCaption FONTCOLOR aBtnFClr1[1] BACKCOLOR aBtnClr1[1]                 ;
         SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                          ;
@@ -117,12 +122,11 @@ FUNCTION Form_Menu_Main(oMainWnd)
                      o:nBtn  := 1 }
         This.Button_1.Cargo:nBtnBase := nBtnBase
 
-      nG := ( nWForm - nWBtn * 4 ) / 5
       nY := 330
       nX := nG
       aBtnIco2 := { "iMess64x1", "iMess64x2"  }
       aBtnClr2 := { COLOR_ORANGE_METRO, BLACK }
-      cCaption := "Sample 2"
+      cCaption := "Sample-2"
       @ nY, nX BUTTONEX Button_2 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco2[1]   ;
         CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr2[1]                    ;
         SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                           ;
@@ -142,7 +146,7 @@ FUNCTION Form_Menu_Main(oMainWnd)
 
       aBtnIco3 := { "iMusic64x1", "iMusic64x2" }
       aBtnClr3 := { {30,213,56}, BLACK  }
-      cCaption := "Sample 3"
+      cCaption := "Sample-3"
       @ nY, nX BUTTONEX Button_3 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco3[1]   ;
         CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr3[1]                    ;
         SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                           ;
@@ -162,7 +166,7 @@ FUNCTION Form_Menu_Main(oMainWnd)
 
       aBtnIco4 := { "iAbout64x1", "iAbout64x2" }
       aBtnClr4 := { COLOR_BLUE_SKYPE, BLACK  }
-      cCaption := "Sample 4"
+      cCaption := "Sample-4"
       @ nY, nX BUTTONEX Button_4 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco4[1]   ;
         CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr4[1]                    ;
         SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                           ;
@@ -180,14 +184,55 @@ FUNCTION Form_Menu_Main(oMainWnd)
 
       nX += This.Button_4.Width + nG
 
-      aBtnIco5 := { "iExitDr64x1","iExitDr64x2" }
-      aBtnClr5 := { COLOR_RED_METRO, BLACK      }
-      cCaption := "Exit"
-      @ nY, nX BUTTONEX Button_5 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco5[1]   ;
+      //nHBtn  := 72 * 2 + nG
+      nHBtn2   := 72 
+      aBtnIco5 := { "iSanta64x1", "iSanta64x2" }
+      aBtnClr5 := { COLOR_PURPLE_METRO, BLACK  }
+      cCaption := "S-5"
+      @ nY, nX BUTTONEX Button_5 OF &cForm WIDTH nWBtn HEIGHT nHBtn2 ICON aBtnIco5[1]  ;
         CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr5[1]                    ;
-        SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                           ;
+        SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP                                    ;
         ON MOUSEHOVER ( This.Icon := aBtnIco5[2], This.Backcolor := aBtnClr5[2] )      ;
         ON MOUSELEAVE ( This.Icon := aBtnIco5[1], This.Backcolor := aBtnClr5[1] )      ;
+        ACTION _wPost(This.Cargo:nBtn+This.Cargo:nBtnBase, ThisWindow.Name, This.Name) ;
+        ON INIT {|o| This.Cargo := oHmgData(), o := This.Cargo ,;
+                     o:cBtn  := This.Name      ,;
+                     o:cCap  := This.Caption   ,;
+                     o:aBClr := This.BackColor ,;
+                     o:nY    := This.Row       ,;
+                     o:nX    := This.Col       ,;
+                     o:nBtn  := 5 }
+        This.Button_5.Cargo:nBtnBase := nBtnBase
+
+      aBtnIco6 := { "iHP64x1", "iHP64x2" }
+      aBtnClr6 := { ORANGE   , BLACK     }
+      cCaption := "S-6"
+      nY2      := nY + This.Button_5.Height + 5
+      @ nY2, nX BUTTONEX Button_6 OF &cForm WIDTH nWBtn HEIGHT nHBtn2 ICON aBtnIco6[1] ;
+        CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr6[1]                    ;
+        SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP                                    ;
+        ON MOUSEHOVER ( This.Icon := aBtnIco6[2], This.Backcolor := aBtnClr6[2] )      ;
+        ON MOUSELEAVE ( This.Icon := aBtnIco6[1], This.Backcolor := aBtnClr6[1] )      ;
+        ACTION _wPost(This.Cargo:nBtn+This.Cargo:nBtnBase, ThisWindow.Name, This.Name) ;
+        ON INIT {|o| This.Cargo := oHmgData(), o := This.Cargo ,;
+                     o:cBtn  := This.Name      ,;
+                     o:cCap  := This.Caption   ,;
+                     o:aBClr := This.BackColor ,;
+                     o:nY    := This.Row       ,;
+                     o:nX    := This.Col       ,;
+                     o:nBtn  := 6 }
+        This.Button_6.Cargo:nBtnBase := nBtnBase
+
+      nX += This.Button_5.Width + nG
+
+      aBtnIco7 := { "iExitDr64x1","iExitDr64x2" }
+      aBtnClr7 := { COLOR_RED_METRO, BLACK      }
+      cCaption := "Exit"
+      @ nY, nX BUTTONEX Button_7 OF &cForm WIDTH nWBtn HEIGHT nHBtn ICON aBtnIco7[1]   ;
+        CAPTION cCaption FONTCOLOR aBtnFntClr BACKCOLOR aBtnClr7[1]                    ;
+        SIZE 16 BOLD NOXPSTYLE HANDCURSOR NOTABSTOP VERTICAL                           ;
+        ON MOUSEHOVER ( This.Icon := aBtnIco7[2], This.Backcolor := aBtnClr7[2] )      ;
+        ON MOUSELEAVE ( This.Icon := aBtnIco7[1], This.Backcolor := aBtnClr7[1] )      ;
         ACTION _wPost(This.Cargo:nBtn+This.Cargo:nBtnBase, ThisWindow.Name, This.Name) ;
         ON INIT {|o| This.Cargo := oHmgData(), o := This.Cargo ,;
                     o:cBtn  := This.Name      ,;
@@ -195,8 +240,8 @@ FUNCTION Form_Menu_Main(oMainWnd)
                     o:aBClr := This.BackColor ,;
                     o:nY    := This.Row       ,;
                     o:nX    := This.Col       ,;
-                    o:nBtn  := 5 }
-        This.Button_5.Cargo:nBtnBase := nBtnBase
+                    o:nBtn  := 7 }
+        This.Button_7.Cargo:nBtnBase := nBtnBase
 
       nY += This.Button_4.Height + nG
 
@@ -234,12 +279,17 @@ FUNCTION Form_Menu_Main(oMainWnd)
                                      Return Nil
                                  } )
 
+      (This.Object):Event(  1, {|ow| SendMessage( ow:Handle, WM_PAINT, 0, 0 ) ,;    // Show form ICO 
+                                     ow:Setfocus('Label_1')                } )  
+                                                                          
       // назначаем обработку событий по кнопкам / assign event handling to buttons
-      (This.Object):Event( 11, {|ow,ky,cn| my_Btn(ky,cn,ow), ow:Setfocus('Label_1') } )
-      (This.Object):Event( 12, {|ow,ky,cn| my_Btn(ky,cn,ow), ow:Setfocus('Label_1') } )
-      (This.Object):Event( 13, {|ow,ky,cn| my_Btn(ky,cn,ow), ow:Setfocus('Label_1') } )
-      (This.Object):Event( 14, {|ow,ky,cn| my_Btn(ky,cn,ow), ow:Setfocus('Label_1') } )
-      (This.Object):Event( 15, {|ow,ky,cn| _wSend(99,App.Cargo:oWinMain), ow:Setfocus('Label_1'), ky:=cn /* Exit */ } )
+      (This.Object):Event( 11, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )      // запуск события 1
+      (This.Object):Event( 12, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )
+      (This.Object):Event( 13, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )
+      (This.Object):Event( 14, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )
+      (This.Object):Event( 15, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )
+      (This.Object):Event( 16, {|ow,ky,cn| my_Btn(ky,cn,ow), _wPost(1,ow)  } )
+      (This.Object):Event( 17, {|ow,ky,cn| _wSend(99,App.Cargo:oWinMain), ow:Setfocus('Label_1'), ky:=cn /* Exit */ } )
       // назначаем обработку событий для Sets_aMenuItems(lCrt)
       (This.Object):Event( 20, {|ow,ky,ap|
                                Local cn := ap[1], aRet
@@ -478,10 +528,10 @@ STATIC FUNCTION IniSavePosWinThis(oWnd)
 
 RETURN NIL
 
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 STATIC FUNCTION my_Btn( nEvnt, cButt, oWnd )
-   LOCAL cBtn, cWnd, o, cForm, y, x, cAls, cTitle, nBtn
-
+   LOCAL cBtn, cWnd, o, cForm, y, x, cAls, cTitle, nBtn, cRun, cParam, cMsg
+                                                         
    cWnd  := oWnd:Name
    nBtn  := nEvnt - oWnd:Cargo:nBtnBase  // 10 смещение для кнопки и события этого окна
    cBtn  := "Button_" + hb_ntos( nBtn )  // Button_1, Button_2, ...
@@ -496,11 +546,11 @@ STATIC FUNCTION my_Btn( nEvnt, cButt, oWnd )
 
    SET WINDOW THIS TO cWnd
 
-   o := This.(cBtn).Cargo
-   cAls  := "CUST_"+hb_ntos(o:nBtn)
+   o      := This.(cBtn).Cargo
+   cAls   := "CUST_"+hb_ntos(o:nBtn)
    cTitle := cBtn+": "+hb_ntos(o:nBtn)+" "+o:cCap
-   y := o:nY - 100
-   x := o:nX +  50
+   y      := o:nY - 100
+   x      := o:nX +  50
 
    ? ProcNL(), nEvnt, cBtn, o:cBtn, o:nBtn, o:cCap, cForm, cTitle
 
@@ -509,6 +559,17 @@ STATIC FUNCTION my_Btn( nEvnt, cButt, oWnd )
       my_Standard4( cForm, o:nBtn, cTitle, o:aBClr, y, x, o:nW, o:nH, cAls, cWnd) // -> table4.prg
    ELSEIF nBtn == 3 //  => nEvnt == 113
       my_Standard3( cForm, o:nBtn, cAls, cWnd)                                    // -> table3.prg
+   ELSEIF nBtn == 5 .OR. nBtn == 6 //  => nEvnt == 115/116
+      cRun   := M->cPubMainFolder + "Run_sample4.bat"
+      cParam := ''
+      IF !FILE(cRun)
+         cMsg := "No file to run !;;" + cRun 
+         cMsg += ";;Program: " + App.Cargo:cAppTitle + ";STOPPED"
+         AlertStop( cMsg, "Error", "ZZZ_B_STOP64", 64 )
+      ELSE
+         ShellExecute( , 'open', cRun, cParam, , SW_SHOWNORMAL)
+      ENDIF
+      wApi_Sleep(100)
    ELSE
       my_Standard( cForm, o:nBtn, cTitle, o:aBClr, y, x, o:nW, o:nH, cAls )       // -> table12.prg
    ENDIF

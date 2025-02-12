@@ -40,71 +40,20 @@
 #define PROGRAM "MySqlCli"
 #define BSL chr(92)
 
-MEMVAR lConnected
-MEMVAR oServer
-MEMVAR cServer
-MEMVAR nPort
-MEMVAR cUser
-MEMVAR cPaswd
-MEMVAR cDBase
-MEMVAR cCryptKey
+#xtranslate nTrim( <nValue> ) => hb_ntos( <nValue> )
 
-MEMVAR aDatabases
-MEMVAR aTables
-MEMVAR lTableSelect
-MEMVAR lBaseSelect
-MEMVAR cBase
-MEMVAR cTable
+MEMVAR lConnected, oServer, cServer, nPort, cUser, cPaswd, cDBase, cCryptKey
+MEMVAR aDatabases, aTables, lTableSelect, lBaseSelect, cBase, cTable
+MEMVAR nScope, nFrom
 
-MEMVAR nScope
-MEMVAR nFrom
+SET PROCEDURE TO GridQuery
 
 *------------------------------------------------------------------------------*
 PROCEDURE Main()
 *------------------------------------------------------------------------------*
 
-   PUBLIC lConnected := .F.
-   PUBLIC oServer := NIL
-   PUBLIC cServer := "localhost"
-   PUBLIC nPort := 3306
-   PUBLIC cUser := "root"
-   PUBLIC cPaswd := ""
-   PUBLIC cDBase := "test"
-   PUBLIC cCryptKey := "topsecret"
-
-   PUBLIC aDatabases := {}
-   PUBLIC aTables := {}
-   PUBLIC lTableSelect := .F.
-   PUBLIC lBaseSelect := .F.
-   PUBLIC cBase := ""
-   PUBLIC cTable := ""
-
-   PUBLIC nScope := 500 // max records for select scope (limit)
-   PUBLIC nFrom := 0 // starting pointer for select scope - Don't touch!
-
-   SET DATE GERMAN
-   SET CENTURY ON
-   SET MULTIPLE OFF WARNING
-   SET CODEPAGE TO UNICODE
-
-   IF File( "MySqlCli.ini" )
-      BEGIN INI FILE "MySqlCli.ini"
-         GET cServer SECTION "Login" ENTRY "server"
-         GET nPort SECTION "Login" ENTRY "port"
-         GET cUser SECTION "Login" ENTRY "user"
-         GET cPaswd SECTION "Login" ENTRY "pass"
-         GET cDBase SECTION "Login" ENTRY "database"
-      END INI
-      cPaswd := hb_decrypt( cPaswd, cCryptKey )
-   ELSE
-      BEGIN INI FILE "MySqlCli.ini"
-         SET SECTION "Login" ENTRY "server" TO cServer
-         SET SECTION "Login" ENTRY "port" TO nPort
-         SET SECTION "Login" ENTRY "user" TO cUser
-         SET SECTION "Login" ENTRY "pass" TO hb_crypt( cPaswd, cCryptKey )
-         SET SECTION "Login" ENTRY "database" TO cDBase
-      END INI
-   ENDIF
+   // Initialize settings
+   InitConfig()
 
    DEFINE WINDOW F_Main ;
          AT 0, 0 ;
@@ -244,6 +193,13 @@ PROCEDURE Main()
 
       END TAB
 
+      @ 64, 340 LABEL NUL ;
+         VALUE "F2 - Export Structure or Data to CSV   F7 - Make a data query" ;
+         WIDTH 340 HEIGHT 21 FONTCOLOR NAVY CENTERALIGN
+
+      ON KEY F2 ACTION iif( GetControlType( this.FocusedControl, thiswindow.name ) == "GRID", ExportGridToCSV( thiswindow.name, this.FocusedControl ), )
+      ON KEY F7 Action iif( GetControlType( this.FocusedControl, thiswindow.name ) == "GRID", GridQuery( thiswindow.name, this.FocusedControl, DoMethod ( thiswindow.name, this.FocusedControl, "GetArray" ) ), )
+
    END WINDOW
 
    setMessage()
@@ -251,6 +207,59 @@ PROCEDURE Main()
 
    CENTER WINDOW F_Main
    ACTIVATE WINDOW F_Main
+
+RETURN
+
+
+*------------------------------------------------------------------------------*
+PROCEDURE InitConfig()
+*------------------------------------------------------------------------------*
+   PUBLIC lConnected := .F.
+   PUBLIC oServer := NIL
+   PUBLIC cServer := "localhost"
+   PUBLIC nPort := 3306
+   PUBLIC cUser := "root"
+   PUBLIC cPaswd := ""
+   PUBLIC cDBase := "test"
+   PUBLIC cCryptKey := GetEnv( "MY_CRYPT_KEY" )
+
+   IF Empty( cCryptKey )
+      cCryptKey := "topsecret" // Replace with dynamic retrieval if needed
+   ENDIF
+
+   PUBLIC aDatabases := {}
+   PUBLIC aTables := {}
+   PUBLIC lTableSelect := .F.
+   PUBLIC lBaseSelect := .F.
+   PUBLIC cBase := ""
+   PUBLIC cTable := ""
+
+   PUBLIC nScope := 500 // max records for select scope (limit)
+   PUBLIC nFrom := 0    // starting pointer for select scope - Don’t touch!
+
+   SET DATE GERMAN
+   SET CENTURY ON
+   SET MULTIPLE OFF WARNING
+   SET CODEPAGE TO UNICODE
+
+   IF File("MySqlCli.ini")
+      BEGIN INI FILE "MySqlCli.ini"
+         GET cServer SECTION "Login" ENTRY "server"
+         GET nPort SECTION "Login" ENTRY "port"
+         GET cUser SECTION "Login" ENTRY "user"
+         GET cPaswd SECTION "Login" ENTRY "pass"
+         GET cDBase SECTION "Login" ENTRY "database"
+      END INI
+      cPaswd := hb_decrypt(cPaswd, cCryptKey)
+   ELSE
+      BEGIN INI FILE "MySqlCli.ini"
+         SET SECTION "Login" ENTRY "server" TO cServer
+         SET SECTION "Login" ENTRY "port" TO nPort
+         SET SECTION "Login" ENTRY "user" TO cUser
+         SET SECTION "Login" ENTRY "pass" TO hb_crypt(cPaswd, cCryptKey)
+         SET SECTION "Login" ENTRY "database" TO cDBase
+      END INI
+   ENDIF
 
 RETURN
 
@@ -575,13 +584,14 @@ PROCEDURE UpdateData()
          RETURN
       ENDIF
 
+      // Old columns cleaning
       nColumns := GetProperty( "F_Main", "GRD_Data", "ColumnCount" )
-
       DO WHILE nColumns != 0
          F_Main.GRD_Data.DeleteColumn( nColumns )
          nColumns--
       ENDDO
 
+      // Add columns from query result
       FOR i := 1 TO oQuery:FCount()
          F_Main.GRD_Data.AddColumn( i, aFields[ i ], aWidths[ i ], iif( aTypes[ i ] == "C", 0, 1 ) )
       NEXT
@@ -590,6 +600,8 @@ PROCEDURE UpdateData()
       i := GetProperty( "F_Main", "GRD_Data", "Index" )
       _HMG_aControlHeadClick[ i ] := Array( nColumns )
       _HMG_aControlRangeMax[ i ] := Array( nColumns )
+
+      // Add column's sorting
       AEval( Array( nColumns ), ;
          {| x, k | _HMG_aControlHeadClick[ i ][ k ] := {| n | HMG_SortColumn( n ) }, ;
          _HMG_aControlRangeMax[ i ][ k ] := 1, HB_SYMBOL_UNUSED( x ) } )
@@ -1049,7 +1061,7 @@ FUNCTION dbf2sql( lCreateTable )
 
       aDbfFiles := getfile( { { "*.dbf", "*.DBF" } }, "Select files to copy", "", .T., .F. )
 
-      IF Len( aDbfFiles ) == 0
+      IF Len( aDbfFiles ) == 1 .AND. Empty( aDbfFiles[ 1 ] )
          RETURN NIL
       ENDIF
 
@@ -1256,7 +1268,77 @@ RETURN iif( _bool, "1", "0" )
 
 
 *------------------------------------------------------------------------------*
-FUNCTION ntrim( nValue )
+PROCEDURE ExportGridToCSV(windowname, gridname)
 *------------------------------------------------------------------------------*
+   LOCAL cFileName := "Data_" + gridname + ".csv"
+   LOCAL aLines := {}, aHeaders := {}, nColumns, nItems, count1, cLine, oError
 
-RETURN hb_ntos( nValue )
+   // Validate inputs
+   IF Empty(windowname) .OR. Empty(gridname)
+      MsgStop("Invalid window or grid name", "Error")
+      RETURN
+   ENDIF
+
+   IF File( cFileName )
+      IF ! msgyesno( "File " + cFileName + " already exists! Overwrite?", PROGRAM )
+         RETURN
+      ENDIF
+   ENDIF
+
+   // Get column count and headers
+   nColumns := LEN(GETPROPERTY(windowname, gridname, "item", 1))
+   FOR count1 := 1 TO nColumns
+      AAdd(aHeaders, GETPROPERTY(windowname, gridname, "header", count1))
+   NEXT
+
+   // Add headers to CSV
+   AAdd(aLines, ArrayToCSV(aHeaders))
+
+   // Get item count
+   nItems := GETPROPERTY(windowname, gridname, "itemcount")
+   FOR count1 := 1 TO nItems
+      cLine := ArrayToCSV(GETPROPERTY(windowname, gridname, "item", count1))
+      AAdd(aLines, cLine)
+   NEXT
+
+   // Write to file
+   BEGIN SEQUENCE
+      hb_MemoWrit(cFileName, CRLFJOIN(aLines))
+      MsgInfo("Data exported to CSV file: " + cFileName)
+   RECOVER USING oError
+      MsgStop("Error exporting data: " + oError:Description, "Error")
+   END SEQUENCE
+
+RETURN
+
+*------------------------------------------------------------------------------*
+// Converts an array to a CSV string, escaping special characters
+STATIC FUNCTION ArrayToCSV(aArray)
+*------------------------------------------------------------------------------*
+   LOCAL nLen := LEN(aArray), cResult := ""
+   LOCAL count1
+
+   FOR count1 := 1 TO nLen
+      cResult += EscapeCSV(CValToChar(aArray[count1]))
+      IF count1 < nLen
+         cResult += ","
+      ENDIF
+   NEXT
+
+RETURN cResult
+
+*------------------------------------------------------------------------------*
+STATIC FUNCTION EscapeCSV(cValue)
+*------------------------------------------------------------------------------*
+RETURN '"' + STRTRAN(cValue, '"', '""') + '"'
+
+*------------------------------------------------------------------------------*
+STATIC FUNCTION CRLFJOIN(aArray)
+*------------------------------------------------------------------------------*
+   LOCAL cResult := "", count1
+
+   FOR count1 := 1 TO LEN(aArray)
+      cResult += aArray[count1] + CRLF
+   NEXT
+
+RETURN hb_StrShrink( cResult, 2 )  // Remove the last CRLF

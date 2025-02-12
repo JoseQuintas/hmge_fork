@@ -290,7 +290,7 @@ STATIC FUNCTION _DefineTab( ControlName, ParentFormName, x, y, w, h, aCaptions, 
    _HMG_aControlBkColor  [k] :=  backcolor [1]
    _HMG_aControlFontColor  [k] :=  Nil
    _HMG_aControlDblClick  [k] :=  ""
-   _HMG_aControlHeadClick  [k] :=  {}
+   _HMG_aControlHeadClick  [k] :=  { Nil, Nil }
    _HMG_aControlRow  [k] :=  y
    _HMG_aControlCol  [k] :=  x
    _HMG_aControlWidth  [k] :=  w
@@ -332,10 +332,11 @@ STATIC FUNCTION _DefineTab( ControlName, ParentFormName, x, y, w, h, aCaptions, 
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-FUNCTION InitDialogTab( ParentName, ControlHandle, k )
+FUNCTION InitDialogTab ( ParentName, ControlHandle, k )
 *-----------------------------------------------------------------------------*
    LOCAL aCaptions, aMnemonic
    LOCAL Caption
+   LOCAL Image
    LOCAL tabpage
    LOCAL c, z, i
 
@@ -344,7 +345,7 @@ FUNCTION InitDialogTab( ParentName, ControlHandle, k )
 
    IF _HMG_BeginDialogActive
 
-      IF Len( _HMG_ActiveTabFullPageMap ) < Len( aCaptions )
+      IF Len ( _HMG_ActiveTabFullPageMap ) < Len ( aCaptions )
          AAdd ( _HMG_ActiveTabFullPageMap , {} )
       ENDIF
 
@@ -355,7 +356,24 @@ FUNCTION InitDialogTab( ParentName, ControlHandle, k )
    ENDIF
 
    IF _HMG_aControlMiscData1 [k,2]  // ImageFlag
-      _HMG_aControlInputMask [k] := AddTabBitMap ( ControlHandle, _HMG_aControlPicture [k], _HMG_aControlMiscData1 [k,8] )
+      _HMG_aControlHeadClick [k] := { 256, 256 }
+
+      FOR EACH Image IN _HMG_aControlPicture [k]
+
+         IF ValType ( Image ) == "C" .AND. !Empty ( Image )
+            i := BmpSize( Image )
+            IF i [1] > 0 .AND. i [2] > 0
+               _HMG_aControlHeadClick [k][1] := Min( i [1], _HMG_aControlHeadClick [k][1] )
+               _HMG_aControlHeadClick [k][2] := Min( i [2], _HMG_aControlHeadClick [k][2] )
+            ELSE
+               i := hb_enumindex( Image )
+               _HMG_aControlPicture [k][i] := _GetDummyImage()
+            ENDIF
+         ENDIF
+
+      NEXT
+
+      _HMG_aControlInputMask [k] := AddTabBitMap ( ControlHandle, _HMG_aControlPicture [k], _HMG_aControlMiscData1 [k,8], _HMG_aControlHeadClick [k][1], _HMG_aControlHeadClick [k][2] )
    ENDIF
 
    FOR EACH c IN aCaptions
@@ -629,7 +647,7 @@ FUNCTION _AddTabPage ( ControlName , ParentForm , Position , Caption , Image , t
          IF !Empty( _HMG_aControlInputMask [i] )
             IMAGELIST_DESTROY ( _HMG_aControlInputMask [i] )
          ENDIF
-         _HMG_aControlInputMask [i] := AddTabBitMap ( _HMG_aControlHandles [i], _HMG_aControlPicture [i], _HMG_aControlMiscData1 [i, 8] )
+         _HMG_aControlInputMask [i] := AddTabBitMap ( _HMG_aControlHandles [i], _HMG_aControlPicture [i], _HMG_aControlMiscData1 [i, 8], _HMG_aControlHeadClick [i][1], _HMG_aControlHeadClick [i][2] )
       ENDIF
       // JR
       IF ! ISARRAY ( _HMG_aControlTooltip [i] )

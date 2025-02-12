@@ -381,7 +381,7 @@ FUNCTION Sumatra_PageNumber(cPanel)
 
       IF nPage == 0
         FOR n := 1 TO Len(aHWnd)
-          IF (GetClassName(aHWnd[n]) == "Edit") .and. (HB_BitAnd(GetWindowLongPtr(aHWnd[n], -16 /*GWL_STYLE*/), 0x2002 /*ES_NUMBER|ES_RIGHT*/) != 0)
+          IF (GetClassName(aHWnd[n]) == "Edit") .and. (HB_BitAnd(GetWindowLong(aHWnd[n], -16 /*GWL_STYLE*/), 0x2002 /*ES_NUMBER|ES_RIGHT*/) != 0)
             nPage := Val(GetWindowText2(aHWnd[n]))
             EXIT
           ENDIF
@@ -546,78 +546,8 @@ RETURN NIL
 #pragma BEGINDUMP
 
 #include <mgdefs.h>
-#include "hbapiitm.h"
 
 #include <commctrl.h>
-
-//--------------------------------------------------------------------------------------------------------
-//   TreeView_ExpandChildrenRecursive ( hWndTV, ItemHandle, nExpand, fRecurse )
-//--------------------------------------------------------------------------------------------------------
-
-BOOL TreeView_IsNode (HWND hWndTV, HTREEITEM ItemHandle)
-{   if ( TreeView_GetChild (hWndTV , ItemHandle) != NULL )
-        return TRUE;
-    else
-        return FALSE;
-}
-
-void TreeView_ExpandChildrenRecursive (HWND hWndTV, HTREEITEM ItemHandle, UINT nExpand)
-{
-   HTREEITEM ChildItem;
-   HTREEITEM NextItem;
-
-   if ( TreeView_IsNode ( hWndTV, ItemHandle ) )
-   {
-        TreeView_Expand ( hWndTV, ItemHandle, nExpand );
-        ChildItem = TreeView_GetChild ( hWndTV , ItemHandle );
-
-        while ( ChildItem != NULL )
-        {
-            TreeView_ExpandChildrenRecursive (hWndTV, ChildItem, nExpand);
-      
-            NextItem = TreeView_GetNextSibling (hWndTV, ChildItem);
-            ChildItem = NextItem;
-        }
-   }
-}
-
-HB_FUNC (TREEVIEW_EXPANDCHILDRENRECURSIVE)
-{
-   HWND      hWndTV     = (HWND)      HB_PARNL (1);
-   HTREEITEM ItemHandle = (HTREEITEM) HB_PARNL (2);
-   UINT      nExpand    = (UINT)      hb_parnl (3);
-   BOOL      fRecurse   = (BOOL)      hb_parl  (4);
-   
-   if ( fRecurse == FALSE )
-      TreeView_Expand ( hWndTV, ItemHandle, nExpand );
-   else
-   {
-      HWND hWndParent = GetParent (hWndTV);
-      BOOL lEnabled   = IsWindowEnabled (hWndParent);
-      
-      EnableWindow (hWndParent, FALSE);
-      
-      TreeView_ExpandChildrenRecursive ( hWndTV, ItemHandle, nExpand );
-      
-      if (lEnabled == TRUE)
-          EnableWindow (hWndParent, TRUE);
-   }
-}
-
-HB_FUNC (TREEVIEW_GETNEXTSIBLING)
-{
-   HWND        hWndTV     = (HWND) HB_PARNL (1);
-   HTREEITEM   ItemHandle = (HTREEITEM) HB_PARNL (2);
-   HTREEITEM   NextItemHandle = TreeView_GetNextSibling ( hWndTV , ItemHandle ) ;
-   HB_RETNL ((LONG_PTR) NextItemHandle ) ;
-}
-
-HB_FUNC (TREEVIEW_GETROOT)
-{
-   HWND hWndTV = (HWND) HB_PARNL (1);
-   HTREEITEM RootItemHandle = TreeView_GetRoot ( hWndTV );
-   HB_RETNL ((LONG_PTR) RootItemHandle ) ;
-}
 
 HB_FUNC( WINMAJORVERSIONNUMBER )
 {
@@ -643,32 +573,6 @@ HB_FUNC( WINMINORVERSIONNUMBER )
    hb_retni( osvi.dwMinorVersion ) ;
 }
 
-//        GetWindowThreadProcessId (hWnd, @nThread, @nProcessID)
-HB_FUNC ( GETWINDOWTHREADPROCESSID )
-{
-   HWND hWnd = (HWND) HB_PARNL (1);
-   DWORD nThread, nProcessID;
-
-   nThread = GetWindowThreadProcessId (hWnd, &nProcessID);
-
-   if ( HB_ISBYREF(2) )
-        hb_storni (nThread, 2); 
-   if ( HB_ISBYREF(3) )
-        hb_storni (nProcessID, 3); 
-}
-
-//        TerminateProcess ( [ nProcessID ] , [ nExitCode ] )
-HB_FUNC ( TERMINATEPROCESS )
-{
-   DWORD ProcessID = HB_ISNUM (1) ? (DWORD) hb_parnl(1) : GetCurrentProcessId();
-   UINT  uExitCode = (UINT) hb_parnl (2);
-   HANDLE hProcess = OpenProcess ( PROCESS_TERMINATE, FALSE, ProcessID );
-   if ( hProcess != NULL )
-   {   if ( TerminateProcess (hProcess, uExitCode) == FALSE )
-           CloseHandle (hProcess);
-   }
-}
-
        //GetWindowText2(nHWnd)
 HB_FUNC( GETWINDOWTEXT2 )
 {
@@ -679,13 +583,6 @@ HB_FUNC( GETWINDOWTEXT2 )
   SendMessage(hWnd, WM_GETTEXT, nLen, (LPARAM) cText);
   hb_retclen(cText, nLen - 1);
   hb_xfree(cText);
-}
-
-//        GetParent(hWnd)
-HB_FUNC ( GETPARENT )
-{
-   HWND hWnd = (HWND) HB_PARNL (1);
-   HB_RETNL ((LONG_PTR) GetParent(hWnd) );
 }
 
 //       ClientToScreenRow (hWnd, Row) --> New_Row 
@@ -710,15 +607,6 @@ HB_FUNC (CLIENTTOSCREENCOL)
    Point.y = 0;
    ClientToScreen(hWnd, &Point);
    hb_retnl ((LONG) Point.x );
-}
-
-//        GetWindowLongPtr (hWnd, nIndex) --> return dwRetLong
-HB_FUNC ( GETWINDOWLONGPTR )
-{
-   HWND hWnd  = (HWND) HB_PARNL (1);
-   int nIndex = (int)  hb_parnl (2);
-   LONG_PTR dwRetLong = GetWindowLongPtr (hWnd, nIndex);
-   HB_RETNL((LONG_PTR) dwRetLong);
 }
 
 #pragma ENDDUMP

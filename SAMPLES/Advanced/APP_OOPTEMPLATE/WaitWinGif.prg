@@ -108,6 +108,7 @@ FUNCTION WaitWinCreateModal( cTitle, lCenter, nWRow, nWCol )
    LOCAL cForm := "WaitWin_" + HB_NtoS( _GetId() )
    LOCAL cFont := "DejaVu Sans Mono", nFSize := 12
    LOCAL nTime := SECONDS()
+
    DEFAULT cTitle  := "Wait", lCenter := .T., nWRow := 0, nWCol := 0
 
    SET INTERACTIVECLOSE OFF

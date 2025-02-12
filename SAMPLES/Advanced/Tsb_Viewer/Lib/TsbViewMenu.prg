@@ -1424,3 +1424,23 @@ FUNCTION myMouseHL(n)
    ENDIF
 
 RETURN NIL
+
+///////////////////////////////////////////////////////////////////
+// получить Width текста
+STATIC FUNCTION GetTxtWidth( cText, nFontSize, cFontName, lBold )
+   LOCAL hFont, nWidth
+   DEFAULT cText     := REPL('A', 2)        ,  ;
+           cFontName := _HMG_DefaultFontName,  ;   // из MiniGUI.Init()
+           nFontSize := _HMG_DefaultFontSize,  ;   // из MiniGUI.Init()
+           lBold     := .F.
+
+   IF Valtype(cText) == 'N'
+      cText := repl('A', cText)
+   ENDIF
+
+   hFont  := InitFont(cFontName, nFontSize, lBold)
+   nWidth := GetTextWidth(0, cText, hFont)         // ширина текста
+   DeleteObject (hFont)
+
+RETURN nWidth
+

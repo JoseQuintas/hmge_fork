@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
- * The idea of 2013-2023 Verchenko Andrey <verchenkoag@gmail.com>
+ * The idea of 2013-2025 Verchenko Andrey <verchenkoag@gmail.com>
  * Implementation (c) 2013-14 Grigory Filatov <gfilatov@inbox.ru>
  * Fixed (c) 2023 Sergej Kiselev <bilance@bilance.lv>
  *
@@ -11,7 +11,7 @@
 
 #define _HMG_OUTLOG
 #define APP_TITLE  "Template of the finished program on MiniGui"
-#define APP_VERS   "Version 2.0 - 2023.12.25"
+#define APP_VERS   "Version 2.2 - 2025.02.02"
 #define APP_ID     555
 #define LEN_SPC    50
 
@@ -100,6 +100,8 @@ FUNCTION Main(...)
    aBCWinAct  := HMG_ColorWinActiveCaption()
    aBackColor := {153,152,255}
 
+   // ВНИМАНИЕ ! Это окно при старте будет всегда NOSHOW ! Чтобы окна MODAL не вызывали это окно на передний план. 
+   // ATTENTION ! This window will always be NOSHOW at startup! To prevent MODAL windows from bringing this window to the foreground.
    DEFINE WINDOW &cForm AT 0,0 WIDTH nW HEIGHT nH + nG TITLE APP_TITLE    ;
       MAIN NOSHOW TOPMOST NOSIZE BACKCOLOR aBackColor                     ;
       FONT "Comic Sans MS" SIZE App.Cargo:nDefFontSize + 2                ;
@@ -255,6 +257,12 @@ INIT PROCEDURE MyInitWin()
    ELSE
       ? ; ? repl("*", 30) + " START 2 " + repl("*", 30) ; ?
    ENDIF
+
+   IF !IsFontExist( cFont )
+      cFont := "Courier New"
+   ENDIF
+   ? "The main font of the program - " + cFont, nSize
+
    // основной Default фонт программы
    SET FONT TO cFont, nSize
    // фонт для HMG_Alert() и Alert...() ф-ий

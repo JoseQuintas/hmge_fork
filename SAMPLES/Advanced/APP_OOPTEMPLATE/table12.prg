@@ -53,7 +53,7 @@ FUNCTION my_Standard( cForm, nBtn, cTitle, aBClr, nY, nX, nW, nH, cAls )
    cMsg += "hb_CdpSelect()  = " + hb_CdpSelect() + ";"
    cMsg += "hb_LangSelect() = " + hb_LangSelect() + ";"
    cMsg += ";" + ProcNL()
-   AlertInfo(cMsg)
+   //AlertInfo(cMsg)
    ? ProcNL(), cMsg
 
    my_WaitWindow('Create a table ...', 1, 7)

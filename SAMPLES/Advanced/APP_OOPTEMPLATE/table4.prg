@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // Показ окна с таблицей / Show table window
 FUNCTION my_Standard4( cForm, nBtn, cTitle, aBClr, nY, nX, nW, nH, cAls, cWndMain )
-   LOCAL cVal, nI, hW, bInitForm
+   LOCAL cVal, nI, hW, bInitForm, aThrd
    LOCAL cPathDbf := App.Cargo:cPathDbf  //GetStartUpFolder()
    LOCAL oWin, oUse, oMenu, oTsb, aEvent, oIndx
    DEFAULT cAls := "CUST_"+hb_ntos(nBtn)
@@ -32,7 +32,14 @@ FUNCTION my_Standard4( cForm, nBtn, cTitle, aBClr, nY, nX, nW, nH, cAls, cWndMai
    ? ProcNL(), cForm, _IsWindowDefined(cForm), hb_CdpSelect()
    ? cForm, nBtn, cTitle, aBClr, nY, nX, nW, nH, cAls, cWndMain
 
-   my_WaitWindow('Create a table ...', 1, 5)
+   aThrd := WaitThreadAvi( 'Create a table ...' )  // создаём окно ожидания с потоком
+   // основной цикл вычислений/расчётов/созданий баз и т.д. - в качестве примера
+   FOR nI := 1 TO 20
+      wApi_Sleep( 70 )
+      DO EVENTS
+      cVal := hb_ntos( nI ) + "/" + "30"
+      WaitThreadAviSay( aThrd, cVal )
+   NEXT
 
    IF _IsWindowDefined( cWndMain )
       Domethod(cWndMain, "Minimize")
@@ -84,6 +91,10 @@ FUNCTION my_Standard4( cForm, nBtn, cTitle, aBClr, nY, nX, nW, nH, cAls, cWndMai
                   ENDIF
                   Return Nil
                  }
+
+   // закрыть окно ожидания с потоком
+   WaitThreadAviClose( aThrd )
+
 //? "*** TsbObjViewer() *** Start" ; To2Log() ; ?
    // окно с таблицей - показ окна зависит от описания в oWin
    TsbObjViewer(oWin, oUse, oIndx, oMenu, oTsb, aEvent, bInitForm)

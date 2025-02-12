@@ -20,3 +20,7 @@ iOkey64x1        ICON         Resource\res_64\iOkey64x1.ico
 iOkey64x2        ICON         Resource\res_64\iOkey64x2.ico
 iFind64x1        ICON         Resource\res_64\iSmalFind64x1.ico
 iFind64x2        ICON         Resource\res_64\iSmalFind64x2.ico
+iHP64x1          ICON         Resource\res_64\iHP64x1.ico
+iHP64x2          ICON         Resource\res_64\iHP64x2.ico
+iSanta64x1       ICON         Resource\res_64\iSanta64x1.ico
+iSanta64x2       ICON         Resource\res_64\iSanta64x2.ico

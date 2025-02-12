@@ -59,11 +59,11 @@ HB_FUNC ( FINDWINDOW )
 {
    hb_retnl( ( LONG ) FindWindow( 0, hb_parc( 1 ) ) );
 }
-
+/*
 HB_FUNC( TERMINATEPROCESS ) {
   hb_retni( (BOOL) TerminateProcess( (HANDLE) hb_parni(1),0) );
 }
-
+*/
 HB_FUNC( UNIXTIME ) {
     hb_retnl(time(NULL));
 }

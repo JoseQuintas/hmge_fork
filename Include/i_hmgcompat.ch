@@ -379,7 +379,7 @@ _ColorMenu ( <hWnd>, <argb> [, <lSubMenu> ] )
    =>;
    _CenterWindow ( <(name)>, .F. )
 
-#xcommand CENTER WINDOW <name> IN <name2> ;
+#xtranslate CENTER WINDOW <name> IN <name2> ;
    =>;
    _CenterWindow ( <(name)>, .T. )
 

@@ -2869,7 +2869,11 @@ METHOD Default() CLASS TSBrowse
                IF Empty( ::nLen )
                   ::SetRecordSet()
                ENDIF
-               ::LoadRecordSet()
+               IF ::nLen == 0
+                  MsgStop( "Cannot create a TBROWSE object for an empty ADO dataset." )
+               ELSE
+                  ::LoadRecordSet()
+               ENDIF
             ENDIF
          ENDIF
 
@@ -3130,7 +3134,7 @@ METHOD Del( nItem ) CLASS TSBrowse
 
    /* added by Pierpaolo Martinello 29/04/2019 */
    ::lHasChanged := .T.
-   // /
+
    ::Refresh( .T., .T. )
 
 RETURN Self

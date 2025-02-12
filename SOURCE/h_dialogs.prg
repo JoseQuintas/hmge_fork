@@ -51,73 +51,129 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include 'minigui.ch'
 #include "i_winuser.ch"
 
-*-----------------------------------------------------------------------------*
+/**
+ * Function: GetColor
+ * Purpose: Opens a color selection dialog and returns the selected color as an RGB array.
+ *
+ * Parameters:
+ *   aInitColor     : Array of initial RGB color values, e.g., {R, G, B}.
+ *   aCustomColors  : Array of custom colors, up to 16 elements, as RGB arrays or numeric RGB values.
+ *   nFlags         : Numeric flags to configure the dialog behavior.
+ *
+ * Returns:
+ *   Array with selected RGB color {R, G, B}, or NIL if no color is selected.
+ */
 FUNCTION GetColor( aInitColor, aCustomColors, nFlags )
-*-----------------------------------------------------------------------------*
+
    LOCAL aRetVal [3]
    LOCAL nColor, nInitColor, i
 
+   // Initialize the starting color
    IF IsArrayRGB ( aInitColor )
       nInitColor := RGB ( aInitColor [1], aInitColor [2], aInitColor [3] )
    ENDIF
 
+   // Initialize the custom colors array
    IF ISARRAY ( aCustomColors )
-      /* aCustomColors parameter must be the array with 16 RGB-colors elements if it is defined */
-      ASize ( aCustomColors, 16 )
+      ASize ( aCustomColors, 16 )  // Ensure the array has 16 elements
       FOR i = 1 TO 16
           IF IsArrayRGB ( aCustomColors [i] )
-             aCustomColors [i] := RGB ( aCustomColors [i][1], aCustomColors [i][2], aCustomColors [i][3] )
+             aCustomColors [i] := RGB ( aCustomColors[i][1], aCustomColors[i][2], aCustomColors[i][3] )
           ELSEIF ! ISNUMERIC ( aCustomColors [i] )
-             aCustomColors [i] := GetSysColor ( COLOR_BTNFACE )
+             aCustomColors [i] := GetSysColor ( COLOR_BTNFACE )  // Default to system button face color
           ENDIF
       NEXT
    ENDIF
 
-   IF ISLOGICAL ( nFlags )  // for HMG compatibility
+   // Handle nFlags for HMG backward compatibility
+   IF ISLOGICAL( nFlags )
       IF nFlags
-         /* default nFlags value is hb_BitOr( CC_ANYCOLOR, CC_FULLOPEN, CC_RGBINIT ) */
+         // Default to typical flag combination for the dialog
          nFlags := NIL
       ELSE
          #define CC_RGBINIT				1
          #define CC_PREVENTFULLOPEN		4
          #define CC_ANYCOLOR			256
-         nFlags := hb_BitOr ( CC_ANYCOLOR, CC_PREVENTFULLOPEN, CC_RGBINIT )
+         nFlags := hb_BitOr( CC_ANYCOLOR, CC_PREVENTFULLOPEN, CC_RGBINIT )
       ENDIF
    ENDIF
 
+   // Show the color selection dialog
    IF ( nColor := ChooseColor ( NIL, nInitColor, @aCustomColors, nFlags ) ) != -1
-      aRetVal := nRGB2Arr ( nColor )
+      aRetVal := nRGB2Arr( nColor )
    ENDIF
 
 RETURN aRetVal
 
-*-----------------------------------------------------------------------------*
-FUNCTION GetFolder( cTitle, cInitPath, nFlags, lNewFolderButton, nFolderType ) // JK HMG 1.0 Experimental Build 8
-*-----------------------------------------------------------------------------*
-RETURN C_BrowseForFolder( NIL, cTitle, ;
-   hb_defaultValue( nFlags, BIF_USENEWUI + BIF_VALIDATE ) + ;
+/**
+ * Function: GetFolder
+ * Purpose: Opens a folder selection dialog and returns the selected folder path.
+ *
+ * Parameters:
+ *   cTitle           : Title of the folder selection dialog.
+ *   cInitPath        : Initial folder path.
+ *   nFlags           : Numeric flags to configure the dialog behavior.
+ *   lNewFolderButton : Logical, shows "New Folder" button if .T.
+ *   nFolderType      : Numeric, specifies the folder type to browse.
+ *
+ * Returns:
+ *   String with the selected folder path, or NIL if no folder is selected.
+ */
+FUNCTION GetFolder( cTitle, cInitPath, nFlags, lNewFolderButton, nFolderType )
+
+   LOCAL nDefaultFlags := BIF_USENEWUI + BIF_VALIDATE
+
+RETURN C_BrowseForFolder( NIL, cTitle, hb_defaultValue( nFlags, nDefaultFlags ) + ;
    iif( hb_defaultValue( lNewFolderButton, .T. ), 0, BIF_NONEWFOLDERBUTTON ), nFolderType, cInitPath )
 
-*-----------------------------------------------------------------------------*
-FUNCTION BrowseForFolder( nFolderType, nFlags, cTitle, cInitPath ) // Contributed By Ryszard Rylko
-*-----------------------------------------------------------------------------*
-RETURN C_BrowseForFolder( NIL, cTitle, ;
-   hb_defaultValue( nFlags, hb_BitOr( BIF_NEWDIALOGSTYLE, BIF_EDITBOX, BIF_VALIDATE ) ), nFolderType, cInitPath )
+/**
+ * Function: BrowseForFolder
+ * Purpose: Simplified interface to open a folder selection dialog.
+ *
+ * Parameters:
+ *   nFolderType : Numeric, specifies the folder type to browse.
+ *   nFlags      : Numeric flags to configure the dialog behavior.
+ *   cTitle      : Title of the folder selection dialog.
+ *   cInitPath   : Initial folder path.
+ *
+ * Returns:
+ *   String with the selected folder path, or NIL if no folder is selected.
+ */
+FUNCTION BrowseForFolder( nFolderType, nFlags, cTitle, cInitPath )
+
+   LOCAL nDefaultFlags := hb_BitOr( BIF_NEWDIALOGSTYLE, BIF_EDITBOX, BIF_VALIDATE )
+
+RETURN C_BrowseForFolder( NIL, cTitle, hb_defaultValue( nFlags, nDefaultFlags ), nFolderType, cInitPath )
 
 #ifndef __XHARBOUR__
+
 #include "hbwin.ch"
 
-*-----------------------------------------------------------------------------*
+/*----------------------------------------------------------------------------*
+ * Function: GetFile
+ * Purpose: Opens a file selection dialog and returns the selected file(s).
+ *
+ * Parameters:
+ *   acFilter            : Array of file filters, e.g., {{'Text Files','*.txt'},{'All Files','*.*'}}
+ *   cTitle              : Title of the dialog window.
+ *   cInitDir            : Initial directory to display.
+ *   lMultiSelect        : Logical, allows multiple file selection if .T.
+ *   lNoChangeDirectory  : Logical, prevents changing the working directory if .T.
+ *   nFilterIndex        : Numeric, index of the initial filter to use.
+ *
+ * Returns:
+ *   Single file path as a string, or an array of file paths if multiple files are selected.
+ *----------------------------------------------------------------------------*/
 FUNCTION GetFile( acFilter, cTitle, cInitDir, lMultiSelect, lNoChangeDirectory, nFilterIndex )
-*-----------------------------------------------------------------------------*
+
    LOCAL cRet, aTmp, xRet, i
-   LOCAL cPath, nTmp
    LOCAL cFilter := ""
    LOCAL nFlags := WIN_OFN_EXPLORER
 
    hb_default( @lMultiSelect, .F. )
    hb_default( @lNoChangeDirectory, .F. )
 
+   // Adjust dialog flags based on input options
    IF lMultiSelect
       nFlags += WIN_OFN_ALLOWMULTISELECT
    ENDIF
@@ -126,28 +182,24 @@ FUNCTION GetFile( acFilter, cTitle, cInitDir, lMultiSelect, lNoChangeDirectory, 
       nFlags += WIN_OFN_NOCHANGEDIR
    ENDIF
 
+   // Construct filter string from the array
    IF ISARRAY( acFilter )
-      AEval( acFilter, { | x | cFilter += x [1] + Chr( 0 ) + x [2] + Chr( 0 ) } )
+      AEval( acFilter, { | x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
       cFilter += Chr( 0 )
    ENDIF
 
-/* win_GetOpenFileName( [[@]<nFlags>], [<cTitle>], [<cInitDir>], [<cDefExt>], ;
- *                      [<acFilter>], [[@]<nFilterIndex>], [<nBufferSize>], [<cDefName>] )
- *    --> <cFilePath> | <cPath> + e"\0" + <cFile1> [ + e"\0" + <cFileN> ] | ""
- */
+   // Open the file selection dialog
    cRet := win_GetOpenFileName( @nFlags, cTitle, cInitDir, /*cDefExt*/, cFilter, @nFilterIndex, /*nBufferSize*/, /*cDefName*/ )
 
+   // Handle the results based on multi-select flag
    IF hb_bitAnd( nFlags, WIN_OFN_ALLOWMULTISELECT ) != 0
       xRet := {}
       IF ! Empty( aTmp := hb_ATokens( cRet, Chr( 0 ) ) )
-         IF ( nTmp := Len( aTmp ) ) == 1
-            IF ! Empty( aTmp[ 1 ] )
-               xRet := { aTmp[ 1 ] }
-            ENDIF
+         IF Len( aTmp ) == 1
+            xRet := { aTmp[1] }
          ELSE
-            cPath := aTmp[ 1 ]
-            FOR i := 2 TO nTmp
-               AAdd( xRet, cPath + "\" + aTmp[ i ] )
+            FOR i := 2 TO Len( aTmp )
+               AAdd( xRet, aTmp[1] + "\" + aTmp[i] )
             NEXT
          ENDIF
       ENDIF
@@ -157,17 +209,32 @@ FUNCTION GetFile( acFilter, cTitle, cInitDir, lMultiSelect, lNoChangeDirectory, 
 
 RETURN xRet
 
-*-----------------------------------------------------------------------------*
+/*----------------------------------------------------------------------------*
+ * Function: Putfile
+ * Purpose: Opens a file save dialog and returns the selected file path.
+ *
+ * Parameters:
+ *   acFilter            : Array of file filters, e.g., {{'Text Files','*.txt'},{'All Files','*.*'}}
+ *   cTitle              : Title of the dialog window.
+ *   cInitDir            : Initial directory to display.
+ *   lNoChangeCurDir     : Logical, prevents changing the working directory if .T.
+ *   cDefName            : Default file name.
+ *   nFilterIndex        : Numeric, index of the initial filter to use.
+ *   lPromptOverwrite    : Logical, prompts before overwriting an existing file if .T.
+ *
+ * Returns:
+ *   String containing the selected file path.
+ *----------------------------------------------------------------------------*/
 FUNCTION Putfile( acFilter, cTitle, cInitDir, lNoChangeCurDir, cDefName, nFilterIndex, lPromptOverwrite )
-*-----------------------------------------------------------------------------*
-   LOCAL cRet, aTmp, xRet, i, cPath
-   LOCAL cFilter := "", cDefExt := ""
+
+   LOCAL cRet, cFilter := "", cDefExt := ""
    LOCAL nFlags := WIN_OFN_EXPLORER
 
    hb_default( @nFilterIndex, 1 )
    hb_default( @lNoChangeCurDir, .F. )
    hb_default( @lPromptOverwrite, .F. )
 
+   // Adjust dialog flags based on input options
    IF lNoChangeCurDir
       nFlags += WIN_OFN_NOCHANGEDIR
    ENDIF
@@ -176,30 +243,16 @@ FUNCTION Putfile( acFilter, cTitle, cInitDir, lNoChangeCurDir, cDefName, nFilter
       nFlags += WIN_OFN_OVERWRITEPROMPT
    ENDIF
 
+   // Construct filter string from the array
    IF ISARRAY( acFilter )
-      AEval( acFilter, { | x | cFilter += x [1] + Chr( 0 ) + x [2] + Chr( 0 ) } )
+      AEval( acFilter, { | x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
       cFilter += Chr( 0 )
    ENDIF
 
-/* win_GetSaveFileName( [[@]<nFlags>], [<cTitle>], [<cInitDir>], [<cDefExt>], ;
- *                      [<acFilter>], [[@]<nFilterIndex>], [<nBufferSize>], [<cDefName>] )
- *    --> <cFilePath> | <cPath> + e"\0" + <cFile1> [ + e"\0" + <cFileN> ] | ""
- */
+   // Open the file save dialog
    cRet := win_GetSaveFileName( @nFlags, cTitle, cInitDir, cDefExt, acFilter, @nFilterIndex, /*nBufferSize*/, cDefName )
 
-   IF hb_bitAnd( nFlags, WIN_OFN_ALLOWMULTISELECT ) != 0
-      xRet := {}
-      IF ! Empty( aTmp := hb_ATokens( cRet, Chr( 0 ) ) )
-         cPath := aTmp[ 1 ]
-         FOR i := 2 TO Len( aTmp )
-            AAdd( xRet, cPath + "\" + aTmp[ i ] )
-         NEXT
-      ENDIF
-   ELSE
-      xRet := cRet
-   ENDIF
-
-RETURN xRet
+RETURN cRet
 
 #else
 
@@ -361,25 +414,57 @@ RETURN ( cFile )
 
 #endif
 
-*-----------------------------------------------------------------------------*
-FUNCTION GetFont( cInitFontName , nInitFontSize , lBold , lItalic , anInitColor , lUnderLine , lStrikeOut , nCharset )
-*-----------------------------------------------------------------------------*
-   LOCAL RetArray
-   LOCAL rgbcolor As Numeric
+/**
+ * Function: GetFont
+ * Purpose: Opens a font selection dialog and returns the selected font attributes.
+ *
+ * Parameters:
+ *   cInitFontName  : Initial font name as a string (default is empty string).
+ *   nInitFontSize  : Initial font size as a numeric value (default is 0).
+ *   lBold          : Logical, initial bold attribute (default is .F.).
+ *   lItalic        : Logical, initial italic attribute (default is .F.).
+ *   anInitColor    : Array of initial RGB color values, e.g., {R, G, B}.
+ *   lUnderLine     : Logical, initial underline attribute (default is .F.).
+ *   lStrikeOut     : Logical, initial strike-out attribute (default is .F.).
+ *   nCharset       : Numeric, specifies character set (default is 0).
+ *
+ * Returns:
+ *   Array with selected font attributes:
+ *     [1] Font name (string).
+ *     [2] Font size (numeric).
+ *     [3] Bold (logical).
+ *     [4] Italic (logical).
+ *     [5] Color as RGB array, e.g., {R, G, B}.
+ *     [6] Underline (logical).
+ *     [7] StrikeOut (logical).
+ *     [8] Charset (numeric).
+ */
+FUNCTION GetFont( cInitFontName, nInitFontSize, lBold, lItalic, anInitColor, lUnderLine, lStrikeOut, nCharset )
 
+   LOCAL RetArray
+   LOCAL rgbColor As Numeric
+
+   // Convert initial color array to RGB numeric value
    IF IsArrayRGB( anInitColor )
-      rgbcolor := RGB( anInitColor [1] , anInitColor [2] , anInitColor [3] )
+      rgbColor := RGB( anInitColor [1], anInitColor [2], anInitColor [3] )
    ENDIF
 
-   RetArray := ChooseFont( hb_defaultValue( cInitFontName, "" ) , hb_defaultValue( nInitFontSize, 0 ) , ;
-      hb_defaultValue( lBold, .F. ) , hb_defaultValue( lItalic, .F. ) , rgbcolor , ;
-      hb_defaultValue( lUnderLine, .F. ) , hb_defaultValue( lStrikeOut, .F. ) , hb_defaultValue( nCharSet, 0 ) )
+   // Invoke the font selection dialog
+   RetArray := ChooseFont( hb_defaultValue( cInitFontName, "" ), ;
+      hb_defaultValue( nInitFontSize, 0 ), ;
+      hb_defaultValue( lBold, .F. ), ;
+      hb_defaultValue( lItalic, .F. ), ;
+      rgbColor, ;
+      hb_defaultValue( lUnderLine, .F. ), ;
+      hb_defaultValue( lStrikeOut, .F. ), ;
+      hb_defaultValue( nCharset, 0 ) )
 
-   IF Empty( RetArray [1] )
-      RetArray [5] := { Nil, Nil, Nil }
+   // Handle color conversion in the return array
+   IF Empty( RetArray [1] )  // If no font is selected
+      RetArray [5] := { NIL, NIL, NIL }  // Default to NIL color
    ELSE
-      rgbcolor := RetArray [5]
-      RetArray [5] := nRGB2Arr( rgbcolor )
+      rgbColor := RetArray [5]  // Extract numeric RGB value
+      RetArray [5] := nRGB2Arr( rgbColor )  // Convert to RGB array
    ENDIF
 
 RETURN RetArray

@@ -14,7 +14,7 @@ FUNCTION my2BUTTON(y, x, w, h, cObj, cCapt, aBtnGrad, aBtnClr, aIcon, aFntClr, a
    LOCAL aGrOver, aGrFill, nSizeIcon, lSizeIcon, y1, x1, lTextVertical
    LOCAL cForm := _HMG_ThisFormName
    DEFAULT cCapt    := "" , aFntClr := {  BLACK, YELLOW }
-   DEFAULT aFnt     := { "Tahoma", 12 , .T. , .F. } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
+   DEFAULT aFnt     := { "Tahona", 12 , .T. , .F. } , aIcon := {"Icon1x1","Icon1x1",.F.,48}
    DEFAULT aBtnGrad := {} , aBtnClr := { BLUE, YELLOW }
    DEFAULT lBlock   := .F. // не блокировать кнопки
    DEFAULT lHide    := .F. // показывать и не скрывать кнопки
@@ -260,5 +260,30 @@ FUNCTION myDrawButton(nRow, nCol, nWBtn, nHBtn, aBtn, bAction)
 
 RETURN NIL
 
+///////////////////////////////////////////////////////////////////
+FUNCTION myScreenIconSize(nH)     // высота иконки от экрана
+   LOCAL nSize := 16
 
+   //RETURN { "640x480"  ,  "768x560",  "800x600", "1024x768", "1280x720" ,;
+   //         "1280x768" , "1280x800", "1280x960","1280x1024", "1360x768" ,;
+   //         "1366x768" ,"1440x1080", "1600x900","1600x1024", "1680x1054",;
+   //         "1940x1080","1920x1440","2560x1440","2580x1080", "3440x1440",;
+   //         "3840x2160" }
 
+   IF nH <= 600
+      nSize := 16
+   ELSEIF nH >= 768 .AND. nH < 800
+      nSize := 24
+   ELSEIF nH >= 800 .AND. nH < 960
+      nSize := 32
+   ELSEIF nH >= 960 .AND. nH < 1024
+      nSize := 48
+   ELSEIF nH >= 1024 .AND. nH < 1440
+      nSize := 64
+   ELSEIF nH >= 1440 .AND. nH < 1600
+      nSize := 72
+   ELSE
+      nSize := 96
+   ENDIF
+
+RETURN nSize

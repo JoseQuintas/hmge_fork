@@ -151,7 +151,7 @@ FUNCTION wMain_4()   // nMode == 4
                        // -> table4.prg
                        my_Standard4("form_Separate", 4, cTitle, ow:Cargo:aBClr, , , , , "EXT_ALS" , ow:Name)
                        DoEvents()
-                       _wPost(99)
+                       _wPost(99,ow)
                        Return Nil
                        } )
          :Event( 90, {|  | AEval({91,92,93}, {|n| _wSend(n) }) })
