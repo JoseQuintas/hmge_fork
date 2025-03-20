@@ -1,6 +1,6 @@
 /*
  * MiniGUI Grid to Text Demo
- * (c) 2009 Pierpaolo Martinello <pier.martinello[at]alice.it>
+ * (c) 2009 Pierpaolo Martinello <assistenza[at]pcmodula.it>
 */
 
 #include "minigui.ch"

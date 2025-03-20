@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
- */
+*/
 
 #include "minigui.ch"
 
@@ -69,13 +69,16 @@ PROCEDURE MakeShortCut( WshShell, LinkName, ;
    LOCAL FileShortcut
 
    FileShortcut := WshShell:CreateShortcut( LinkName )
-   FileShortcut:TargetPath := TargetPath
-   FileShortcut:Arguments := Arguments
-   FileShortcut:WindowStyle := 1
-   FileShortcut:IconLocation := IconLocation
-   FileShortcut:Description := Description
-   FileShortcut:WorkingDirectory := WorkingDirectory
-   FileShortcut:Save()
+
+   WITH OBJECT FileShortcut
+      :TargetPath := TargetPath
+      :Arguments := Arguments
+      :WindowStyle := 1
+      :IconLocation := IconLocation
+      :Description := Description
+      :WorkingDirectory := WorkingDirectory
+      :Save()
+   END WITH
 
    FileShortcut := NIL
 

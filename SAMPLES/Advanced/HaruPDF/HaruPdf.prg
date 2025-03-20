@@ -56,7 +56,7 @@
 *------------------------------------------------------------------------*
 //
 //                  Minigui Adaption by Pierpaolo Martinello
-//                          <pier.martinello[at]alice.it>
+//                          <assistenza[at]pcmodula.it>
 //
 
 ANNOUNCE RDDSYS

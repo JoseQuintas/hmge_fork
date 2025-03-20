@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2024, https://harbour.github.io/
+   Copyright 1999-2025, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -51,7 +51,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    SET PROCEDURE TO h_cdomail.prg
 #endif
 
-#ifdef _HMG_COMPAT_
+#if !defined( __XHARBOUR__ ) .AND. defined( _HMG_COMPAT_ )
 
 #include "hbmzip.ch"
 *------------------------------------------------------------------------------*
@@ -411,7 +411,7 @@ FUNCTION HMG_FileCopy( cSourceFile, cTargetFile, nBuffer, bEval )
    LOCAL lShowProgress := ( ValType( bEval ) == "B" )
    LOCAL lSuccess
 
-#if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
+#if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 ) .OR. ( __HARBOUR__ - 0 > 0x030200 )
 
    LOCAL hSourceFile, hTargetFile
    LOCAL cBuffer

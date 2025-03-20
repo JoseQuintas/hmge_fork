@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2024, https://harbour.github.io/
+   Copyright 1999-2025, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -60,6 +60,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #endif
 
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
+#xtranslate hb_StrShrink( <char>, <n> ) => Left( <char>, Len( <char> ) - <n> )
 #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
 #xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
 #xtranslate hb_URight( <c>, <n> ) => Right( <c>, <n> )

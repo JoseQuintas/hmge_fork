@@ -2,7 +2,7 @@
  * MINIGUI - Harbour Win32 GUI library Demo
  * 28/07/2019  Contributed by
  *             Grigory Filatov <gfilatov@inbox.ru>
- *             Pierpaolo Martinello <pier.martinello[at]alice.it>
+ *             Pierpaolo Martinello <assistenza[at]pcmodula.it>
  */
 
 #include "MiniGUI.ch"

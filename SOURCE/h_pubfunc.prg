@@ -47,8 +47,11 @@
 
 #include "minigui.ch"
 
+#if !defined(__XHARBOUR__)
 // Include all Harbour code pages for extended character set support.
 #include "hbextcdp.ch"
+
+#endif
 
 // ============================================================================
 

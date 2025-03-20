@@ -3,7 +3,7 @@
  *
  * Copyright 2007-2018 Grigory Filatov <gfilatov@inbox.ru>
  *
- * Revised edition 2019 by Pierpaolo Martinello <pier.martinello[at]alice.it>
+ * Revised edition 2019 by Pierpaolo Martinello <assistenza[at]pcmodula.it>
  * Based upon a contribution of Petr Chornyj <myorg63/at/gmail.com>.
 */
 

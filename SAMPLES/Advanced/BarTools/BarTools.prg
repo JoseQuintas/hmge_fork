@@ -42,7 +42,7 @@
 /*
 File:		BarTools.prg
 Contributors:	"SerialComm" By Panagiotis Siampanis <panosavlida@yahoo.gr>
-                "BarTools" By Pierpaolo Martinello <pier.martinello[at]alice.it>
+                "BarTools" By Pierpaolo Martinello <assistenza[at]pcmodula.it>
 Description:	Barcode Reader with serial input for MiniGUI
 Status:		Public Domain
 */

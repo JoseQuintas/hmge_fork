@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------
  MINIGUI - Harbour Win32 GUI library source code
- ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 #include "TSBrowse.ch"
@@ -376,7 +376,7 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 
    LOCAL oBrw, aTmp, aBrush, aHead, aField, aFoot, aColor
    LOCAL cForm, hForm, lSpecHd, bInit, bEnd, lSuperHd, lZebra, aZebra
-   LOCAL i, j
+   LOCAL i, j, o
 
    DEFAULT oParam := oHmgData()
    DEFAULT oParam:cForm := oParam:cFormName
@@ -406,9 +406,25 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DEFAULT oParam:bChange    := oParam:bOnChange
    DEFAULT oParam:lNoPicture := .F.
 
-   IF HB_ISCHAR( uAlias ) .AND. ! "." $ uAlias
+   IF HB_ISOBJECT( uAlias ) .AND. "TODBC" $ uAlias:ClassName
+      oParam:oTODBC := uAlias
+      oParam:aHead  := {}
+      IF HB_ISARRAY( oParam:oTODBC:Fields ) .AND. Len( oParam:oTODBC:Fields ) > 0
+         FOR EACH o IN oParam:oTODBC:Fields
+            AAdd( oParam:aHead, o:FieldName )
+         NEXT
+      ELSE
+         AAdd( oParam:aHead, "Fields not found !" )
+      ENDIF
+      o := oParam:oTODBC
+      IF HB_ISARRAY( o:aRecordset ) .AND. Len( o:aRecordset ) > 0
+         uAlias := o:aRecordset
+      ELSE
+         uAlias := { Array( Len( oParam:aHead ) ) }
+      ENDIF
+   ELSEIF HB_ISCHAR( uAlias ) .AND. ! "." $ uAlias
       dbSelectArea( uAlias )
-   ELSEIF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ! HB_ISARRAY( uAlias[1] )
+   ELSEIF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ! HB_ISARRAY( uAlias[ 1 ] )
       j := uAlias
       uAlias := {}
       FOR EACH i IN j

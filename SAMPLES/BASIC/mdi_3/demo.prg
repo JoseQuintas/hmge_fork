@@ -8,7 +8,7 @@
  * (C)2005-2007 Janusz Pora <januszpora@onet.eu>
  * HMG 1.0 Experimental Build 32
  *
- * 2006/07/01 Revised by Pierpaolo Martinello <pier.martinello[at]alice.it>
+ * 2006/07/01 Revised by Pierpaolo Martinello <assistenza[at]pcmodula.it>
  * Added Maximize, Restore for Mdi Child Window
 */
 
@@ -68,7 +68,7 @@ DEFINE MAIN MENU
       ITEM 'HMG Version' ACTION MsgInfo(MiniGuiVersion())
       ITEM 'About' ACTION MsgInfo(padc("MiniGUI MDI Demo", Len(MiniguiVersion()))+CRLF+ ;
                "Contributed by Janusz Pora <januszpora@onet.eu>"+CRLF+ ;
-               "and Pierpaolo Martinello <pier.martinello[at]alice.it>"+CRLF+CRLF+ ;
+               "and Pierpaolo Martinello <assistenza[at]pcmodula.it>"+CRLF+CRLF+ ;
                MiniguiVersion(),"A COOL Feature ;)")
    END POPUP
 

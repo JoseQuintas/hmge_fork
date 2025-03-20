@@ -1,6 +1,6 @@
 /*
  * Harbour TGif Class v1.4
- * Copyright 2009-2024 Grigory Filatov <gfilatov@gmail.com>
+ * Copyright 2009-2025 Grigory Filatov <gfilatov@gmail.com>
  *
  * Revised by Ivanil Marcelino <ivanil/at/linkbr.com.br>
  * Last revision 30.10.2020

@@ -8,7 +8,7 @@
  *
  * Revised by Evangelos Tsakalidis <tsakal@otenet.gr>
  *
- * 20/10/2019 Revised by Pierpaolo Martinello <pier.martinello[at]alice.it>
+ * 20/10/2019 Revised by Pierpaolo Martinello <assistenza[at]pcmodula.it>
  */
 
 #define _NO_BTN_PICTURE_

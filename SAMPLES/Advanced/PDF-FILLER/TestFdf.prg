@@ -10,7 +10,7 @@
    Comments      :
 *******************************************************************************/
 /*
-Copyright 2007-2018 Pierpaolo Martinello <pier.martinello [at] alice.it>
+Copyright 2007-2018 Pierpaolo Martinello <assistenza[at]pcmodula.it>
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -33,7 +33,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    (c) 2002-2007 Roberto Lopez
    Mail: harbourminigui@gmail.com
 
-   (c) 2007-2018 Pierpaolo Martinello <pier.martinello [at] alice.it>
+   (c) 2007-2018 Pierpaolo Martinello <assistenza[at]pcmodula.it>
    .Prg donated to public domain
 */
 
