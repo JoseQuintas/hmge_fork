@@ -1,14 +1,19 @@
-#xcommand DEFINE LBLTEXTBOX <name> ROW <nRow> COL <nCol> [ WIDTH <nW> ] CAPTION <cCaption> ;
-      => ;
-      CreateTextboxWithLabel( <(name)>, <nRow>, <nCol>, <cCaption>, <nW> )
+#xcommand DEFINE LBLTEXTBOX <name> ;
+      [ OF <cParent> ] ;
+      ROW <nRow> COL <nCol> ;
+      [ WIDTH <nW> ] ;
+      CAPTION <cCaption> ;
+      [ VALUE <cValue> ] ;
+=> ;
+      CreateTextboxWithLabel( <(name)>, <(cParent)>, <nRow>, <nCol>, <cCaption>, <nW>, <cValue> )
 
-#xcommand END LBLTEXTBOX =>;
+#xcommand END LBLTEXTBOX =>
 
 #include "minigui.ch"
 
-FUNCTION Main
+FUNCTION Main()
 
-   LOCAL nWidth  := 400 + GetBorderWidth() - iif( IsSeven(), 2, 0 )
+   LOCAL nWidth := 400 + GetBorderWidth() - iif( IsSeven(), 2, 0 )
    LOCAL nHeight := 170 + GetTitleHeight() + GetBorderHeight() - iif( IsSeven(), 2, 0 )
 
    IF ! _IsControlDefined( "DlgFont", "Main" )
@@ -19,7 +24,7 @@ FUNCTION Main
    SET NAVIGATION EXTENDED
 
    DEFINE WINDOW MainForm ;
-      AT 0, 0 WIDTH nWidth HEIGHT nHeight ;
+      WIDTH nWidth HEIGHT nHeight ;
       TITLE "Labeled TextBox Demo" ;
       MODAL ;
       NOSIZE ;
@@ -29,44 +34,43 @@ FUNCTION Main
          ROW 10 ;
          COL 135 ;
          WIDTH 250 ;
-         CAPTION "Enter your name:"
+         CAPTION "Enter your name:" ;
+         VALUE "User Name"
       END LBLTEXTBOX
-        
+
       DEFINE LBLTEXTBOX Text_2 ;
          ROW 40 ;
          COL 135 ;
          WIDTH 250 ;
-         CAPTION "Enter your address:"
+         CAPTION "Enter your address:" ;
+         VALUE "User Address"
       END LBLTEXTBOX
-        
+
       DEFINE LBLTEXTBOX Text_3 ;
          ROW 70 ;
          COL 135 ;
          WIDTH 250 ;
-         CAPTION "Enter your city:"
+         CAPTION "Enter your city:" ;
+         VALUE "User City"
       END LBLTEXTBOX
-        
-      DEFINE TEXTBOX Text_4
-         ROW 100 
-         COL 135 
-         WIDTH 250 
+
+      DEFINE LBLTEXTBOX Text_4 ;
+         ROW 100 ;
+         COL 135 ;
+         WIDTH 250 ;
+         CAPTION "" ;
          VALUE "textbox without 'caption'"
-      END TEXTBOX
-        
+      END LBLTEXTBOX
+
       DEFINE BUTTON Button_1
-         ROW nHeight - GetTitleHeight() - GetBorderHeight() - iif(IsSeven(), 2, 0) - 35
-         COL nWidth  - GetBorderWidth() - iif(IsSeven(), 2, 0) - 80
+         ROW nHeight - GetTitleHeight() - GetBorderHeight() - iif( IsSeven(), 2, 0 ) - 35
+         COL nWidth - GetBorderWidth() - iif( IsSeven(), 2, 0 ) - 80
          WIDTH 70
          CAPTION "Close"
-         ACTION ThisWindow.Release
+         ACTION ThisWindow.RELEASE
       END BUTTON
 
    END WINDOW
-
-   MainForm.Text_1.Value := "User Name"
-   MainForm.Text_2.Value := "User Address"
-   MainForm.Text_3.Value := "User City"
-   MainForm.Text_1.SetFocus()
 
    MainForm.Center()
    MainForm.Activate()
@@ -74,18 +78,21 @@ FUNCTION Main
 RETURN NIL
 
 
-STATIC FUNCTION CreateTextboxWithLabel( textboxname, nR, nC, cCaption, nW )
+STATIC FUNCTION CreateTextboxWithLabel( textboxname, cParent, nR, nC, cCaption, nW, cValue )
 
-   LOCAL lbl :=  textboxname + "_Label"
    LOCAL hWnd := ThisWindow.Handle
    LOCAL hDC := GetDC( hWnd )
    LOCAL hDlgFont := GetFontHandle( "DlgFont" )
    LOCAL nLabelLen := GetTextWidth( hDC, cCaption, hDlgFont )
 
-   hb_default( @nW, 120 )
    ReleaseDC( hWnd, hDC )
 
-   DEFINE LABEL &( lbl )
+   hb_default( @cParent, This.Name )
+   hb_default( @nW, 120 )
+   hb_default( @cValue, "" )
+
+   DEFINE LABEL NUL
+      PARENT cParent
       ROW nR
       COL nC - nLabelLen - GetBorderWidth()
       VALUE cCaption
@@ -94,13 +101,15 @@ STATIC FUNCTION CreateTextboxWithLabel( textboxname, nR, nC, cCaption, nW )
       VCENTERALIGN .T.
    END LABEL
 
-   DEFINE TEXTBOX &( textboxname )
+   DEFINE TEXTBOX ( textboxname )
+      PARENT cParent
       ROW nR
-      Col nC
+      COL nC
       WIDTH nW
       HEIGHT 24
-      //ONGOTFOCUS SetProperty( ThisWindow.Name, textboxname, "FontColor", BLACK )
-      //ONLOSTFOCUS SetProperty( ThisWindow.Name, textboxname, "FontColor", GRAY )
+      VALUE cValue
+      ONGOTFOCUS SetProperty( ThisWindow.NAME, textboxname, "BackColor", YELLOW )
+      ONLOSTFOCUS SetProperty( ThisWindow.NAME, textboxname, "BackColor", WHITE )
    END TEXTBOX
 
 RETURN NIL

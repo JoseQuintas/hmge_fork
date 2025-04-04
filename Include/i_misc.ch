@@ -63,7 +63,7 @@
 #command INSERT BLANK            => dbInsert( RecNo() + 1 )
 
 // Registry functions for Harbour defines
-// Contributed by Luiz Rafael Culik<culik@sl.conex.net>
+// Contributed by Luiz Rafael Culik <culik@sl.conex.net>
 
 #define  HKEY_CLASSES_ROOT       2147483648       // 0x80000000
 #define  HKEY_CURRENT_USER       2147483649       // 0x80000001
@@ -80,12 +80,12 @@
 #define STANDARD_RIGHTS_WRITE   131072     // 0x00020000L
 #define STANDARD_RIGHTS_ALL     2031616    // 0x001F0000L
 
-// Registry Specific Access Rights.
+// Registry Specific Access Rights
 
-#define KEY_QUERY_VALUE         1    // 0x0001
-#define KEY_SET_VALUE           2    // 0x0002
-#define KEY_CREATE_SUB_KEY      4    // 0x0004
-#define KEY_ENUMERATE_SUB_KEYS  8    // 0x0008
+#define KEY_QUERY_VALUE          1   // 0x0001
+#define KEY_SET_VALUE            2   // 0x0002
+#define KEY_CREATE_SUB_KEY       4   // 0x0004
+#define KEY_ENUMERATE_SUB_KEYS   8   // 0x0008
 #define KEY_NOTIFY              16   // 0x0010
 #define KEY_CREATE_LINK         32   // 0x0020
 
@@ -93,17 +93,17 @@
 *** Not sure how to handle the &'s and ~'s
 ***
 
-#define KEY_READ        25 // ((STANDARD_RIGHTS_READ +  KEY_QUERY_VALUE + KEY_ENUMERATE_SUB_KEYS +  KEY_NOTIFY) & (~SYNCHRONIZE))
-#define KEY_WRITE        6 // ((STANDARD_RIGHTS_WRITE +  KEY_SET_VALUE +  KEY_CREATE_SUB_KEY) & (~SYNCHRONIZE))
-#define KEY_EXECUTE     25 // ((KEY_READ) & (~SYNCHRONIZE))
-#define KEY_ALL_ACCESS  63 // ((STANDARD_RIGHTS_ALL +  KEY_QUERY_VALUE +  KEY_SET_VALUE +  KEY_CREATE_SUB_KEY + KEY_ENUMERATE_SUB_KEYS +  KEY_NOTIFY +  KEY_CREATE_LINK) & (~SYNCHRONIZE))
+#define KEY_READ                25 // ((STANDARD_RIGHTS_READ +  KEY_QUERY_VALUE + KEY_ENUMERATE_SUB_KEYS +  KEY_NOTIFY) & (~SYNCHRONIZE))
+#define KEY_WRITE                6 // ((STANDARD_RIGHTS_WRITE +  KEY_SET_VALUE +  KEY_CREATE_SUB_KEY) & (~SYNCHRONIZE))
+#define KEY_EXECUTE             25 // ((KEY_READ) & (~SYNCHRONIZE))
+#define KEY_ALL_ACCESS          63 // ((STANDARD_RIGHTS_ALL +  KEY_QUERY_VALUE +  KEY_SET_VALUE +  KEY_CREATE_SUB_KEY + KEY_ENUMERATE_SUB_KEYS +  KEY_NOTIFY +  KEY_CREATE_LINK) & (~SYNCHRONIZE))
 
-// Predefined Value Types.
+// Predefined Value Types
 
-#define REG_SZ                          1       && Data string (unicode nul terminated)
-#define REG_EXPAND_SZ                   2       && Unicode string
-#define REG_BINARY                      3       && Binary data in any form.
-#define REG_DWORD                       4       && A 32-bit number.
+#define REG_SZ                   1   // Data string (unicode nul terminated)
+#define REG_EXPAND_              2   // Unicode string
+#define REG_BINARY v             3   // Binary data in any form.
+#define REG_DWORD                4   // A 32-bit number.
 
 // End Registry functions for Harbour defines
 

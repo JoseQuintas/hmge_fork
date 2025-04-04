@@ -317,6 +317,11 @@ FUNCTION hb_UnzipFile( cFileName, bUpdate, lWithPath, cPassword, cPath, acFiles,
    LOCAL cTime
    LOCAL cBuffer := Space( s_nReadBuffer )
 
+   IF hb_IsString( cPath ) .and. lower( cPath ) == "mem:"
+      cPath := lower( cPath )
+      lWithPath := .F.
+   ENDIF
+
    DEFAULT lWithPath TO .F.
 
    IF lWithPath .AND. !hb_DirExists( cPath )
@@ -343,7 +348,9 @@ FUNCTION hb_UnzipFile( cFileName, bUpdate, lWithPath, cPassword, cPath, acFiles,
          hb_FNameSplit( cFileName, @cPath )
       ENDIF
 
-      cPath := hb_DirSepAdd( cPath )
+      IF cPath != "mem:"
+         cPath := hb_DirSepAdd( cPath )
+      ENDIF
 
       nPos := 0
       nErr := hb_UnzipFileFirst( hUnzip )
@@ -361,9 +368,16 @@ FUNCTION hb_UnzipFile( cFileName, bUpdate, lWithPath, cPassword, cPath, acFiles,
                AScan( acFiles, nPos ) > 0 .OR. ;
                AScan( acFiles, {| cMask | hb_FileMatch( cExtName, cMask ) } ) > 0 )
 
-            IF lExtract .AND. ! Empty( cSubPath ) .AND. ! hb_DirExists( cPath + cSubPath ) .AND. ! hb_DirBuild( cPath + cSubPath )
-               lRetVal := .F.
-               EXIT
+            IF lExtract
+               IF cPath == "mem:"
+                  cSubPath := ""
+                  hb_vfErase( cPath + cSubPath + cExtName )
+               ELSE
+                  IF ! Empty( cSubPath ) .AND. ! hb_DirExists( cPath + cSubPath ) .AND. ! hb_DirBuild( cPath + cSubPath )
+                     lRetVal := .F.
+                     EXIT
+                  ENDIF
+               ENDIF
             ENDIF
 
             IF lExtract
@@ -372,23 +386,26 @@ FUNCTION hb_UnzipFile( cFileName, bUpdate, lWithPath, cPassword, cPath, acFiles,
                   EXIT
                ENDIF
                cExtName := cPath + cSubPath + cExtName
-               IF ( hHandle := FCreate( cExtName ) ) != F_ERROR
+               cExtName := StrTran(cExtName, "\", hb_ps())
+               cExtName := StrTran(cExtName, "/", hb_ps())
+               hHandle := hb_vfOpen( cExtName,  hb_BitOr( FO_WRITE, HB_FO_CREAT, HB_FO_EXCL ) )
+               IF !Empty( hHandle )
                   nRead := 0
                   DO WHILE ( nLen := hb_unZipFileRead( hUnzip, @cBuffer, hb_BLen( cBuffer ) ) ) > 0
                      IF hb_IsEvalItem( bProgress )
                         nRead += nLen
-                        Eval( bProgress, nRead, nSize )
+                        Eval( bProgress, nRead, nSize, cExtName )
                      ENDIF
-                     FWrite( hHandle, cBuffer, nLen )
+                     hb_vfWrite( hHandle, cBuffer, nLen )
                   ENDDO
 
                   hb_UnzipFileClose( hUnzip )
-                  FClose( hHandle )
+                  hb_vfClose( hHandle )
 
-                  hb_FSetDateTime( cExtName, dDate, cTime )
+                  hb_vfTimeSet( cExtName, dDate, cTime )
 
                   IF hb_IsEvalItem( bUpdate )
-                     Eval( bUpdate, cZipName, nPos )
+                     Eval( bUpdate, cZipName, nPos, cExtName )
                   ENDIF
                ENDIF
             ENDIF

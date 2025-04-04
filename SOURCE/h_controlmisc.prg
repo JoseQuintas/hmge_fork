@@ -6487,14 +6487,14 @@ STATIC FUNCTION SetFirstDayOfWeek ( cControlName, cFormName, Value )
 
    Assign cDay := Value
 
-   cDay := Upper ( AllTrim ( cDay ) )
+   cDay := Upper( AllTrim( cDay ) )
 
    FOR i := 1 TO 7
-      aWeek [i] := { i - 1, Upper( iif( i == 7, NToCDoW( 1 ), NToCDoW( i + 1 ) ) ) }
+      aWeek [i] := { i - 1, Upper( NToCDoW( iif( i == 7, 1, i + 1 ) ) ) }
    NEXT
 
    IF ( nPos := AScan( aWeek, {| x | x [2] == cDay } ) ) == 0
-      RETURN ( -1 )
+      RETURN( -1 )
    ENDIF
 
 RETURN SetMonthCalFirstDayOfWeek ( GetControlHandle ( cControlName, cFormName ), aWeek [nPos] [1] )
@@ -6508,7 +6508,7 @@ STATIC FUNCTION GetFirstDayOfWeek ( cControlName, cFormName )
    LOCAL i
 
    FOR i := 1 TO 7
-      aWeek [i] := { i - 1, iif( i == 7, NToCDoW( 1 ), NToCDoW( i + 1 ) ) }
+      aWeek [i] := { i - 1, NToCDoW( iif( i == 7, 1, i + 1 ) ) }
    NEXT
 
    IF ( nPos := AScan( aWeek, {| x | x [1] == nDay } ) ) == 0

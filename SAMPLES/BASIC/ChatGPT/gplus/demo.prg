@@ -16,8 +16,9 @@ Function Main()
       DEFINE IMAGE graph
          ROW 10
          COL 30
-         WIDTH 680
+         WIDTH 625
          HEIGHT 600
+         STRETCH .T.
       END IMAGE
 
       // Create the graph object
@@ -32,8 +33,8 @@ Function Main()
          :cXTitle := "Quarters" // X-axis Title
          :cYTitle := "Sales (in Thousands)" // Y-axis Title
          :nGraphType := GT_COLUMNS // Columns graph
-         :nHeight := 600
-         :nWidth := 680
+         :nImageHeight := Win_1.graph.Height
+         :nImageWidth := Win_1.graph.Width
          :lShowLegends := .T. // Show legends
       END OBJECT
 

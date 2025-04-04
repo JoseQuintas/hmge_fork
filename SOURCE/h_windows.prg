@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2024, https://harbour.github.io/
+   Copyright 1999-2025, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -185,6 +185,10 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
          ENDIF
       ENDIF
 
+   ELSEIF MSC_VER() > 0 .OR. _HMG_IsBcc77
+      IF !( nocaption .AND. nosize )
+         w += 2 * GetBorderWidth()
+      ENDIF
    ENDIF
 
    mVar := '_' + FormName
@@ -635,7 +639,7 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
    ClassName := "HMG_FORM_" + FormName
    UnRegisterWindow ( ClassName )
 
-   BrushHandle := RegisterWindow( icon, ClassName, aRGB )
+   BrushHandle := RegisterWindow ( icon, ClassName, aRGB )
    Formhandle := InitModalWindow ( Caption, x, y, w, h, Parent, nosize, nosysmenu, nocaption, ClassName, vscroll, hscroll, helpbutton )
 
    IF Empty ( _HMG_InteractiveClose ) .AND. !nosysmenu .AND. !nocaption

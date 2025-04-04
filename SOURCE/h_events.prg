@@ -1007,7 +1007,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
                         FOR z := 1 TO Len ( _HMG_aControlhandles [x] )
                            IF _HMG_aControlMiscData1 [x] == .F.
-                              MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos , _HMG_aControlRow [x] - NewPos + ( (z - 1 ) * _HMG_aControlSpacing[x] ), _HMG_aControlWidth [x] , _HMG_aControlHeight [x] / Len ( _HMG_aControlhandles [x] ) , .T. )
+                              MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos , _HMG_aControlRow [x] - NewPos + ( z - 1 ) * _HMG_aControlSpacing[x], _HMG_aControlWidth [x] , _HMG_aControlHeight [x] / Len ( _HMG_aControlhandles [x] ) , .T. )
                            ELSE  // horizontal
                               MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos + ( z - 1 ) * ( _HMG_aControlWidth [x] + _HMG_aControlSpacing[x] ), _HMG_aControlRow [x] - NewPos , _HMG_aControlWidth [x] , _HMG_aControlHeight [x] , .T. )
                            ENDIF
@@ -1291,7 +1291,7 @@ FUNCTION Events ( hWnd, nMsg, wParam, lParam )
 
                         FOR z := 1 TO Len ( _HMG_aControlhandles [x] )
                            IF _HMG_aControlMiscData1 [x] == .F.
-                              MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos , _HMG_aControlRow [x] - NewVPos + ( (z - 1 ) * _HMG_aControlSpacing[x] ), ;
+                              MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos , _HMG_aControlRow [x] - NewVPos + ( z - 1 ) * _HMG_aControlSpacing[x], ;
                                  _HMG_aControlWidth [x] , _HMG_aControlHeight [x] / Len ( _HMG_aControlhandles [x] ) , .T. )
                            ELSE  // horizontal
                               MoveWindow ( _HMG_aControlhandles [x] [z] , _HMG_aControlCol [x] - NewHPos + ( z - 1 ) * ( _HMG_aControlWidth [x] + _HMG_aControlSpacing[x] ) , _HMG_aControlRow [x] - NewVPos , ;

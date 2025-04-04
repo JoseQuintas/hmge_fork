@@ -366,11 +366,7 @@
    => ;
    DoMethod ( <(name)> , 'Release' )
 
-#command RELEASE WINDOW ALL ;
-   => ;
-   ReleaseAllWindows ()
-
-#command RELEASE WINDOW MAIN ;
+#command RELEASE WINDOW <scope: ALL, MAIN> ;
    => ;
    ReleaseAllWindows ()
 
@@ -379,7 +375,7 @@
    ReleaseAllWindows ()
 
 #ifndef __CONSOLE__
-#command QUIT ;
+#command QUIT [ EVENTS ] ;
    => ;
    ReleaseAllWindows ()
 #endif

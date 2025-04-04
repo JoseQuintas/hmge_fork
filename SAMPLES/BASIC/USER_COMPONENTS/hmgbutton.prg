@@ -54,17 +54,22 @@ PROCEDURE _DefineMixedButton ( ControlName, ParentForm, x, y, caption, ;
    IF ValType ( alignment ) = 'U'
       alignment := BUTTON_IMAGELIST_ALIGN_TOP
    ELSEIF ValType ( alignment ) = 'C'
-      IF AllTrim( HMG_UPPER( alignment ) ) == 'LEFT'
+      SWITCH AllTrim( HMG_UPPER( alignment ) )
+      CASE 'LEFT'
          alignment := BUTTON_IMAGELIST_ALIGN_LEFT
-      ELSEIF AllTrim( HMG_UPPER( alignment ) ) == 'RIGHT'
+         EXIT
+      CASE 'RIGHT'
          alignment := BUTTON_IMAGELIST_ALIGN_RIGHT
-      ELSEIF AllTrim( HMG_UPPER( alignment ) ) == 'TOP'
+         EXIT
+      CASE 'TOP'
          alignment := BUTTON_IMAGELIST_ALIGN_TOP
-      ELSEIF AllTrim( HMG_UPPER( alignment ) ) == 'BOTTOM'
+         EXIT
+      CASE 'BOTTOM'
          alignment := BUTTON_IMAGELIST_ALIGN_BOTTOM
-      ELSE
+         EXIT
+      DEFAULT
          alignment := BUTTON_IMAGELIST_ALIGN_TOP
-      ENDIF
+      ENDSWITCH
    ELSE
       alignment := BUTTON_IMAGELIST_ALIGN_TOP
    ENDIF

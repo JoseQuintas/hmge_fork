@@ -50,7 +50,7 @@ FUNCTION Main()
 
    CENTER WINDOW Form_Main
 
-   Form_Main.ROW := ( Form_Main.Row ) - 245
+   Form_Main.Row := ( Form_Main.Row ) - 245
 
    ACTIVATE WINDOW Form_Main
 
@@ -83,24 +83,25 @@ FUNCTION CircleProgressAnimation()
       c + Form_Main.Label_1.WIDTH + 2 ;
       PENCOLOR { 100, 100, 100 }
 
-   DEFINE TIMER Timer_1 PARENT Form_Main INTERVAL 30 ACTION OnTimer()
+   DEFINE TIMER Timer_1 PARENT Form_Main INTERVAL 30 ACTION OnTimer( This.Index, This.Cargo )
+   Form_Main.Timer_1.Cargo := "PW_1"
 
 RETURN NIL
 
 *--------------------------------------------------------*
-PROCEDURE OnTimer
+PROCEDURE OnTimer( i, ControlName )
 *--------------------------------------------------------*
    LOCAL Max := 100
    LOCAL ColorRemain, ColorDoneMax
-   LOCAL ControlName := "PW_1", FormName := "Form_Main"
+   LOCAL FormName := GetParentFormName( i )
    STATIC Position := 0
 
-   Position += 5
+   Position += 4
    IF Position <= Max
       PW_SetPosition( ControlName, FormName, Position )
    ELSE
-      ColorRemain := Form_Main.&(ControlName).ColorRemain
-      ColorDoneMax := Form_Main.&(ControlName).ColorDoneMax
+      ColorRemain := GetProperty( FormName, ControlName, "ColorRemain" )
+      ColorDoneMax := GetProperty( FormName, ControlName, "ColorDoneMax" )
       PW_SetColorRemain( ControlName, FormName, ColorDoneMax, .F. )
       PW_SetColorDoneMax( ControlName, FormName, ColorRemain, .F. )
       Position := 0

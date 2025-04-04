@@ -108,14 +108,18 @@ RETURN NIL
 PROCEDURE _ReleaseRating ( cWindow, cControl )
 *-----------------------------------------------------------------------------*
    LOCAL i, img_name
+   LOCAL nCount
 
    IF _IsControlDefined ( cControl, cWindow )
 
-      FOR i := 1 TO GetControlId ( cControl, cWindow )
+      nCount := GetControlId ( cControl, cWindow )
+
+      FOR i := 1 TO nCount
          img_name := cWindow + "_" + cControl + "_" + hb_ntos( i )
          DoMethod( cWindow, img_name, 'Release' )
       NEXT
 
+      _ReleaseControl ( cControl, cWindow )
       EraseWindow( cWindow )
 
    ENDIF
@@ -250,3 +254,33 @@ FUNCTION RefreshRating( ParentForm, ControlName )
    LOCAL onchangeprocedure := _GetControlAction( ControlName, ParentForm, 'ONCHANGE' )
 
 RETURN OnLeaveRate( ParentForm, ControlName, onchangeprocedure )
+
+
+PROCEDURE ToggleRatingReadOnly( cWindow, cControl, lReadOnly )
+
+   LOCAL i, img_name
+   LOCAL k := GetControlIndex( cControl, cWindow )
+   LOCAL nCount := GetControlId( cControl, cWindow )
+
+   IF lReadOnly
+      // Disable interactions
+      FOR i := 1 TO nCount
+         img_name := cWindow + "_" + cControl + "_" + hb_ntos( i )
+         IF ! ISARRAY( _HMG_aControlSpacing [k] )
+            _HMG_aControlSpacing [k] := { GetProperty( cWindow, img_name, 'ONGOTFOCUS' ), GetProperty( cWindow, img_name, 'ONLOSTFOCUS' ) }
+         ENDIF
+         SetProperty( cWindow, img_name, 'ONGOTFOCUS', {|| NIL } )
+         SetProperty( cWindow, img_name, 'ONLOSTFOCUS', {|| NIL } )
+      NEXT
+   ELSE
+      // Restore interactions
+      FOR i := 1 TO nCount
+         img_name := cWindow + "_" + cControl + "_" + hb_ntos( i )
+         IF ISARRAY( _HMG_aControlSpacing [k] )
+            SetProperty( cWindow, img_name, 'ONGOTFOCUS', _HMG_aControlSpacing [k][1] )
+            SetProperty( cWindow, img_name, 'ONLOSTFOCUS', _HMG_aControlSpacing [k][2] )
+         ENDIF
+      NEXT
+   ENDIF
+
+RETURN

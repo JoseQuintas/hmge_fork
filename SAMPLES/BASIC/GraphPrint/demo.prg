@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
- * Data provided by gs.statcounter.com for October 2024
+ * Data provided by gs.statcounter.com for February 2025
 */
 
 #include "hmg.ch"
@@ -21,13 +21,13 @@ FUNCTION Main
 
    // set the series data
    aSeries := { ;
-      60.97, ;
-      35.55, ;
-      2.62, ;
-      0.31, ;
-      0.28, ;
-      0.19, ;
-      0.08  ;
+      58.7, ;
+      38.13, ;
+      2.3, ;
+      0.3, ;
+      0.29, ;
+      0.22, ;
+      0.06  ;
       }
 
    // set the series names
@@ -76,8 +76,8 @@ FUNCTION Main
 
    DEFINE IMAGE chart
       ROW 10
-      COL 140
-      WIDTH 540
+      COL 130
+      WIDTH 550
       HEIGHT 600
       STRETCH .T.
    END IMAGE
@@ -114,8 +114,8 @@ FUNCTION showpie
    ENDIF
 
    WITH OBJECT oObj
-      :Width := m.chart.Width
-      :Height := m.chart.Height
+      :nImageWidth := m.chart.Width
+      :nImageHeight := m.chart.Height
       :GraphData := aSeries
       :Legends := aSerieNames
       :GraphColors := aColors

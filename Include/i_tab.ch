@@ -112,15 +112,7 @@
 	=>;
 	_BeginTab( <(name)> , <(parent)> , 0 , 0 , 0 , 0 , <value> , <f> , <s> , <tooltip> , <{change}> , <.buttons.> , <.flat.> , <.hottrack.> , <.vertical.>, <.bottom.> , <.notabstop.> , <.bold.>, <.italic.>, <.underline.>, <.strikeout.>, <.multiline.>, {,,}, <nId> , <bInit> , <.NoTrans.> )
 
-#command PAGE <caption> [ IMAGE <image> ] [ TOOLTIP <tooltip> ] ;
-	=>;
-	_BeginTabPage ( <caption> , <image> , <tooltip> ) 
-
-#command DEFINE PAGE <caption> [ IMAGE <image> ] [ TOOLTIP <tooltip> ] ;
-	=>;
-	_BeginTabPage ( <caption> , <image> , <tooltip> ) 
-
-#command DEFINE TAB PAGE <caption> [ IMAGE <image> ] [ TOOLTIP <tooltip> ] ;
+#command [ DEFINE ] [ TAB ] PAGE <caption> [ IMAGE <image> ] [ TOOLTIP <tooltip> ] ;
 	=>;
 	_BeginTabPage ( <caption> , <image> , <tooltip> ) 
 

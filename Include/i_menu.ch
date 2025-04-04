@@ -106,23 +106,23 @@ _NewMenuStyle ()
 
 #xcommand SET MENUTHEME DEFAULT [ OF <parent> ] ;
 => ;
-HMG_SetMenuTheme( MNUCLR_THEME_DEFAULT , <(parent)> )
+HMG_SetMenuTheme( MNUCLR_THEME_DEFAULT, <(parent)> )
 
 #xcommand SET MENUTHEME XP [ OF <parent> ] ;
 => ;
-HMG_SetMenuTheme( MNUCLR_THEME_XP , <(parent)> )
+HMG_SetMenuTheme( MNUCLR_THEME_XP, <(parent)> )
 
 #xcommand SET MENUTHEME 2000 [ OF <parent> ] ;
 => ;
-HMG_SetMenuTheme( MNUCLR_THEME_2000 , <(parent)> )
+HMG_SetMenuTheme( MNUCLR_THEME_2000, <(parent)> )
 
 #xcommand SET MENUTHEME DARK [ OF <parent> ] ;
 => ;
-HMG_SetMenuTheme( MNUCLR_THEME_DARK , <(parent)> )
+HMG_SetMenuTheme( MNUCLR_THEME_DARK, <(parent)> )
 
 #xcommand SET MENUTHEME USER <aUser> [ OF <parent> ] ;
 => ;
-HMG_SetMenuTheme( MNUCLR_THEME_USER_DEFINED , <(parent)> , <aUser> )
+HMG_SetMenuTheme( MNUCLR_THEME_USER_DEFINED, <(parent)>, <aUser> )
 
 #xcommand SET MENUCURSOR FULL ;
 => ;
@@ -271,7 +271,7 @@ _DefineMenuItem ( <caption> , <{action}> , <(name)> , , <.checked.> , <.disabled
 
 #xcommand SEPARATOR ;
 => ;
-_DefineSeparator ()
+_DefineSeparator()
 
 #xcommand END POPUP ;
 => ;
@@ -288,6 +288,7 @@ _DefineDropDownMenu( <(button)> , <(parent)> )
 #xcommand DEFINE DROPDOWNMENU OWNERBUTTON <button> [ PARENT <parent> ] ;
 => ;
 _DefineDropDownMenu( <(button)> , <(parent)> )
+
 
 #command ENABLE MENUITEM <control> OF <form>;
 => ;

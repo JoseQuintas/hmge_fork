@@ -758,7 +758,9 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       ENDIF
 
       :ResetVScroll( .T. )
-      :oHScroll:SetRange( 0, 0 )
+      IF !Empty( :oHScroll )
+         :oHScroll:SetRange( 0, 0 )
+      ENDIF
 
    END TBROWSE
 

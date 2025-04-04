@@ -144,11 +144,7 @@ _DefineTree ( <(name)> , <(parent)> , <row> , <col> , <width> , <height> , <{cha
 _DefineTree ( <(name)> , <(parent)> , 0 , 0 , 0 , 0 , <{change}> , <tooltip> , <fontname> , <fontsize> , <{gotfocus}> , <{lostfocus}> , <{dblclick}> , .f. , <value>  , <helpid>, <aImgNode>, <aImgItem>, <.noBut.> ,<.bold.>, <.italic.>, <.underline.>, <.strikeout.>, <.itemids.>, <backcolor>, <fontcolor>, <linecolor>, <indent>, <itemheight>, <nId>, <bInit>, <.notrans.> )
 
 
-#xcommand NODE <text> [ IMAGES <aImage> ] [ ID <id> ] [ CARGO <Cargo> ] ;
-=> ;
-_DefineTreeNode ( <text> , <aImage> , <id> , <Cargo> )
-
-#xcommand DEFINE NODE <text> [ IMAGES <aImage> ] [ ID <id> ] [ CARGO <Cargo> ] ;
+#xcommand [ DEFINE ] NODE <text> [ IMAGES <aImage> ] [ ID <id> ] [ CARGO <Cargo> ] ;
 => ;
 _DefineTreeNode ( <text> , <aImage> , <id> , <Cargo> )
 

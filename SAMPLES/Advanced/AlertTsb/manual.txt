@@ -57,7 +57,8 @@ The function returns an array aRet containing details about the user's interacti
 1. Button index clicked.
 2. Button name.
 3. Table content (if applicable).
-4. Key or event data.
+4. Row number in table.
+5. Key or event data.
 
 ---
 

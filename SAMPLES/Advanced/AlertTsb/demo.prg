@@ -12,7 +12,7 @@
 #include "tsbrowse.ch"
 
 #define PROGRAM  "MG Test AlertTsb()"
-#define PROGVER  "Version 0.61 (24.11.2024)"
+#define PROGVER  "Version 0.63 (16.03.2025)"
 #define PROGINF  "Viewing arrays in a window using _TBrowse()"
 
 FUNCTION Main()
@@ -224,7 +224,9 @@ FUNCTION Test3()
          ENDIF
       NEXT
       MsgDebug( "Return AlertTSB()=","Number of the pressed button=",aRet[1],;
-                "Name button=", aRet[2], "Corrected array=", aRet[3], REPL("~",60) ,;
+                "Name button=", aRet[2], "Corrected array=", aRet[3] ,;
+                "Cursor on a row in a table = ",  aRet[4]            ,;
+                "Button event = " + HB_NtoS(aRet[5]) ,  REPL("~",60) ,;
                 "Checkbox equals .T.", aChk )
    ELSE
       MsgDebug("Return AlertTSB()=",aRet)
@@ -386,7 +388,10 @@ FUNCTION Test4()
    IF LEN(aRet) > 0
       cMsg := "Return AlertTSB()=;"
       cMsg += "Number of the pressed button = " + HB_NtoS(aRet[1]) + ";"
-      cMsg += "Name button = " + aRet[2] + ";;"
+      cMsg += "Name button = " + aRet[2] + ";"
+      cMsg += "Table array = ob:aArray[" + HB_NtoS(LEN(aRet[3])) + "];"
+      cMsg += "Cursor on a row in a table = " + HB_NtoS(aRet[4]) + ";"
+      cMsg += "Button event = " + HB_NtoS(aRet[5]) + ";;"
 
       // запишем в ини-файл
       aDim := aRet[3]
@@ -478,14 +483,20 @@ FUNCTION Test5()
             aDim2 := HB_ATokens(cStr,cSprt,.F.,.F.)
             aVal  := {}
             FOR nJ := 1 TO LEN(aDim2)
+if val(aDim2[5]) == 1
                AADD( aVal, aDim2[nJ] )
+endif
             NEXT
+      If Len(aVal) > 0
             AADD( aArray , aVal )
+      EndIf
          ENDIF
       NEXT
 
       If Len(aArray) == 0
          aArray := { { "Error! ", "Could not create array for import !" } }
+else
+aSort(aArray, NIL, NIL, {| x, y | val(x[ 9 ]) > val(y[ 9 ]) })
       EndIf
 
       oTsb := oHmgData()

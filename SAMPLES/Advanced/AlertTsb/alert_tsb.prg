@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library Demo
  *
- * Copyright 2024 Verchenko Andrey <verchenkoag@gmail.com> Dmitrov, Moscow region
+ * Copyright 2024-2025 Verchenko Andrey <verchenkoag@gmail.com> Dmitrov, Moscow region
  *
  * Просмотр массивов в окне через _TBrowse()
  * Viewing arrays in a window using _TBrowse()
@@ -9,7 +9,7 @@
 #define  _HMG_OUTLOG
 #include "minigui.ch"
 #include "tsbrowse.ch"
-#define PROGVER  "Version 0.61 (24.11.2024)"
+#define PROGVER  "Version 0.63 (16.03.2025)"
 /////////////////////////////////////////////////////////////////////////////////////////
 FUNCTION AlertTsb(cType,nIcoSize,aXDim,cTitle,aButton,oWin,o1Brw,bInitForm)
    LOCAL nFontSize, nY, nX, nW, nH, nG, cForm, cIcon, nWTsb, nHTsb, aRet, cMsg
@@ -342,8 +342,9 @@ FUNCTION AlertTsb(cType,nIcoSize,aXDim,cTitle,aButton,oWin,o1Brw,bInitForm)
                                     Return Nil
                                     })
 
-      (This.Object):Event(80, {|ow,ky,cn,ob| ob := ow:Cargo:oBrw,;
-                                             aRet := {This.&(cn).Cargo:nBtn, This.&(cn).Cargo:cCapt, ob:aArray, ky} ,;
+      (This.Object):Event(80, {|ow,ky,cn,ob,nAt| ob  := ow:Cargo:oBrw ,;
+                                             nAt := ow:Cargo:oBrw:nAt ,;  // номер строки в ТСБ
+                                             aRet := {This.&(cn).Cargo:nBtn, This.&(cn).Cargo:cCapt, ob:aArray, nAt, ky} ,;
                                              ow:Release() } )
 
       (This.Object):Event(90, {|ow| // ON RELEASE

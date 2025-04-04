@@ -65,21 +65,21 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  */
 FUNCTION GetColor( aInitColor, aCustomColors, nFlags )
 
-   LOCAL aRetVal [3]
+   LOCAL aRetVal[3]
    LOCAL nColor, nInitColor, i
 
    // Initialize the starting color
    IF IsArrayRGB ( aInitColor )
-      nInitColor := RGB ( aInitColor [1], aInitColor [2], aInitColor [3] )
+      nInitColor := RGB ( aInitColor[1], aInitColor[2], aInitColor[3] )
    ENDIF
 
    // Initialize the custom colors array
    IF ISARRAY ( aCustomColors )
       ASize ( aCustomColors, 16 )  // Ensure the array has 16 elements
-      FOR i = 1 TO 16
-          IF IsArrayRGB ( aCustomColors [i] )
+      FOR i := 1 TO 16
+          IF IsArrayRGB ( aCustomColors[i] )
              aCustomColors [i] := RGB ( aCustomColors[i][1], aCustomColors[i][2], aCustomColors[i][3] )
-          ELSEIF ! ISNUMERIC ( aCustomColors [i] )
+          ELSEIF ! ISNUMERIC ( aCustomColors[i] )
              aCustomColors [i] := GetSysColor ( COLOR_BTNFACE )  // Default to system button face color
           ENDIF
       NEXT
@@ -184,7 +184,7 @@ FUNCTION GetFile( acFilter, cTitle, cInitDir, lMultiSelect, lNoChangeDirectory, 
 
    // Construct filter string from the array
    IF ISARRAY( acFilter )
-      AEval( acFilter, { | x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
+      AEval( acFilter, {| x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
       cFilter += Chr( 0 )
    ENDIF
 
@@ -245,7 +245,7 @@ FUNCTION Putfile( acFilter, cTitle, cInitDir, lNoChangeCurDir, cDefName, nFilter
 
    // Construct filter string from the array
    IF ISARRAY( acFilter )
-      AEval( acFilter, { | x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
+      AEval( acFilter, {| x | cFilter += x[1] + Chr( 0 ) + x[2] + Chr( 0 ) } )
       cFilter += Chr( 0 )
    ENDIF
 

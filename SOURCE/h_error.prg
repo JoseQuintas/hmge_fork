@@ -65,6 +65,8 @@ INIT PROCEDURE ClipInit()
 
    ENDIF
 
+   __TRACEPRGCALLS( .T. )
+   HB_TRACESTATE( .T. )
    Init()
 
 RETURN
@@ -111,7 +113,7 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 25.03 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 25.04 ("
 
 *-----------------------------------------------------------------------------*
 FUNCTION MiniGuiVersion( nVer )

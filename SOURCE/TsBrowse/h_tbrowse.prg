@@ -10228,7 +10228,7 @@ RETURN Self
 * METHOD TSBrowse:AddItem() Version 7.0 Oct/10/2007
 * ============================================================================
 
-METHOD AddItem( cItem ) CLASS TSBrowse // delete in V90
+METHOD AddItem( cItem ) CLASS TSBrowse
 
    LOCAL nMin, nMax, nPage
 
@@ -11029,7 +11029,6 @@ METHOD PageUp( nLines ) CLASS TSBrowse
    IF ::lPageMode .AND. ::nRowPos > 1
 
       ::DrawLine()
-      // nSkipped := ::Skip( -( ::nRowPos - 1 ) )    //V90 active
       ::nRowPos := 1
       ::Refresh( .F. ,, .F. )
 
@@ -11139,7 +11138,7 @@ METHOD Paint() CLASS TSBrowse
    LOCAL lAppendMode, nRecNo, uTag, oCol, ;
       nColPos := ::nColPos, ;
       nI := 1, ;
-      nLines := Min( ( ::nLen + iif( ::lAppendMode .AND. ! ::lIsArr, 1, 0 ) ), ::nRowCount() ), ;
+      nLines, ;
       nSkipped := 1
 
    DEFAULT ::lPostEdit := .F., ;
@@ -11155,7 +11154,6 @@ METHOD Paint() CLASS TSBrowse
    IF ::lEditing .AND. ! ::lPostEdit .AND. ::nLen > 0
       RETURN 0
    ELSEIF ::lEditing .OR. ::lNoPaint
-
       IF ::lDrawHeaders
          ::DrawHeaders()
       ENDIF
@@ -11204,7 +11202,7 @@ METHOD Paint() CLASS TSBrowse
          ENDIF
       ENDIF
 
-      nLines := Min( ( ::nLen + iif( ::lAppendMode .AND. ! ::lIsArr, 1, 0 ) ), ::nRowCount() )
+      nLines := Min( ::nLen + iif( ::lAppendMode .AND. ! ::lIsArr, 1, 0 ), ::nRowCount() )
 
       IF ::nLen <= nLines .AND. ::nAt > ::nRowPos
          ::nRowPos := ::nAt
@@ -11260,6 +11258,8 @@ METHOD Paint() CLASS TSBrowse
 
    ::nLastPainted := 0
 
+   nLines := Min( ::nLen + iif( ::lAppendMode .AND. ! ::lIsArr, 1, 0 ), ::nRowCount() )
+
    WHILE nI <= nLines .AND. nSkipped == 1
 
       IF ::nRowPos == nI
@@ -11275,7 +11275,9 @@ METHOD Paint() CLASS TSBrowse
          nI++
       ENDIF
    ENDDO
+
    ::nLenPos := nI // JP 1.31
+
    IF ::lIsArr
       ::lAppendMode := lAppendMode
    ENDIF

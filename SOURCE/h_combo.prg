@@ -161,7 +161,7 @@ FUNCTION _DefineCombo ( ControlName, ParentFormName, x, y, w, rows, value, ;
          Style += WS_VISIBLE
       ENDIF
 
-      IF SORT
+      IF sort
          Style += CBS_SORT
       ENDIF
 

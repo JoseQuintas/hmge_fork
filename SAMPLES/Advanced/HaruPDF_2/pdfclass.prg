@@ -1,7 +1,7 @@
 /*
  * PDFCLASS - PRINT CLASS
  * Author: José Quintas
- * Update: 2 Feb 2019
+ * Update: 12 Jun 2024
  */
 
 // Calculate page: cm * 0.03937 * 72
@@ -18,6 +18,7 @@
 
 #include "hbclass.ch"
 #include "harupdf.ch"
+#include "hbzebra.ch"
 
 #define PDFCLASS_DRAWMODE_ROWCOL     1
 #define PDFCLASS_DRAWMODE_CENTIMETER 2
@@ -66,10 +67,10 @@ CREATE CLASS PDFClass
    METHOD DrawLine( nTop, nLeft, nBottom, nRight, nPenSize )
    METHOD DrawBox( nTop, nLeft, nBottom, nRight, nPenSize, nFillType, anRGB )
    METHOD DrawBoxSize( nTop, nLeft, nHeight, nWidth, nPenSize, nFillType, anRGB )
-   METHOD DrawImageBox( nTop, nLeft, nBottom, nRight, cJPEGFile )
-   METHOD DrawImageSize( nRow, nCol, nHeight, nWidth, cJPEGFile )
-   METHOD DrawMemImageBox( nTop, nLeft, nBottom, nRight, cJPEGMem )
-   METHOD DrawMemImageSize( nRow, nCol, nHeight, nWidth, cJPEGMem )
+   METHOD DrawImageBox( nTop, nLeft, nBottom, nRight, cJPEGFile, lPNG )
+   METHOD DrawImageSize( nRow, nCol, nHeight, nWidth, cJPEGFile, lPNG )
+   METHOD DrawMemImageBox( nTop, nLeft, nBottom, nRight, cJPEGMem, lPNG )
+   METHOD DrawMemImageSize( nRow, nCol, nHeight, nWidth, cJPEGMem, lPNG )
    METHOD Cancel()
    METHOD LstToPdf( cInputFile )
    METHOD SetType( nPrinterType )
@@ -83,6 +84,8 @@ CREATE CLASS PDFClass
    METHOD PDFRun( cFileName ) INLINE _Execute( 0, , cFileName, , , 5 )
    METHOD Preview( cFileName ) INLINE _Execute( 0, , cFileName, , , 5 )
    METHOD TempFile( cExtension ) INLINE "report." + cExtension
+   METHOD DrawI25BarCode( nRow, nCol, nHeight, cCode, nOneBarWidth )
+   METHOD DrawBarcodeQRCode( nRow, nCol, nHeight, cCode, nFlags )
 
    ENDCLASS
 
@@ -295,8 +298,8 @@ METHOD DrawText( nTop, nLeft, xValue, cPicture, nFontSize, cFontName, nAngle, an
       HPDF_Page_ShowText( ::oPage, cTexto )
       HPDF_Page_EndText( ::oPage )
       IF anRGB != NIL
-         HPDF_Page_SetRGBFill( ::Page, 0, 0, 0 )
-         HPDF_Page_SetRGBStroke( ::Page, 0, 0, 0 )
+         HPDF_Page_SetRGBFill( ::oPage, 0, 0, 0 )
+         HPDF_Page_SetRGBStroke( ::oPage, 0, 0, 0 )
       ENDIF
    ENDIF
 
@@ -325,29 +328,34 @@ METHOD DrawLine( nTop, nLeft, nBottom, nRight, nPenSize ) CLASS PDFClass
 
    RETURN NIL
 
-METHOD DrawImageBox( nTop, nLeft, nBottom, nRight, cJPEGFile ) CLASS PDFClass
+METHOD DrawImageBox( nTop, nLeft, nBottom, nRight, cJPEGFile, lPNG ) CLASS PDFClass
 
    LOCAL oImage, nWidth, nHeight
 
    IF ::nPrinterType == PDFCLASS_TXT // .OR. ! File( cJPEGFile )
       RETURN NIL
    ENDIF
+   hb_Default( @lPNG, .F. )
    nWidth  :=  ::ColToPdfCol( nRight - nLeft ) - ::ColToPdfCol( 0 )
    nHeight := ( ::RowToPdfRow( 0 ) - ::RowToPdfRow( nBottom - nTop ) )
    nBottom := ::RowToPDFRow( nBottom )
    nLeft   := ::ColToPdfCol( nLeft )
-   oImage  := HPDF_LoadJPEGImageFromFile( ::oPdf, cJPEGFile )
+   IF lPNG
+      oImage  := HPDF_LoadPNGImageFromFile( ::oPdf, cJPEGFile )
+   ELSE
+      oImage  := HPDF_LoadJPEGImageFromFile( ::oPdf, cJPEGFile )
+   ENDIF
    HPDF_Page_DrawImage( ::oPage, oImage, nLeft, nBottom, nWidth, nHeight )
 
    RETURN NIL
 
-METHOD DrawImageSize( nRow, nCol, nHeight, nWidth, cJPEGFile ) CLASS PDFClass
+METHOD DrawImageSize( nRow, nCol, nHeight, nWidth, cJPEGFile, lPNG ) CLASS PDFClass
 
-   ::DrawImageBox( nRow, nCol, nRow + nHeight, nCol + nWidth, cJPEGFile )
+   ::DrawImageBox( nRow, nCol, nRow + nHeight, nCol + nWidth, cJPEGFile, lPNG )
 
    RETURN NIL
 
-METHOD DrawMemImageBox( nTop, nLeft, nBottom, nRight, cJPEGMem ) CLASS PDFClass
+METHOD DrawMemImageBox( nTop, nLeft, nBottom, nRight, cJPEGMem, lPNG ) CLASS PDFClass
 
    LOCAL oImage, nWidth, nHeight
 
@@ -357,18 +365,23 @@ METHOD DrawMemImageBox( nTop, nLeft, nBottom, nRight, cJPEGMem ) CLASS PDFClass
    IF cJPEGMem == NIL
       RETURN NIL
    ENDIF
+   hb_Default( @lPNG, .F. )
    nWidth  :=  ::ColToPdfCol( nRight - nLeft ) - ::ColToPdfCol( 0 )
    nHeight := ( ::RowToPdfRow( 0 ) - ::RowToPdfRow( nBottom - nTop ) )
    nBottom := ::RowToPDFRow( nBottom )
    nLeft   := ::ColToPdfCol( nLeft )
-   oImage  := HPDF_LoadJPEGImageFromMem( ::oPDF, cJPEGMem, Len( cJPEGMem ) )
+   IF lPNG
+      oImage  := HPDF_LoadPNGImageFromMem( ::oPDF, cJPEGMem, Len( cJPEGMem ) )
+   ELSE
+      oImage  := HPDF_LoadJPEGImageFromMem( ::oPDF, cJPEGMem, Len( cJPEGMem ) )
+   ENDIF
    HPDF_Page_DrawImage( ::oPage, oImage, nLeft, nBottom, nWidth, nHeight )
 
    RETURN NIL
 
-METHOD DrawMemImageSize( nRow, nCol, nHeight, nWidth, cJPEGMem ) CLASS PDFClass
+METHOD DrawMemImageSize( nRow, nCol, nHeight, nWidth, cJPEGMem, lPNG ) CLASS PDFClass
 
-   ::DrawMemImageBox( nRow, nCol, nRow + nHeight, nCol + nWidth, cJPEGMem )
+   ::DrawMemImageBox( nRow, nCol, nRow + nHeight, nCol + nWidth, cJPEGMem, lPNG )
 
    RETURN NIL
 
@@ -476,6 +489,7 @@ METHOD LstToPdf( cInputFile ) CLASS PDFClass
             cTxtPage := Substr( cTxtPage, 2 )
          ENDIF
          ::AddPage()
+         ::nPage += 1
          nRow := 0
          DO WHILE At( hb_eol(), cTxtPage ) != 0
             cTxtLine := Substr( cTxtPage, 1, At( hb_eol(), cTxtPage ) - 1 )
@@ -561,6 +575,48 @@ METHOD DrawZebrado( nNivel, lDraw ) CLASS PDFClass
    ENDIF
    IF ! lDraw
       ::lDrawZebrado := ! ::lDrawZebrado
+   ENDIF
+
+   RETURN NIL
+
+METHOD DrawI25BarCode( nRow, nCol, nHeight, cCode, nOneBarWidth ) CLASS PDFClass
+
+   LOCAL oZebraBarCode
+
+   nCol         := ::ColToPdfCol( nCol )
+   nRow         := ::RowToPdfRow( nRow + nHeight )
+   nHeight      := ::RowToPdfRow( 0 ) - ::RowToPdfRow( nHeight )
+   hb_default( @nOneBarWidth, 0.4 )
+
+   // HPDF_Page_GSave( ::oPage )
+   // HPDF_Page_Concat( ::oPage, 0.1, 0, 0, 0.1, 0, 0)
+
+   oZebraBarCode := hb_zebra_create_itf( cCode, HB_ZEBRA_FLAG_WIDE2_5 )
+   IF ( oZebraBarCode != NIL )
+      IF hb_zebra_geterror( oZebraBarCode ) == 0
+         hb_zebra_draw( oZebraBarCode, {| a, b, c, d | HPDF_Page_Rectangle( ::oPage, a, b, c, d ) }, nCol, nRow, nOneBarWidth, nHeight )
+         HPDF_Page_Fill( ::oPage )
+      ENDIF
+   ENDIF
+   hb_zebra_destroy( oZebraBarCode )
+   // HPDF_Page_GRestore( ::oPage )
+
+   RETURN Nil
+
+METHOD DrawBarcodeQRCode( nRow, nCol, nHeight, cCode, nFlags ) CLASS PDFClass
+
+   LOCAL hZebra, nWidth
+
+   nCol         := ::ColToPdfCol( nCol )
+   nRow         := ::RowToPdfRow( nRow + nHeight )
+   nHeight      := ::RowToPdfRow( 0 ) - ::RowToPdfRow( nHeight )
+   nWidth       := nHeight
+
+   hZebra := hb_Zebra_Create_QRCode( cCode, nFlags )
+   IF hb_Zebra_GetError( hZebra ) == 0
+      hb_Zebra_Draw( hZebra, { | x, y, w, h | HPDF_Page_Rectangle( ::oPage, x, y, w, h ) }, nCol, nRow, nWidth, -nHeight )
+      HPDF_Page_Fill( ::oPage )
+      hb_Zebra_Destroy( hZebra )
    ENDIF
 
    RETURN NIL
