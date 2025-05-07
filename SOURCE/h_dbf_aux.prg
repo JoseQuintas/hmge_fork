@@ -1,6 +1,7 @@
 #ifdef __XHARBOUR__
 #define __SYSDATA__
 #endif
+
 #include "minigui.ch"
 #include "dbinfo.ch"
 #include "fileio.ch"
@@ -11,7 +12,7 @@
 
 /*
    cFieldList is a comma delimited list of fields, f.e. "First,Last,Birth,Age".
- */
+*/
 *-----------------------------------------------------------------------------*
 FUNCTION HMG_DbfToArray( cFieldList, bFor, bWhile, nNext, nRec, lRest )
 *-----------------------------------------------------------------------------*
@@ -42,6 +43,7 @@ FUNCTION HMG_ArrayToDbf( aData, cFieldList, bProgress )
    LOCAL nCols, nRows
    LOCAL nCol, nRow
    LOCAL lFldName
+   LOCAL lSuccess := .T.
 
    IF ISARRAY( cFieldList )
       aFldName := cFieldList
@@ -64,20 +66,19 @@ FUNCTION HMG_ArrayToDbf( aData, cFieldList, bProgress )
    ENDIF
 
    FOR nRow := 1 TO nRows
-
       aRow := aData[ nRow ]
-      REPEAT
-         dbAppend()
-      UNTIL NetErr()
+
+      IF ! NetAppend()
+         lSuccess := .F.
+         EXIT
+      ENDIF
 
       FOR nCol := 1 TO nCols
-
          IF ! Empty( aFieldPos[ nCol ] )
 
             IF ! Empty( uVal := aRow[ nCol ] )
 
                IF ! ( aFieldTyp[ nCol ] $ '+@' )
-
                   IF ValType( uVal ) != aFieldTyp[ nCol ]
                      uVal := ConvertType( uVal, aFieldTyp[ nCol ] )
                   ENDIF
@@ -85,23 +86,20 @@ FUNCTION HMG_ArrayToDbf( aData, cFieldList, bProgress )
                   IF ! Empty( uVal )
                      FieldPut( aFieldPos[ nCol ], uVal )
                   ENDIF
-
                ENDIF
 
             ENDIF
 
          ENDIF
-
       NEXT nCol
 
       dbUnlock()
       IF ISBLOCK( bProgress )
          Eval( bProgress, nRow, nRows )
       ENDIF
-
    NEXT nRow
 
-RETURN .T.
+RETURN lSuccess
 
 #ifdef __XHARBOUR__
 #include "hbcompat.ch"

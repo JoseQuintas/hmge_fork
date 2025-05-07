@@ -1,7 +1,7 @@
 /*
  * MINIGUI - Harbour Win32 GUI library source code
  *
- * Copyright 2017-2022 Aleksandr Belov, Sergej Kiselev <bilance@bilance.lv>
+ * Copyright 2017-2025 Aleksandr Belov, Sergej Kiselev <bilance@bilance.lv>
  */
 
 #include "minigui.ch"
@@ -15,6 +15,7 @@ FUNCTION _WindowCargo( FormName, xValue )
 #else
    LOCAL i := GetFormIndex( FormName )
 #endif
+
    IF i > 0
       IF PCount() > 1;     _HMG_aFormMiscData2[ i ] := xValue
       ELSE        ; RETURN _HMG_aFormMiscData2[ i ]
@@ -32,6 +33,7 @@ FUNCTION _ControlCargo( ControlName, FormName, xValue )
 #else
    LOCAL i := GetControlIndex( ControlName, FormName )
 #endif
+
    IF i > 0
       IF PCount() > 2;     _HMG_aControlMiscData2[ i ] := xValue
       ELSE        ; RETURN _HMG_aControlMiscData2[ i ]
@@ -88,7 +90,7 @@ FUNCTION Do_WindowEventProcedure( bBlock, i, p1, p2, p3, p4 )
 RETURN RetVal
 
 #ifdef __XHARBOUR__
-  #xtranslate hb_ValToExp( [<x,...>] ) => ValToPrgExp( <x> )
+   #xtranslate hb_ValToExp( [<x,...>] ) => ValToPrgExp( <x> )
 #endif
 *----------------------------------------------------------------------------*
 FUNCTION _o2Log( o, nLen, cMsg, lExt, cLog )
@@ -264,11 +266,107 @@ STATIC FUNCTION TR0( cTxt, nLen, cSim )
 *----------------------------------------------------------------------------*
    IF !HB_ISCHAR( cTxt ) ; cTxt := cValToChar( cTxt )
    ENDIF
+
    DEFAULT nLen := Len( cTxt )
+
    IF cSim == Nil; cSim := " "
    ENDIF
 
 RETURN PadL( AllTrim( cTxt ), nLen, cSim )
+
+*----------------------------------------------------------------------------*
+FUNCTION _wPost( nEvent, nIndex, xParam )
+*----------------------------------------------------------------------------*
+   LOCAL oWnd, cForm
+
+   IF HB_ISOBJECT( nIndex )
+      IF nIndex:ClassName == 'TSBROWSE'
+         cForm := nIndex:cParentWnd
+         nIndex := GetControlIndex( cForm, nIndex:cControlName )
+      ELSE
+         cForm := _HMG_THISFORMNAME
+         IF __objHasData( nIndex, "Name" ) ; cForm := nIndex:Name
+         ENDIF
+         nIndex := NIL
+      ENDIF
+   ELSEIF HB_ISCHAR( nIndex )
+      cForm := nIndex
+      nIndex := NIL
+   ELSE
+      cForm := _HMG_THISFORMNAME
+   ENDIF
+
+   IF _HMG_lOOPEnabled
+
+#ifdef _OBJECT_
+      IF ! Empty( cForm ) .AND. HB_ISCHAR( cForm )
+         oWnd := _WindowObj( cForm )
+         IF HB_ISOBJECT( oWnd )
+            IF HB_ISCHAR( nEvent )
+               nEvent := oWnd:oEvents:Get( nEvent, nEvent )
+            ENDIF
+            IF HB_ISNUMERIC( nEvent )
+               DoEvents() ; oWnd:PostMsg( nEvent, nIndex, xParam )
+            ENDIF
+         ENDIF
+      ENDIF
+#else
+      HB_SYMBOL_UNUSED( nEvent )
+      HB_SYMBOL_UNUSED( nIndex )
+      HB_SYMBOL_UNUSED( xParam )
+      HB_SYMBOL_UNUSED( cForm )
+      HB_SYMBOL_UNUSED( oWnd )
+#endif
+   ENDIF
+
+RETURN NIL
+
+*----------------------------------------------------------------------------*
+FUNCTION _wSend( nEvent, nIndex, xParam )
+*----------------------------------------------------------------------------*
+   LOCAL oWnd, cForm
+
+   IF HB_ISOBJECT( nIndex )
+      IF nIndex:ClassName == 'TSBROWSE'
+         cForm := nIndex:cParentWnd
+         nIndex := GetControlIndex( cForm, nIndex:cControlName )
+      ELSE
+         cForm := _HMG_THISFORMNAME
+         IF __objHasData( nIndex, "Name" ) ; cForm := nIndex:Name
+         ENDIF
+         nIndex := NIL
+      ENDIF
+   ELSEIF HB_ISCHAR( nIndex )
+      cForm := nIndex
+      nIndex := NIL
+   ELSE
+      cForm := _HMG_THISFORMNAME
+   ENDIF
+
+   IF _HMG_lOOPEnabled
+
+#ifdef _OBJECT_
+      IF ! Empty( cForm ) .AND. HB_ISCHAR( cForm )
+         oWnd := _WindowObj( cForm )
+         IF HB_ISOBJECT( oWnd )
+            IF HB_ISCHAR( nEvent )
+               nEvent := oWnd:oEvents:Get( nEvent, nEvent )
+            ENDIF
+            IF HB_ISNUMERIC( nEvent )
+               DoEvents() ; oWnd:SendMsg( nEvent, nIndex, xParam )
+            ENDIF
+         ENDIF
+      ENDIF
+#else
+      HB_SYMBOL_UNUSED( nEvent )
+      HB_SYMBOL_UNUSED( nIndex )
+      HB_SYMBOL_UNUSED( xParam )
+      HB_SYMBOL_UNUSED( cForm )
+      HB_SYMBOL_UNUSED( oWnd )
+#endif
+   ENDIF
+
+RETURN NIL
 
 #ifdef _OBJECT_
 
@@ -282,7 +380,8 @@ RETURN hmg_GetWindowObject( h )
 *-----------------------------------------------------------------------------*
 FUNCTION _ControlObj( ControlName, FormName )
 *-----------------------------------------------------------------------------*
-   LOCAL h := iif( HB_ISNUMERIC( ControlName ), ControlName, GetControlHandle( ControlName, FormName ) )
+   LOCAL h := iif( HB_ISNUMERIC( ControlName ), ControlName, ;
+      GetControlHandle( ControlName, FormName ) )
 
    IF ISARRAY( h )
       h := h[ 1 ]
@@ -291,7 +390,7 @@ FUNCTION _ControlObj( ControlName, FormName )
 RETURN hmg_GetWindowObject( h )
 
 *-----------------------------------------------------------------------------*
-FUNCTION _oThis( oThis, lSets )      // Snapshot of current data This or Sets
+FUNCTION _oThis( oThis, lSets ) // Snapshot of current data This or Sets
 *-----------------------------------------------------------------------------*
    LOCAL c, i := 0, k, o := oHmgData()
 
@@ -346,12 +445,13 @@ FUNCTION _oThis( oThis, lSets )      // Snapshot of current data This or Sets
          ENDIF
       ENDIF
    ENDIF
+
    k := iif( Empty( _HMG_ThisControlName ), o:FocusedControlIndex, _HMG_ThisIndex )
    IF !Empty( k )
       o:ControlCargo        := _HMG_aControlMiscData2     [ k ]
       o:ControlHandle       := _HMG_aControlHandles       [ k ]
       o:ControlParentHandle := _HMG_aControlParenthandles [ k ]
-      o:ControlParentName  := GetParentFormName ( k )
+      o:ControlParentName   := GetParentFormName( k )
    ENDIF
    IF _HMG_ThisFormIndex > 0
       o:FormCargo        := _HMG_aFormMiscData2    [ _HMG_ThisFormIndex ]
@@ -370,16 +470,16 @@ FUNCTION _oThis( oThis, lSets )      // Snapshot of current data This or Sets
       ENDIF
    ENDIF
 
-   IF HB_ISCHAR ( oThis ) ; oThis := GetFormIndex ( oThis )
+   IF HB_ISCHAR( oThis ) ; oThis := GetFormIndex( oThis )
    ENDIF
 
-   IF HB_ISNUMERIC ( oThis ) .AND. oThis > 0 ; i := oThis
+   IF HB_ISNUMERIC( oThis ) .AND. oThis > 0 ; i := oThis
    ENDIF
 
    IF i > 0
       _HMG_ThisFormIndex   := i
       _HMG_ThisEventType   := ""
-      _HMG_ThisType        := iif( _HMG_aFormType [ i ] == "C", "W", _HMG_aFormType [ i ] )
+      _HMG_ThisType        := iif( _HMG_aFormType[ i ] == "C", "W", _HMG_aFormType[ i ] )
       _HMG_ThisIndex       := i
       _HMG_ThisFormName    := _HMG_aFormNames[ i ]
       _HMG_ThisControlName := ""
@@ -400,6 +500,7 @@ RETURN o
 FUNCTION _pPost( nEvent, nParam, xParam )
 *-----------------------------------------------------------------------------*
    LOCAL oApp := oDlu2Pixel()
+
    DEFAULT nParam := 0
 
    IF oApp:IsError ; RETURN oApp:cError
@@ -418,6 +519,7 @@ RETURN NIL
 FUNCTION _pSend( nEvent, nParam, xParam )
 *-----------------------------------------------------------------------------*
    LOCAL oApp := oDlu2Pixel()
+
    DEFAULT nParam := 0
 
    IF oApp:IsError ; RETURN oApp:cError
@@ -428,66 +530,6 @@ FUNCTION _pSend( nEvent, nParam, xParam )
       IF HB_ISNUMERIC( nEvent )
          oApp:SendMsg( nEvent, nParam, xParam )
       ENDIF
-   ENDIF
-
-RETURN NIL
-
-*-----------------------------------------------------------------------------*
-FUNCTION _wPost( nEvent, nIndex, xParam )
-*-----------------------------------------------------------------------------*
-   LOCAL oWnd
-
-   IF HB_ISOBJECT( nIndex )
-      IF nIndex:ClassName == 'TSBROWSE'
-         oWnd  := _WindowObj( nIndex:cParentWnd )
-         IF ! HB_ISOBJECT( oWnd ) ; RETURN NIL
-         ENDIF
-         nIndex := oWnd:GetObj( nIndex:cControlName ):Index
-      ELSE
-         oWnd  := nIndex
-         nIndex := NIL
-      ENDIF
-   ELSEIF HB_ISCHAR( nIndex )
-      oWnd  := _WindowObj( nIndex )
-      nIndex := NIL
-   ELSE
-      oWnd := _WindowObj( _HMG_THISFORMNAME )
-   ENDIF
-   IF HB_ISCHAR( nEvent )
-      nEvent := oWnd:oEvents:Get( nEvent, nEvent )
-   ENDIF
-   IF HB_ISNUMERIC( nEvent )
-      DoEvents() ; oWnd:PostMsg( nEvent, nIndex, xParam )
-   ENDIF
-
-RETURN NIL
-
-*-----------------------------------------------------------------------------*
-FUNCTION _wSend( nEvent, nIndex, xParam )
-*-----------------------------------------------------------------------------*
-   LOCAL oWnd
-
-   IF HB_ISOBJECT( nIndex )
-      IF nIndex:ClassName == 'TSBROWSE'
-         oWnd  := _WindowObj( nIndex:cParentWnd )
-         IF ! HB_ISOBJECT( oWnd ) ; RETURN NIL
-         ENDIF
-         nIndex := oWnd:GetObj( nIndex:cControlName ):Index
-      ELSE
-         oWnd  := nIndex
-         nIndex := NIL
-      ENDIF
-   ELSEIF HB_ISCHAR( nIndex )
-      oWnd  := _WindowObj( nIndex )
-      nIndex := NIL
-   ELSE
-      oWnd := _WindowObj( _HMG_THISFORMNAME )
-   ENDIF
-   IF HB_ISCHAR( nEvent )
-      nEvent := oWnd:oEvents:Get( nEvent, nEvent )
-   ENDIF
-   IF HB_ISNUMERIC( nEvent )
-      oWnd:SendMsg( nEvent, nIndex, xParam )
    ENDIF
 
 RETURN NIL
@@ -509,8 +551,8 @@ FUNCTION Do_Obj( nHandle, bBlock, p1, p2, p3 )
          ELSE                                        // set the environment This control
             RETURN Do_ControlEventProcedure( bBlock, o:Index, o, p1, p2, p3 )
          ENDIF
-      ELSEIF bBlock != NIL                        // do not change the environment This
-         RETURN o:Event( bBlock, o, p1, p2, p3 )        // bBlock - execution key
+      ELSEIF bBlock != NIL                           // do not change the environment This
+         RETURN o:Event( bBlock, o, p1, p2, p3 )     // bBlock - execution key
       ENDIF
    ENDIF
 
@@ -520,11 +562,12 @@ RETURN o
 FUNCTION oRecGet( aFieldList, oRec )
 *----------------------------------------------------------------------------*
    LOCAL cFld, nPos
+
    DEFAULT oRec := oHmgData()
 
    IF HB_ISCHAR( aFieldList )
       aFieldList := AllTrim( aFieldList )
-      IF left( aFieldList, 1 ) == "{" .AND. right( aFieldList, 1 ) == "}"
+      IF Left( aFieldList, 1 ) == "{" .AND. Right( aFieldList, 1 ) == "}"
          aFieldList := &( aFieldList )  // after hb_valtoexp(...)
       ELSE
          aFieldList := hb_ATokens( aFieldList, "," )
@@ -542,7 +585,7 @@ FUNCTION oRecGet( aFieldList, oRec )
           ENDIF
       NEXT
    ELSE
-      AEval( dbStruct(), {|a,n| oRec:Set( a[1], FieldGet(n) ) } )
+      AEval( dbStruct(), {|a, n| oRec:Set( a[1], FieldGet( n ) ) } )
    ENDIF
 
 RETURN oRec
@@ -562,6 +605,7 @@ FUNCTION oRecPut( oRec, aFieldList )
    ENDIF
 
    IF ISARRAY( aFieldList )
+
       FOR EACH cFld IN aFieldList
           IF HB_ISARRAY(cFld) ; cFld := aFld[1] // array as dbStruct()
           ENDIF
@@ -570,7 +614,7 @@ FUNCTION oRecPut( oRec, aFieldList )
           ENDIF
           cFld := Upper( AllTrim( cFld ) )
           xVal := oRec:Get( cFld )
-          IF xVal == NIL ; LOOP                  // no key or value
+          IF xVal == NIL ; LOOP                 // no key or value
           ENDIF
           IF ( nPos := FieldPos( cFld ) ) > 0
              IF FieldType( nPos ) $ "+^="
@@ -580,7 +624,9 @@ FUNCTION oRecPut( oRec, aFieldList )
              nCnt++
           ENDIF
       NEXT
+
    ELSE
+
       FOR EACH aFld IN oRec:GetAll()
           cFld := aFld[1]
           IF !HB_ISCHAR( cFld ) .OR. aFld[2] == NIL
@@ -588,18 +634,19 @@ FUNCTION oRecPut( oRec, aFieldList )
           ENDIF
           IF ( nPos := FieldPos( cFld ) ) > 0
              IF FieldType( nPos ) $ "+^="
-                LOOP                         // write protection
+                LOOP                            // write protection
              ENDIF
              FieldPut( nPos, aFld[2] )
              nCnt++
           ENDIF
       NEXT
+
    ENDIF
 
 RETURN nCnt > 0
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnWndInit( i, cVar )
+FUNCTION Do_OnWndInit( i, cVar )
 *-----------------------------------------------------------------------------*
    LOCAL nIndex := i
    LOCAL cName := _HMG_aFormNames[ i ]
@@ -610,7 +657,7 @@ FUNC Do_OnWndInit( i, cVar )
 RETURN oWndData( nIndex, cName, nHandle, nParent, cType, cVar )
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnWndRelease( i )
+FUNCTION Do_OnWndRelease( i )
 *-----------------------------------------------------------------------------*
    LOCAL o
    LOCAL hWnd := _HMG_aFormHandles[ i ]
@@ -629,7 +676,7 @@ FUNC Do_OnWndRelease( i )
 RETURN .F.
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnCtlInit( i, cVar )
+FUNCTION Do_OnCtlInit( i, cVar )
 *-----------------------------------------------------------------------------*
    LOCAL nCtlIndex := i
    LOCAL cCtlName  := _HMG_aControlNames[ i ]
@@ -643,7 +690,7 @@ FUNC Do_OnCtlInit( i, cVar )
 RETURN oCnlData( nCtlIndex, cCtlName, nHandle, nParent, cCtlType, cVar )
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnCtlRelease( i )
+FUNCTION Do_OnCtlRelease( i )
 *-----------------------------------------------------------------------------*
    LOCAL o
    LOCAL hWnd := _HMG_aControlHandles[ i ]
@@ -662,7 +709,7 @@ FUNC Do_OnCtlRelease( i )
 RETURN .F.
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnWndLaunch( hWnd, nMsg, wParam, lParam )
+FUNCTION Do_OnWndLaunch( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
    IF hmg_IsWindowObject ( hWnd )
       hmg_GetWindowObject( hWnd ):DoEvent( wParam, lParam )
@@ -673,7 +720,7 @@ FUNC Do_OnWndLaunch( hWnd, nMsg, wParam, lParam )
 RETURN NIL
 
 *-----------------------------------------------------------------------------*
-FUNC Do_OnCtlLaunch( hWnd, nMsg, wParam, lParam )
+FUNCTION Do_OnCtlLaunch( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
    HB_SYMBOL_UNUSED( nMsg )
 

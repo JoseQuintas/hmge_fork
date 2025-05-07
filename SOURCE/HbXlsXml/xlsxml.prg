@@ -55,23 +55,23 @@ STATIC cCp
 
 CREATE CLASS ExcelWriterXML
 
-   VAR    styles                                  INIT {}
-   VAR    formatErrors                            INIT { => }
-   VAR    sheets                                  INIT {}
-   VAR    lShowErrorSheet                         INIT .F.
-   VAR    overwriteFile                           INIT .F.
-   VAR    cCodePage                               INIT NIL
-   VAR    docFileName
-   VAR    cDocTitle
-   VAR    cDocSubject
-   VAR    cDocAuthor
-   VAR    cDocCreated
-   VAR    cDocManager
-   VAR    cDocCompany
-   VAR    cDocVersion                             INIT "11.9999"
+   VAR styles INIT {}
+   VAR formatErrors INIT { => }
+   VAR sheets INIT {}
+   VAR lShowErrorSheet INIT .F.
+   VAR overwriteFile INIT .F.
+   VAR cCodePage INIT NIL
+   VAR docFileName
+   VAR cDocTitle
+   VAR cDocSubject
+   VAR cDocAuthor
+   VAR cDocCreated
+   VAR cDocManager
+   VAR cDocCompany
+   VAR cDocVersion INIT "11.9999"
 
-   VAR    cError                                  INIT ""
-   VAR    errors                                  INIT .F.
+   VAR cError INIT ""
+   VAR errors INIT .F.
 
    METHOD New( fileName )
    METHOD setOverwriteFile( overwrite )
@@ -107,7 +107,7 @@ METHOD ExcelWriterXML:new( fileName )
    ::docFileName := fileName
    ::cDocCreated := DToS( Date() ) + "T" + Time() + "Z"
 
-   RETURN SELF
+RETURN SELF
 
 METHOD ExcelWriterXML:setOverwriteFile( overwrite )
 
@@ -115,16 +115,16 @@ METHOD ExcelWriterXML:setOverwriteFile( overwrite )
 
    ::overwriteFile := overwrite
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:setCodePage( cPage )
 
-   hb_default( @cPage, "RU1251" )
+   hb_default( @cPAGE, "RU1251" )
 
    ::cCodePage := cPage
    cCp := cPage
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:showErrorSheet( show )
 
@@ -132,19 +132,19 @@ METHOD ExcelWriterXML:showErrorSheet( show )
 
    ::lShowErrorSheet := show
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:addError( cFunction, cMessage )
 
    ::formatErrors += { ;
       "FUNCTION" => cFunction, ;
-      "MESSAGE"  => cMessage  }
+      "MESSAGE" => cMessage }
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:getDefaultStyle()
 
-   RETURN ::styles[ 1 ]
+RETURN ::styles[ 1 ]
 
 METHOD ExcelWriterXML:addStyle( id )
 
@@ -169,7 +169,7 @@ METHOD ExcelWriterXML:addStyle( id )
    style := ExcelWriterXML_Style():new( id )
    AAdd( ::styles, style )
 
-   RETURN style
+RETURN style
 
 METHOD ExcelWriterXML:addSheet( id )
 
@@ -190,7 +190,7 @@ METHOD ExcelWriterXML:addSheet( id )
    sheet := ExcelWriterXML_Sheet():New( id )
    AAdd( ::sheets, sheet )
 
-   RETURN sheet
+RETURN sheet
 
 METHOD ExcelWriterXML:checkSheetID( id )
 
@@ -206,7 +206,7 @@ METHOD ExcelWriterXML:checkSheetID( id )
       RETURN .T.
    ENDIF
 
-   RETURN .T.
+RETURN .T.
 
 METHOD ExcelWriterXML:checkStyleID( id )
 
@@ -222,15 +222,15 @@ METHOD ExcelWriterXML:checkStyleID( id )
       RETURN .T.
    ENDIF
 
-   RETURN .T.
+RETURN .T.
 
 METHOD ExcelWriterXML:writeData( target )
 
-   LOCAL style, sheet, xml := "", handle, fileExists, format
+   LOCAL style, sheet, xml := "", handle, fileExists, FORMAT
 
-   LOCAL docTitle   := ""
+   LOCAL docTitle := ""
    LOCAL docSubject := ""
-   LOCAL docAuthor  := ""
+   LOCAL docAuthor := ""
    LOCAL docCreated := ""
    LOCAL docManager := ""
    LOCAL docCompany := ""
@@ -255,17 +255,17 @@ METHOD ExcelWriterXML:writeData( target )
    ENDIF
 
    IF ::lShowErrorSheet
-      format := ::addStyle( "formatErrorsHeader" )
+      FORMAT := ::addStyle( "formatErrorsHeader" )
       format:setFontBold()
       format:bgColor( "red" )
    ENDIF
 
-   IF ! Empty( ::cDocTitle   ); docTitle   := "<Title>"   + StrToHtmlSpecial( ::cDocTitle   ) + "</Title>"   + hb_eol(); ENDIF
-   IF ! Empty( ::cDocSubject ); docSubject := "<Subject>" + StrToHtmlSpecial( ::cDocSubject ) + "</Subject>" + hb_eol(); ENDIF
-   IF ! Empty( ::cDocAuthor  ); docAuthor  := "<Author>"  + StrToHtmlSpecial( ::cDocAuthor  ) + "</Author>"  + hb_eol(); ENDIF
-   IF ! Empty( ::cDocCreated ); docCreated := "<Created>" + StrToHtmlSpecial( ::cDocCreated ) + "</Created>" + hb_eol(); ENDIF
-   IF ! Empty( ::cDocManager ); docManager := "<Manager>" + StrToHtmlSpecial( ::cDocManager ) + "</Manager>" + hb_eol(); ENDIF
-   IF ! Empty( ::cDocCompany ); docCompany := "<Company>" + StrToHtmlSpecial( ::cDocCompany ) + "</Company>" + hb_eol(); ENDIF
+   IF ! Empty( ::cDocTitle ) ; docTitle := "<Title>" + StrToHtmlSpecial( ::cDocTitle ) + "</Title>" + hb_eol() ; ENDIF
+   IF ! Empty( ::cDocSubject ) ; docSubject := "<Subject>" + StrToHtmlSpecial( ::cDocSubject ) + "</Subject>" + hb_eol() ; ENDIF
+   IF ! Empty( ::cDocAuthor ) ; docAuthor := "<Author>" + StrToHtmlSpecial( ::cDocAuthor ) + "</Author>" + hb_eol() ; ENDIF
+   IF ! Empty( ::cDocCreated ) ; docCreated := "<Created>" + StrToHtmlSpecial( ::cDocCreated ) + "</Created>" + hb_eol() ; ENDIF
+   IF ! Empty( ::cDocManager ) ; docManager := "<Manager>" + StrToHtmlSpecial( ::cDocManager ) + "</Manager>" + hb_eol() ; ENDIF
+   IF ! Empty( ::cDocCompany ) ; docCompany := "<Company>" + StrToHtmlSpecial( ::cDocCompany ) + "</Company>" + hb_eol() ; ENDIF
 
    xml := '<?xml version="1.0"?>' + hb_eol()
    xml += '<?mso-application progid="Excel.Sheet"?>' + hb_eol()
@@ -276,18 +276,18 @@ METHOD ExcelWriterXML:writeData( target )
    xml += 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' + hb_eol()
    xml += 'xmlns:html="http://www.w3.org/TR/REC-html40">' + hb_eol()
    xml += '<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">' + hb_eol()
-   IF ! Empty( ::cDocTitle   ); xml += "   " + docTitle  ; ENDIF
-   IF ! Empty( ::cDocSubject ); xml += "   " + docSubject; ENDIF
-   IF ! Empty( ::cDocAuthor  ); xml += "   " + docAuthor ; ENDIF
-   IF ! Empty( ::cDocCreated ); xml += "   " + docCreated; ENDIF
-   IF ! Empty( ::cDocManager ); xml += "   " + docManager; ENDIF
-   IF ! Empty( ::cDocCompany ); xml += "   " + docCompany; ENDIF
+   IF ! Empty( ::cDocTitle ) ; xml += "   " + docTitle ; ENDIF
+   IF ! Empty( ::cDocSubject ) ; xml += "   " + docSubject ; ENDIF
+   IF ! Empty( ::cDocAuthor ) ; xml += "   " + docAuthor ; ENDIF
+   IF ! Empty( ::cDocCreated ) ; xml += "   " + docCreated ; ENDIF
+   IF ! Empty( ::cDocManager ) ; xml += "   " + docManager ; ENDIF
+   IF ! Empty( ::cDocCompany ) ; xml += "   " + docCompany ; ENDIF
    xml += "   <Version>" + ::cDocVersion + "</Version>" + hb_eol()
    xml += "</DocumentProperties>" + hb_eol()
    xml += '<ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel" />' + hb_eol()
    xml += "<Styles>" + hb_eol()
 
-   xml := hb_StrToUTF8( xml , ::cCodePage )
+   xml := hb_StrToUTF8( xml, ::cCodePage )
    FWrite( handle, xml )
    xml := ""
 
@@ -296,7 +296,7 @@ METHOD ExcelWriterXML:writeData( target )
    NEXT
    xml += "</Styles>" + hb_eol()
 
-   xml := hb_StrToUTF8( xml , ::cCodePage )
+   xml := hb_StrToUTF8( xml, ::cCodePage )
    FWrite( handle, xml )
    xml := ""
 
@@ -317,21 +317,21 @@ METHOD ExcelWriterXML:writeData( target )
 
    xml += "</Workbook>"
 
-   xml := hb_StrToUTF8( xml , ::cCodePage )
+   xml := hb_StrToUTF8( xml, ::cCodePage )
 
    FWrite( handle, xml )
    xml := ""
    FClose( handle )
 
-   RETURN .T.
+RETURN .T.
 
 METHOD ExcelWriterXML:docTitle( title )
 
    IF HB_ISSTRING( title )
-      ::cDocTitle := title
+      ::cDocTitle := TITLE
    ENDIF
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:docSubject( subject )
 
@@ -339,7 +339,7 @@ METHOD ExcelWriterXML:docSubject( subject )
       ::cDocSubject := subject
    ENDIF
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:docAuthor( author )
 
@@ -347,7 +347,7 @@ METHOD ExcelWriterXML:docAuthor( author )
       ::cDocAuthor := author
    ENDIF
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:docManager( manager )
 
@@ -355,7 +355,7 @@ METHOD ExcelWriterXML:docManager( manager )
       ::cDocManager := manager
    ENDIF
 
-   RETURN NIL
+RETURN NIL
 
 METHOD ExcelWriterXML:docCompany( company )
 
@@ -363,7 +363,7 @@ METHOD ExcelWriterXML:docCompany( company )
       ::cDocCompany := company
    ENDIF
 
-   RETURN NIL
+RETURN NIL
 
 FUNCTION StrToHtml( xtxt )
 
@@ -371,32 +371,32 @@ FUNCTION StrToHtml( xtxt )
 
    afrm := { ;
       { "á", "&aacute;" }, ;
-      { "â", "&acirc;"  }, ;
+      { "â", "&acirc;" }, ;
       { "à", "&agrave;" }, ;
       { "ã", "&atilde;" }, ;
       { "ç", "&ccedil;" }, ;
       { "é", "&eacute;" }, ;
-      { "ê", "&ecirc;"  }, ;
+      { "ê", "&ecirc;" }, ;
       { "í", "&iacute;" }, ;
       { "ó", "&oacute;" }, ;
-      { "ô", "&ocirc;"  }, ;
+      { "ô", "&ocirc;" }, ;
       { "õ", "&otilde;" }, ;
       { "ú", "&uacute;" }, ;
-      { "ü", "&uuml;"   }, ;
+      { "ü", "&uuml;" }, ;
       { "Á", "&Aacute;" }, ;
-      { "Â", "&Acirc;"  }, ;
+      { "Â", "&Acirc;" }, ;
       { "À", "&Agrave;" }, ;
       { "Ã", "&Atilde;" }, ;
       { "Ç", "&Ccedil;" }, ;
       { "É", "&Eacute;" }, ;
-      { "Ê", "&Ecirc;"  }, ;
+      { "Ê", "&Ecirc;" }, ;
       { "Í", "&Iacute;" }, ;
       { "Ó", "&Oacute;" }, ;
-      { "Ô", "&Ocirc;"  }, ;
+      { "Ô", "&Ocirc;" }, ;
       { "Õ", "&Otilde;" }, ;
       { "Ú", "&Uacute;" }, ;
-      { "Ü", "&Uuml;"   }, ;
-      { "-", "&ndash;"  } }
+      { "Ü", "&Uuml;" }, ;
+      { "-", "&ndash;" } }
 
    FOR i := 1 TO Len( xtxt )
       IF ( xpos := AScan( afrm, {| x | SubStr( xtxt, i, 1 ) == hb_UTF8ToStr( x[ 1 ] ) } ) ) > 0
@@ -406,7 +406,7 @@ FUNCTION StrToHtml( xtxt )
       ENDIF
    NEXT
 
-   RETURN xret
+RETURN xret
 
 /*
 FUNCTION StrToHtmlSpecial( xtxt )
@@ -479,8 +479,8 @@ STATIC FUNCTION RemoveAccents( xtxt )
 
 FUNCTION StrToHtmlSpecial( xtxt )
 
-   RETURN xtxt
+RETURN xtxt
 
 FUNCTION GetExcelWriterXMLCodePage()
 
-   RETURN cCP
+RETURN cCP

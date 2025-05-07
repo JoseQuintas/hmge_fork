@@ -111,10 +111,12 @@ FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColor
    LOCAL cDelim, cOldDelim
    LOCAL cForm := "oDlg"
    LOCAL nMaxLen := 0
+   LOCAL hPrevious
 
    IF _SetGetGlobal( "_HMG_IsWin10" ) == NIL
       STATIC _HMG_IsWin10 AS GLOBAL VALUE IsWin10OrLater()
    ENDIF
+
    STATIC _HMG_PressButton AS GLOBAL VALUE .F.
 
    IF _IsWindowDefined( cForm )
@@ -189,6 +191,10 @@ FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColor
       hb_default( @_HMG_ModalDialogReturn, 0 )
    ENDIF
 
+   IF ! _HMG_IsModalActive
+      hPrevious := GetActiveWindow()
+   ENDIF
+
    DEFINE WINDOW ( cForm ) ;
       WIDTH 0 HEIGHT 0 ;
       TITLE cTitle ;
@@ -208,6 +214,10 @@ FUNCTION HMG_Alert( cMsg, aOptions, cTitle, nType, cIcoFile, nIcoSize, aBtnColor
 
    IF lFont
       RELEASE FONT ( cFontName )
+   ENDIF
+
+   IF hPrevious != NIL
+      SetFocus ( hPrevious )
    ENDIF
 
 RETURN _HMG_ModalDialogReturn
@@ -384,9 +394,9 @@ STATIC FUNCTION FillDlg( cMsg, aOptions, nLineas, cIcoFile, nIcoSize, aBtnColors
    nHeightCli := ( Min( nMaxLines, nLineas ) + iif( nLineas == 1, 4, 3 ) ) * nChrHeight + nVMARGIN_BUTTON + nHeightBtn + GetBorderHeight()
    nHeightDlg := nHeightCli + GetTitleHeight() + SEP_BUTTON + GetBorderHeight() / iif( lIsWin10, 2.5, 1 )
 
-   IF ( ( n := ( MSC_VER() > 0 ) ) .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      nWidthDlg += iif( n, GetBorderWidth(), 4 * GetBorderWidth() - 2 )
-      nHeightDlg += iif( n, GetBorderHeight() / 2, 3 * GetBorderHeight() )
+   IF _HMG_IsBcc77 .AND. _HMG_IsThemed
+      nWidthDlg += GetBorderWidth() + 2
+      nHeightDlg += GetBorderHeight() + 2
    ENDIF
 
    IF nHeightDlg > GetDesktopRealHeight()

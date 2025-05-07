@@ -137,7 +137,7 @@ PROCEDURE ProcInitGUIDebugger( lCreate )
    LOCAL i, bBackColor, bForeColor, cGrid_SourceCode
    LOCAL aFiles, lOldMainFirst
 
-   IF ValType( lCreate ) == "L" .AND. lCreate == .F. .AND. IsWindowDefined ( _HMG_FormDebugger ) == .T.
+   IF ValType ( lCreate ) == "L" .AND. lCreate == .F. .AND. IsWindowDefined ( _HMG_FormDebugger ) == .T.
       _HMG_FormDebugger.RELEASE
       RETURN
    ENDIF
@@ -1526,16 +1526,6 @@ FUNCTION GetSplitBoxHandle ( cParentForm )
 RETURN 0
 
 
-*-----------------------------------------------------------------------*
-FUNCTION GetSplitBoxHEIGHT ( cParentForm )
-*-----------------------------------------------------------------------*
-   LOCAL hWnd, aPos := { 0, 0, 0, 0 }
-   hWnd := GetSplitBoxHandle ( cParentForm )
-   GetWindowRect ( hWnd, aPos )
-
-RETURN ( aPos[ 4 ] - aPos[ 2 ] )
-
-
 #xtranslate UTF8_BOM => ( HB_BCHAR (0xEF) + HB_BCHAR (0xBB) + HB_BCHAR (0xBF) )
 
 FUNCTION HMG_IsUTF8WithBOM ( cString )
@@ -1584,19 +1574,5 @@ HB_FUNC (GETDESKTOPREALLEFT)
    SystemParametersInfo ( SPI_GETWORKAREA, 0, &Rect, 0 );
    hb_retni ( Rect.left );
 }
-/*
-HB_FUNC (GETDESKTOPREALWIDTH)
-{
-   RECT Rect;
-   SystemParametersInfo ( SPI_GETWORKAREA, 0, &Rect, 0 );
-   hb_retni (Rect.right - Rect.left);
-}
 
-HB_FUNC (GETDESKTOPREALHEIGHT)
-{
-   RECT Rect;
-   SystemParametersInfo ( SPI_GETWORKAREA, 0, &Rect, 0 );
-   hb_retni (Rect.bottom - Rect.top);
-}
-*/
 #pragma ENDDUMP

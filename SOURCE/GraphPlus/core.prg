@@ -218,7 +218,7 @@ METHOD GridData( cFormName, cControlName ) CLASS GraphPlus
                IF j == 1
                   AAdd( ::aLegends, aLineData[ j ] )
                ELSE
-                  AAdd( aLine, Val( AllTrim( aLineData[ j ] ) ) )
+                  AAdd( aLine, Val( AllTrim( cValToChar( aLineData[ j ] ) ) ) )
                ENDIF
             NEXT j
             AAdd( ::aData, AClone( aLine ) )

@@ -46,13 +46,13 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  ---------------------------------------------------------------------------*/
 
 #ifdef __XHARBOUR__
-#define __MINIPRINT__
+  #define __MINIPRINT__
 #endif
 
 #include "hmg.ch"
 
 #ifndef HMG_LEGACY_OFF
-#undef _BT_
+  #undef _BT_
 #endif
 
 #include "i_winuser.ch"
@@ -4182,23 +4182,14 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       CASE Arg2 == "HEIGHT"
 
-         IF MSC_VER() > 0
-            IF GetProperty( Arg1 , "TitleBar" ) .AND. _HMG_IsThemed
-               Arg3 += 10
-            ENDIF
-         ENDIF
          _SetWindowSizePos ( Arg1 , , , , Arg3 )
 
       CASE Arg2 == "WIDTH"
 
-         IF MSC_VER() > 0
-            IF GetProperty( Arg1 , "TitleBar" ) .AND. _HMG_IsThemed
-               Arg3 += 10
-            ENDIF
-         ENDIF
          _SetWindowSizePos ( Arg1 , , , Arg3 , )
 
       CASE Arg2 == "COL"
+
 #ifdef _PANEL_
          IF GetWindowType ( Arg1 ) == 'P'
             Arg3 += GetBorderWidth()
@@ -4207,6 +4198,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
          _SetWindowSizePos ( Arg1 , , Arg3 , , )
 
       CASE Arg2 == "ROW"
+
 #ifdef _PANEL_
          IF GetWindowType ( Arg1 ) == 'P'
             Arg3 += GetTitleHeight() + GetBorderHeight()
@@ -5021,7 +5013,7 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 RETURN
 
 *-----------------------------------------------------------------------------*
-FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
+FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 *-----------------------------------------------------------------------------*
    LOCAL RetVal, ix
 #if defined( _BT_ ) .OR. defined( _HMG_COMPAT_ )
@@ -5036,8 +5028,6 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
    IF _RichEditBox_GetProperty ( @xDATA, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
       RETURN xData
    ENDIF
-#else
-   HB_SYMBOL_UNUSED( Arg8 )
 #endif
 
 #ifdef _BT_
@@ -5241,9 +5231,24 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
       NEXT
 #endif
       IF ( Upper( Arg2 ) == "VSCROLLBAR" .OR. Upper( Arg2 ) == "HSCROLLBAR" )
+
          IF .NOT. _IsWindowDefined ( Arg1 )
             MsgMiniGuiError ( "Window: " + Arg1 + " is not defined." )
          ENDIF
+
+      ELSEIF Upper( Arg2 ) == "SPLITBOX"
+
+         IF ( ix := GetFormIndex ( Arg1 ) ) > 0 .AND. IsWindowHandle ( Arg8 := _HMG_aFormReBarHandle [ix] )
+
+            IF Arg3 == "WIDTH"
+               RETURN GetWindowWidth ( Arg8 )
+
+            ELSEIF Arg3 == "HEIGHT"
+               RETURN GetWindowHeight ( Arg8 )
+            ENDIF
+
+         ENDIF
+
       ELSE
          VerifyControlDefined ( Arg1 , Arg2 )
       ENDIF
@@ -5275,23 +5280,29 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
       CASE Arg3 == "ALIGNMENT"  // GF 12/01/17
 
-         ix := GetControlHandle ( Arg2 , Arg1 )
+         Arg8 := GetControlHandle ( Arg2 , Arg1 )
 
-         DO CASE
+         IF GetControlType ( Arg2 , Arg1 ) == "TOOLBAR"
+            RetVal := iif( And ( GetWindowLong ( Arg8, GWL_STYLE ) , CCS_BOTTOM ) == CCS_BOTTOM, "BOTTOM", "TOP" )
+         ELSE
 
-         CASE IsWindowHasStyle ( ix , ES_CENTER )
-            RetVal := "CENTER"
+            DO CASE
 
-         CASE IsWindowHasStyle ( ix , ES_RIGHT )
-            RetVal := "RIGHT"
+            CASE IsWindowHasStyle ( Arg8, ES_CENTER )
+               RetVal := "CENTER"
 
-         CASE IsWindowHasStyle ( ix , SS_CENTERIMAGE )
-            RetVal := "VCENTER"
+            CASE IsWindowHasStyle ( Arg8, ES_RIGHT )
+               RetVal := "RIGHT"
 
-         OTHERWISE
-            RetVal := "LEFT"
+            CASE IsWindowHasStyle ( Arg8, SS_CENTERIMAGE )
+               RetVal := "VCENTER"
 
-         ENDCASE
+            OTHERWISE
+               RetVal := "LEFT"
+
+            ENDCASE
+
+         ENDIF
 
       CASE Arg3 == "CASECONVERT"  // GF 04/04/20
 
@@ -5299,10 +5310,10 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7, Arg8 )
 
          DO CASE
 
-         CASE IsWindowHasStyle ( ix , ES_UPPERCASE )
+         CASE IsWindowHasStyle ( ix, ES_UPPERCASE )
             RetVal := "UPPER"
 
-         CASE IsWindowHasStyle ( ix , ES_LOWERCASE )
+         CASE IsWindowHasStyle ( ix, ES_LOWERCASE )
             RetVal := "LOWER"
 
          OTHERWISE
@@ -8253,9 +8264,9 @@ FUNCTION _GetControlFree()
       AAdd ( _HMG_aControlPageMap      , Nil )
       AAdd ( _HMG_aControlValue        , Nil )
       AAdd ( _HMG_aControlInputMask    , Nil )
-      AAdd ( _HMG_aControllostFocusProcedure, Nil )
+      AAdd ( _HMG_aControllostFocusProcedure , Nil )
       AAdd ( _HMG_aControlGotFocusProcedure , Nil )
-      AAdd ( _HMG_aControlChangeProcedure   , Nil )
+      AAdd ( _HMG_aControlChangeProcedure , Nil )
       AAdd ( _HMG_aControlDeleted      , Nil )
       AAdd ( _HMG_aControlBkColor      , Nil )
       AAdd ( _HMG_aControlFontColor    , Nil )
@@ -8269,10 +8280,10 @@ FUNCTION _GetControlFree()
       AAdd ( _HMG_aControlContainerRow , Nil )
       AAdd ( _HMG_aControlContainerCol , Nil )
       AAdd ( _HMG_aControlPicture      , Nil )
-      AAdd ( _HMG_aControlContainerHandle   , Nil )
+      AAdd ( _HMG_aControlContainerHandle , Nil )
       AAdd ( _HMG_aControlFontName     , Nil )
       AAdd ( _HMG_aControlFontSize     , Nil )
-      AAdd ( _HMG_aControlFontAttributes    , Nil )
+      AAdd ( _HMG_aControlFontAttributes , Nil )
       AAdd ( _HMG_aControlToolTip      , Nil )
       AAdd ( _HMG_aControlRangeMin     , Nil )
       AAdd ( _HMG_aControlRangeMax     , Nil )
@@ -8435,32 +8446,92 @@ STATIC FUNCTION _SetGetCheckboxItemState ( ControlName, ParentForm, Item, lState
 
 RETURN RetVal
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * Function: _GetId
+ * Purpose: Generates a unique ID (integer) within a specified range, ensuring it's not already in use.
+ *
+ * Parameters:
+ *   nMax : The maximum value for the generated ID (exclusive).  Defaults to 65536 if not provided.
+ *          This parameter controls the range of possible IDs, influencing the likelihood of collisions.
+ *
+ * Returns:
+ *   nRetVal : A unique integer ID that is not present in the _HMG_aControlIds array.
+ *             This ID can then be assigned to a new control.
+ -----------------------------------------------------------------------------*/
 FUNCTION _GetId ( nMax )
-*-----------------------------------------------------------------------------*
+
    LOCAL nRetVal
 
-   hb_default( @nMax, 65536 )
+   hb_default( @nMax, 65536 )  // If nMax is not provided, default it to 65536.
 
-   REPEAT
+   REPEAT  // Repeat the ID generation process until a unique ID is found.
+      // Generate a random number between 1 and nMax (inclusive).
       nRetVal := Random ( nMax )
-   UNTIL ( AScan ( _HMG_aControlIds, nRetVal ) <> 0 )
+   UNTIL ( AScan ( _HMG_aControlIds, nRetVal ) <> 0 ) // Check if the generated ID already exists in the _HMG_aControlIds array.
 
 RETURN nRetVal
 
-*-----------------------------------------------------------------------------*
-FUNCTION IsArrayRGB ( aColor )
-*-----------------------------------------------------------------------------*
+/* ----------------------------------------------------------------------------
+ * Function: IsArrayRGB
+ * Purpose: Checks if a given variable is an array containing valid RGB color values.
+ *
+ * Parameters:
+ *   xValue  : The variable to check.
+ *   lDeeper : Check if the element is numeric and has a valid RGB range.
+ *
+ * Returns:
+ *   .T. if the variable is an array of the form {R, G, B} where R, G, and B are numeric values between 0 and 255 (inclusive).
+ *   .F. otherwise.
+ -----------------------------------------------------------------------------*/
+FUNCTION IsArrayRGB( xValue, lDeeper )
 
-   IF ISARRAY ( aColor ) .AND. Len ( aColor ) == 3
-      RETURN ( aColor [1] != NIL .AND. aColor [2] != NIL .AND. aColor [3] != NIL )
+   LOCAL lResult := .F.
+   LOCAL xElement
+
+   // Check if the input is an array and contains exactly 3 elements
+   IF ISARRAY( xValue ) .AND. Len( xValue ) == 3
+
+      lResult := .T.  // Assume true initially
+
+      IF hb_defaultValue( lDeeper, .F. )
+         // Iterate through the array elements
+         FOR EACH xElement IN xValue
+            // Check if the element is numeric
+            IF ! ISNUMERIC( xElement )
+               lResult := .F.
+               EXIT  // Exit the loop if a non-numeric element is found
+            ENDIF
+
+            // Check if the element is within the valid RGB range (0-255)
+            IF xElement < 0 .OR. xElement > 255
+               lResult := .F.
+               EXIT  // Exit the loop if an out-of-range element is found
+            ENDIF
+         NEXT
+      ENDIF
+
    ENDIF
 
-RETURN .F.
+RETURN lResult
 
-*-----------------------------------------------------------------------------*
-FUNCTION HMG_IsEqualArr ( aData1 , aData2 )
-*-----------------------------------------------------------------------------*
+/* ----------------------------------------------------------------------------
+ * Function: HMG_IsEqualArr
+ *
+ * Purpose: Recursively compares two arrays to determine if they are equal.
+ *  Equality is defined as having the same length and containing elements that are
+ *  equal in both value and data type at corresponding positions.  The function
+ *  handles nested arrays by recursively calling itself to compare the nested arrays.
+ *
+ * Parameters:
+ *   aData1 : The first array to compare.
+ *   aData2 : The second array to compare.
+ *
+ * Returns:
+ *   .T. if the two arrays are equal according to the definition above.
+ *   .F. otherwise.
+ -----------------------------------------------------------------------------*/
+FUNCTION HMG_IsEqualArr( aData1, aData2 )
+
    LOCAL x
    LOCAL lEqual := .T.
 

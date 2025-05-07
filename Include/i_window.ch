@@ -675,7 +675,7 @@ _HMG_AutoAdjust := .F. ; _HMG_AutoZooming := .F.
 // WAIT Window support
 ////////////////////////////////////////////////////////////
 
-#xcommand WAIT WINDOW <Message> ;
+#xcommand WAIT WINDOW [ PROMPT ] <Message> ;
 	[ <nowait: NOWAIT> ] ;
 	[ WIDTH <nWidth> ] ;
 	[ FONTSIZE <FontSize> ] ;
@@ -685,7 +685,14 @@ _HMG_AutoAdjust := .F. ; _HMG_AutoZooming := .F.
 => ;
 WaitWindow ( <Message> , <.nowait.> , <nWidth> , <FontSize> , <FontName> , <fontcolor> , <backcolor> )
 
-#xcommand WAIT CLEAR => WaitWindow ()
+#xcommand WAIT [ WINDOW ] CLEAR => WaitWindow ()
+
+#command SET WAITWINDOW [ PROMPT TO <cMessage> ] ;
+	[ FONT <cFont> ] ;
+	[ FONTCOLOR <fontcolor> ] ;
+	[ BACKCOLOR <backcolor> ] ;
+=> ;
+WaitWindow ( <(cMessage)>, 0,,, <(cFont)>, <fontcolor>, <backcolor> )
 
 
 ////////////////////////////////////////////////////////////

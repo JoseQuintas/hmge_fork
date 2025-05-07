@@ -23,8 +23,20 @@ SELECT FONT F0
 SET ORIENTATION Portrait
 //var pizza C []
 //(Pizza:= owr:prndrv)
+   SET HPDFDOC COMPRESS ALL
+   SET HPDFDOC PAGENUMBERING FROM 1 STYLE LETTERS PREFIX "Page: "
+   //SET HPDFDOC PASSWORD OWNER [Pierpaolo] USER [TEST]
+   SET HPDFDOC PAGEMODE TO OUTLINE
+   SET HPDFINFO DATECREATED TO [DATE()] TIME [TIME()]
+   SET HPDFINFO AUTHOR TO [Pierpaolo Martinello]
+   SET HPDFINFO CREATOR TO [Pierpaolo Martinello]
+   SET HPDFINFO TITLE   TO [Report interpreter Pdf export]
+   SET HPDFINFO SUBJECT TO [A Test of pdf creation with Report Interpreter]
+   SET HPDFINFO KEYWORDS TO [HMG, HPDF, Documentation, LibHaru, Harbour, MiniGUI]
+
 If (owr:prndrv = "PDF")
    SET JOB NAME [Winreport Pdf demo]
+   SET OFFSET HBPCOMPATIBLE 3.5
 Endif
 //msgbox(oWr:aStat[ 'Hbcompatible' ])
 [HEAD]12

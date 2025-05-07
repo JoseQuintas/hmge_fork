@@ -148,6 +148,7 @@ _ColorMenu ( <hWnd>, <argb> [, <lSubMenu> ] )
    ChangeStyle( <hWnd>, [ <nAddStyle> ], [ <nRemoveStyle> ], [ <lExStyle> ] );;
    iif( <.lRedrawWindow.>, RedrawWindow ( <hWnd> ), )
 
+
 #ifndef WS_EX_WINDOWEDGE
 #define WS_EX_WINDOWEDGE         256
 #define WS_EX_CLIENTEDGE         512
@@ -308,19 +309,27 @@ _ColorMenu ( <hWnd>, <argb> [, <lSubMenu> ] )
    => ;
    _GetValue (  <ControlName> , <FormName> ) \[2]
 
+#translate GetSplitBoxWIDTH ( <FormName> ) ;
+   => ;
+   GetProperty ( <FormName> , "SplitBox" , "WIDTH" )
+
+#translate GetSplitBoxHEIGHT ( <FormName> ) ;
+   => ;
+   GetProperty ( <FormName> , "SplitBox" , "HEIGHT" )
+
 
 #xtranslate CellNavigationColor (_SELECTEDCELL_FORECOLOR, <aColor>) => ( _HMG_GridSelectedCellForeColor := <aColor> )
 #xtranslate CellNavigationColor (_SELECTEDCELL_BACKCOLOR, <aColor>) => ( _HMG_GridSelectedCellBackColor := <aColor> )
 #xtranslate CellNavigationColor (_SELECTEDROW_FORECOLOR, <aColor>)  => ( _HMG_GridSelectedRowForeColor := <aColor> )
 #xtranslate CellNavigationColor (_SELECTEDROW_BACKCOLOR, <aColor>)  => ( _HMG_GridSelectedRowBackColor := <aColor> )
 #xtranslate CellNavigationColor (_SELECTEDCELL_DISPLAYCOLOR, <l>) => //
-#xtranslate CellNavigationColor (_SELECTEDROW_DISPLAYCOLOR, <l>) => //
+#xtranslate CellNavigationColor (_SELECTEDROW_DISPLAYCOLOR, <l>)  => //
 
 
-#xcommand  SET TOOLTIPBACKCOLOR <aColor> => ;
+#xcommand SET TOOLTIPBACKCOLOR <aColor> => ;
    SendMessage( GetFormToolTipHandle(Application.FormName), TTM_SETTIPBKCOLOR, RGB(<aColor>\[1], <aColor>\[2], <aColor>\[3]), 0 )
 
-#xcommand  SET TOOLTIPFORECOLOR <aColor> => ;
+#xcommand SET TOOLTIPFORECOLOR <aColor> => ;
    SendMessage( GetFormToolTipHandle(Application.FormName), TTM_SETTIPTEXTCOLOR, RGB(<aColor>\[1], <aColor>\[2], <aColor>\[3]), 0 )
 
 

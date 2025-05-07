@@ -181,7 +181,7 @@ SET TOOLTIP MAXWIDTH TO <w> [OF <form>]
 SET TOOLTIP VISIBLETIME TO <millisec> OF <form>
 
 ///////////////////////////////
-// Controls related commands
+// Mixed controls commands
 ///////////////////////////////
 
 SET AUTOADJUST [ON [NOBUTTONS]| OFF]
@@ -216,6 +216,9 @@ SET MSGALERT BACKCOLOR TO <aBackColor> [STOREIN <aPrev>]
 SET MSGALERT FONTCOLOR TO <aFontColor> [STOREIN <aPrev>]
 
 SET ALERT EOL [NORMAL | STANDARD]
+
+SET WAITWINDOW [ PROMPT TO <cMessage> ] [ FONT <cFont> ] ;
+  [ FONTCOLOR <fontcolor> ] [ BACKCOLOR <backcolor> ]
 
 [DISABLE | ENABLE] [CONTROL] EVENT <ControlName> OF <FormName>
 

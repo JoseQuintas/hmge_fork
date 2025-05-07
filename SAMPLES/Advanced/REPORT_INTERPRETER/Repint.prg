@@ -4,7 +4,7 @@
    Created			: 17 November 2011 (12:00:20)
    Created by		: Pierpaolo Martinello
 
-   Last Updated	: 22 May 2015
+   Last Updated	: 28 August 2024
    Updated by		: Pierpaolo
 
    Comments		:
@@ -32,43 +32,46 @@ procedure main()
 private aPrinters, aports
 
    AddFont()
-
    INIT PRINTSYS
    GET PRINTERS TO aprinters
-   GET PORTS TO aports
    RELEASE PRINTSYS
+   SET DATE BRITISH
 
    DEFINE WINDOW F1 ;
            AT 10,10 ;
-           WIDTH 545 HEIGHT 300 ;
-           TITLE 'Report Interpreter Demo' ;
+           WIDTH 642 HEIGHT 315 ;
+           TITLE 'Report Interpreter Demo using WinReport 4.5' ;
            ICON 'PRINT' ;
            MAIN ;
+           NOSIZE ;
+           NOMAXIMIZE ;
            FONT 'Arial' SIZE 10 ;
            ON RELEASE RemoveFont()
 
            ON KEY ESCAPE ACTION exit()
 
            DEFINE STATUSBAR
-                   STATUSITEM '[x] Harbour Power Ready!'
+                   STATUSITEM '[x] Harbour Power Ready! - with WinReport print and modify your report without recompile your program!'
            END STATUSBAR
 
-           @5 ,5   BUTTON Button_1 CAPTION '&Two Db'  ACTION  {||print(1),f1.button_1.setfocus} Tooltip "See Bolla.mod" default
-           @5 ,110 BUTTON Button_2 CAPTION '&Fantasy' ACTION  {||print(2),f1.button_2.setfocus} Tooltip "See ReportF.mod"
-           @5 ,215 BUTTON Button_3 CAPTION '&Group' ACTION  {||print(3),f1.button_3.setfocus} Tooltip "See ReportG.mod"
-           @5 ,320 BUTTON Button_4 CAPTION '&Simple (mm)' ACTION  {||print(4),f1.button_4.setfocus} Tooltip "See ReportS.mod"
-           @5 ,425 BUTTON Button_5 CAPTION '&Miniprint (mm)' ACTION  {||print(5),f1.button_5.setfocus} Tooltip "See ReportM.mod"
-           @50,5   BUTTON Button_6 CAPTION '&2PageS/Recno' ACTION  {||print(6),f1.button_6.setfocus} Tooltip "See ReportD.mod"
-           @50,110 BUTTON Button_7 CAPTION '&Labels' ACTION  {||print(7),f1.button_7.setfocus} Tooltip "See ReportL.mod"
-           @50,215 BUTTON Button_8 CAPTION '&Array' ACTION  {||print(9),f1.button_8.setfocus} Tooltip "See ReportA.mod"
-           @50,320 BUTTON Button_9 CAPTION '&Pdf (mm)' ACTION  {||print(8),f1.button_9.setfocus} Tooltip "See ReportP.mod"
-           @50,425 BUTTON Button_10 CAPTION '&Unified' ACTION {||print(10),f1.button_10.setfocus} Tooltip [See Unified.mod "One script 3 drivers"]
+           @ 5,  5 BUTTON Button_1  CAPTION '&Two Db'  ACTION  {||print(1),f1.button_1.setfocus} Tooltip "See Bolla.mod" default
+           @ 5,110 BUTTON Button_2  CAPTION '&Fantasy' ACTION  {||print(2),f1.button_2.setfocus} Tooltip "See ReportF.mod"
+           @ 5,215 BUTTON Button_3  CAPTION '&Group' ACTION  {||print(3),f1.button_3.setfocus} Tooltip "See ReportG.mod"
+           @ 5,320 BUTTON Button_4  CAPTION '&Simple (mm)' ACTION  {||print(4),f1.button_4.setfocus} Tooltip "See ReportS.mod"
+           @ 5,425 BUTTON Button_5  CAPTION '&Miniprint (mm)' ACTION  {||print(5),f1.button_5.setfocus} Tooltip "See ReportM.mod"
+           @ 5,530 BUTTON Button_6  CAPTION '&2PageS/Recno' ACTION  {||print(6),f1.button_6.setfocus} Tooltip "See ReportD.mod"
+           @50,  5 BUTTON Button_7  CAPTION '&Labels' ACTION  {||print(7),f1.button_7.setfocus} Tooltip "See ReportL.mod"
+           @50,110 BUTTON Button_8  CAPTION '&Array' ACTION  {||print(9),f1.button_8.setfocus} Tooltip "See ReportA.mod"
+           @50,215 BUTTONEX Button_9  CAPTION '&New Array' ACTION  {||stampa_buono(),f1.button_9.setfocus} Fontcolor {0,0,255} Tooltip "See BuonoOrdine.model"
+           @50,320 BUTTON Button_10 CAPTION '&Pdf (mm)' ACTION  {||print(8),f1.button_10.setfocus} Tooltip "See ReportP.mod"
+           @50,425 BUTTON Button_11 CAPTION '&Unified' ACTION {||print(10),f1.button_11.setfocus} Tooltip [See Unified.mod "One script 3 drivers"]
 
-           @100,10  LISTBOX L1 WIDTH 250 HEIGHT 100 ITEMS aprinters
-           @100,270 LISTBOX L2 WIDTH 250 HEIGHT 100 ITEMS aports
+           @115,59 LISTBOX L1 WIDTH 520 HEIGHT 100 ITEMS aprinters value ascan(aprinters,getdefaultprinter())
+           // @100,270 LISTBOX L2 WIDTH 250 HEIGHT 100 ITEMS aports
 
-           @210,160 LABEL LB1 VALUE "Available Printers and Ports" autosize
-           @210,425 BUTTON Button_11 CAPTION '&QUIT' ACTION {|| exit()}
+           @ 90,62 LABEL LB1 VALUE "Available Printers:"  autosize
+           @225,62 LABEL LB2 VALUE "Default: "+Getdefaultprinter() autosize
+           @225,530 BUTTON Button_21 CAPTION '&QUIT' ACTION {|| exit()}
 
    END WINDOW
 
@@ -80,7 +83,13 @@ return
 /*
 */
 *-----------------------------------------------------------------------------*
-function print(arg1)
+Function altd ()
+*-----------------------------------------------------------------------------*
+Return Nil
+/*
+*/
+*-----------------------------------------------------------------------------*
+Function print(arg1)
 *-----------------------------------------------------------------------------*
 local atag := {2,3,4}, afld:= {"First","Last","Birth" }, afldn:={"Simple","Apellido","Nato"}
 local choice := 0, aDrv:={[HBPRINTER],[MINIPRINT],[PDFPRINT]}
@@ -182,7 +191,7 @@ release tagged
 return Nil
 
 *-----------------------------------------------------------------------------*
-function Page2(row,col,argm1,argl1,argcolor1)
+Function Page2(row,col,argm1,argl1,argcolor1)
 *-----------------------------------------------------------------------------*
  local _Memo1:=argm1, mrow := mlcount(_memo1,argl1), arrymemo:={}
  Local units := hbprn:UNITS, k, mcl , argcolor
@@ -230,7 +239,7 @@ function Page2(row,col,argm1,argl1,argcolor1)
 /*
 */
 *-----------------------------------------------------------------------------*
-function exit()
+Function exit()
 *-----------------------------------------------------------------------------*
      close databases
      release window all
@@ -238,7 +247,7 @@ return nil
 /*
 */
 *-----------------------------------------------------------------------------*
-function what(calias, Checosa, nindexorder,ritorna,sync)
+Function what(calias, Checosa, nindexorder,ritorna,sync)
 *-----------------------------------------------------------------------------*
 local px
 local retval
@@ -284,7 +293,7 @@ return retval
 /*
 */
 *-----------------------------------------------------------------------------*
-function azzera(y_campo)
+Function azzera(y_campo)
 *-----------------------------------------------------------------------------*
 local ritorno
 do case
@@ -405,3 +414,40 @@ Procedure ESCAPE_ON(ARG1)
         ON KEY ESCAPE ACTION nil
      endif
 return
+/*
+*/
+*-----------------------------------------------------------------------------*
+Procedure stampa_buono()
+*-----------------------------------------------------------------------------*
+Local aDrv:={[HBPR],[MINI],[PDF]}, choice
+Local q
+Public aStampa := {}
+
+   for q =1 to 50
+      do case
+         Case q =1
+              aadd(aStampa, {"codice", "descriz" ,q })
+         Case q =2
+              aadd(aStampa, {"codice", "descriz" , q*20+q })
+         Case q =3
+              aadd(aStampa, {"codice", "descriz" , q*300+q })
+         Case q =4
+              aadd(aStampa, {"codice", "descriz" , q*400+q })
+         Case q =5
+              aadd(aStampa, {"codice", "descriz" , q*2100+q })
+         case q >= 6
+              aadd(aStampa, {"codice", "descriz" , 100000*RAND(10000*Q)  })
+      EndCase
+      aadd(aStampa, {"",Space (50)+"Blank Line",""} )
+   next
+
+   choice := Scegli({"Use Hbprinter","use Miniprint","Use PdfPrint"},"Driver choice","",1)
+
+   if choice = 0
+      return
+   Endif
+
+   WinREPINT('BuonoOrdine.model',aStampa,,,,, aDRV[choice] )
+
+return
+

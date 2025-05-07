@@ -106,7 +106,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
       Mdi := .F.
    ENDIF
 
-   FormName := AllTrim( FormName )
+   FormName := AllTrim ( FormName )
 
    IF Main
 
@@ -155,8 +155,8 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
 #else
    HB_SYMBOL_UNUSED( cPanelParent )
 #endif
-   IF !ISNUMBER( w ) .AND. !ISNUMBER( h )
 
+   IF !ISNUMBER( w ) .AND. !ISNUMBER( h )
       IF !ISNUMBER( clientwidth ) .AND. !ISNUMBER( clientheight )
          w := GetDesktopWidth()
          h := GetDesktopHeight()
@@ -177,17 +177,18 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
          w := ClientWidth + iif( mVar, 0, GetBorderWidth() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          h := ClientHeight + iif( nocaption, 0, GetTitleHeight() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) + iif( mVar, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          IF MSC_VER() > 0 .OR. _HMG_IsBcc77
-            IF !mVar .AND. _HMG_IsThemed
-               mVar := 2 * GetBorderWidth() + 2 * GetBorderHeight()
-               w += mVar
-               h += mVar
+            IF !mVar .AND. nosize .AND. _HMG_IsThemed
+               w += GetBorderWidth() + 2
+               h += GetBorderHeight() + 2
             ENDIF
          ENDIF
       ENDIF
-
-   ELSEIF MSC_VER() > 0 .OR. _HMG_IsBcc77
-      IF !( nocaption .AND. nosize )
-         w += 2 * GetBorderWidth()
+   ELSE
+      IF MSC_VER() > 0 .OR. _HMG_IsBcc77
+         IF nosize .AND. !nocaption .AND. _HMG_IsThemed
+            w += GetBorderWidth() + 2
+            h += GetBorderHeight() + 2
+         ENDIF
       ENDIF
    ENDIF
 
@@ -221,6 +222,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
 
    ENDIF
 #endif
+
    _HMG_ActiveFontName := hb_defaultValue( FontName, _HMG_DefaultFontName )
 
    _HMG_ActiveFontSize := hb_defaultValue( FontSize, _HMG_DefaultFontSize )
@@ -260,13 +262,6 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
          MsgMiniGuiError( "DEFINE WINDOW: Virtual Width must be greater than Window Width." )
       ENDIF
       hscroll := .T.
-   ENDIF
-
-   IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      IF nosize .AND. !nocaption
-         w += 10
-         h += 10
-      ENDIF
    ENDIF
 
    IF ValType ( aRGB ) == 'N'
@@ -554,10 +549,9 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
          w := ClientWidth + iif( mVar, 0, GetBorderWidth() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          h := ClientHeight + iif( nocaption, 0, GetTitleHeight() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) + iif( mVar, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          IF MSC_VER() > 0 .OR. _HMG_IsBcc77
-            IF !mVar .AND. _HMG_IsThemed
-               mVar := 2 * GetBorderWidth() + 2 * GetBorderHeight()
-               w += mVar
-               h += mVar
+            IF ! mVar .AND. nosize .AND. _HMG_IsThemed
+               w += GetBorderWidth() + 2
+               h += GetBorderHeight() + 2
             ENDIF
          ENDIF
       ENDIF
@@ -609,9 +603,9 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
    ENDIF
 
    IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      IF nosize
-         w += 10
-         h += 5
+      IF nosize .AND. nosysmenu
+         w += GetBorderWidth() + 2
+         h += GetBorderHeight() + 2
       ENDIF
    ENDIF
 
@@ -643,7 +637,7 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
    Formhandle := InitModalWindow ( Caption, x, y, w, h, Parent, nosize, nosysmenu, nocaption, ClassName, vscroll, hscroll, helpbutton )
 
    IF Empty ( _HMG_InteractiveClose ) .AND. !nosysmenu .AND. !nocaption
-      xDisableCloseButton( FormHandle, .F. )
+      xDisableCloseButton ( FormHandle, .F. )
    ENDIF
 
    IF cursor != NIL
@@ -2754,6 +2748,7 @@ FUNCTION MsgDebug ( ... )
 *-----------------------------------------------------------------------------*
    LOCAL nCnt := PCount()
    LOCAL cMsg, xVal
+   LOCAL cFormName, hWnd
    LOCAL i
 
    cMsg := "Called from: " + ProcName( 1 ) + "(" + hb_ntos( ProcLine( 1 ) ) + ") --> " + ProcFile( 1 ) + CRLF + CRLF
@@ -2778,16 +2773,16 @@ FUNCTION MsgDebug ( ... )
 
    IF _HMG_lOnErrorStop
       IF _HMG_BeginWindowActive
-         i := _HMG_ActiveFormName
+         cFormName := _HMG_ActiveFormName
       ENDIF
-      xVal := GetActiveWindow()
+      hWnd := GetActiveWindow()
 
       AlertInfo( cMsg, "DEBUG INFO", "_dbgicon" )
 
-      SetFocus( xVal )
-      IF ISCHAR( i )
+      SwitchToThisWindow( hWnd )
+      IF ISCHAR( cFormName )
          _HMG_BeginWindowActive := .T.
-         _HMG_ActiveFormName := i
+         _HMG_ActiveFormName := cFormName
       ENDIF
    ELSE
       MsgInfo( cMsg, "DEBUG INFO", 32001 )
@@ -2921,7 +2916,10 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
    LOCAL lWidth := ( nWidth == NIL )
    LOCAL nHeight
    LOCAL nY, nX, nW, nI, nK
-   LOCAL hFont, cTmp, nTmp, cLbl
+   LOCAL hFont, cTmp, nTmp, cLbl, bOnInit, l_No_Wait := .T.
+#ifdef _NAMES_LIST_
+   LOCAL oo, lo
+#endif
 
    IF PCount() == 0
 
@@ -2932,6 +2930,48 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
       ENDIF
 
    ELSE
+
+      IF HB_ISBLOCK( lNoWait )
+         bOnInit := lNoWait
+         lNoWait := NIL
+      ENDIF
+
+#ifdef _NAMES_LIST_
+      IF HB_ISNUMERIC( lNoWait )
+         oo := _SetGetNamesList():Get( cFormName )
+         IF ( lo := Empty( oo ) ) ; oo := oHmgData()
+         ENDIF
+         IF ( HB_ISCHAR( cMessage ) .OR. HB_ISARRAY( cMessage ) ) .AND. ! Empty( cMessage )
+            oo:cMessage := cMessage
+         ENDIF
+         IF HB_ISCHAR( cFont ) .AND. ! Empty( cFont )
+            oo:cFontName := cFont
+         ENDIF
+         IF HB_ISARRAY( aFontColor ) .AND. Len( aFontColor ) == 3
+            oo:aFontColor := aFontColor
+         ENDIF
+         IF HB_ISARRAY( aBackColor ) .AND. Len( aBackColor ) == 3
+            oo:aBackColor := aBackColor
+         ENDIF
+         IF lo ; _SetGetNamesList():Set( cFormName, oo )
+         ENDIF
+         RETURN oo
+      ENDIF
+#endif
+
+      IF HB_ISLOGICAL( cMessage )
+         lNoWait := cMessage
+         cMessage := NIL
+
+#ifdef _NAMES_LIST_
+         oo := _SetGetNamesList( cFormName )
+         IF HB_ISOBJECT( oo )
+            DEFAULT aFontColor := oo:aFontColor, cMessage := oo:cMessage, ;
+               aBackColor := oo:aBackColor, cFont := oo:cFontName
+         ENDIF
+#endif
+         DEFAULT cMessage := "... Wait for the preparation to complete ..."
+      ENDIF
 
       hb_default( @lNoWait, .F. )
       hb_default( @cFont, _HMG_DefaultFontName )
@@ -2993,6 +3033,9 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
             DEFINE WINDOW _HMG_CHILDWAITWINDOW CHILD
          ELSE
             DEFINE WINDOW _HMG_CHILDWAITWINDOW MODAL
+            IF HB_ISBLOCK( bOnInit )
+               l_No_Wait := .F.
+            ENDIF
          ENDIF
 
          SetProperty( cFormName, "Width", Min( 2 * nWidth, Min( GetDesktopWidth(), 800 ) ) )
@@ -3026,22 +3069,28 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
             _DefineTimer( "Timer", cFormName, 100, {|| EfeitoLabel( cMessage[ 1 ] ) } )
          ENDIF
 
+         IF HB_ISBLOCK( bOnInit )
+            nK := GetFormIndex( cFormName )
+            _HMG_aFormInitProcedure [ nK ] := bOnInit
+         ENDIF
+
          END WINDOW
 
          DoMethod ( cFormName, "Center" )
-         _ActivateWindow ( { cFormName }, .T. )
+         _ActivateWindow ( { cFormName }, l_No_Wait )
 
          _HMG_IsModalActive := lIsModal
 
          IF ! lNoWait
-            InkeyGUI( 0 )
+            IF _IsWindowDefined( cFormName ) 
+               InkeyGUI( 0 )
 
-            IF _IsControlDefined ( "Timer", cFormName )
-               nCtEfeito := 0
-               cDescEfeito := ""
+               IF _IsControlDefined ( "Timer", cFormName )
+                  nCtEfeito := 0
+                  cDescEfeito := ""
+               ENDIF
+               DoMethod ( cFormName, "Release" )
             ENDIF
-
-            DoMethod ( cFormName, "Release" )
          ENDIF
 
       ENDIF

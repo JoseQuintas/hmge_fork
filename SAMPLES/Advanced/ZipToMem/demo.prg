@@ -46,7 +46,7 @@ FUNCTION Main(...)
    DEFINE WINDOW wMain AT nY, nX WIDTH nW HEIGHT nH TITLE SHOW_TITLE ;
           MAIN  NOMAXIMIZE  NOSIZE ;
           ON INIT    _wPost( 0) ;  // Post event 0 on initialization
-          ON RELEASE _wPost(90)    // Post event 90 on release
+          ON RELEASE _wSend(90)    // Post event 90 on release
 
       // Store extracted DBF filenames
       This.Cargo := oHmgData()

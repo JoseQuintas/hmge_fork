@@ -52,9 +52,16 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "error.ch"
 #include "hbver.ch"
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+* PROCEDURE ClipInit()
+*
+* Description:
+*   This procedure is the initialization routine for the application.
+*   It checks the Windows version and displays an error message if it's running on
+*   Windows 95 or 98, as these versions are not supported. If the Windows version
+*   is acceptable, it calls the Init() function to perform further initialization.
+*-----------------------------------------------------------------------------*/
 INIT PROCEDURE ClipInit()
-*-----------------------------------------------------------------------------*
 
    IF os_isWin95() .OR. os_isWin98()
       MsgExclamation( "The " + hb_ArgV( 0 ) + " file" + CRLF + ;
@@ -71,15 +78,27 @@ INIT PROCEDURE ClipInit()
 
 RETURN
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+* PROCEDURE ClipExit()
+*
+* Description:
+*   This procedure is the exit routine for the application.
+*   It terminates the application process.
+*-----------------------------------------------------------------------------*/
 EXIT PROCEDURE ClipExit()
-*-----------------------------------------------------------------------------*
 
    ExitProcess()
 
 RETURN
 
 #ifndef __XHARBOUR__
+/*
+* PROCEDURE hb_GTSYS
+*
+* Description:
+*   This procedure requests the default GUI graphics terminal system (GTSYS) for Harbour.
+*   It ensures that the GUI is initialized correctly.
+*/
 PROCEDURE hb_GTSYS
 
    REQUEST HB_GT_GUI_DEFAULT
@@ -87,22 +106,47 @@ PROCEDURE hb_GTSYS
 RETURN
 
 #endif
-*-----------------------------------------------------------------------------*
-*-Date Created: 01-01-2003
-*-Author: Antonio Novo <antonionovo@gmail.com>
-*-Modified by Grigory Filatov at 24-08-2014
-*-----------------------------------------------------------------------------*
+
+/*-----------------------------------------------------------------------------*
+* FUNCTION MsgMiniGuiError( cMessage, lAddText )
+*
+* Description:
+*   This function displays an error message using the MiniGUI framework.
+*   It takes an error message string as input and optionally appends a default
+*   termination message. It then evaluates the ErrorBlock() with a generated
+*   HMG error object, effectively triggering the error handling mechanism.
+*
+* Parameters:
+*   cMessage (STRING): The error message to display.
+*   lAddText (LOGICAL): Optional. If .T. (default), appends " Program terminated." to the message.
+*
+* Return Value:
+*   The return value of Eval( ErrorBlock(), HMG_GenError( cMessage ) ).  This is typically NIL, but depends on the ErrorBlock() implementation.
+*-----------------------------------------------------------------------------*/
 FUNCTION MsgMiniGuiError( cMessage, lAddText )
-*-----------------------------------------------------------------------------*
+
    IF hb_defaultValue( lAddText, .T. )
       cMessage += " Program terminated."
    ENDIF
 
 RETURN Eval( ErrorBlock(), HMG_GenError( cMessage ) )
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+* STATIC FUNCTION HMG_GenError( cMsg )
+*
+* Description:
+*   This function generates a Harbour error object with specific MiniGUI-related
+*   information. It sets the subsystem, subcode, severity, description, and operation
+*   properties of the error object.
+*
+* Parameters:
+*   cMsg (STRING): The error message to be stored in the error object's description.
+*
+* Return Value:
+*   oError (OBJECT): A Harbour error object populated with MiniGUI-specific error details.
+*-----------------------------------------------------------------------------*/
 STATIC FUNCTION HMG_GenError( cMsg )
-*-----------------------------------------------------------------------------*
+
    LOCAL oError := ErrorNew()
 
    oError:SubSystem   := "MGERROR"
@@ -113,11 +157,29 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 25.04 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 25.05 ("
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+* FUNCTION MiniGuiVersion( nVer )
+*
+* Description:
+*   This function returns the version string of the Harbour MiniGUI Extended Edition.
+*   It constructs the version string based on the Harbour version and the character set.
+*   It also includes a "DEBUG" suffix if the debug mode is enabled. The function allows
+*   for different levels of version information to be returned based on the nVer parameter.
+*
+* Parameters:
+*   nVer (NUMERIC): Optional. Specifies the level of version information to return.
+*                    0 (default): Returns the full version string.
+*                    1: Returns a shorter version string (38 characters).
+*                    2: Returns an even shorter version string (15 characters).
+*                    < 0: Returns an empty string.
+*                    > 2: Returns the 38 character version string.
+*
+* Return Value:
+*   cVer (STRING): The version string of the Harbour MiniGUI Extended Edition, truncated based on nVer.
+*-----------------------------------------------------------------------------*/
 FUNCTION MiniGuiVersion( nVer )
-*-----------------------------------------------------------------------------*
 #ifndef __XHARBOUR__
    LOCAL cVer := MG_VERSION + hb_ntos( hb_Version( HB_VERSION_BITWIDTH ) ) + "-bit) "
 #else

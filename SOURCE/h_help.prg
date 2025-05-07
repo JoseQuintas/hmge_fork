@@ -48,9 +48,31 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "fileio.ch"
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 PROCEDURE SetHelpFile( cFile )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Purpose:
+*     Sets the active help file for the application. This procedure checks if the specified
+*     help file exists and attempts to open it. If successful, it sets the global variable
+*     _HMG_ActiveHelpFile to the file's path. If not, it displays an error message.
+*
+*  Parameters:
+*     cFile - The path to the help file (string).
+*
+*  Return Value:
+*     None.
+*
+*  Side Effects:
+*     Sets the global variable _HMG_ActiveHelpFile.
+*     Displays a message box if the file cannot be opened or is not found.
+*
+*  Note:
+*     This procedure assumes that the global variable _HMG_ActiveHelpFile is defined elsewhere.
+*     It uses the Harbour file I/O functions FOpen, FError, and FClose.
+*     It uses the HMG MsgAlert function to display error messages.
+*/
+PROCEDURE SetHelpFile( cFile )
    LOCAL hFile
 
    IF File( cFile )
@@ -73,9 +95,35 @@ PROCEDURE SetHelpFile( cFile )
 
 RETURN
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 PROCEDURE DisplayHelpTopic( xTopic , nMet )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Purpose:
+*     Displays a specific help topic from the active help file. This procedure determines
+*     the type of help file (CHM or other) and uses the appropriate method to display the topic.
+*     For CHM files, it uses the "hh.exe" (HTML Help executable) to display the topic.
+*     For other help files, it uses the WinHelp API function.
+*
+*  Parameters:
+*     xTopic - The topic to display. This can be a numeric ID, a string representing a topic name, or NIL.
+*     nMet   - The method to use for displaying the help topic (numeric).  This parameter is used with WinHelp API.
+*              It's defaulted to 0 if not provided.
+*
+*  Return Value:
+*     None.
+*
+*  Side Effects:
+*     Displays a help window.
+*     Sets the global variables _HMG_nTopic and _HMG_nMet.
+*
+*  Note:
+*     This procedure assumes that the global variables _HMG_ActiveHelpFile and _HMG_MainHandle are defined elsewhere.
+*     It uses the Harbour functions ValType, hb_ntos, AllTrim, Upper, and _Execute.
+*     It uses the Windows API function WinHelp.
+*     The _Execute function is assumed to be a custom function for executing external programs.
+*/
+PROCEDURE DisplayHelpTopic( xTopic , nMet )
    LOCAL cParam := ""
 
    IF Empty( _HMG_ActiveHelpFile )

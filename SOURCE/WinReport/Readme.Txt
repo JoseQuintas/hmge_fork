@@ -27,6 +27,20 @@ USE AT YOUR OWN RISK.
 
 Whats News:
 ~~~~~~~~~~~
+
+May 2025 New Version 4.5
+Introduced the new method MyMask(num, nlen, nDec, cDSep , cMSep)
+Num   (the current number used)
+nLen  (the max len of char to print )
+nDec  (Quantity of tenth printed )
+cDsep (Type of decimal separator [ all chars ] )
+cMsep (Type of separator of the thousands [ all chars ])
+
+Enhanced Putarray Method with the new MyMask Method
+Syntax example: PUTARRAY m->aStampa  len { 20, 138, {len , nDdec, cDSep, cMSep } }
+Correct some bugs including the printing of negative numbers with Putarray
+The transpace method code changed
+
 December 2022
     Fixed wrong interpretation of command Landscape command with Miniprint
 

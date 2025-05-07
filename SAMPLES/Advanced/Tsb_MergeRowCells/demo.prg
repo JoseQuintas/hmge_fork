@@ -123,7 +123,7 @@ FUNCTION Main()
       ON KEY ESCAPE OF wMain ACTION _wPost(99,"wMain")
 
       WITH OBJECT This.Object
-        :Event( 0, {|ow| DoEvents(), ow:Setfocus("Buff"), oTbl:Setfocus() })
+        :Event( 0, {|ow,ob| ob := ow:Cargo:oTbl, ob:SetFocus(), ob:DrawSelect(), ob:Show(), DoEvents() })
 
         :Event( 1, {|ow,ky,nI| _SetThisFormInfo(ow) , MsgDebug(nI,ky) ,;
                                _SetThisFormInfo() , ow:Setfocus("Buff"), DoEvents() })
@@ -271,6 +271,8 @@ STATIC FUNCTION TablePatam(cForm,aXDim,cBrw,aBColor,nWTsb)
    // присвоим ширину колонок для передачи в _TBrowse()
    oTsb:aSize := aCSize
    ? "nWTsb=", nWTsb, "nWSum=", nWSum, "oTsb:aSize", HB_ValToExp(oTsb:aSize)
+
+   oTsb:bInit  := {|ob| ob:Hide() }
    // блок кода для объединения колонок в одну колонку (1)
    oTsb:bAfter := {|ob|
                    Local oo, i

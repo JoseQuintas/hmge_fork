@@ -18,6 +18,9 @@ SELECT FONT F0
 SET ORIENTATION Portrait
 var pizza [Hbprn] C
 (Pizza := oWr:PrnDrv)
+var dt [1/3/2025] C
+var eu [1000.03] C
+(dt:= ctod(dt))
 ONEATLEAST  1
 set debug off
 [HEAD]8
@@ -44,13 +47,13 @@ set backcolor white
 @(2*lstep+3),130,(4*lstep+4),145 DRAW IMAGELIST ILIST1 ICON 15 BACKGROUND WHITE
 @(52*lstep ),120,( ((maxRow)-1 ) ),(maxcol)-1 RECTANGLE pen p1 brush b1
 SET TEXTCOLOR BLACK
+// msgdebug( hb_dtoc(m->dt,"DD-MM-YY") , eu_point( m->eu ) )
 [BODY]50
-
 if (npag < 2)
-   @ ((nline)*lstep),10 PUTARRAY m->asay len {20,40,25,18} FONT ARIAL SIZE 10 COLOR Blue noframe
+   @ ((nline)*lstep),10 PUTARRAY m->asay len {{20,0},40,25,20} FONT ARIAL SIZE 10 COLOR Blue noframe
    // ((nline)*lstep),10 PUTARRAY m->asay len {40} FONT ARIAL SIZE 10 COLOR Blue noframe
 else
-   @(nline*lstep),10 PUTARRAY m->asay len {20,40,25,18} FONT ARIAL SIZE 10 COLOR RED
+   @(nline*lstep),10 PUTARRAY m->asay len { {20,0},40,25,18} FONT ARIAL SIZE 10 COLOR RED
    //@ ((nline)*lstep),10 PUTARRAY m->asay len {40} FONT ARIAL SIZE 10 COLOR RED
 Endif
 */

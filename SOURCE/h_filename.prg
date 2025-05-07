@@ -51,49 +51,129 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #endif
 #include "minigui.ch"
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION cFilePath ( cPathMask )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Extracts the path component from a full file path string.
+*
+*  Parameters:
+*     cPathMask - The full file path string (e.g., "C:\MyFolder\MyFile.txt").
+*
+*  Return Value:
+*     The path component of the file path (e.g., "C:\MyFolder").  The trailing backslash is removed.
+*
+*  Purpose:
+*     This function is used to isolate the directory path from a complete file path.
+*     It leverages the hb_FNameSplit function to parse the path and then removes the trailing backslash.
+*
+*/
+FUNCTION cFilePath ( cPathMask )
    LOCAL cPath
 
    hb_FNameSplit ( cPathMask, @cPath )
 
 RETURN hb_StrShrink( cPath )
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION cFileNoPath ( cPathMask )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Extracts the file name (including extension) from a full file path string.
+*
+*  Parameters:
+*     cPathMask - The full file path string (e.g., "C:\MyFolder\MyFile.txt").
+*
+*  Return Value:
+*     The file name with extension (e.g., "MyFile.txt").
+*
+*  Purpose:
+*     This function is used to retrieve the file name and extension from a complete file path,
+*     excluding the directory path. It uses hb_FNameSplit to separate the path, name, and extension,
+*     and then concatenates the name and extension.
+*
+*/
+FUNCTION cFileNoPath ( cPathMask )
    LOCAL cName, cExt
 
    hb_FNameSplit ( cPathMask, , @cName, @cExt )
 
 RETURN ( cName + cExt )
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION cFileNoExt ( cPathMask )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Extracts the file name (without extension) from a full file path string.
+*
+*  Parameters:
+*     cPathMask - The full file path string (e.g., "C:\MyFolder\MyFile.txt").
+*
+*  Return Value:
+*     The file name without extension (e.g., "MyFile").
+*
+*  Purpose:
+*     This function is used to retrieve the file name without its extension from a complete file path.
+*     It uses hb_FNameSplit to separate the path, name, and extension, and then returns only the name.
+*
+*/
+FUNCTION cFileNoExt ( cPathMask )
    LOCAL cName
 
    hb_FNameSplit ( cPathMask, , @cName )
 
 RETURN cName
 
-// Jacek Kubica <kubica@wssk.wroc.pl> HMG 1.1 Experimental Build 11a
-// cFile - string to be compacted (may be for example fullpath, path or file name)
-// nMax  - required string size (characters count)
-// _GetCompactPath("C:\Program Files\Adobe",20) -> "C:\Program...\Adobe"
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION _GetCompactPath ( cFile, nMax )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Compacts a file path string to a specified maximum length, inserting an ellipsis (...) if necessary.
+*
+*  Parameters:
+*     cFile - The file path string to compact.
+*     nMax  - The maximum length of the compacted string.
+*
+*  Return Value:
+*     The compacted file path string. If the original string is shorter than nMax, it is returned unchanged.
+*     If GetCompactPath fails, the original cFile is returned.
+*
+*  Purpose:
+*     This function is used to display long file paths in a limited space, such as in a listbox or textbox.
+*     It uses the Windows API function GetCompactPath to achieve the compaction.
+*     The IFNUMERIC check handles cases where nMax might not be numeric, providing a default value.
+*
+*/
+FUNCTION _GetCompactPath ( cFile, nMax )
    LOCAL cShort := Space( IFNUMERIC( nMax, nMax + 1, 64 ) )
 
 RETURN iif( GetCompactPath( @cShort, cFile, IFNUMERIC( nMax, nMax, 63 ), NIL ) > 0, cShort, cFile )
 
-// Jacek Kubica <kubica@wssk.wroc.pl> HMG 1.1 Experimental Build 11a
-// _GetShortPathName("C:\Program Files\Adobe") -> "C:\Program~1\Adobe"
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION _GetShortPathName ( cPath )
-*-----------------------------------------------------------------------------*
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Retrieves the short (8.3) form of a file path.
+*
+*  Parameters:
+*     cPath - The long file path string.
+*
+*  Return Value:
+*     The short path name if it exists; otherwise, the original path.
+*
+*  Purpose:
+*     This function is used to obtain the short path name (also known as the 8.3 name) of a file or directory.
+*     Short path names are used for compatibility with older systems that do not support long file names.
+*     It uses the Windows API function GetShortPathName.
+*     If GetShortPathName fails (e.g., if short names are disabled on the volume), the original path is returned.
+*
+*/
+FUNCTION _GetShortPathName ( cPath )
    LOCAL cShortPathName
 
 RETURN iif( GetShortPathName( cPath, @cShortPathName ) > 0, cShortPathName, cPath )

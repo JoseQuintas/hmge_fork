@@ -184,6 +184,8 @@ SetResCursor( LoadCursor( NIL, IDC_UPARROW ) )
 #define SM_CXEDGE               45
 #define SM_CYEDGE               46
 
+#define SM_CXPADDEDBORDER       92
+
 /*
  * ShowWindow() Commands
  */
