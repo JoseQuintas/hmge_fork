@@ -63,6 +63,9 @@ PROCEDURE Init
 
    PUBLIC _HMG_SYSDATA [ _HMG_SYSDATA_SIZE ]
 
+#ifdef MT_EXPERIMENTAL
+   STATIC lFirstLoad := .T.
+#endif
 // JP Drag Image
    _HMG_ActiveDragImageHandle := 0
 // JP MDI
@@ -484,7 +487,14 @@ PROCEDURE Init
 
    InitMessages()
 
+#ifdef MT_EXPERIMENTAL
+   IF lFirstLoad
+#endif
    ResetGlobalListener() // set default Events function
+#ifdef MT_EXPERIMENTAL
+      lFirstLoad := .F.
+   ENDIF
+#endif
 
    _HMG_IsMultiple := IsExeRunning ( StrTran( GetExeFileName (), '\', '_' ) )
 

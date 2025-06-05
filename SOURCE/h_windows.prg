@@ -1304,7 +1304,9 @@ FUNCTION _EndWindow ()
    CASE _HMG_MdiChildActive == .T.  // JP MDI
       _EndMdiChildWindow ()
    OTHERWISE
+#ifdef WRITESTATICTXT
       _DefineTimer( "0", _HMG_ActiveFormName, 100, {|| _AltD( 1 ) }, .T. )
+#endif
       _HMG_BeginWindowActive := .F.
       _HMG_ActiveFormName := ""
    ENDCASE
@@ -3082,7 +3084,7 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
          _HMG_IsModalActive := lIsModal
 
          IF ! lNoWait
-            IF _IsWindowDefined( cFormName ) 
+            IF _IsWindowDefined( cFormName )
                InkeyGUI( 0 )
 
                IF _IsControlDefined ( "Timer", cFormName )
