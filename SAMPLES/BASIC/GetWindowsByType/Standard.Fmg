@@ -5,7 +5,7 @@ DEFINE WINDOW TEMPLATE AT 216 , 384 WIDTH 550 HEIGHT 350 VIRTUAL WIDTH Nil VIRTU
 
     DEFINE MAIN MENU
         DEFINE POPUP "Standard"
-            MENUITEM "Get Standard Windows" ACTION Msgdebug(GetWindowsByType('S'))
+            MENUITEM "Get Standard Windows" ACTION MsgTest(GetWindowsByType('S'))
             MENUITEM "Close" ACTION ThisWindow.Release
         END POPUP
     END MENU

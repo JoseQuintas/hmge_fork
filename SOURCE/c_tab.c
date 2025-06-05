@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 // Define the Windows Internet Explorer version for compatibility with control features.
 #define _WIN32_IE 0x0501
@@ -67,9 +67,37 @@ HINSTANCE   GetResources( void );   // Retrieves application resource instance.
 // MiniGUI resource management function to register resource with a given type.
 void        RegisterResource( HANDLE hResource, LPCSTR szType );
 
-/**
- * INITTABCONTROL - Initialize a tab control with configurable styles and tab items.
- * Creates a tab control window and sets various styles based on input parameters.
+/*
+ * HB_FUNC( INITTABCONTROL )
+ *
+ * Initializes a tab control window with specified properties and tab captions.
+ *
+ * Parameters:
+ *   - 1: Parent window handle (HWND).
+ *   - 2: Tab control ID (HMENU).
+ *   - 3: X position of the tab control.
+ *   - 4: Y position of the tab control.
+ *   - 5: Width of the tab control.
+ *   - 6: Height of the tab control.
+ *   - 7: Array containing tab captions (PHB_ITEM).
+ *   - 8: Initial selected tab index (1-based).
+ *   - 9: Reserved (unused).
+ *   - 10: Reserved (unused).
+ *   - 11: Optional: TRUE to enable TCS_BUTTONS style.
+ *   - 12: Optional: TRUE to enable TCS_FLATBUTTONS style.
+ *   - 13: Optional: TRUE to enable TCS_HOTTRACK style.
+ *   - 14: Optional: TRUE to enable TCS_VERTICAL style.
+ *   - 15: Optional: TRUE to enable TCS_BOTTOM style.
+ *   - 16: Optional: TRUE to enable TCS_MULTILINE style.
+ *   - 17: Optional: TRUE to enable TCS_OWNERDRAWFIXED style.
+ *   - 18: Optional: FALSE to disable WS_TABSTOP style.
+ *
+ * Returns:
+ *   - Handle to the created tab control window (HWND).
+ *
+ * This function creates a tab control, sets its styles based on the provided parameters,
+ * and populates it with tab items from the given array of captions. It handles both
+ * ANSI and Unicode environments by converting the captions appropriately.
  */
 HB_FUNC( INITTABCONTROL )
 {
@@ -169,34 +197,58 @@ HB_FUNC( INITTABCONTROL )
    hmg_ret_raw_HWND( hbutton );              // Return the tab control handle.
 }
 
-/**
- * TABCTRL_SETCURSEL - Set the currently selected tab.
+/*
+ * HB_FUNC( TABCTRL_SETCURSEL )
+ *
+ * Sets the currently selected tab in a tab control.
+ *
  * Parameters:
- * - Tab control handle.
- * - Tab index to select.
+ *   - 1: Tab control handle (HWND).
+ *   - 2: Tab index to select (1-based).
+ *
+ * Returns:
+ *   - The index of the previously selected tab, or -1 if there was no previously selected tab.
+ *
+ * This function allows you to programmatically change the active tab in a tab control.
  */
 HB_FUNC( TABCTRL_SETCURSEL )
 {
    hmg_ret_NINT( TabCtrl_SetCurSel( hmg_par_raw_HWND( 1 ), hb_parni( 2 ) - 1 ) );
 }
 
-/**
- * TABCTRL_GETCURSEL - Get the currently selected tab index.
+/*
+ * HB_FUNC( TABCTRL_GETCURSEL )
+ *
+ * Retrieves the index of the currently selected tab in a tab control.
+ *
  * Parameters:
- * - Tab control handle.
- * Returns the selected tab index incremented by 1.
+ *   - 1: Tab control handle (HWND).
+ *
+ * Returns:
+ *   - The index of the currently selected tab (1-based). Returns 1 if no tab is selected.
+ *
+ * This function is useful for determining which tab is currently active in the tab control.
  */
 HB_FUNC( TABCTRL_GETCURSEL )
 {
    hmg_ret_NINT( TabCtrl_GetCurSel( hmg_par_raw_HWND( 1 ) ) + 1 );
 }
 
-/**
- * TABCTRL_INSERTITEM - Insert a new item into the tab control.
+/*
+ * HB_FUNC( TABCTRL_INSERTITEM )
+ *
+ * Inserts a new tab item into a tab control at a specified position.
+ *
  * Parameters:
- * - Tab control handle.
- * - Position to insert.
- * - Text of the new tab.
+ *   - 1: Tab control handle (HWND).
+ *   - 2: Position to insert the new tab item (0-based).
+ *   - 3: Text of the new tab item (LPSTR).
+ *
+ * Returns:
+ *   - None.
+ *
+ * This function adds a new tab to the tab control with the specified text.
+ * The new tab is inserted at the given position, shifting existing tabs if necessary.
  */
 HB_FUNC( TABCTRL_INSERTITEM )
 {
@@ -217,23 +269,40 @@ HB_FUNC( TABCTRL_INSERTITEM )
 #endif
 }
 
-/**
- * TABCTRL_DELETEITEM - Delete a tab item at a specified position.
+/*
+ * HB_FUNC( TABCTRL_DELETEITEM )
+ *
+ * Deletes a tab item from a tab control at a specified position.
+ *
  * Parameters:
- * - Tab control handle.
- * - Tab index to delete.
+ *   - 1: Tab control handle (HWND).
+ *   - 2: Tab index to delete (0-based).
+ *
+ * Returns:
+ *   - None.
+ *
+ * This function removes a tab from the tab control at the given position.
+ * Subsequent tabs are shifted to fill the gap.
  */
 HB_FUNC( TABCTRL_DELETEITEM )
 {
    TabCtrl_DeleteItem( hmg_par_raw_HWND( 1 ), hb_parni( 2 ) );
 }
 
-/**
- * SETTABCAPTION - Set or update the caption for a specific tab.
+/*
+ * HB_FUNC( SETTABCAPTION )
+ *
+ * Sets or updates the caption (text) of a specific tab in a tab control.
+ *
  * Parameters:
- * - Tab control handle.
- * - Tab index.
- * - New text for the tab caption.
+ *   - 1: Tab control handle (HWND).
+ *   - 2: Tab index (1-based).
+ *   - 3: New text for the tab caption (LPSTR).
+ *
+ * Returns:
+ *   - None.
+ *
+ * This function allows you to change the text displayed on a tab in the tab control.
  */
 HB_FUNC( SETTABCAPTION )
 {
@@ -254,12 +323,23 @@ HB_FUNC( SETTABCAPTION )
 #endif
 }
 
-/**
- * ADDTABBITMAP - Add images to the tab control for each tab.
+/*
+ * HB_FUNC( ADDTABBITMAP )
+ *
+ * Adds images to the tab control for each tab, using an image list.
+ *
  * Parameters:
- * - Tab control handle.
- * - Array of image filenames.
- * - Transparency setting.
+ *   - 1: Tab control handle (HWND).
+ *   - 2: Array of image filenames (PHB_ITEM).
+ *   - 3: Transparency setting (TRUE for transparent, FALSE for opaque).
+ *   - 4: Optional: Image width. If not provided, it will be determined from the first image.
+ *   - 5: Optional: Image height. If not provided, it will be determined from the first image.
+ *
+ * Returns:
+ *   - Handle to the created image list (HIMAGELIST).
+ *
+ * This function loads images from the specified files, creates an image list,
+ * associates the image list with the tab control, and assigns an image to each tab.
  */
 HB_FUNC( ADDTABBITMAP )
 {
@@ -310,10 +390,19 @@ HB_FUNC( ADDTABBITMAP )
    hmg_ret_raw_HANDLE( himl );   // Return the image list handle.
 }
 
-/**
- * WINDOWFROMPOINT - Retrieve the window handle at a specified screen point.
+/*
+ * HB_FUNC( WINDOWFROMPOINT )
+ *
+ * Retrieves the window handle at a specified screen point.
+ *
  * Parameters:
- * - Array containing X and Y coordinates.
+ *   - 1: Array containing X and Y coordinates of the screen point (PHB_ITEM).
+ *
+ * Returns:
+ *   - Handle to the window at the specified point (HWND).
+ *
+ * This function is useful for determining which window is located at a particular
+ * screen coordinate.
  */
 HB_FUNC( WINDOWFROMPOINT )
 {
@@ -323,9 +412,19 @@ HB_FUNC( WINDOWFROMPOINT )
    hmg_ret_raw_HWND( WindowFromPoint( Point ) );      // Retrieve window handle at specified point.
 }
 
-/**
- * GETMESSAGEPOS - Get the cursor position for the last message.
- * Returns the cursor position as a DWORD value.
+/*
+ * HB_FUNC( GETMESSAGEPOS )
+ *
+ * Gets the cursor position for the last message retrieved by the calling thread.
+ *
+ * Parameters:
+ *   - None.
+ *
+ * Returns:
+ *   - A DWORD value containing the X and Y coordinates of the cursor. The X coordinate is the low-order word,
+ *     and the Y coordinate is the high-order word.
+ *
+ * This function is useful for determining the cursor position when handling window messages.
  */
 HB_FUNC( GETMESSAGEPOS )
 {

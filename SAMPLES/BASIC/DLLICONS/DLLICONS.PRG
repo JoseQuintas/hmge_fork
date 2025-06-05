@@ -7,7 +7,7 @@
  *
  * Based upon the Minigui\Samples\Basic\ExtractIcon\demo2.prg sample
  * rewritten for HMG by Auge & Ohr, Jimmy
-*/
+ */
 
 #include "hmg.ch"
 
@@ -26,12 +26,14 @@
 
 #xtranslate LTRIM( STR( <i> ) ) => hb_ntos( <i> )
 
-*+--------------------------------------------------------------------
-*+
-*+    Procedure MAIN()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Procedure Main()
+ *
+ *  This is the main procedure of the application. It defines the main window
+ *  containing a grid that displays a list of DLL files from the system folder.
+ *  When a DLL is double-clicked, the ShowDLL() procedure is called to display
+ *  the icons contained within that DLL.
+ */
 PROCEDURE Main()
 
    LOCAL cFolder := System.SystemFolder
@@ -168,14 +170,21 @@ PROCEDURE Main()
 
 RETURN
 
-*+--------------------------------------------------------------------
-*+
-*+    Procedure DoUseThis()
-*+
-*+    Called from ( dllicons.prg )   1 - procedure main()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Procedure DoUseThis()
+ *
+ *  This procedure is called when a DLL is double-clicked in the grid.
+ *  It retrieves the selected DLL's path and calls the ShowDLL() procedure
+ *  to display the icons contained within that DLL.
+ *
+ *  Parameters:
+ *      cForm   - The name of the form containing the grid.
+ *      cControl - The name of the grid control.
+ *      aFolder  - An array containing the DLL file names and descriptions.
+ *
+ *  Return:
+ *      None
+ */
 PROCEDURE DoUseThis( cForm, cControl, aFolder )
 
    LOCAL cFolder := System.SystemFolder
@@ -192,14 +201,20 @@ PROCEDURE DoUseThis( cForm, cControl, aFolder )
 
 RETURN
 
-*+--------------------------------------------------------------------
-*+
-*+    Procedure ShowDLL()
-*+
-*+    Called from ( dllicons.prg )   1 - procedure dousethis()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Procedure ShowDLL()
+ *
+ *  This procedure creates a new window to display the icons extracted from
+ *  the specified DLL file. It calculates the optimal window size based on
+ *  the number of icons and the screen resolution. It then calls the
+ *  MyDrawIcons() function to populate the window with the icons.
+ *
+ *  Parameters:
+ *      cWhich - The full path of the DLL file to extract icons from.
+ *
+ *  Return:
+ *      None
+ */
 PROCEDURE ShowDLL( cWhich )
 
    LOCAL nDesktopHeight := GetDesktopRealHeight() - 30
@@ -248,14 +263,20 @@ PROCEDURE ShowDLL( cWhich )
 
 RETURN
 
-*+--------------------------------------------------------------------
-*+
-*+    Function MyDrawIcons()
-*+
-*+    Called from ( dllicons.prg )   1 - procedure showdll()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Function MyDrawIcons()
+ *
+ *  This function extracts icons from the specified DLL and displays them
+ *  as buttons on the form. Each button displays an icon, and a label
+ *  below the button shows the icon's index. Clicking a button calls the
+ *  SaveThisIcon() function to save the icon to a file.
+ *
+ *  Parameters:
+ *      cWhich - The full path of the DLL file to extract icons from.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION MyDrawIcons( cWhich )
 
    LOCAL nJ := 0, nI, cStr, cObj, nRow := 10, nCol
@@ -318,14 +339,20 @@ FUNCTION MyDrawIcons( cWhich )
 
 RETURN NIL
 
-*+--------------------------------------------------------------------
-*+
-*+    Function SaveThisIcon()
-*+
-*+    Called from ( dllicons.prg )   2 - function mydrawicons()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Function SaveThisIcon()
+ *
+ *  This function prompts the user to select a file name and location to
+ *  save the specified icon. It then calls the SaveIcon() function to
+ *  perform the actual saving of the icon to the file.
+ *
+ *  Parameters:
+ *      cSrcName - The full path of the DLL file containing the icon.
+ *      nI       - The index of the icon to save.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION SaveThisIcon( cSrcName, nI )
 
    LOCAL cFileName := PutFile( { { "Icon Files (*.ico)", "*.ico" } }, "Save Icon",, .T. )
@@ -336,14 +363,21 @@ FUNCTION SaveThisIcon( cSrcName, nI )
 
 RETURN NIL
 
-*+--------------------------------------------------------------------
-*+
-*+    Function SaveIcon()
-*+
-*+    Called from ( dllicons.prg )   1 - function savethisicon()
-*+
-*+--------------------------------------------------------------------
-*+
+/*
+ *  Function SaveIcon()
+ *
+ *  This function saves the specified icon to a file in the .ico format.
+ *  It extracts the icon in multiple sizes (32x32 and 16x16) and then
+ *  uses the C_SaveHIconToFile() function to create the .ico file.
+ *
+ *  Parameters:
+ *      cIconName - The full path of the file to save the icon to.
+ *      cIconSrc  - The full path of the DLL file containing the icon.
+ *      nItem     - The index of the icon to save.
+ *
+ *  Return:
+ *      .T. if the icon was saved successfully, .F. otherwise.
+ */
 FUNCTION SaveIcon( cIconName, cIconSrc, nItem )
 
    LOCAL aIcons := {}, aSizes := { 32, 16 }, n

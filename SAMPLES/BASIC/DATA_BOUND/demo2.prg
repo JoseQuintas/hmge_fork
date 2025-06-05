@@ -217,6 +217,7 @@ PROCEDURE Refresh
 
       IF ( "EDIT" $ GetControlType( Ctrl, cWindowName ) .OR. ;
          "TEXT" $ GetControlType( Ctrl, cWindowName ) .OR. ;
+         "DATE" $ GetControlType( Ctrl, cWindowName ) .OR. ;
          "CHECK" $ GetControlType( Ctrl, cWindowName ) )
          Win_1.(Ctrl).Refresh
       ENDIF
@@ -242,6 +243,7 @@ PROCEDURE Save
 
          IF ( "EDIT" $ GetControlType( Ctrl, cWindowName ) .OR. ;
             "TEXT" $ GetControlType( Ctrl, cWindowName ) .OR. ;
+            "DATE" $ GetControlType( Ctrl, cWindowName ) .OR. ;
             "CHECK" $ GetControlType( Ctrl, cWindowName ) )
             This.&(Ctrl).Save
          ENDIF

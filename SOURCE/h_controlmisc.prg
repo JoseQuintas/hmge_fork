@@ -4206,6 +4206,18 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #endif
          _SetWindowSizePos ( Arg1 , Arg3 , , , )
 
+#ifdef _PANEL_
+      CASE Arg2 == "BORDER"
+
+         IF GetWindowType ( Arg1 ) == 'P'
+            Arg8 := HMG_IsWindowStyle ( GetFormHandle ( Arg1 ), WS_EX_STATICEDGE, .T. )
+            IF Arg3 == .F. .AND. Arg8
+               HMG_ChangeWindowStyle ( GetFormHandle ( Arg1 ), NIL, WS_EX_STATICEDGE, .T., .T. )
+            ELSEIF Arg3 .AND. Arg8 == .F.
+               HMG_ChangeWindowStyle ( GetFormHandle ( Arg1 ), WS_EX_STATICEDGE, NIL, .T., .T. )
+            ENDIF
+         ENDIF
+#endif
       CASE Arg2 == "NOTIFYICON"
 
          _SetNotifyIconName ( Arg1 , Arg3 )
@@ -5121,6 +5133,13 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
          RetVal := _GetWindowSizePos ( Arg1 ) [1]
 
+#ifdef _PANEL_
+      CASE Arg2 == "BORDER"
+
+         IF GetWindowType ( Arg1 ) == 'P'
+            RetVal := HMG_IsWindowStyle ( GetFormHandle ( Arg1 ), WS_EX_STATICEDGE, .T. )
+         ENDIF
+#endif
       CASE Arg2 == "TITLEBAR"
 
          RetVal := IsWindowHasStyle ( GetFormHandle( Arg1 ) , WS_CAPTION )
@@ -5238,15 +5257,32 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 
       ELSEIF Upper( Arg2 ) == "SPLITBOX"
 
-         IF ( ix := GetFormIndex ( Arg1 ) ) > 0 .AND. IsWindowHandle ( Arg8 := _HMG_aFormReBarHandle [ix] )
+         IF ( ix := GetFormIndex ( Arg1 ) ) > 0 .AND. GetControlIndex( Arg2, Arg1 ) == 0
 
-            IF Arg3 == "WIDTH"
-               RETURN GetWindowWidth ( Arg8 )
+            IF IsWindowHandle ( Arg8 := _HMG_aFormReBarHandle [ix] )
 
-            ELSEIF Arg3 == "HEIGHT"
-               RETURN GetWindowHeight ( Arg8 )
+               IF Arg3 == "WIDTH"
+                  RETURN GetWindowWidth ( Arg8 )
+
+               ELSEIF Arg3 == "HEIGHT"
+                  RETURN GetWindowHeight ( Arg8 )
+               ENDIF
+            ELSE
+               RETURN 0
             ENDIF
 
+         ENDIF
+
+      ELSEIF Upper( Arg2 ) == "STATUSBAR"
+  
+         IF ( ix := GetControlIndex( Arg2, Arg1 ) ) > 0
+            IF Arg3 == "HEIGHT"
+               RETURN _HMG_aControlHeight [ix]
+            ELSEIF Arg3 == "WIDTH"
+               RETURN _HMG_aControlWidth [ix]
+            ENDIF
+         ELSE
+            RETURN 0                       
          ENDIF
 
       ELSE

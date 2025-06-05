@@ -5,7 +5,7 @@ DEFINE WINDOW TEMPLATE AT 216 , 384 WIDTH 550 HEIGHT 350 VIRTUAL WIDTH Nil VIRTU
 
     DEFINE MAIN MENU
         DEFINE POPUP "Child"
-            MENUITEM "Get Child Windows" ACTION Msgdebug(GetWindowsByType('C'))
+            MENUITEM "Get Child Windows" ACTION MsgTest(GetWindowsByType('C'))
             MENUITEM "Get invalid Window's type" ACTION Msgdebug(GetWindowsByType('H'))
             MENUITEM "Close" ACTION ThisWindow.Release
         END POPUP

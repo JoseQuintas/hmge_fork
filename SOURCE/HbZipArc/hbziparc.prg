@@ -17,31 +17,28 @@
  *
  */
 
-#include "common.ch"      // Include common constants and macros
-#include "directry.ch"    // Directory handling
-#include "fileio.ch"      // File input/output handling
-#include "hbcompat.ch"    // Harbour compatibility functions
-#include "hbmzip.ch"      // Harbour zip library functions
+#include "common.ch"
+#include "directry.ch"
+#include "fileio.ch"
+#include "hbcompat.ch"
+#include "hbmzip.ch"
 
 // Static variables for buffering and settings
-STATIC s_nReadBuffer := 32768   // Read buffer size
-STATIC s_cComment               // Comment for Zip archive
-STATIC s_lReadOnly := .F.       // Read-only flag
+STATIC s_nReadBuffer := 32768
+STATIC s_cComment
+STATIC s_lReadOnly := .F.
 
-// Set the read-only flag for Zip operations
 PROCEDURE SetZipReadOnly( lReadOnly )
-   DEFAULT lReadOnly TO .F. // Default to .F. if not provided
+   DEFAULT lReadOnly TO .F.
    s_lReadOnly := lReadOnly
    RETURN
 
-// Set the global comment for the Zip archive
 PROCEDURE hb_SetZipComment( cComment )
    IF cComment == NIL .OR. ISCHARACTER( cComment )
       s_cComment := cComment
    ENDIF
    RETURN
 
-// Get the global comment from the Zip archive
 FUNCTION hb_GetZipComment( cFileName )
    LOCAL hUnzip
    LOCAL cComment
@@ -51,7 +48,7 @@ FUNCTION hb_GetZipComment( cFileName )
    ENDIF
 
    IF !Empty( hUnzip := hb_UnzipOpen( cFileName ) )
-      hb_UnzipGlobalInfo( hUnzip, NIL, @cComment ) // Retrieve comment
+      hb_UnzipGlobalInfo( hUnzip, NIL, @cComment )
       hb_UnzipClose( hUnzip )
    ELSE
       cComment := ""
@@ -59,7 +56,6 @@ FUNCTION hb_GetZipComment( cFileName )
 
    RETURN cComment
 
-// Get the number of files in the Zip archive
 FUNCTION hb_GetFileCount( cFileName )
    LOCAL hUnzip
    LOCAL nEntries
@@ -69,7 +65,7 @@ FUNCTION hb_GetFileCount( cFileName )
    ENDIF
 
    IF !Empty( hUnzip := hb_UnzipOpen( cFileName ) )
-      hb_UnzipGlobalInfo( hUnzip, @nEntries, NIL ) // Get file count
+      hb_UnzipGlobalInfo( hUnzip, @nEntries, NIL )
       hb_UnzipClose( hUnzip )
    ELSE
       nEntries := 0
@@ -77,7 +73,6 @@ FUNCTION hb_GetFileCount( cFileName )
 
    RETURN nEntries
 
-// Check if the Zip archive is encrypted with a password
 FUNCTION hb_ZipWithPassword( cFileName )
    LOCAL lCrypted := .F.
    LOCAL hUnzip
@@ -95,7 +90,6 @@ FUNCTION hb_ZipWithPassword( cFileName )
 
    RETURN lCrypted
 
-// Retrieve file information from the Zip archive, with an optional verbose mode
 FUNCTION hb_GetFilesInZip( cFileName, lVerbose )
    LOCAL hUnzip, nErr, aFiles := {}
    LOCAL dDate, cTime, nSize, nCompSize, nInternalAttr, nMethod, lCrypted, cComment, nRatio, nCRC
@@ -107,7 +101,7 @@ FUNCTION hb_GetFilesInZip( cFileName, lVerbose )
    IF !Empty( hUnzip := hb_UnzipOpen( cFileName ) )
       DEFAULT lVerbose TO .F.
 
-      nErr := hb_UnzipFileFirst( hUnzip ) // Read the first file in the archive
+      nErr := hb_UnzipFileFirst( hUnzip )
       DO WHILE nErr == 0
          hb_UnzipFileInfo( hUnzip, @cFileName, @dDate, @cTime, @nInternalAttr, NIL, @nMethod, @nSize, @nCompSize, @lCrypted, @cComment, @nCRC )
 
@@ -127,7 +121,7 @@ FUNCTION hb_GetFilesInZip( cFileName, lVerbose )
             AAdd( aFiles, cFileName ) // Add just the file name to the array
          ENDIF
 
-         nErr := hb_UnzipFileNext( hUnzip ) // Move to the next file
+         nErr := hb_UnzipFileNext( hUnzip )
       ENDDO
 
       hb_UnzipClose( hUnzip )
@@ -135,19 +129,16 @@ FUNCTION hb_GetFilesInZip( cFileName, lVerbose )
 
    RETURN aFiles
 
-// Test if the Zip archive is in the PK format
 FUNCTION hb_ZipTestPK( cFileName )
    HB_SYMBOL_UNUSED( cFileName )
    /* NOTE: Spanning not supported. */
    RETURN 0
 
-// Set the disk span for Zip operations (not supported)
 FUNCTION hb_SetDiskZip( bBlock )
    HB_SYMBOL_UNUSED( bBlock )
    /* NOTE: Spanning not supported. */
    RETURN .F.
 
-// Transfer files from one Zip archive to another (to be implemented)
 FUNCTION TransferFromZip( cZipSrc, cZipDst, aFiles )
    HB_SYMBOL_UNUSED( cZipSrc )
    HB_SYMBOL_UNUSED( cZipDst )
@@ -155,7 +146,6 @@ FUNCTION TransferFromZip( cZipSrc, cZipDst, aFiles )
    /* TODO: Implement. */
    RETURN .F.
 
-// Set buffer sizes for reading and writing during Zip operations
 PROCEDURE hb_SetBuffer( nWriteBuffer, nExtractBuffer, nReadBuffer )
    HB_SYMBOL_UNUSED( nWriteBuffer )
    HB_SYMBOL_UNUSED( nExtractBuffer )
@@ -166,7 +156,6 @@ PROCEDURE hb_SetBuffer( nWriteBuffer, nExtractBuffer, nReadBuffer )
 
    RETURN
 
-// Create a Zip file with specified files and compression level
 FUNCTION hb_ZipFile( cFileName, acFiles, nLevel, bUpdate, lOverwrite, cPassword, lWithPath, lWithDrive, bProgress, lFullPath, acExclude )
    LOCAL lRetVal := .T.
 
@@ -294,7 +283,6 @@ FUNCTION hb_ZipFile( cFileName, acFiles, nLevel, bUpdate, lOverwrite, cPassword,
 
    RETURN lRetVal
 
-// Unzip a compressed file
 FUNCTION hb_UnzipFile( cFileName, bUpdate, lWithPath, cPassword, cPath, acFiles, bProgress )
 
    LOCAL lRetVal := .T.
@@ -425,8 +413,6 @@ FUNCTION hb_UnzipFileIndex( ... )
 FUNCTION hb_UnzipAllFile( ... )
    RETURN hb_UnzipFile( ... )
 
-// Delete files from an zip archive
-/* NOTE: Numeric file positions are not supported. */
 FUNCTION hb_ZipDeleteFiles( cFileName, acFiles )
 
    LOCAL lRetVal := .T.
@@ -446,7 +432,6 @@ FUNCTION hb_ZipDeleteFiles( cFileName, acFiles )
 
    RETURN lRetVal
 
-// Test if the Zip archive is in the PK format (have the ZIP_SIGNATURE)
 FUNCTION hb_IsZipFile( cFilename )
 
    LOCAL isZipFile := .F.

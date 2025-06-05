@@ -3,7 +3,7 @@
  * (c) 2002-2010 Roberto Lopez
 */
 
-#include "minigui.ch"
+#include "hmg.ch"
 
 FUNCTION Main
 
@@ -44,8 +44,10 @@ FUNCTION Main
                DEFINE LABEL Label_1
                   ROW 10
                   COL 10
-                  VALUE 'Panel windows Can do This...'
-                  WIDTH 300
+                  VALUE 'Panel windows Can do This...' + CRLF + CRLF + ;
+                        'Press the F2 hotkey to toggle the border visibility on or off.'
+                  WIDTH 250
+                  HEIGHT 70
                END LABEL
 
                DEFINE TEXTBOX Text_1
@@ -117,6 +119,8 @@ FUNCTION Main
          END PAGE
 
       END TAB
+
+      ON KEY F2 ACTION Win_2.Border := !(Win_2.Border)
 
    END WINDOW
 

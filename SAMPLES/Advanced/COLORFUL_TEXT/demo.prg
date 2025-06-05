@@ -1,8 +1,8 @@
 /*
-   Rendering multi-colored text on the form
-
-   Adapted for MiniGUI by Grigory Filatov
-*/
+ * Rendering multi-colored text on the form
+ *
+ * Adapted for MiniGUI by Grigory Filatov
+ */
 
 #include "hmg.ch"
 #include "i_winuser.ch"
@@ -10,6 +10,10 @@
 *------------------------------------------------------------------------------*
 FUNCTION Main
 *------------------------------------------------------------------------------*
+/*
+   This is the main function of the application. It defines the main window,
+   sets up the font and colors, and activates the window.
+*/
    LOCAL cText := "MULTI-COLOR TEXT"
    LOCAL hFont
 
@@ -59,6 +63,19 @@ RETURN NIL
 *------------------------------------------------------------------------------*
 FUNCTION App_OnPaint( hWnd, hFont, cText, aColors )
 *------------------------------------------------------------------------------*
+/*
+   This function is called when the window needs to be repainted. It draws the
+   multi-colored text on the window.
+
+   Input parameters:
+       hWnd    - Handle to the window
+       hFont   - Handle to the font
+       cText   - The text to be displayed
+       aColors - An array of colors to use for the text
+
+   Return value:
+       NIL
+*/
    LOCAL aRect := { 0, 0, 0, 0 }
    LOCAL c, n, hDC, nRight, bk
 
@@ -91,6 +108,19 @@ RETURN NIL
 *------------------------------------------------------------------------------*
 FUNCTION App_OnEvents( hWnd, nMsg, wParam, lParam )
 *------------------------------------------------------------------------------*
+/*
+   This function is the event handler for the application. It handles various
+   window messages, such as WM_SIZE, and performs actions accordingly.
+
+   Input parameters:
+       hWnd    - Handle to the window
+       nMsg    - The message code
+       wParam  - Message-specific information
+       lParam  - Message-specific information
+
+   Return value:
+       nResult - The result of the event handling
+*/
    LOCAL nResult
    LOCAL ControlCount, i, k, x
 
@@ -187,11 +217,17 @@ FUNCTION App_OnEvents( hWnd, nMsg, wParam, lParam )
 RETURN nResult
 
 *------------------------------------------------------------------------------*
-* Function AShuffle( aArray ) --> aArray
-* Sorts a given array in a random order.
-*------------------------------------------------------------------------------*
 FUNCTION AShuffle( aArray )
 *------------------------------------------------------------------------------*
+/*
+   This function shuffles the elements of an array in a random order.
+
+   Input parameters:
+       aArray - The array to be shuffled (passed by reference)
+
+   Return value:
+       aArray - The shuffled array
+*/
    LOCAL n, i, j, a := {}
 
    IF ( n := Len( aArray ) ) > 1
@@ -224,6 +260,16 @@ RETURN aArray
 #include <mgdefs.h>
 
 RECT *Param2Rect( int iParam, RECT *prct )
+/*
+   Converts a Harbour array parameter to a RECT structure.
+ 
+   Parameters:
+       iParam - The index of the Harbour array parameter
+       prct   - A pointer to the RECT structure to be filled
+ 
+   Return:
+       A pointer to the filled RECT structure.
+*/
 {
    if( hb_pcount() >= iParam && HB_ISARRAY( iParam ) )
    {
@@ -244,6 +290,18 @@ RECT *Param2Rect( int iParam, RECT *prct )
 }
 
 HB_FUNC( GETCLIAREARECT )
+/*
+   This function retrieves the client area rectangle of a window.
+
+   Input parameters:
+       hWnd - Handle to the window
+
+   Return value:
+       .T. - If the function succeeds
+       .F. - If the function fails
+
+       The function also stores the rectangle coordinates in an array passed by reference as the second parameter.
+*/
 {
    RECT  rect;
 
@@ -256,6 +314,21 @@ HB_FUNC( GETCLIAREARECT )
 }
 
 HB_FUNC( DRAWTEXTEX )   // ( hDC, cText, aRect, nStyle, [hFont], [nClr], [@nRight] ) --> nHeight
+/*
+   This function draws formatted text in the specified rectangle.
+
+   Input parameters:
+       hDC    - Handle to the device context
+       cText  - The text to be drawn
+       aRect  - An array containing the rectangle coordinates (top, left, bottom, right)
+       nStyle - The formatting options (e.g., DT_SINGLELINE, DT_CALCRECT)
+       hFont  - (Optional) Handle to the font to use
+       nClr   - (Optional) The color of the text
+       nRight - (Optional) Variable to store the right coordinate of the drawn text (used with DT_CALCRECT)
+
+   Return value:
+       nHeight - The height of the drawn text
+*/
 {
    HDC      hDC;
    RECT     rct;

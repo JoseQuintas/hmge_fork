@@ -61,8 +61,8 @@
 
    #xcommand DECLARE WINDOW <w> ;
    => ;
-   #xtranslate <w> . \<p:Name,Handle,Type,Index,Title,Parent,GripperText,Height,Width,ClientHeight,ClientWidth,Col,Row,NotifyIcon,NotifyToolTip,FocusedControl,Cursor,BackColor,MinHeight,MinWidth,MaxHeight,MaxWidth,TitleBar,SysMenu,Sizable,MaxButton,MinButton,Closable,Visible,Enabled,Topmost,HelpButton,Cargo,Object\> => GetProperty ( <(w)>, \<"p"\> ) ;;
-   #xtranslate <w> . \<p:Name,Title,GripperText,Height,Width,Col,Row,NotifyIcon,NotifyToolTip,FocusedControl,Cursor,BackColor,MinHeight,MinWidth,MaxHeight,MaxWidth,TitleBar,SysMenu,Sizable,MaxButton,MinButton,Closable,Visible,Enabled,Topmost,HelpButton,Cargo\> := \<n\> => SetProperty ( <(w)>, \<"p"\> , \<n\> ) ;;
+   #xtranslate <w> . \<p:Name,Handle,Type,Index,Title,Parent,GripperText,Height,Width,ClientHeight,ClientWidth,Col,Row,NotifyIcon,NotifyToolTip,FocusedControl,Cursor,BackColor,MinHeight,MinWidth,MaxHeight,MaxWidth,Border,TitleBar,SysMenu,Sizable,MaxButton,MinButton,Closable,Visible,Enabled,Topmost,HelpButton,Cargo,Object\> => GetProperty ( <(w)>, \<"p"\> ) ;;
+   #xtranslate <w> . \<p:Name,Title,GripperText,Height,Width,Col,Row,NotifyIcon,NotifyToolTip,FocusedControl,Cursor,BackColor,MinHeight,MinWidth,MaxHeight,MaxWidth,Border,TitleBar,SysMenu,Sizable,MaxButton,MinButton,Closable,Visible,Enabled,Topmost,HelpButton,Cargo\> := \<n\> => SetProperty ( <(w)>, \<"p"\> , \<n\> ) ;;
    #xtranslate <w> . \<p:OnInit,OnRelease,OnInterActiveClose,OnGotFocus,OnLostFocus,OnNotifyClick,OnMouseClick,OnMouseDrag,OnMouseMove,OnMove,OnSize,OnMaximize,OnMinimize,OnPaint,OnRestore,OnDropFiles\> => GetProperty ( <(w)>, \<"p"\> ) ;;
    #xtranslate <w> . \<p:OnInit,OnRelease,OnInterActiveClose,OnGotFocus,OnLostFocus,OnNotifyClick,OnMouseClick,OnMouseDrag,OnMouseMove,OnMove,OnSize,OnMaximize,OnMinimize,OnPaint,OnRestore,OnDropFiles\> := \<n\> => SetProperty ( <(w)>, \<"p"\> , \<n\> ) ;;
    #xtranslate <w> . \<p:AlphaBlendTransparent,BackColorTransparent> := \<n\> => SetProperty ( <"w">, \<"p"\> , \<n\> ) ;;

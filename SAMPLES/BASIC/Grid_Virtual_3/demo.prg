@@ -22,7 +22,15 @@ SET PROCEDURE TO vfFileRead
 
 STATIC lCheck_1, lCheck_2, lCheck_3
 
-FUNCTION MAIN
+/*
+ *  FUNCTION Main
+ *
+ *  This is the main function of the application. It defines the main window,
+ *  its controls (menu, labels, checkboxes, statusbar, progressbar), and
+ *  sets up the initial state of the application. It also handles the activation
+ *  of the main window, starting the GUI event loop.
+ */
+FUNCTION Main
 
    LOCAL cFileToOpen := 'TestBIG.dat'
    LOCAL cDelimiter := Chr ( 9 )
@@ -81,7 +89,26 @@ FUNCTION MAIN
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION QueryFile( oFile, cDelimiter )
+ *
+ *  This function is called by the grid control to retrieve data for each cell.
+ *  It reads a line from the file, splits it into fields based on the delimiter,
+ *  and returns the appropriate field for the requested row and column. It also
+ *  implements incremental file reading to handle large files efficiently.
+ *
+ *  Parameters:
+ *      oFile       - vfFileRead object representing the file to read from.
+ *      cDelimiter  - Character used to separate fields in the file.
+ *
+ *  Return:
+ *      NIL
+ *
+ *  Note:
+ *      This function uses static variables to cache the fields of the current
+ *      line, improving performance by avoiding rereading the same line multiple
+ *      times when querying different columns.
+ */
 FUNCTION QueryFile( oFile, cDelimiter )
 
    LOCAL nRecord := This.QueryRowIndex
@@ -121,7 +148,20 @@ FUNCTION QueryFile( oFile, cDelimiter )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION MemoryLeakQuery()
+ *
+ *  This function is designed to test for potential memory leaks by repeatedly
+ *  calling functions that might allocate memory without releasing it. It's
+ *  triggered by checkboxes on the form, allowing the user to enable or disable
+ *  specific tests.
+ *
+ *  Parameters:
+ *      None
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION MemoryLeakQuery()
 
    IF lCheck_1
@@ -138,12 +178,28 @@ FUNCTION MemoryLeakQuery()
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION OpenFile( cFileToOpen, cDelimiter, nMode )
+ *
+ *  This function opens a file and displays its contents in a grid control.
+ *  It supports different modes of operation:
+ *      0 - Incremental reading (without counting lines beforehand).
+ *      1 - Static loading (counting lines before displaying).
+ *      2 - Dynamic loading (counting lines in a separate thread).
+ *
+ *  Parameters:
+ *      cFileToOpen - The name of the file to open.
+ *      cDelimiter  - The delimiter used to separate fields in the file.
+ *      nMode       - The mode of operation (0, 1, or 2).
+ *
+ *  Return:
+ *      oFile - vfFileRead object representing the opened file, or NIL if an error occurred.
+ */
 FUNCTION OpenFile ( cFileToOpen, cDelimiter, nMode )
 
    LOCAL aColumns, aHeaders := {}, aWidths := {}, i, oFile
    LOCAL pMutexCount, nListRows
-   DEFAULT nMode := 0
+      DEFAULT nMode := 0
 
    IF File ( cFileToOpen )
 
@@ -222,7 +278,21 @@ FUNCTION OpenFile ( cFileToOpen, cDelimiter, nMode )
 
 RETURN oFile
 
-
+/*
+ *  FUNCTION MT_Count( cFileToOpen, oFileGrid, pMutexCount )
+ *
+ *  This function counts the number of lines in a file in a separate thread.
+ *  It uses a mutex to communicate the progress of the counting process to the
+ *  main thread, allowing the UI to be updated without blocking.
+ *
+ *  Parameters:
+ *      cFileToOpen - The name of the file to open.
+ *      oFileGrid   - The vfFileRead object associated with the grid control.
+ *      pMutexCount - A mutex used to synchronize access to shared data between threads.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION MT_Count( cFileToOpen, oFileGrid, pMutexCount )
 
    // Calculating the number of lines in a separate thread.
@@ -314,7 +384,21 @@ FUNCTION MT_Count( cFileToOpen, oFileGrid, pMutexCount )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION Run_MT_Count( oFile, pMutex )
+ *
+ *  This function is executed in a separate thread and calls the CountLines()
+ *  method of the vfFileRead object to count the number of lines in the file.
+ *  It uses a code block (exGauge) to report the progress of the counting
+ *  process to the main thread via a mutex.
+ *
+ *  Parameters:
+ *      oFile   - The vfFileRead object representing the file to count lines in.
+ *      pMutex  - A mutex used to synchronize access to shared data between threads.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION Run_MT_Count( oFile, pMutex )
    // Calling the CountLines() method, you can declare as an argument
    // a block of code that will be executed while the method is running.
@@ -323,7 +407,14 @@ FUNCTION Run_MT_Count( oFile, pMutex )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION Refr_Mem_Stat()
+ *
+ *  This function continuously updates the memory statistics displayed on the
+ *  form. It retrieves the total application memory, available application
+ *  memory, and working memory set, and updates the corresponding labels on
+ *  the form every 500 milliseconds.
+ */
 FUNCTION Refr_Mem_Stat()
 
    DO WHILE .T.
@@ -338,7 +429,20 @@ FUNCTION Refr_Mem_Stat()
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION Prepare( cFileToOpen, cDelimiter )
+ *
+ *  This function prepares the application by creating a test file if it
+ *  doesn't already exist. It also starts a thread to continuously refresh
+ *  the memory statistics displayed on the form.
+ *
+ *  Parameters:
+ *      cFileToOpen - The name of the test file to create.
+ *      cDelimiter  - The delimiter used to separate fields in the test file.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION Prepare ( cFileToOpen, cDelimiter )
 
    LOCAL hTestFile, i, x, nMaxRec := 70000000, aTestRec
@@ -392,7 +496,20 @@ FUNCTION Prepare ( cFileToOpen, cDelimiter )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION Test( nTest, cFileToOpen )
+ *
+ *  This function provides two testing modes for file access:
+ *      1 - Tests the hb_F* functions (Harbour file functions).
+ *      2 - Tests the vfFileRead class.
+ *
+ *  Parameters:
+ *      nTest       - The test mode (1 or 2).
+ *      cFileToOpen - The name of the file to test.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION Test ( nTest, cFileToOpen )
 
    LOCAL oFile, nStartTime
@@ -483,7 +600,20 @@ FUNCTION Test ( nTest, cFileToOpen )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION MessageRecNo( nValidRec, cRec )
+ *
+ *  This function checks if the record number in a given record matches the
+ *  expected record number. It displays a message indicating whether the
+ *  record number is correct or invalid.
+ *
+ *  Parameters:
+ *      nValidRec - The expected record number.
+ *      cRec      - The record to check.
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION MessageRecNo( nValidRec, cRec )
    IF Val( cRec ) == nValidRec
       MsgInfo ( cRec, "The record number is correct." )
@@ -493,11 +623,31 @@ FUNCTION MessageRecNo( nValidRec, cRec )
 
 RETURN NIL
 
-
+/*
+ *  FUNCTION ShowProgressBar( nMode, nMin, nMax, nCol, nLenght )
+ *
+ *  This function manages the visibility and properties of a progress bar
+ *  control. It allows initializing, showing, hiding, and setting the range
+ *  and value of the progress bar.
+ *
+ *  Parameters:
+ *      nMode   - The mode of operation:
+ *                  1 - Initialize the progress bar.
+ *                  2 - Set/show the progress bar.
+ *                  3 - Release the progress bar.
+ *                  0 or other - Hide the progress bar.
+ *      nMin    - The minimum value of the progress bar (default: 1).
+ *      nMax    - The maximum value of the progress bar (default: 100).
+ *      nCol    - The column position of the progress bar (default: 20).
+ *      nLenght - The length of the progress bar (default: 740).
+ *
+ *  Return:
+ *      NIL
+ */
 FUNCTION ShowProgressBar( nMode, nMin, nMax, nCol, nLenght )
-DEFAULT nMode := 1 // 1 = init, 2 = set/show, 3 = close, 0/other = hide
-DEFAULT nMin := 1, nMax := 100
-DEFAULT nCol := 20, nLenght := 740
+   DEFAULT nMode := 1 // 1 = init, 2 = set/show, 3 = close, 0/other = hide
+   DEFAULT nMin := 1, nMax := 100
+   DEFAULT nCol := 20, nLenght := 740
    DO CASE
    CASE nMode = 1
       DEFINE PROGRESSBAR PBar

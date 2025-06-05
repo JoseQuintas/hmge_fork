@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #include <commctrl.h>
@@ -60,6 +60,38 @@ extern HFONT   PrepareFont( TCHAR *, int, int, int, int, int, int, int );
 #ifdef __cplusplus
 }
 #endif
+
+/*
+ *  HB_FUNC( TEXTDRAW )
+ *
+ *  Description:
+ *     Draws text on a window or device context (DC) using specified parameters like font, color, and rectangle.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND) or hDC (HDC): Handle to the window or device context on which to draw the text.
+ *     2: Y (int): The y-coordinate of the upper-left corner of the rectangle.
+ *     3: X (int): The x-coordinate of the upper-left corner of the rectangle.
+ *     4: String (string): The text string to be drawn.
+ *     5: Bottom (int): The y-coordinate of the lower-right corner of the rectangle.
+ *     6: Right (int): The x-coordinate of the lower-right corner of the rectangle.
+ *     7: Foreground Color (PHB_ITEM): Harbour array representing the RGB color for the text.
+ *     8: Background Color (PHB_ITEM): Harbour array representing the RGB color for the background.
+ *     9: Font Name (string): The name of the font to use.
+ *    10: Font Size (int): The size of the font.
+ *    11: Bold (logical):  .T. for bold font, .F. otherwise.
+ *    12: Italic (logical): .T. for italic font, .F. otherwise.
+ *    13: Underline (logical): .T. for underlined font, .F. otherwise.
+ *    14: Strikeout (logical): .T. for strikeout font, .F. otherwise.
+ *    15: Transparent (logical): .T. for transparent background, .F. otherwise.
+ *    16: Angle (numeric): Angle for the font.
+ *
+ *  Return Value:
+ *     (logical): .T. if the text was drawn successfully, .F. otherwise.
+ *
+ *  Purpose:
+ *     This function provides a way to draw text with custom formatting on a window or device context.
+ *     It handles font selection, color settings, and background modes before drawing the text using ExtTextOut.
+ */
 HB_FUNC( TEXTDRAW )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
@@ -161,6 +193,29 @@ HB_FUNC( TEXTDRAW )
    }
 }
 
+/*
+ *  HB_FUNC( LINEDRAW )
+ *
+ *  Description:
+ *     Draws a line on a window using the specified coordinates and color.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the line.
+ *     2: Y1 (int): The y-coordinate of the starting point of the line.
+ *     3: X1 (int): The x-coordinate of the starting point of the line.
+ *     4: Y2 (int): The y-coordinate of the ending point of the line.
+ *     5: X2 (int): The x-coordinate of the ending point of the line.
+ *     6: Color (PHB_ITEM): Harbour array representing the RGB color of the line.
+ *     7: Pen Width (int): The width of the pen used to draw the line.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a simple way to draw a line on a window with a specified color and width.
+ *     It creates a pen with the given color and width, selects it into the device context, draws the line,
+ *     and then cleans up by deselecting the pen and releasing the device context.
+ */
 HB_FUNC( LINEDRAW )
 {
    HWND     hWnd1;
@@ -179,6 +234,32 @@ HB_FUNC( LINEDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( RECTDRAW )
+ *
+ *  Description:
+ *     Draws a rectangle on a window using the specified coordinates, border color, fill color, and fill option.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the rectangle.
+ *     2: Top (int): The y-coordinate of the upper-left corner of the rectangle.
+ *     3: Left (int): The x-coordinate of the upper-left corner of the rectangle.
+ *     4: Bottom (int): The y-coordinate of the lower-right corner of the rectangle.
+ *     5: Right (int): The x-coordinate of the lower-right corner of the rectangle.
+ *     6: Border Color (PHB_ITEM): Harbour array representing the RGB color of the rectangle's border.
+ *     7: Pen Width (int): The width of the pen used to draw the rectangle's border.
+ *     8: Fill Color (PHB_ITEM): Harbour array representing the RGB color to fill the rectangle with.
+ *     9: Fill (logical): .T. to fill the rectangle with the specified color, .F. for a hollow rectangle.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw a rectangle on a window with customizable border color, width,
+ *     fill color, and fill option. It creates a pen for the border, a brush for the fill (solid or hollow),
+ *     selects them into the device context, draws the rectangle, and then cleans up by deselecting the objects
+ *     and releasing the device context.
+ */
 HB_FUNC( RECTDRAW )
 {
    HWND     hWnd1;
@@ -213,6 +294,35 @@ HB_FUNC( RECTDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( ROUNDRECTDRAW )
+ *
+ *  Description:
+ *     Draws a rounded rectangle on a window using the specified coordinates, corner ellipse dimensions,
+ *     border color, fill color, and fill option.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the rounded rectangle.
+ *     2: Top (int): The y-coordinate of the upper-left corner of the rectangle.
+ *     3: Left (int): The x-coordinate of the upper-left corner of the rectangle.
+ *     4: Bottom (int): The y-coordinate of the lower-right corner of the rectangle.
+ *     5: Right (int): The x-coordinate of the lower-right corner of the rectangle.
+ *     6: Ellipse Width (int): The width of the ellipse used to round the corners.
+ *     7: Ellipse Height (int): The height of the ellipse used to round the corners.
+ *     8: Border Color (PHB_ITEM): Harbour array representing the RGB color of the rectangle's border.
+ *     9: Pen Width (int): The width of the pen used to draw the rectangle's border.
+ *    10: Fill Color (PHB_ITEM): Harbour array representing the RGB color to fill the rectangle with.
+ *    11: Fill (logical): .T. to fill the rectangle with the specified color, .F. for a hollow rectangle.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw a rounded rectangle on a window with customizable corner roundness,
+ *     border color, width, fill color, and fill option. It creates a pen for the border, a brush for the fill
+ *     (solid or hollow), selects them into the device context, draws the rounded rectangle using RoundRect,
+ *     and then cleans up by deselecting the objects and releasing the device context.
+ */
 HB_FUNC( ROUNDRECTDRAW )
 {
    HWND     hWnd1;
@@ -246,6 +356,32 @@ HB_FUNC( ROUNDRECTDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( ELLIPSEDRAW )
+ *
+ *  Description:
+ *     Draws an ellipse on a window using the specified bounding rectangle, border color, fill color, and fill option.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the ellipse.
+ *     2: Top (int): The y-coordinate of the upper-left corner of the bounding rectangle.
+ *     3: Left (int): The x-coordinate of the upper-left corner of the bounding rectangle.
+ *     4: Bottom (int): The y-coordinate of the lower-right corner of the bounding rectangle.
+ *     5: Right (int): The x-coordinate of the lower-right corner of the bounding rectangle.
+ *     6: Border Color (PHB_ITEM): Harbour array representing the RGB color of the ellipse's border.
+ *     7: Pen Width (int): The width of the pen used to draw the ellipse's border.
+ *     8: Fill Color (PHB_ITEM): Harbour array representing the RGB color to fill the ellipse with.
+ *     9: Fill (logical): .T. to fill the ellipse with the specified color, .F. for a hollow ellipse.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw an ellipse on a window with customizable border color, width,
+ *     fill color, and fill option. It creates a pen for the border, a brush for the fill (solid or hollow),
+ *     selects them into the device context, draws the ellipse using Ellipse, and then cleans up by deselecting
+ *     the objects and releasing the device context.
+ */
 HB_FUNC( ELLIPSEDRAW )
 {
    HWND     hWnd1;
@@ -279,6 +415,33 @@ HB_FUNC( ELLIPSEDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( ARCDRAW )
+ *
+ *  Description:
+ *     Draws an arc on a window using the specified bounding rectangle, start and end points, and border color.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the arc.
+ *     2: Top (int): The y-coordinate of the upper-left corner of the bounding rectangle.
+ *     3: Left (int): The x-coordinate of the upper-left corner of the bounding rectangle.
+ *     4: Bottom (int): The y-coordinate of the lower-right corner of the bounding rectangle.
+ *     5: Right (int): The x-coordinate of the lower-right corner of the bounding rectangle.
+ *     6: Y Start (int): The y-coordinate of the arc's starting point.
+ *     7: X Start (int): The x-coordinate of the arc's starting point.
+ *     8: Y End (int): The y-coordinate of the arc's ending point.
+ *     9: X End (int): The x-coordinate of the arc's ending point.
+ *    10: Border Color (PHB_ITEM): Harbour array representing the RGB color of the arc's border.
+ *    11: Pen Width (int): The width of the pen used to draw the arc's border.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw an arc on a window with customizable border color and width.
+ *     It creates a pen for the border, selects it into the device context, draws the arc using Arc,
+ *     and then cleans up by deselecting the pen and releasing the device context.
+ */
 HB_FUNC( ARCDRAW )
 {
    HWND     hWnd1;
@@ -296,6 +459,37 @@ HB_FUNC( ARCDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( PIEDRAW )
+ *
+ *  Description:
+ *     Draws a pie slice on a window using the specified bounding rectangle, start and end points, border color,
+ *     fill color, and fill option.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the pie slice.
+ *     2: Top (int): The y-coordinate of the upper-left corner of the bounding rectangle.
+ *     3: Left (int): The x-coordinate of the upper-left corner of the bounding rectangle.
+ *     4: Bottom (int): The y-coordinate of the lower-right corner of the bounding rectangle.
+ *     5: Right (int): The x-coordinate of the lower-right corner of the bounding rectangle.
+ *     6: Y Start (int): The y-coordinate of the pie's starting point.
+ *     7: X Start (int): The x-coordinate of the pie's starting point.
+ *     8: Y End (int): The y-coordinate of the pie's ending point.
+ *     9: X End (int): The x-coordinate of the pie's ending point.
+ *    10: Border Color (PHB_ITEM): Harbour array representing the RGB color of the pie's border.
+ *    11: Pen Width (int): The width of the pen used to draw the pie's border.
+ *    12: Fill Color (PHB_ITEM): Harbour array representing the RGB color to fill the pie slice with.
+ *    13: Fill (logical): .T. to fill the pie slice with the specified color, .F. for a hollow pie slice.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw a pie slice on a window with customizable border color, width,
+ *     fill color, and fill option. It creates a pen for the border, a brush for the fill (solid or hollow),
+ *     selects them into the device context, draws the pie slice using Pie, and then cleans up by deselecting
+ *     the objects and releasing the device context.
+ */
 HB_FUNC( PIEDRAW )
 {
    HWND     hWnd1;
@@ -329,6 +523,30 @@ HB_FUNC( PIEDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( POLYGONDRAW )
+ *
+ *  Description:
+ *     Draws a polygon on a window using the specified array of points, border color, fill color, and fill option.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the polygon.
+ *     2: X Coordinates (PHB_ITEM): Harbour array containing the x-coordinates of the polygon's vertices. The first element of the array must be the number of points.
+ *     3: Y Coordinates (PHB_ITEM): Harbour array containing the y-coordinates of the polygon's vertices. The first element of the array must be the number of points.
+ *     4: Border Color (PHB_ITEM): Harbour array representing the RGB color of the polygon's border.
+ *     5: Pen Width (int): The width of the pen used to draw the polygon's border.
+ *     6: Fill Color (PHB_ITEM): Harbour array representing the RGB color to fill the polygon with.
+ *     7: Fill (logical): .T. to fill the polygon with the specified color, .F. for a hollow polygon.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw a polygon on a window with customizable vertices, border color, width,
+ *     fill color, and fill option. It creates a pen for the border, a brush for the fill (solid or hollow),
+ *     selects them into the device context, constructs the POINT array from the Harbour arrays, draws the polygon
+ *     using Polygon, and then cleans up by deselecting the objects and releasing the device context.
+ */
 HB_FUNC( POLYGONDRAW )
 {
    HWND     hWnd1;
@@ -371,6 +589,28 @@ HB_FUNC( POLYGONDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+ *  HB_FUNC( POLYBEZIERDRAW )
+ *
+ *  Description:
+ *     Draws a series of Bezier curves on a window using the specified array of points and border color.
+ *
+ *  Parameters:
+ *     1: hWnd (HWND): Handle to the window on which to draw the Bezier curves.
+ *     2: X Coordinates (PHB_ITEM): Harbour array containing the x-coordinates of the Bezier curve's control points. The first element of the array must be the number of points.
+ *     3: Y Coordinates (PHB_ITEM): Harbour array containing the y-coordinates of the Bezier curve's control points. The first element of the array must be the number of points.
+ *     4: Border Color (PHB_ITEM): Harbour array representing the RGB color of the Bezier curve's border.
+ *     5: Pen Width (int): The width of the pen used to draw the Bezier curve's border.
+ *
+ *  Return Value:
+ *     None.
+ *
+ *  Purpose:
+ *     This function provides a way to draw a series of Bezier curves on a window with customizable control points
+ *     and border color. It creates a pen for the border, selects it into the device context, constructs the POINT
+ *     array from the Harbour arrays, draws the Bezier curves using PolyBezier, and then cleans up by deselecting
+ *     the pen and releasing the device context.
+ */
 HB_FUNC( POLYBEZIERDRAW )
 {
    HWND     hWnd1;
@@ -397,6 +637,23 @@ HB_FUNC( POLYBEZIERDRAW )
    ReleaseDC( hWnd1, hdc1 );
 }
 
+/*
+   WndDrawBox
+
+   Draws a box using two different pens to create a 3D effect.
+
+   Parameters:
+       hDC       : Handle to the device context on which to draw.
+       rct       : Pointer to a RECT structure defining the rectangle to draw.
+       hPUpLeft  : Handle to the pen used for the top and left sides of the box.  This pen typically represents a highlight color.
+       hPBotRit  : Handle to the pen used for the bottom and right sides of the box. This pen typically represents a shadow color.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function draws a rectangle using two different pens to simulate a 3D border effect.  It's used to give the appearance of depth or elevation to UI elements. The function selects the first pen, draws the top and left sides, then selects the second pen and draws the bottom and right sides.  The original pen is restored at the end. The -1 in LineTo( hDC, rct->right, rct->top - 1 ); is to avoid overlapping lines.
+*/
 void WndDrawBox( HDC hDC, RECT *rct, HPEN hPUpLeft, HPEN hPBotRit )
 {
    HPEN  hOldPen = ( HPEN ) SelectObject( hDC, hPUpLeft );
@@ -416,6 +673,21 @@ void WndDrawBox( HDC hDC, RECT *rct, HPEN hPUpLeft, HPEN hPBotRit )
    SelectObject( hDC, hOldPen );
 }
 
+/*
+   WindowBoxIn
+
+   Draws a sunken box around a rectangle.
+
+   Parameters:
+       hDC   : Handle to the device context on which to draw.
+       pRect : Pointer to a RECT structure defining the rectangle to draw around.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function draws a rectangle that appears to be sunken into the background. It achieves this effect by using a gray pen for the top and left sides (simulating shadow) and a white pen for the bottom and right sides (simulating highlight).  It calls WndDrawBox to perform the actual drawing. The pens are created and then deleted to avoid resource leaks.
+*/
 void WindowBoxIn( HDC hDC, RECT *pRect )
 {
    HPEN  hWhite = CreatePen( PS_SOLID, 1, GetSysColor( COLOR_BTNHIGHLIGHT ) );
@@ -427,6 +699,21 @@ void WindowBoxIn( HDC hDC, RECT *pRect )
    DeleteObject( hWhite );
 }
 
+/*
+   WindowRaised
+
+   Draws a raised box around a rectangle.
+
+   Parameters:
+       hDC   : Handle to the device context on which to draw.
+       pRect : Pointer to a RECT structure defining the rectangle to draw around.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function draws a rectangle that appears to be raised above the background. It achieves this effect by using a white pen for the top and left sides (simulating highlight) and a gray pen for the bottom and right sides (simulating shadow). It calls WndDrawBox to perform the actual drawing. The pens are created and then deleted to avoid resource leaks.
+*/
 void WindowRaised( HDC hDC, RECT *pRect )
 {
    HPEN  hGray = CreatePen( PS_SOLID, 1, GetSysColor( COLOR_BTNSHADOW ) );
@@ -438,6 +725,24 @@ void WindowRaised( HDC hDC, RECT *pRect )
    DeleteObject( hWhite );
 }
 
+/*
+   WNDBOXIN
+
+   Harbour function to draw a sunken box around a rectangle.
+
+   Parameters:
+       Parameter 1: HDC - Handle to the device context on which to draw.  Passed from Harbour as a raw HDC value.
+       Parameter 2: Top coordinate of the rectangle.
+       Parameter 3: Left coordinate of the rectangle.
+       Parameter 4: Bottom coordinate of the rectangle.
+       Parameter 5: Right coordinate of the rectangle.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function is a Harbour callable function that draws a sunken box. It retrieves the rectangle coordinates from the Harbour parameters, constructs a RECT structure, and then calls the WindowBoxIn function to perform the actual drawing.  hmg_par_raw_HDC is a helper function (likely from the HMG Extended library) to safely retrieve the HDC from the Harbour parameter stack. hb_parni is a Harbour function to retrieve numeric parameters.
+*/
 HB_FUNC( WNDBOXIN )
 {
    RECT  rct;
@@ -450,6 +755,24 @@ HB_FUNC( WNDBOXIN )
    WindowBoxIn( hmg_par_raw_HDC( 1 ), &rct );
 }
 
+/*
+   WNDBOXRAISED
+
+   Harbour function to draw a raised box around a rectangle.
+
+   Parameters:
+       Parameter 1: HDC - Handle to the device context on which to draw. Passed from Harbour as a raw HDC value.
+       Parameter 2: Top coordinate of the rectangle.
+       Parameter 3: Left coordinate of the rectangle.
+       Parameter 4: Bottom coordinate of the rectangle.
+       Parameter 5: Right coordinate of the rectangle.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function is a Harbour callable function that draws a raised box. It retrieves the rectangle coordinates from the Harbour parameters, constructs a RECT structure, and then calls the WindowRaised function to perform the actual drawing. hmg_par_raw_HDC is a helper function (likely from the HMG Extended library) to safely retrieve the HDC from the Harbour parameter stack. hb_parni is a Harbour function to retrieve numeric parameters.
+*/
 HB_FUNC( WNDBOXRAISED )
 {
    RECT  rct;

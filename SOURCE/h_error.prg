@@ -116,9 +116,13 @@ RETURN
 *   termination message. It then evaluates the ErrorBlock() with a generated
 *   HMG error object, effectively triggering the error handling mechanism.
 *
+*   This function provides a standardized way to display error messages within
+*   MiniGUI applications.  It leverages the Harbour error handling system to
+*   ensure that errors are reported consistently and can be handled gracefully.
+*
 * Parameters:
-*   cMessage (STRING): The error message to display.
-*   lAddText (LOGICAL): Optional. If .T. (default), appends " Program terminated." to the message.
+*   cMessage: The error message to display.
+*   lAddText: Optional. If .T. (default), appends " Program terminated." to the message.
 *
 * Return Value:
 *   The return value of Eval( ErrorBlock(), HMG_GenError( cMessage ) ).  This is typically NIL, but depends on the ErrorBlock() implementation.
@@ -139,11 +143,16 @@ RETURN Eval( ErrorBlock(), HMG_GenError( cMessage ) )
 *   information. It sets the subsystem, subcode, severity, description, and operation
 *   properties of the error object.
 *
+*   This function is a helper function for MsgMiniGuiError.  It creates a
+*   standardized error object that can be used by the Harbour error handling
+*   system.  The error object contains information about the error, such as its
+*   severity and description.
+*
 * Parameters:
-*   cMsg (STRING): The error message to be stored in the error object's description.
+*   cMsg: The error message to be stored in the error object's description.
 *
 * Return Value:
-*   oError (OBJECT): A Harbour error object populated with MiniGUI-specific error details.
+*   oError: A Harbour error object populated with MiniGUI-specific error details.
 *-----------------------------------------------------------------------------*/
 STATIC FUNCTION HMG_GenError( cMsg )
 
@@ -157,7 +166,7 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 25.05 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 25.06 ("
 
 /*-----------------------------------------------------------------------------*
 * FUNCTION MiniGuiVersion( nVer )
@@ -168,16 +177,19 @@ RETURN oError
 *   It also includes a "DEBUG" suffix if the debug mode is enabled. The function allows
 *   for different levels of version information to be returned based on the nVer parameter.
 *
+*   This function provides a way to retrieve the version of the MiniGUI library.
+*   This can be useful for debugging, logging, or displaying the version information
+*   to the user. The different levels of version information allow for flexibility
+*   in how the version is displayed.
+*
 * Parameters:
-*   nVer (NUMERIC): Optional. Specifies the level of version information to return.
-*                    0 (default): Returns the full version string.
-*                    1: Returns a shorter version string (38 characters).
-*                    2: Returns an even shorter version string (15 characters).
-*                    < 0: Returns an empty string.
-*                    > 2: Returns the 38 character version string.
+*   nVer: Optional. Specifies the level of version information to return.
+*                   0 (default): Returns the full version string.
+*                   1: Returns a shorter version string (38 characters).
+*                   2: Returns an even shorter version string (15 characters).
 *
 * Return Value:
-*   cVer (STRING): The version string of the Harbour MiniGUI Extended Edition, truncated based on nVer.
+*   cVer: The version string of the Harbour MiniGUI Extended Edition, truncated based on nVer.
 *-----------------------------------------------------------------------------*/
 FUNCTION MiniGuiVersion( nVer )
 #ifndef __XHARBOUR__

@@ -58,7 +58,7 @@ FUNCTION SBrowse( uAlias, cTitle, bSetUp, aCols, nWidth, nHeight, lSql, lModal, 
       lCenter := .T.
 
    DEFAULT uParam := oHmgData()
-     
+
    IF ( lParam := uParam:ClassName != "TSBROWSE" )
       DEFAULT uParam:uSelector := 20, uParam:cBrw := "oBrw"
    ENDIF
@@ -374,8 +374,29 @@ RETURN NIL
 
 FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
 
+   LOCAL oBrw, aBrw, lBrw, oTsb
+
+   IF IsArray( oParam )
+      lBrw := .T.
+      aBrw := {}
+      FOR EACH oTsb IN oParam
+          oBrw := _TBrowse_Create( oTsb )
+          oBrw:Cargo:nBrw := hb_enumindex( oTsb )
+          AAdd( aBrw, oBrw )
+      NEXT
+   ELSE               
+      lBrw := .F.
+      oTsb := oParam
+      oBrw := _TBrowse_Create( oTsb, uAlias, cBrw, nY, nX, nW, nH )
+   ENDIF
+
+RETURN iif( lBrw, aBrw, oBrw )
+
+STATIC FUNCTION _TBrowse_Create( oParam, uAlias, cBrw, nY, nX, nW, nH )
+
    LOCAL oBrw, aTmp, aBrush, aHead, aField, aFoot, aColor
-   LOCAL cForm, hForm, lSpecHd, bInit, bEnd, lSuperHd, lZebra, aZebra
+   LOCAL cForm, hForm, lSpecHd, bInit, bEnd, lSuperHd
+   LOCAL lZebra, aZebra, lChess, aChess
    LOCAL i, j, o
 
    DEFAULT oParam := oHmgData()
@@ -399,6 +420,8 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    lSuperHd := !Empty( oParam:lSuperHd ) .OR. !Empty( oParam:lSuperHead )
    lZebra   := !Empty( oParam:lZebra   ) .OR. !Empty( oParam:lZebraLine ) ;
                                          .OR. !Empty( oParam:lZebraRow  )
+   lChess   := !Empty( oParam:lChess   ) .OR. !Empty( oParam:lChessLine ) ;
+                                         .OR. !Empty( oParam:lChessRow  )
 
    DEFAULT oParam:bDblClick  := oParam:bOnDblClick
    DEFAULT oParam:bGotFocus  := oParam:bOnGotFocus
@@ -486,14 +509,33 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
       aZebra := oParam:aZebra ; DEFAULT aZebra := oParam:aZebraColor
       DEFAULT aZebra := { GetSysColor( COLOR_WINDOW ), GetSysColor( COLOR_BTNFACE ) }
       IF IsArray( aZebra ) .AND. Len( aZebra ) > 1
-         IF IsArray( aZebra[1] ) ; aZebra[1] := HMG_RGB2n( aZebra[1] )
+         IF IsArray( aZebra[1] ) .AND. IsArrayRGB( aZebra[1] )
+            aZebra[1] := HMG_RGB2n( aZebra[1] )
          ENDIF
-         IF IsArray( aZebra[2] ) ; aZebra[2] := HMG_RGB2n( aZebra[2] )
+         IF IsArray( aZebra[2] ) .AND. IsArrayRGB( aZebra[2] )
+            aZebra[2] := HMG_RGB2n( aZebra[2] )
          ENDIF
          IF IsNumeric( aZebra[1] ) .AND. IsNumeric( aZebra[2] )
             AAdd( aColor, { CLR_PANE, {|c,n,b| c := aZebra[2], n := aZebra[1], ;
                                         iif( b:nAt % 2 == 0, c, n ) } } )
          ENDIF
+      ENDIF
+   ELSEIF lChess
+      aChess := oParam:aChess ; DEFAULT aChess := oParam:aChessColor
+      DEFAULT aChess := { GetSysColor( COLOR_WINDOW ), GetSysColor( COLOR_BTNFACE ) }
+      IF IsArray( aChess ) .AND. Len( aChess ) > 1
+         IF IsArray( aChess[1] ) .AND. IsArrayRGB( aChess[1] )
+            aChess[1] := HMG_RGB2n( aChess[1] )
+         ENDIF
+         IF IsArray( aChess[2] ) .AND. IsArrayRGB( aChess[2] )
+            aChess[2] := HMG_RGB2n( aChess[2] )
+         ENDIF
+         AAdd( aColor, { CLR_PANE, {|nr,nc,nn|
+                         IF nr % 2 == 0 ; nn := iif( nc % 2 == 0, 1, 2 )
+                         ELSE           ; nn := iif( nc % 2 == 0, 2, 1 )
+                         ENDIF
+                         Return aChess[ nn ]
+                         } } )
       ENDIF
    ENDIF
 
@@ -795,3 +837,4 @@ FUNCTION _TBrowse( oParam, uAlias, cBrw, nY, nX, nW, nH )
    DO EVENTS
 
 RETURN oBrw
+

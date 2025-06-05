@@ -1,8 +1,6 @@
 /*
  * 'HMG EasySQL' a Simple HMG library To Handle MySql/MariaDB 'Things'
  *
- * *** EXPERIMENTAL CODE ***
- *
  * Copyright 2024 Roberto Lopez <mail.box.hmg@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -57,47 +55,65 @@ REQUEST SDDMY, SQLMIX
 *---------------------------------------------------------------------------------------------*
 CLASS SQL
 *---------------------------------------------------------------------------------------------*
+/*
+ *  SQL Class Definition
+ *  This class provides an interface for interacting with SQL databases using the SQLMIX RDD.
+ */
 
    // Data:
 
-   DATA lShowMsgs
-   DATA lTrace
-   DATA cMsgLang
-   DATA cNoQuoteChar
+   DATA lShowMsgs    // Flag to control the display of messages during SQL operations.
+   DATA lTrace       // Flag to enable or disable tracing of SQL commands to a log file.
+   DATA cMsgLang     // Stores the language code for messages (e.g., 'EN' for English, 'ES' for Spanish).
+   DATA cNoQuoteChar // Character used to indicate that a string should not be quoted in SQL commands.
 
-   DATA lError EXPORTED READONLY
-   DATA cErrorDesc EXPORTED READONLY
+   DATA lError EXPORTED READONLY     // Read-only flag indicating whether an error occurred during the last SQL operation.
+   DATA cErrorDesc EXPORTED READONLY // Read-only string containing the description of the last error.
 
-   DATA aMsgs HIDDEN
-   DATA cCommandBuffer HIDDEN
-   DATA cCommandWhere HIDDEN
-   DATA nConnHandle HIDDEN
-   DATA cMessageWindowName HIDDEN
-   DATA aWorkAreas HIDDEN
+   DATA aMsgs HIDDEN          // Hidden array storing messages for different languages.
+   DATA cCommandBuffer HIDDEN // Hidden string buffer used to build SQL commands.
+   DATA cCommandWhere HIDDEN  // Hidden string used to store the WHERE clause for SQL commands.
+   DATA nConnHandle HIDDEN    // Hidden numeric handle for the database connection.
+   DATA cMessageWindowName HIDDEN // Hidden string containing the name of the message window.
+   DATA aWorkAreas HIDDEN     // Hidden array storing the work areas used by the class.
 
    // Methods:
 
-   METHOD New()
-   METHOD Connect( cServer, cUser, cPassword, cDatabase )
-   METHOD Select( cCommand, cWorkArea )
-   METHOD Insert( cTable, aHash )
-   METHOD Update( cTable, cWhere, aHash )
-   METHOD Delete( cTable, cWhere )
-   METHOD Exec()
-   METHOD AffectedRows()
-   METHOD Disconnect()
-   METHOD CloseAreas()
-   METHOD Destroy()
+   METHOD New()              // Constructor: Initializes the SQL class instance.
+   METHOD Connect( cServer, cUser, cPassword, cDatabase ) // Establishes a connection to the SQL database.
+   METHOD Select( cCommand, cWorkArea ) // Executes a SELECT SQL command and opens a work area.
+   METHOD Insert( cTable, aHash ) // Executes an INSERT SQL command using data from a hash.
+   METHOD Update( cTable, cWhere, aHash ) // Executes an UPDATE SQL command using data from a hash and a WHERE clause.
+   METHOD Delete( cTable, cWhere ) // Executes a DELETE SQL command with a WHERE clause.
+   METHOD Exec()             // Executes the SQL command stored in the command buffer.
+   METHOD AffectedRows()     // Returns the number of rows affected by the last SQL command.
+   METHOD Disconnect()       // Closes the database connection.
+   METHOD CloseAreas()       // Closes all open work areas used by the class.
+   METHOD Destroy()          // Destructor: Cleans up resources used by the SQL class instance.
 
-   METHOD Field( cField, xExpression ) HIDDEN
-   METHOD ShowMessage( cMessage ) HIDDEN
-   METHOD HideMessage() HIDDEN
+   METHOD Field( cField, xExpression ) HIDDEN // Hidden method to format a field and its value for SQL commands.
+   METHOD ShowMessage( cMessage ) HIDDEN      // Hidden method to display a message in the message window.
+   METHOD HideMessage() HIDDEN                // Hidden method to hide the message window.
 
 ENDCLASS
 
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:New()
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:New()
+ *
+ * Constructor for the SQL class.
+ *
+ * Initializes the class properties, sets default values, and defines the message window.
+ * It determines the language to use for messages based on the system's language setting.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   Self (the SQL object)
+ */
 
    ::cMsgLang := Upper( Left( Set ( _SET_LANGUAGE ), 2 ) )
    ::aMsgs := {}
@@ -154,7 +170,7 @@ METHOD SQL:New()
   Sorry for possible mistakes.
   Any help is welcome.
 
- */
+  */
 
    ELSEIF ::cMsgLang = 'PT' // Portuguese PT
 
@@ -363,6 +379,20 @@ RETURN Self
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Destroy()
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Destroy()
+ *
+ * Destructor for the SQL class.
+ *
+ * Disconnects from the database, closes all open work areas, and releases memory used by the class.
+ * This ensures that resources are properly cleaned up when the object is no longer needed, preventing memory leaks and other issues.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   NIL
+ */
 
    ::Disconnect()
    ::CloseAreas()
@@ -383,6 +413,18 @@ RETURN NIL
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:CloseAreas()
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:CloseAreas()
+ *
+ * Closes all open work areas used by the SQL class.
+ * This is important to release database resources and prevent conflicts when working with multiple tables.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   The number of work areas closed.
+ */
    LOCAL i, n
 
    n := 0
@@ -399,6 +441,21 @@ RETURN n
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Connect( cServer, cUser, cPassword, cDatabase )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Connect( cServer, cUser, cPassword, cDatabase )
+ *
+ * Establishes a connection to the SQL database using the provided credentials.
+ * It uses the SQLMIX RDD to connect to the database.
+ *
+ * Parameters:
+ *   cServer   : The server address or name.
+ *   cUser     : The username for the database connection.
+ *   cPassword : The password for the database connection.
+ *   cDatabase : The name of the database to connect to.
+ *
+ * Returns:
+ *   .T. if the connection was successful, .F. otherwise.
+ */
 
    IF ::lShowMsgs
       ::ShowMessage( ::aMsgs[ 1 ] ) // 'SQL: Connecting...'
@@ -428,6 +485,18 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Disconnect()
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Disconnect()
+ *
+ * Closes the database connection.
+ * It releases the connection handle and resets error flags.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   NIL
+ */
 
    ::lError := .F.
    ::cErrorDesc := ''
@@ -439,6 +508,19 @@ RETURN NIL
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Select( cCommand, cWorkArea )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Select( cCommand, cWorkArea )
+ *
+ * Executes a SELECT SQL command and opens a work area.
+ * It uses the dbUseArea function to execute the command and open the work area.
+ *
+ * Parameters:
+ *   cCommand  : The SELECT SQL command to execute.
+ *   cWorkArea : The work area to open for the result set.
+ *
+ * Returns:
+ *   .T. if the command was executed successfully, .F. otherwise.
+ */
    LOCAL oError
 
    ::lError := .F.
@@ -480,6 +562,24 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Field( cField, xExpression )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Field( cField, xExpression )
+ *
+ * Formats a field and its value for use in SQL commands (INSERT or UPDATE).
+ * This is a HIDDEN method, intended for internal use by the class.
+ *
+ * Parameters:
+ *   cField      : The name of the field.
+ *   xExpression : The value of the field.  Can be of various data types (Date, Character, Numeric, Logical).
+ *
+ * Returns:
+ *   .T. if the field was formatted successfully, .F. otherwise.
+ *
+ * Note:
+ *   This method handles data type conversion and quoting for SQL compatibility.
+ *   It also supports a "raw" mode where the value is not quoted (indicated by a leading ::cNoQuoteChar).
+ *   This allows for inserting values that are already SQL expressions or functions.
+ */
    LOCAL cExpression, lRaw := .F.
 
    ::lError := .F.
@@ -527,6 +627,19 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Insert( cTable, aHash )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Insert( cTable, aHash )
+ *
+ * Executes an INSERT SQL command using data from a hash.
+ * It iterates through the hash, formatting each field and value using the ::Field() method.
+ *
+ * Parameters:
+ *   cTable : The name of the table to insert into.
+ *   aHash  : A hash containing the field names and values to insert.
+ *
+ * Returns:
+ *   .T. if the command was executed successfully, .F. otherwise.
+ */
    LOCAL aKeys, aValues, i
 
    IF ValType( cTable ) <> 'C'
@@ -569,9 +682,21 @@ METHOD SQL:Insert( cTable, aHash )
 
 RETURN ! ::lError
 
-// ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
 METHOD SQL:Delete( cTable, cWhere )
-   // ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Delete( cTable, cWhere )
+ *
+ * Executes a DELETE SQL command with a WHERE clause.
+ *
+ * Parameters:
+ *   cTable : The name of the table to delete from.
+ *   cWhere : The WHERE clause to use in the DELETE command.
+ *
+ * Returns:
+ *   .T. if the command was executed successfully, .F. otherwise.
+ */
 
    IF ValType( cTable ) <> 'C'
       ::lError := .T.
@@ -598,9 +723,21 @@ METHOD SQL:Delete( cTable, cWhere )
 
 RETURN ! ::lError
 
-// ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
 METHOD SQL:AffectedRows()
-   // ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
+/*
+ * SQL:AffectedRows()
+ *
+ * Returns the number of rows affected by the last SQL command.
+ * It uses the rddInfo function with RDDI_AFFECTEDROWS to retrieve the number of affected rows.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   The number of rows affected, or 0 if an error occurred.
+ */
    LOCAL nRetVal
 
    ::lError := .F.
@@ -615,9 +752,23 @@ METHOD SQL:AffectedRows()
 
 RETURN nRetVal
 
-// ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
 METHOD SQL:Update( cTable, cWhere, aHash )
-   // ------------------------------------------------------------------------------------------*
+*---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Update( cTable, cWhere, aHash )
+ *
+ * Executes an UPDATE SQL command using data from a hash and a WHERE clause.
+ * It iterates through the hash, formatting each field and value using the ::Field() method.
+ *
+ * Parameters:
+ *   cTable : The name of the table to update.
+ *   cWhere : The WHERE clause to use in the UPDATE command.
+ *   aHash  : A hash containing the field names and values to update.
+ *
+ * Returns:
+ *   .T. if the command was executed successfully, .F. otherwise.
+ */
    LOCAL aKeys, aValues, i
 
    IF ValType( cTable ) <> 'C'
@@ -666,6 +817,18 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:Exec( cCommand )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:Exec( cCommand )
+ *
+ * Executes the SQL command stored in the command buffer or a provided command.
+ * It uses the rddInfo function with RDDI_EXECUTE to execute the command.
+ *
+ * Parameters:
+ *   cCommand (optional): The SQL command to execute. If omitted, the command in ::cCommandBuffer is executed.
+ *
+ * Returns:
+ *   .T. if the command was executed successfully, .F. otherwise.
+ */
    LOCAL cRDD
 
    IF ::lShowMsgs
@@ -736,6 +899,18 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:ShowMessage( cMessage )
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:ShowMessage( cMessage )
+ *
+ * Displays a message in the message window.
+ * This is a HIDDEN method, intended for internal use by the class.
+ *
+ * Parameters:
+ *   cMessage : The message to display.
+ *
+ * Returns:
+ *   .T. if the message was displayed successfully, .F. otherwise.
+ */
 
    IF ValType( cMessage ) <> 'C'
       ::lError := .T.
@@ -758,6 +933,18 @@ RETURN ! ::lError
 *---------------------------------------------------------------------------------------------*
 METHOD SQL:HideMessage()
 *---------------------------------------------------------------------------------------------*
+/*
+ * SQL:HideMessage()
+ *
+ * Hides the message window.
+ * This is a HIDDEN method, intended for internal use by the class.
+ *
+ * Parameters:
+ *   None
+ *
+ * Returns:
+ *   NIL
+ */
 
    DoMethod( ::cMessageWindowName, 'Hide' )
 

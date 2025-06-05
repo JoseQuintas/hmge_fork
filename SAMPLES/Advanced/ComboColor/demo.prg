@@ -6,6 +6,9 @@
  *
  * Fixing the example 2023 Verchenko Andrey <verchenkoag@gmail.com>
  *
+ * The purpose of this demo is to showcase how to use comboboxes to select colors,
+ * including HMG colors, system colors, and Windows 10 specific colors. It also demonstrates
+ * how to enable/disable the dark theme in Windows 10.
  */
 
 #include "minigui.ch"
@@ -13,6 +16,11 @@
 
 *------------------------------------------------
 FUNCTION Main()
+/*
+ *  This is the main function of the application. It defines and activates the main window,
+ *  including its controls (labels, comboboxes, checkbox), menu, and imagelists.
+ *  It also sets up event handlers for the controls.
+ */
 *------------------------------------------------
    LOCAL n, nW, nH, nG, cVal, lDark, aSysColor10 := {}
    LOCAL aColorName := {}, aSysColorName := {}
@@ -148,14 +156,39 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION WinDarkTheme( lDark )
-
+/*
+ *  This function sets the dark theme for the window.
+ *  It calls the SetWindowDarkTheme function (defined in the #pragma section) to apply the dark theme.
+ *  This function is crucial for enabling or disabling the dark theme in Windows 10 applications,
+ *  providing a more visually appealing experience for users who prefer dark mode.
+ *
+ *  Input parameters:
+ *      lDark - A logical value indicating whether to enable (TRUE) or disable (FALSE) the dark theme.
+ *
+ *  Return value:
+ *      NIL
+ */
+*------------------------------------------------
    SetWindowDarkTheme( _HMG_MainHandle, 0, lDark )
 
 RETURN NIL
 
 *------------------------------------------------
 FUNCTION HMG_AppsUseTheme( lRet )
-
+/*
+ *  This function reads the Windows registry to determine whether the application is using the light or dark theme.
+ *  It retrieves the value of the "AppsUseLightTheme" registry key, which indicates the user's preferred app theme.
+ *  This information is used to adjust the application's appearance to match the user's system settings.
+ *
+ *  Input parameters:
+ *      lRet - A logical value indicating whether to return the theme name (TRUE) or the registry value (FALSE).
+ *             Defaults to TRUE if not provided.
+ *
+ *  Return value:
+ *      If lRet is TRUE: Returns a character string indicating the theme ("Dark theme" or "Light theme").
+ *      If lRet is FALSE: Returns the integer value read from the registry (0 for dark theme, 1 for light theme).
+ */
+*------------------------------------------------
    LOCAL i, cRet
 
    DEFAULT lRet := .T.
@@ -169,8 +202,20 @@ FUNCTION HMG_AppsUseTheme( lRet )
 RETURN iif( lRet, cRet, i )
 
 *------------------------------------------------
-FUNCTION Color10_ActiveCaption // "Active window caption"
-
+FUNCTION Color10_ActiveCaption
+/*
+ *  This function determines the color of the active window caption in Windows 10 and later.
+ *  It reads values from the Windows registry to determine the color based on the current theme settings.
+ *  The function first checks the "ColorPrevalence" flag to determine whether to use the accent color or the default theme color.
+ *  This ensures that the application uses the correct color for the active window caption, regardless of the user's theme settings.
+ *
+ *  Input parameters:
+ *      None
+ *
+ *  Return value:
+ *      An array containing the RGB color values for the active window caption.
+ */
+*------------------------------------------------
    LOCAL i, xKey, aClr
    // If the ColorPrevalence flag is set to 0 then the color of the window is either black or white.
    // If the flag is set to 1 then the window color is taken from the AccentColor value.
@@ -190,10 +235,37 @@ RETURN aClr
 
 *------------------------------------------------
 FUNCTION Color10_ActiveCaptionKey( i )
+/*
+ *  This function returns either BLACK or WHITE based on the input parameter.
+ *  It's used to determine the active caption color when the ColorPrevalence flag is 0.
+ *  This function provides a simple way to select the appropriate color based on the theme.
+ *
+ *  Input parameters:
+ *      i - An integer value. If i is 0, returns BLACK; otherwise, returns WHITE.
+ *
+ *  Return value:
+ *      BLACK or WHITE color constant.
+ */
 RETURN iif( i == 0, BLACK, WHITE )
 
 *------------------------------------------------
 FUNCTION HMG_SetColorBtm( aColor, bChecked, BmpWidh, BmpHeight )
+/*
+ *  This function creates a color bitmap and adds it to the imagelist.
+ *  It's used to display the colors in the comboboxes.
+ *  The function creates a bitmap with the specified color and an optional checkmark,
+ *  and then adds it to the imagelist associated with the combobox. This allows the combobox
+ *  to display a visual representation of the color options.
+ *
+ *  Input parameters:
+ *      aColor - An array containing the RGB color values.
+ *      bChecked - A logical value indicating whether to draw a checkmark on the bitmap.
+ *      BmpWidh - The width of the bitmap.
+ *      BmpHeight - The height of the bitmap.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL hImage, hImageLst, nColor
    hImageLst := This.imagelst_1.Handle
@@ -206,6 +278,22 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION HMG_SetSysColorBtm( COLOR, bChecked, BmpWidh, BmpHeight )
+/*
+ *  This function creates a color bitmap for a system color and adds it to the imagelist.
+ *  It's used to display the system colors in the comboboxes.
+ *  This function is similar to HMG_SetColorBtm, but it uses system color constants
+ *  to retrieve the color values. This allows the combobox to display system-defined colors,
+ *  such as the active window caption color.
+ *
+ *  Input parameters:
+ *      COLOR - The system color constant (e.g., COLOR_ACTIVECAPTION).
+ *      bChecked - A logical value indicating whether to draw a checkmark on the bitmap.
+ *      BmpWidh - The width of the bitmap.
+ *      BmpHeight - The height of the bitmap.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL hImage, hImageLst, nColor
    hImageLst := This.imagelst_2.Handle
@@ -217,6 +305,22 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION HMG_SetColor10Btm( aColor, bChecked, BmpWidh, BmpHeight )
+/*
+ *  This function creates a color bitmap for a Windows 10 color and adds it to the imagelist.
+ *  It's used to display the Windows 10 colors in the comboboxes.
+ *  This function is similar to HMG_SetColorBtm, but it uses Windows 10 color values
+ *  retrieved from the registry. This allows the combobox to display Windows 10-specific colors,
+ *  such as the accent color.
+ *
+ *  Input parameters:
+ *      aColor - An array containing the RGB color values.
+ *      bChecked - A logical value indicating whether to draw a checkmark on the bitmap.
+ *      BmpWidh - The width of the bitmap.
+ *      BmpHeight - The height of the bitmap.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL hImage, hImageLst, nColor
    hImageLst := This.imagelst_3.Handle
@@ -228,6 +332,17 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION GetHMGColor( aColor )
+/*
+ *  This function displays information about the selected HMG color in a message box.
+ *  It retrieves the selected color from the combobox and displays its name and RGB values in a message box.
+ *  This provides the user with detailed information about the selected color.
+ *
+ *  Input parameters:
+ *      aColor - An array containing the HMG color definitions.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL nPos, cStr, aColorHMG
    nPos := Form_1.ComboEx_1.VALUE
@@ -241,6 +356,17 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION GetWin10Color( aColor )
+/*
+ *  This function displays information about the selected Windows 10 color in a message box.
+ *  It retrieves the selected color from the combobox and displays its name and RGB values in a message box.
+ *  This provides the user with detailed information about the selected Windows 10 color.
+ *
+ *  Input parameters:
+ *      aColor - An array containing the Windows 10 color definitions.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL nPos, cStr, aColorWin
    nPos := Form_1.ComboEx_3.VALUE
@@ -254,6 +380,17 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION GetSystemColor( aColor )
+/*
+ *  This function displays information about the selected system color in a message box.
+ *  It retrieves the selected color from the combobox and displays its name and RGB values in a message box.
+ *  This provides the user with detailed information about the selected system color.
+ *
+ *  Input parameters:
+ *      aColor - An array containing the system color definitions.
+ *
+ *  Return value:
+ *      NIL
+ */
 *------------------------------------------------
    LOCAL nPos, cStr, nColorSys
    nPos := Form_1.ComboEx_2.VALUE
@@ -267,7 +404,19 @@ RETURN NIL
 
 *------------------------------------------------
 FUNCTION ColorHMG()
-
+/*
+ *  This function defines an array of HMG colors.
+ *  It creates an array containing the color constants and their names.
+ *  This array is used to populate the HMG color combobox.
+ *
+ *  Input parameters:
+ *      None
+ *
+ *  Return value:
+ *      An array containing the HMG color definitions. Each element in the array is an array
+ *      containing the color constant and its name (e.g., { YELLOW, "YELLOW" }).
+ */
+*------------------------------------------------
    LOCAL aColor := ;
       { { YELLOW, "YELLOW" }, ;
       { PINK, "PINK" }, ;
@@ -293,7 +442,19 @@ RETURN aColor
 
 *------------------------------------------------
 FUNCTION ColorHMGSys()
-
+/*
+ *  This function defines an array of system colors.
+ *  It creates an array containing the system color constants and their names.
+ *  This array is used to populate the system color combobox.
+ *
+ *  Input parameters:
+ *      None
+ *
+ *  Return value:
+ *      An array containing the system color definitions. Each element in the array is an array
+ *      containing the system color constant and its name (e.g., { COLOR_ACTIVECAPTION, "Active window caption" }).
+ */
+*------------------------------------------------
    LOCAL aColor := ;
       { { COLOR_GRADIENTACTIVECAPTION, "GRADIENTACTIVECAPTION" }, ;
       { COLOR_GRADIENTINACTIVECAPTION, "GRADIENTINACTIVECAPTION" }, ;
@@ -327,7 +488,20 @@ RETURN aColor
 
 *------------------------------------------------
 FUNCTION ColorHMGWin10()
-
+/*
+ *  This function defines an array of Windows 10 colors.
+ *  It creates an array containing the color values (obtained from registry or calculated), their names, and the registry keys
+ *  associated with the colors. This array is used to populate the Windows 10 color combobox.
+ *
+ *  Input parameters:
+ *      None
+ *
+ *  Return value:
+ *      An array containing the Windows 10 color definitions. Each element in the array is an array
+ *      containing the color value (obtained from registry or calculated), its name, and the registry key
+ *      associated with the color (e.g., { Color10_ActiveCaption(), "Active window caption", "AccentColor" }).
+ */
+*------------------------------------------------
    LOCAL aColor := ;
       { { Color10_ActiveCaption(), "Active window caption", "AccentColor" }, ;
       { Color10_ActiveCaptionKey( 0 ), "Active window caption: dark theme", "ColorPrevalence = 0" }, ;
@@ -348,8 +522,20 @@ typedef HRESULT (WINAPI *DwmSetWindowAttributeCallback)(HWND hwnd, DWORD dwAttri
 static HINSTANCE libDWM;
 static DwmSetWindowAttributeCallback DwmSetWindowAttribute;
 
-// SetWindowDarkMode
 HB_FUNC ( SETWINDOWDARKTHEME )
+/*
+ *  This function sets the dark mode theme for a given window.
+ *  It uses the DwmSetWindowAttribute function from dwmapi.dll to apply the dark theme.
+ *  This function directly interacts with the Windows API to change the window's appearance.
+ *
+ *  Input parameters:
+ *      handle - The handle of the window to apply the dark theme to.
+ *      isLegacy - A logical value indicating whether to use the legacy dark theme (Windows 10 versions before 2004).
+ *      isDarkMode - A logical value indicating whether to enable (TRUE) or disable (FALSE) the dark theme.
+ *
+ *  Return value:
+ *      None (void). The function modifies the window's appearance directly.
+ */
 {
    BOOL isDarkMode;
 
@@ -378,13 +564,39 @@ HB_FUNC ( SETWINDOWDARKTHEME )
 }
 
 static void GoToPoint( HDC hDC, int ix, int iy )
+/*
+ *  This function moves the current position of the pen in the specified device context (DC) to a new location.
+ *  It's a helper function used by CreateColorBMP to draw the checkmark.
+ *
+ *  Input parameters:
+ *      hDC - A handle to the device context.
+ *      ix - The x-coordinate of the new location.
+ *      iy - The y-coordinate of the new location.
+ *
+ *  Return value:
+ *      None (void). The function modifies the device context directly.
+ */
 {
    POINT pt;
    MoveToEx( hDC, ix, iy, &pt );
 }
 
 
-HB_FUNC ( CREATECOLORBMP )   //CreateColorBmp(hwnd,BmpWidh,BmpHeight,nColor,bChecked)
+HB_FUNC ( CREATECOLORBMP )
+/*
+ *  This function creates a color bitmap with an optional checkmark.
+ *  It's used to generate the images displayed in the comboboxes, providing a visual representation of the colors.
+ *
+ *  Input parameters:
+ *      hwnd - The handle of the window.
+ *      BmpWidh - The width of the bitmap.
+ *      BmpHeight - The height of the bitmap.
+ *      nColor - The color of the bitmap.
+ *      bChecked - A logical value indicating whether to draw a checkmark on the bitmap.
+ *
+ *  Return value:
+ *      HBITMAP - A handle to the created bitmap.
+ */
 {
    HBRUSH hOldBrush;
    HBRUSH hColorBrush;
@@ -469,7 +681,24 @@ HB_FUNC ( CREATECOLORBMP )   //CreateColorBmp(hwnd,BmpWidh,BmpHeight,nColor,bChe
    HB_RETNL( ( LONG_PTR ) hBmp );
 }
 
-HB_FUNC( IL_ADDMASKEDINDIRECT )   //IL_AddMaskedIndirect( hwnd , himage , color , ix , iy , imagecount )
+HB_FUNC( IL_ADDMASKEDINDIRECT )
+/*
+ *  This function adds a masked bitmap to an image list.
+ *  It's used to add the color bitmaps created by CreateColorBMP to the imagelist,
+ *  allowing them to be displayed in the comboboxes. The mask ensures that the background
+ *  of the bitmap is transparent.
+ *
+ *  Input parameters:
+ *      hwnd - The handle of the image list.
+ *      himage - The handle of the bitmap to add.
+ *      color - The color to use as the mask.  CLR_NONE indicates no mask.
+ *      ix - The width of each image in the bitmap.
+ *      iy - The height of each image in the bitmap.
+ *      imagecount - The number of images in the bitmap.
+ *
+ *  Return value:
+ *      LRESULT - The index of the image added to the image list, or -1 if the function fails.
+ */
 {
    BITMAP   bm;
    HBITMAP  himage = ( HBITMAP ) HB_PARNL( 2 );

@@ -1379,6 +1379,9 @@ PROCEDURE UpdateGridRec()
 
    LOCAL i, aRec, cAlias
    cAlias := _HMG_FormDebugger.Grid_Areas.CELL( _HMG_FormDebugger.Grid_Areas.VALUE, 1 )
+   IF ValType( cAlias ) == "U"
+      RETURN
+   ENDIF
    IF "*" $ cAlias
       cAlias := SubStr( cAlias, 2 )
    ENDIF

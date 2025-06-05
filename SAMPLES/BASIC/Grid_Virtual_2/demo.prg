@@ -7,9 +7,14 @@
 
 #include "hmg.ch"
 
-#define ARRAY_FILENAME  'Items.Array'
+#define ARRAY_FILENAME   'Items.Array'
 
 FUNCTION MAIN
+   /*
+    *  This is the main function of the application.
+    *  It initializes the main window, defines the grid, and sets up the menu options for loading, saving, and clearing data in the grid.
+    *  It also handles the initial creation of the data file if it doesn't exist.
+    */
 
    LOCAL aItems := {}
 
@@ -39,7 +44,7 @@ FUNCTION MAIN
    DEFINE WINDOW Form_1 ;
          AT 0, 0 ;
          WIDTH 550 ;
-         HEIGHT 400 ;
+         HEIGHT 410 ;
          TITLE 'Hello World!' ;
          MAIN
 
@@ -73,6 +78,17 @@ FUNCTION MAIN
 RETURN NIL
 
 PROCEDURE QueryTest( aItems )
+   /*
+    *  This procedure is called by the grid control to retrieve data for a specific cell.
+    *  It determines the row and column being queried and assigns the corresponding value from the aItems array to the QueryData property of the grid.
+    *  This is essential for virtual grids, where data is only loaded when needed for display.
+    *
+    *  Parameters:
+    *      aItems: An array containing the data to be displayed in the grid.
+    *
+    *  Return:
+    *      None.  The data is passed back to the grid via the This.QueryData property.
+    */
 
    LOCAL i := This.QueryRowIndex
    LOCAL j := This.QueryColIndex
@@ -82,6 +98,17 @@ PROCEDURE QueryTest( aItems )
 RETURN
 
 FUNCTION moveUp( aItems )
+   /*
+    *  This function moves a selected row up one position in the aItems array.
+    *  It retrieves the currently selected row from the grid, removes it from its current position, and inserts it into the position above.
+    *  The grid is then refreshed to reflect the change, and the selection is moved to the new position of the row.
+    *
+    *  Parameters:
+    *      aItems: An array containing the data displayed in the grid.
+    *
+    *  Return:
+    *      aItems: The modified array with the row moved up.
+    */
 
    LOCAL nPos := Form_1.Grid_1.VALUE[ 1 ]
    LOCAL nCol := Form_1.Grid_1.VALUE[ 2 ]
@@ -97,6 +124,17 @@ FUNCTION moveUp( aItems )
 RETURN aItems
 
 FUNCTION moveDown( aItems )
+   /*
+    *  This function moves a selected row down one position in the aItems array.
+    *  It retrieves the currently selected row from the grid, removes it from its current position, and inserts it into the position below.
+    *  The grid is then refreshed to reflect the change, and the selection is moved to the new position of the row.
+    *
+    *  Parameters:
+    *      aItems: An array containing the data displayed in the grid.
+    *
+    *  Return:
+    *      aItems: The modified array with the row moved down.
+    */
 
    LOCAL nPos := Form_1.Grid_1.VALUE[ 1 ]
    LOCAL nCol := Form_1.Grid_1.VALUE[ 2 ]

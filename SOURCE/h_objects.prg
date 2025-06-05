@@ -1125,7 +1125,7 @@ CLASS TWndData
    VAR oEvent AS OBJECT
    VAR oOnEventBlock AS OBJECT
    VAR oParam AS OBJECT
-   VAR oEvents INIT oHmgData()
+   VAR oEvents AS OBJECT
    VAR cProcFile INIT ""
    VAR cProcName INIT ""
    VAR nProcLine INIT 0
@@ -1135,11 +1135,11 @@ CLASS TWndData
    METHOD Def( nIndex, cName, nHandle, nParent, cType, cVar ) INLINE ( ;
       ::nIndex := nIndex, ::cName := cName, ::nHandle := nHandle, ;
       ::nParent := nParent, ::cType := cType, ::cVar := cVar, ;
-      ::oCargo := oKeyData(), ::oOnEventBlock := oKeyData( Self, .T. ), ;
-      ::oEvent := oKeyData( Self ), ::oUserKeys := oKeyData(), ;
-      ::oName := oKeyData(), ::oHand := oKeyData(), ;
-      ::oProp := oKeyData(), ::oParam := oKeyData(), ;
-      hmg_SetWindowObject( ::nHandle, Self ), ;
+      ::oCargo := oHmgData(), ::oOnEventBlock := oKeyData( Self, .T. ), ;
+      ::oEvent := oKeyData( Self ), ::oUserKeys := oHmgData(), ;
+      ::oName := oHmgData(), ::oHand := oHmgData(), ;
+      ::oProp := oHmgData(), ::oParam := oHmgData(), ;
+      ::oEvents := oHmgData(), hmg_SetWindowObject( ::nHandle, Self ), ;
       ::nLeft := ::oApp:Left, ::nRight := ::oApp:Right, ;
       ::nTop := ::oApp:Top, ::nBottom := ::oApp:Bottom, ;
       ::nGapWidth := ::oApp:GapsWidth, ;

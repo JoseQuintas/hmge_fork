@@ -304,101 +304,109 @@ HB_FUNC( COMBOGETSTRING )
       hb_retc_null();
    }
 }
-   HB_FUNC( COMBOADDSTRING )
-   {
+
+// Adds a string to the end of the list in a ComboBox
+HB_FUNC( COMBOADDSTRING )
+{
 #ifndef UNICODE
-      LPCTSTR  lpString = ( LPCTSTR ) hb_parc( 2 );
+   LPCTSTR  lpString = ( LPCTSTR ) hb_parc( 2 );
 #else
-      LPWSTR   lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-      hmg_ret_LRESULT( ComboBox_AddString( hmg_par_raw_HWND( 1 ), lpString ) );
+   hmg_ret_LRESULT( ComboBox_AddString( hmg_par_raw_HWND( 1 ), lpString ) );
 #ifdef UNICODE
-      hb_xfree( lpString );
+   hb_xfree( lpString );
 #endif
-   }
-   HB_FUNC( COMBOINSERTSTRING )
-   {
+}
+
+// Inserts a string into the list of a ComboBox at a specified position
+HB_FUNC( COMBOINSERTSTRING )
+{
 #ifndef UNICODE
-      LPCTSTR  lpString = ( LPCTSTR ) hb_parc( 2 );
+   LPCTSTR  lpString = ( LPCTSTR ) hb_parc( 2 );
 #else
-      LPWSTR   lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR   lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-      hmg_ret_LRESULT( ComboBox_InsertString( hmg_par_raw_HWND( 1 ), hb_parni( 3 ) - 1, lpString ) );
+   hmg_ret_LRESULT( ComboBox_InsertString( hmg_par_raw_HWND( 1 ), hb_parni( 3 ) - 1, lpString ) );
 #ifdef UNICODE
-      hb_xfree( lpString );
+   hb_xfree( lpString );
 #endif
-   }
+}
 
-   // extend combo functions  (JK) HMG 1.0 Exp. Build 8
-   HB_FUNC( COMBOADDSTRINGEX )
-   {
+// extend combo functions  (JK) HMG 1.0 Exp. Build 8
+// Adds a string with an associated image to the end of the list in a ComboBoxEx
+HB_FUNC( COMBOADDSTRINGEX )
+{
 #ifndef UNICODE
-      LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
+   LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
 #else
-      LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-      int            nImage = hb_parni( 3 );
-      COMBOBOXEXITEM cbei;
+   int            nImage = hb_parni( 3 );
+   COMBOBOXEXITEM cbei;
 
-      cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
-      cbei.iItem = -1;
-      cbei.pszText = lpText;
-      cbei.cchTextMax = ( int ) hb_parclen( 2 );
-      cbei.iImage = ( nImage - 1 ) * 3;
-      cbei.iSelectedImage = ( nImage - 1 ) * 3 + 1;
-      cbei.iOverlay = ( nImage - 1 ) * 3 + 2;
-      cbei.iIndent = 0;
+   cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
+   cbei.iItem = -1;
+   cbei.pszText = lpText;
+   cbei.cchTextMax = ( int ) hb_parclen( 2 );
+   cbei.iImage = ( nImage - 1 ) * 3;
+   cbei.iSelectedImage = ( nImage - 1 ) * 3 + 1;
+   cbei.iOverlay = ( nImage - 1 ) * 3 + 2;
+   cbei.iIndent = 0;
 
-      SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
+   SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
 #ifdef UNICODE
-      hb_xfree( lpText );
+   hb_xfree( lpText );
 #endif
-   }
-   HB_FUNC( COMBOINSERTSTRINGEX )
-   {
-#ifndef UNICODE
-      LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
-#else
-      LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
-#endif
-      int            nImage = hb_parni( 3 );
-      COMBOBOXEXITEM cbei;
+}
 
-      cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
+// Inserts a string with an associated image into the list of a ComboBoxEx at a specified position
+HB_FUNC( COMBOINSERTSTRINGEX )
+{
+#ifndef UNICODE
+   LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
+#else
+   LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
+#endif
+   int            nImage = hb_parni( 3 );
+   COMBOBOXEXITEM cbei;
+
+   cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
    cbei.iItem = hb_parni( 4 ) - 1;
-      cbei.pszText = lpText;
-      cbei.cchTextMax = ( int ) hb_parclen( 2 );
-      cbei.iImage = ( nImage - 1 ) * 3;
-      cbei.iSelectedImage = ( nImage - 1 ) * 3 + 1;
-      cbei.iOverlay = ( nImage - 1 ) * 3 + 2;
-      cbei.iIndent = 0;
+   cbei.pszText = lpText;
+   cbei.cchTextMax = ( int ) hb_parclen( 2 );
+   cbei.iImage = ( nImage - 1 ) * 3;
+   cbei.iSelectedImage = ( nImage - 1 ) * 3 + 1;
+   cbei.iOverlay = ( nImage - 1 ) * 3 + 2;
+   cbei.iIndent = 0;
 
-      SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
+   SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
 #ifdef UNICODE
-      hb_xfree( lpText );
+   hb_xfree( lpText );
 #endif
-   }
-   HB_FUNC( COMBOADDDATASTRINGEX )
-   {
+}
+
+// Adds a string to the end of the list in a ComboBoxEx, setting default image indices
+HB_FUNC( COMBOADDDATASTRINGEX )
+{
 #ifndef UNICODE
-      LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
+   LPTSTR         lpText = ( LPTSTR ) hb_parc( 2 );
 #else
-      LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPWSTR         lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-      COMBOBOXEXITEM cbei;
+   COMBOBOXEXITEM cbei;
 
-      cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
-      cbei.iItem = -1;
-      cbei.pszText = lpText;
-      cbei.cchTextMax = ( int ) hb_parclen( 2 );
-      cbei.iImage = 0;
-      cbei.iSelectedImage = 1;
-      cbei.iOverlay = 2;
-      cbei.iIndent = 0;
+   cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE | CBEIF_OVERLAY;
+   cbei.iItem = -1;
+   cbei.pszText = lpText;
+   cbei.cchTextMax = ( int ) hb_parclen( 2 );
+   cbei.iImage = 0;
+   cbei.iSelectedImage = 1;
+   cbei.iOverlay = 2;
+   cbei.iIndent = 0;
 
-      SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
+   SendMessage( hmg_par_raw_HWND( 1 ), CBEM_INSERTITEM, 0, ( LPARAM ) & cbei );
 #ifdef UNICODE
-      hb_xfree( lpText );
+   hb_xfree( lpText );
 #endif
-   }
-   
+}

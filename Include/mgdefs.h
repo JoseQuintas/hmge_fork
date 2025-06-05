@@ -262,6 +262,7 @@ extern HB_PTRUINT wapi_GetProcAddress( HMODULE hmodule, LPCSTR lpProcName );
 #define hmg_ret_raw_HACCEL( h )          hb_retptr( ( void * ) ( h ) )
 #define hmg_ret_raw_HBRUSH( h )          HB_RETNL( ( HB_PTRUINT ) h )
 #define hmg_ret_raw_HGDIOBJ( h )         HB_RETNL( ( HB_PTRUINT ) h )
+#define hmg_ret_LONG_PTR( h )            HB_RETNL( ( LONG_PTR ) h )
 
 #define hmg_ret_HRESULT( hr )            hb_retnint( hr )
 #define hmg_ret_LRESULT( hr )            hb_retnint( hr )

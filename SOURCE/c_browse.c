@@ -47,15 +47,15 @@
 #define _WIN32_IE 0x0501
 
 #ifdef __XCC__
-   #define _WIN32_WINDOWS  0x0410
+#define _WIN32_WINDOWS  0x0410
 #endif
 #include <mgdefs.h>
 #include <commctrl.h>
 
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
-   // Class definitions
-   #define WC_SCROLLBAR "ScrollBar"
-   #define WC_STATIC    "Static"
+// Class definitions
+#define WC_SCROLLBAR "ScrollBar"
+#define WC_STATIC    "Static"
 #endif
 
 LRESULT APIENTRY  SubClassFunc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
@@ -63,9 +63,28 @@ static WNDPROC    lpfnOldWndProc;
 
 HINSTANCE         GetInstance( void );
 
-// Initializes a ListView control with custom styles
 HB_FUNC( INITBROWSE )
 {
+   /*
+   *  Initializes a ListView control with custom styles.
+   *
+   *  Parameters:
+   *     1: HWND - Handle of the parent window.
+   *     2: HMENU - Menu handle (used as control ID).
+   *     3: INT - X coordinate of the control.
+   *     4: INT - Y coordinate of the control.
+   *     5: INT - Width of the control.
+   *     6: INT - Height of the control.
+   *     7: LOGICAL - WS_TABSTOP style (TRUE or FALSE).
+   *
+   *  Returns:
+   *     HWND - Handle of the created ListView control.
+   *
+   *  Purpose:
+   *     Creates a ListView control with specified styles and dimensions,
+   *     and subclasses it to intercept messages like WM_MOUSEWHEEL for scrolling.
+   *     The WS_TABSTOP style is added based on the value of hb_parl(7).
+   */
    HWND                 hListView;
    DWORD                style = LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | LVS_REPORT;
 
@@ -103,9 +122,26 @@ HB_FUNC( INITBROWSE )
    hmg_ret_raw_HWND( hListView );
 }
 
-// Message handling function to process WM_MOUSEWHEEL events
+// LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
+   /*
+   *  Message handling function to process WM_MOUSEWHEEL events.
+   *
+   *  Parameters:
+   *     hWnd: HWND - Handle of the window receiving the message.
+   *     msg: UINT - The message identifier.
+   *     wParam: WPARAM - Additional message-specific information.
+   *     lParam: LPARAM - Additional message-specific information.
+   *
+   *  Returns:
+   *     LRESULT - Result of the message processing.
+   *
+   *  Purpose:
+   *     Intercepts WM_MOUSEWHEEL messages to simulate up/down arrow key presses
+   *     for scrolling the ListView control when the mouse wheel is used.
+   *     Other messages are passed to the original window procedure.
+   */
    if( msg == WM_MOUSEWHEEL )
    {
       // Scroll up or down based on the wheel delta
@@ -124,9 +160,24 @@ LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
    return CallWindowProc( lpfnOldWndProc, hWnd, msg, wParam, lParam );
 }
 
-// Initializes a vertical scrollbar with a specified range
 HB_FUNC( INITVSCROLLBAR )
 {
+   /*
+   *  Initializes a vertical scrollbar control.
+   *
+   *  Parameters:
+   *     1: HWND - Handle of the parent window.
+   *     2: INT - X coordinate of the scrollbar.
+   *     3: INT - Y coordinate of the scrollbar.
+   *     4: INT - Width of the scrollbar.
+   *     5: INT - Height of the scrollbar.
+   *
+   *  Returns:
+   *     HWND - Handle of the created scrollbar control.
+   *
+   *  Purpose:
+   *     Creates a vertical scrollbar control with specified dimensions and sets its scroll range.
+   */
    HWND  hScrollbar;
 
    hScrollbar = CreateWindowEx
@@ -150,9 +201,21 @@ HB_FUNC( INITVSCROLLBAR )
    hmg_ret_raw_HWND( hScrollbar );
 }
 
-// Retrieves the maximum scroll range for a scrollbar
 HB_FUNC( GETSCROLLRANGEMAX )
 {
+   /*
+   *  Retrieves the maximum scroll range for a scrollbar.
+   *
+   *  Parameters:
+   *     1: HWND - Handle of the scrollbar control.
+   *     2: INT - Scrollbar type (e.g., SB_CTL for a control scrollbar).
+   *
+   *  Returns:
+   *     INT - The maximum scroll range value.
+   *
+   *  Purpose:
+   *     Gets the maximum scroll position of a scrollbar control.
+   */
    int   minPos, maxPos;
 
    // Retrieve the range limits for the specified scrollbar
@@ -160,9 +223,24 @@ HB_FUNC( GETSCROLLRANGEMAX )
    hmg_ret_NINT( maxPos );
 }
 
-// Creates a static control styled as a button, typically to represent a scroll button
 HB_FUNC( INITVSCROLLBARBUTTON )
 {
+   /*
+   *  Creates a static control styled as a button, typically to represent a scroll button.
+   *
+   *  Parameters:
+   *     1: HWND - Handle of the parent window.
+   *     2: INT - X coordinate of the button.
+   *     3: INT - Y coordinate of the button.
+   *     4: INT - Width of the button.
+   *     5: INT - Height of the button.
+   *
+   *  Returns:
+   *     HWND - Handle of the created static control (button).
+   *
+   *  Purpose:
+   *     Creates a static control that visually resembles a button, often used as part of a custom scrollbar implementation.
+   */
    hmg_ret_raw_HWND
    (
       CreateWindow
@@ -182,9 +260,24 @@ HB_FUNC( INITVSCROLLBARBUTTON )
    );
 }
 
-// Sets the scroll info for a scrollbar, including page size, position, and range
 HB_FUNC( SETSCROLLINFO )
 {
+   /*
+   *  Sets the scroll info for a scrollbar, including page size, position, and range.
+   *
+   *  Parameters:
+   *     1: HWND - Handle of the scrollbar control.
+   *     2: INT - Maximum scroll range.
+   *     3: INT - Current scroll position.
+   *     4: INT - Page size (visible area).
+   *
+   *  Returns:
+   *     INT - Nonzero if successful; otherwise, zero.
+   *
+   *  Purpose:
+   *     Configures the scrollbar's properties, such as the total range, current position, and the size of the visible portion.
+   *     This is essential for properly displaying and controlling the scrollbar's behavior.
+   */
    SCROLLINFO  si = { 0 };
 
    // Configure scroll information
@@ -196,5 +289,5 @@ HB_FUNC( SETSCROLLINFO )
    si.nPos = hb_parni( 3 );         // Scroll position
 
    // Apply scroll info and return success/failure
-   hmg_ret_NINT( SetScrollInfo( hmg_par_raw_HWND( 1 ), SB_CTL, &si, TRUE ) );
+   hb_retl( SetScrollInfo( hmg_par_raw_HWND( 1 ), SB_CTL, &si, TRUE ) );
 }

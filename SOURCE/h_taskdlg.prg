@@ -10,162 +10,78 @@
 #include "TaskDlgs.ch"
 #include "i_var.ch"
 
-////////////////////////////////////////////////////////////////////////////////
+/*-----------------------------------------------------------------------------*
+CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Defines the TSimpleTaskDialog class, which provides a simplified interface for displaying Task Dialogs.
+*     This class is designed for basic use cases where only a title, instruction, content,
+*     common buttons, and a main icon are needed.
+*
+*  Purpose:
+*     This class simplifies the use of Task Dialogs for common scenarios, reducing the amount of code required
+*     to display a basic dialog with a title, instruction, content, and standard buttons/icons.  It provides
+*     a more user-friendly interface compared to directly using the underlying Windows API.
+*
+*  Notes:
+*     This class is suitable for simple dialogs. For more complex scenarios with custom buttons, radio buttons,
+*     or expanded information, use the TTaskDialog class.
+*
+*/
 CREATE CLASS TSimpleTaskDialog FUNCTION SimpleTaskDialog
-////////////////////////////////////////////////////////////////////////////////
-  /*
-   *  Class: TSimpleTaskDialog
-   *  Purpose:  Provides a simplified interface for displaying Task Dialogs.
-   *            This class is designed for basic use cases where only a title, instruction, content,
-   *            common buttons, and a main icon are needed.
-   */
+
    EXPORTED:
-   /*
-    *  Var: Cargo
-    *  Type: Variant
-    *  Purpose:  A general-purpose variable that can be used to store any data associated with the object.
-    *            This is a common practice in HMG to allow attaching custom data to GUI elements.
-    */
    VAR    Cargo
-   /*
-    *  Var: lError
-    *  Type: Logical
-    *  Purpose:  Indicates whether an error occurred during the execution of the Task Dialog.
-    *            It is set to .T. initially and changed to .F. if the dialog executes successfully.
-    *  Access: READONLY
-    *  Initial Value: .T. (assumes an error until proven otherwise)
-    */
    VAR    lError                       READONLY   INIT .T.
-   /*
-    *  Var: nButtonResult
-    *  Type: Numeric
-    *  Purpose:  Stores the ID of the button that was clicked by the user in the Task Dialog.
-    *            This value is set after the dialog is closed.
-    *  Access: READONLY
-    *  Initial Value: NIL (no button has been clicked yet)
-    */
    VAR    nButtonResult                READONLY   INIT NIL
-   /*
-    *  Var: nResult
-    *  Type: Numeric
-    *  Purpose:  Stores the return code of the TaskDialog API function.
-    *            This can be used to determine the specific reason for a failure, if any.
-    *  Access: READONLY
-    *  Initial Value: E_FAIL (indicates a failure until the dialog is executed)
-    */
    VAR    nResult                      READONLY   INIT E_FAIL
 
-   /*
-    *  Method: New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon )
-    *  Purpose:  Constructor for the TSimpleTaskDialog class.  Initializes the dialog's properties.
-    *  Parameters:
-    *     cTitle:       The title of the Task Dialog (String or Numeric).
-    *     cInstruction: The main instruction text (String or Numeric).
-    *     cContent:     The content text (String or Numeric).
-    *     nCommonButtons: A flag indicating which common buttons to display (Numeric, e.g., TDCBF_OK_BUTTON).
-    *     nMainIcon:    A flag indicating which main icon to display (Numeric, e.g., TD_INFORMATION_ICON).
-    *  Return Value: Self (the object instance)
-    */
    METHOD New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon )
-   /*
-    *  Method: Execute()
-    *  Purpose:  Executes the Task Dialog, displaying it to the user.
-    *  Parameters: None
-    *  Return Value: Logical (.T. if the dialog executed successfully, .F. otherwise)
-    */
    METHOD Execute()
-   /*
-    *  Method: Title( cTitle )
-    *  Purpose:  Getter/Setter for the dialog's title.
-    *  Parameters:
-    *     cTitle: The new title for the dialog (String or Numeric).
-    *  Return Value: The old title value.
-    */
+
    METHOD Title( cTitle )              SETGET
-   /*
-    *  Method: Instruction( cInstruction )
-    *  Purpose:  Getter/Setter for the dialog's main instruction text.
-    *  Parameters:
-    *     cInstruction: The new instruction text (String or Numeric).
-    *  Return Value: The old instruction text value.
-    */
    METHOD Instruction( cInstruction )  SETGET
-   /*
-    *  Method: Content( cContent )
-    *  Purpose:  Getter/Setter for the dialog's content text.
-    *  Parameters:
-    *     cContent: The new content text (String or Numeric).
-    *  Return Value: The old content text value.
-    */
    METHOD Content( cContent )          SETGET
-   /*
-    *  Method: CommonButtons( nCBs )
-    *  Purpose:  Getter/Setter for the common buttons flag.
-    *  Parameters:
-    *     nCBs: The new common buttons flag (Numeric).
-    *  Return Value: The old common buttons flag value.
-    */
    METHOD CommonButtons( nCBs )        SETGET
-   /*
-    *  Method: MainIcon( nIcon )
-    *  Purpose:  Getter/Setter for the main icon flag.
-    *  Parameters:
-    *     nIcon: The new main icon flag (Numeric).
-    *  Return Value: The old main icon flag value.
-    */
    METHOD MainIcon( nIcon )            SETGET
 
    PROTECTED:
-   /*
-    *  Var: cTitle
-    *  Type: String
-    *  Purpose:  Stores the title of the Task Dialog.
-    *  Initial Value: NIL
-    */
    VAR    cTitle                       INIT       NIL
-   /*
-    *  Var: cInstruction
-    *  Type: String
-    *  Purpose:  Stores the main instruction text of the Task Dialog.
-    *  Initial Value: NIL
-    */
    VAR    cInstruction                 INIT       NIL
-   /*
-    *  Var: cContent
-    *  Type: String
-    *  Purpose:  Stores the content text of the Task Dialog.
-    *  Initial Value: NIL
-    */
    VAR    cContent                     INIT       NIL
-   /*
-    *  Var: nCommonButtons
-    *  Type: Numeric
-    *  Purpose:  Stores the flag indicating which common buttons to display.
-    *  Initial Value: TDCBF_OK_BUTTON (displays only the OK button by default)
-    */
    VAR    nCommonButtons               INIT       TDCBF_OK_BUTTON
-   /*
-    *  Var: nMainIcon
-    *  Type: Numeric
-    *  Purpose:  Stores the flag indicating which main icon to display.
-    *  Initial Value: TD_NO_ICON (displays no icon by default)
-    */
    VAR    nMainIcon                    INIT       TD_NO_ICON
 
 ENDCLASS
-////////////////////////////////////////////////////////////////////////////////
 
-/*
- *  Method: New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon ) CLASS TSimpleTaskDialog
- *  Purpose:  Constructor for the TSimpleTaskDialog class.  Initializes the dialog's properties.
- *  Parameters:
- *     cTitle:       The title of the Task Dialog (String or Numeric).
- *     cInstruction: The main instruction text (String or Numeric).
- *     cContent:     The content text (String or Numeric).
- *     nCommonButtons: A flag indicating which common buttons to display (Numeric, e.g., TDCBF_OK_BUTTON).
- *     nMainIcon:    A flag indicating which main icon to display (Numeric, e.g., TD_INFORMATION_ICON).
- *  Return Value: Self (the object instance)
- */
+/*-----------------------------------------------------------------------------*
+METHOD New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Constructor for the TSimpleTaskDialog class. Initializes the dialog's properties.
+*
+*  Parameters:
+*     cTitle:       The title of the Task Dialog (String or Numeric).
+*     cInstruction: The main instruction text (String or Numeric).
+*     cContent:     The content text (String or Numeric).
+*     nCommonButtons: A flag indicating which common buttons to display (Numeric, e.g., TDCBF_OK_BUTTON).
+*     nMainIcon:    A flag indicating which main icon to display (Numeric, e.g., TD_INFORMATION_ICON).
+*
+*  Return Value:
+*     Self (the object instance).
+*
+*  Purpose:
+*     This constructor initializes the TSimpleTaskDialog object with the provided title, instruction, content,
+*     common buttons, and main icon. It handles different data types for the title, instruction, and content,
+*     and sets the common buttons and main icon flags if numeric values are provided.
+*
+*  Notes:
+*     The constructor uses the iif() function to handle different data types for the title, instruction, and content.
+*     If a non-string or non-numeric value is provided, it is set to NIL.
+*
+*/
 METHOD New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon ) CLASS TSimpleTaskDialog
 
    // Assign the title, instruction, and content, handling different data types and NULL values.
@@ -185,12 +101,29 @@ METHOD New( cTitle, cInstruction, cContent, nCommonButtons, nMainIcon ) CLASS TS
 
 RETURN Self
 
-/*
- *  Method: Execute() CLASS TSimpleTaskDialog
- *  Purpose:  Executes the Task Dialog, displaying it to the user.
- *  Parameters: None
- *  Return Value: Logical (.T. if the dialog executed successfully, .F. otherwise)
- */
+/*-----------------------------------------------------------------------------*
+METHOD Execute() CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Executes the Task Dialog, displaying it to the user.
+*
+*  Parameters:
+*     None
+*
+*  Return Value:
+*     Logical (.T. if the dialog executed successfully, .F. otherwise).
+*
+*  Purpose:
+*     This method displays the Task Dialog to the user and sets the object's properties based on the result of the execution.
+*     It checks if the operating system is Windows Vista or later and calls the appropriate API function.
+*     If the operating system is older than Windows Vista, it sets the result to E_NOTIMPL (Not Implemented).
+*
+*  Notes:
+*     The win_TaskDialog0 function is used to display the Task Dialog.
+*     The @nButton parameter passes the variable by reference so the function can set the value.
+*
+*/
 METHOD Execute() CLASS TSimpleTaskDialog
 
    LOCAL nResult
@@ -218,13 +151,27 @@ METHOD Execute() CLASS TSimpleTaskDialog
 
 RETURN ( ! ::lError )
 
-/*
- *  Method: Title( cTitle ) CLASS TSimpleTaskDialog
- *  Purpose:  Getter/Setter for the dialog's title.
- *  Parameters:
- *     cTitle: The new title for the dialog (String or Numeric).
- *  Return Value: The old title value.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Title( cTitle ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the dialog's title.
+*
+*  Parameters:
+*     cTitle: The new title for the dialog (String or Numeric).
+*
+*  Return Value:
+*     The old title value.
+*
+*  Purpose:
+*     This method allows you to get or set the title of the Task Dialog.
+*     When setting the title, it handles different data types and NULL values.
+*
+*  Notes:
+*     If the new title is a NULL string, the title is set to NIL.
+*
+*/
 METHOD Title( cTitle ) CLASS TSimpleTaskDialog
 
    LOCAL cOldVal := ::cTitle
@@ -237,13 +184,27 @@ METHOD Title( cTitle ) CLASS TSimpleTaskDialog
 
 RETURN cOldVal
 
-/*
- *  Method: Instruction( cInstruction ) CLASS TSimpleTaskDialog
- *  Purpose:  Getter/Setter for the dialog's main instruction text.
- *  Parameters:
- *     cInstruction: The new instruction text (String or Numeric).
- *  Return Value: The old instruction text value.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Instruction( cInstruction ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the dialog's main instruction text.
+*
+*  Parameters:
+*     cInstruction: The new instruction text (String or Numeric).
+*
+*  Return Value:
+*     The old instruction text value.
+*
+*  Purpose:
+*     This method allows you to get or set the main instruction text of the Task Dialog.
+*     When setting the instruction text, it handles different data types and NULL values.
+*
+*  Notes:
+*     If the new instruction text is a NULL string, the instruction text is set to NIL.
+*
+*/
 METHOD Instruction( cInstruction ) CLASS TSimpleTaskDialog
 
    LOCAL cOldVal := ::cInstruction
@@ -256,13 +217,27 @@ METHOD Instruction( cInstruction ) CLASS TSimpleTaskDialog
 
 RETURN cOldVal
 
-/*
- *  Method: Content( cContent ) CLASS TSimpleTaskDialog
- *  Purpose:  Getter/Setter for the dialog's content text.
- *  Parameters:
- *     cContent: The new content text (String or Numeric).
- *  Return Value: The old content text value.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Content( cContent ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the dialog's content text.
+*
+*  Parameters:
+*     cContent: The new content text (String or Numeric).
+*
+*  Return Value:
+*     The old content text value.
+*
+*  Purpose:
+*     This method allows you to get or set the content text of the Task Dialog.
+*     When setting the content text, it handles different data types and NULL values.
+*
+*  Notes:
+*     If the new content text is a NULL string, the content text is set to NIL.
+*
+*/
 METHOD Content( cContent ) CLASS TSimpleTaskDialog
 
    LOCAL cOldVal := ::cContent
@@ -275,13 +250,27 @@ METHOD Content( cContent ) CLASS TSimpleTaskDialog
 
 RETURN cOldVal
 
-/*
- *  Method: CommonButtons( nCBs ) CLASS TSimpleTaskDialog
- *  Purpose:  Getter/Setter for the common buttons flag.
- *  Parameters:
- *     nCBs: The new common buttons flag (Numeric).
- *  Return Value: The old common buttons flag value.
- */
+/*-----------------------------------------------------------------------------*
+METHOD CommonButtons( nCBs ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the common buttons flag.
+*
+*  Parameters:
+*     nCBs: The new common buttons flag (Numeric).
+*
+*  Return Value:
+*     The old common buttons flag value.
+*
+*  Purpose:
+*     This method allows you to get or set the common buttons flag of the Task Dialog.
+*     The common buttons flag indicates which common buttons to display (e.g., TDCBF_OK_BUTTON, TDCBF_CANCEL_BUTTON).
+*
+*  Notes:
+*     The new common buttons flag must be a numeric value.
+*
+*/
 METHOD CommonButtons( nCBs ) CLASS TSimpleTaskDialog
 
    LOCAL nOldVal := ::nCommonButtons
@@ -293,13 +282,27 @@ METHOD CommonButtons( nCBs ) CLASS TSimpleTaskDialog
 
 RETURN nOldVal
 
-/*
- *  Method: MainIcon( nIcon ) CLASS TSimpleTaskDialog
- *  Purpose:  Getter/Setter for the main icon flag.
- *  Parameters:
- *     nIcon: The new main icon flag (Numeric).
- *  Return Value: The old main icon flag value.
- */
+/*-----------------------------------------------------------------------------*
+METHOD MainIcon( nIcon ) CLASS TSimpleTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the main icon flag.
+*
+*  Parameters:
+*     nIcon: The new main icon flag (Numeric).
+*
+*  Return Value:
+*     The old main icon flag value.
+*
+*  Purpose:
+*     This method allows you to get or set the main icon flag of the Task Dialog.
+*     The main icon flag indicates which main icon to display (e.g., TD_INFORMATION_ICON, TD_WARNING_ICON).
+*
+*  Notes:
+*     The new main icon flag must be a numeric value.
+*
+*/
 METHOD MainIcon( nIcon ) CLASS TSimpleTaskDialog
 
    LOCAL nOldVal := ::nMainIcon
@@ -311,449 +314,122 @@ METHOD MainIcon( nIcon ) CLASS TSimpleTaskDialog
 
 RETURN nOldVal
 
-////////////////////////////////////////////////////////////////////////////////
+/*-----------------------------------------------------------------------------*
+CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Defines the TTaskDialog class, which provides a comprehensive interface for displaying Task Dialogs with advanced features.
+*     This class allows for customization of various aspects of the dialog, including custom buttons,
+*     radio buttons, verification checkboxes, and expanded information.
+*
+*  Purpose:
+*     This class provides a flexible and customizable way to display Task Dialogs with advanced features.
+*     It allows you to create complex dialogs with custom buttons, radio buttons, verification checkboxes,
+*     and expanded information.
+*
+*  Notes:
+*     This class is suitable for complex dialogs. For simple dialogs, use the TSimpleTaskDialog class.
+*
+*/
 CREATE CLASS TTaskDialog FUNCTION TaskDialog
-////////////////////////////////////////////////////////////////////////////////
-  /*
-   *  Class: TTaskDialog
-   *  Purpose:  Provides a comprehensive interface for displaying Task Dialogs with advanced features.
-   *            This class allows for customization of various aspects of the dialog, including custom buttons,
-   *            radio buttons, verification checkboxes, and expanded information.
-   */
+
    EXPORTED:
-   /*
-    *  Var: Cargo
-    *  Type: Variant
-    *  Purpose:  A general-purpose variable that can be used to store any data associated with the object.
-    *            This is a common practice in HMG to allow attaching custom data to GUI elements.
-    */
    VAR    Cargo
-   /*
-    *  Var: lActive
-    *  Type: Logical
-    *  Purpose:  Indicates whether the Task Dialog is currently active (being displayed).
-    *  Access: READONLY
-    *  Initial Value: .F. (the dialog is not active initially)
-    */
    VAR    lActive               READONLY   INIT .F.
-   /*
-    *  Var: lError
-    *  Type: Logical
-    *  Purpose:  Indicates whether an error occurred during the execution of the Task Dialog.
-    *            It is set to .T. initially and changed to .F. if the dialog executes successfully.
-    *  Access: READONLY
-    *  Initial Value: .T. (assumes an error until proven otherwise)
-    */
    VAR    lError                READONLY   INIT .T.
-   /*
-    *  Var: nButtonResult
-    *  Type: Numeric
-    *  Purpose:  Stores the ID of the button that was clicked by the user in the Task Dialog.
-    *            This value is set after the dialog is closed.
-    *  Access: READONLY
-    *  Initial Value: NIL (no button has been clicked yet)
-    */
    VAR    nButtonResult         READONLY   INIT NIL
-   /*
-    *  Var: nRadioButtonResult
-    *  Type: Numeric
-    *  Purpose:  Stores the ID of the radio button that was selected by the user in the Task Dialog.
-    *            This value is set after the dialog is closed.
-    *  Access: READONLY
-    *  Initial Value: NIL (no radio button has been selected yet)
-    */
    VAR    nRadioButtonResult    READONLY   INIT NIL
-   /*
-    *  Var: nResult
-    *  Type: Numeric
-    *  Purpose:  Stores the return code of the TaskDialog API function.
-    *            This can be used to determine the specific reason for a failure, if any.
-    *  Access: READONLY
-    *  Initial Value: E_FAIL (indicates a failure until the dialog is executed)
-    */
    VAR    nResult               READONLY   INIT E_FAIL
-   /*
-    *  Var: lVerifyResult
-    *  Type: Logical
-    *  Purpose:  Stores the state of the verification checkbox in the Task Dialog.
-    *            This value is set after the dialog is closed.
-    *  Access: READONLY
-    *  Initial Value: .F. (the checkbox is not checked initially)
-    */
    VAR    lVerifyResult         READONLY   INIT .F.
 
-   /*
-    *  Method: New( cTitle, cInstruction, cContent, cFooter, nCommonButtons, nMainIcon )
-    *  Purpose:  Constructor for the TTaskDialog class.  Initializes the dialog's properties.
-    *  Parameters:
-    *     cTitle:       The title of the Task Dialog (String or Numeric).
-    *     cInstruction: The main instruction text (String or Numeric).
-    *     cContent:     The content text (String or Numeric).
-    *     cFooter:      The footer text (String or Numeric).
-    *     nCommonButtons: A flag indicating which common buttons to display (Numeric, e.g., TDCBF_OK_BUTTON).
-    *     nMainIcon:    A flag indicating which main icon to display (Numeric, e.g., TD_INFORMATION_ICON).
-    *  Return Value: Self (the object instance)
-    */
    METHOD New( cTitle, cInstruction, cContent, cFooter, nCommonButtons, nMainIcon )
-   /*
-    *  Method: Execute()
-    *  Purpose:  Executes the Task Dialog, displaying it to the user.  This is an INLINE method that calls ShowDialog().
-    *  Parameters: None
-    *  Return Value: None (calls ShowDialog() which returns a logical value indicating success)
-    */
    METHOD Execute() INLINE ::ShowDialog()
-   /*
-    *  Method: ShowDialog()
-    *  Purpose:  Displays the Task Dialog to the user.
-    *  Parameters: None
-    *  Return Value: Logical (.T. if the dialog executed successfully, .F. otherwise)
-    */
    METHOD ShowDialog()
-   /*
-    *  Method: DialogHandle()
-    *  Purpose:  Returns the handle (HWND) of the Task Dialog window.
-    *  Parameters: None
-    *  Return Value: The window handle (HWND) of the Task Dialog.  Returns NIL if the dialog is not active.
-    */
    METHOD DialogHandle()
-   /*
-    *  Method: Showing( lState )
-    *  Purpose:  Getter/Setter for the dialog's active state (whether it is currently being displayed).
-    *  Parameters:
-    *     lState:  A logical value indicating whether to show (.T.) or hide (.F.) the dialog.
-    *  Return Value: The current active state of the dialog (Logical).
-    */
    METHOD Showing( lState )
-   /*
-    *  Method: OnCreated( hWnd, nNotify, nWParam, nLParam )
-    *  Purpose:  Event handler called when the Task Dialog is created.
-    *  Parameters:
-    *     hWnd:    The handle of the Task Dialog window.
-    *     nNotify: The notification code (TDN_CREATED).
-    *     nWParam: Additional information (unused).
-    *     nLParam: Additional information (unused).
-    *  Return Value: Logical (.F. to allow default processing)
-    */
    METHOD OnCreated( hWnd, nNotify, nWParam, nLParam )
-   /*
-    *  Method: OnDestroyed( hWnd, nNotify, nWParam, nLParam )
-    *  Purpose:  Event handler called when the Task Dialog is destroyed.
-    *  Parameters:
-    *     hWnd:    The handle of the Task Dialog window.
-    *     nNotify: The notification code (TDN_DESTROYED).
-    *     nWParam: Additional information (unused).
-    *     nLParam: Additional information (unused).
-    *  Return Value: Logical (.F. to allow default processing)
-    */
    METHOD OnDestroyed( hWnd, nNotify, nWParam, nLParam )
-   /*
-    *  Method: Listener( hWnd, nNotify, nWParam, nLParam )
-    *  Purpose:  The default event listener for the Task Dialog.  Calls the callback block if one is defined.
-    *  Parameters:
-    *     hWnd:    The handle of the Task Dialog window.
-    *     nNotify: The notification code.
-    *     nWParam: Additional information.
-    *     nLParam: Additional information.
-    *  Return Value: Logical (.T. to allow default processing, .F. to prevent it)
-    */
    METHOD Listener( hWnd, nNotify, nWParam, nLParam )
-   /*
-    *  Method: CommonButtons( nCBs )
-    *  Purpose:  Getter/Setter for the common buttons flag.
-    *  Parameters:
-    *     nCBs: The new common buttons flag (Numeric).
-    *  Return Value: The old common buttons flag value.
-    */
    METHOD CommonButtons( nCBs )                SETGET
-   /*
-    *  Method: WindowTitle( cTitle )
-    *  Purpose:  Getter/Setter for the dialog's window title.
-    *  Parameters:
-    *     cTitle: The new window title (String or Numeric).
-    *  Return Value: The old window title value.
-    */
    METHOD WindowTitle( cTitle )                SETGET
-   /*
-    *  Method: Title( cTitle )
-    *  Purpose:  Getter/Setter for the dialog's title (same as WindowTitle).
-    *  Parameters:
-    *     cTitle: The new title (String or Numeric).
-    *  Return Value: The old title value.
-    */
    METHOD Title( cTitle )                      SETGET
-   /*
-    *  Method: MainIcon( nIcon )
-    *  Purpose:  Getter/Setter for the main icon flag.
-    *  Parameters:
-    *     nIcon: The new main icon flag (Numeric).
-    *  Return Value: The old main icon flag value.
-    */
    METHOD MainIcon( nIcon )                    SETGET
-   /*
-    *  Method: MainInstruction( cInstruction )
-    *  Purpose:  Getter/Setter for the dialog's main instruction text.
-    *  Parameters:
-    *     cInstruction: The new instruction text (String or Numeric).
-    *  Return Value: The old instruction text value.
-    */
    METHOD MainInstruction( cInstruction )      SETGET
-   /*
-    *  Method: Instruction( cInstruction )
-    *  Purpose:  Getter/Setter for the dialog's main instruction text (same as MainInstruction).
-    *  Parameters:
-    *     cInstruction: The new instruction text (String or Numeric).
-    *  Return Value: The old instruction text value.
-    */
    METHOD Instruction( cInstruction )          SETGET
-   /*
-    *  Method: Content( cContent )
-    *  Purpose:  Getter/Setter for the dialog's content text.
-    *  Parameters:
-    *     cContent: The new content text (String or Numeric).
-    *  Return Value: The old content text value.
-    */
    METHOD Content( cContent )                  SETGET
-   /*
-    *  Method: CustomButtons( aCustButton )
-    *  Purpose:  Getter/Setter for the array of custom buttons.
-    *  Parameters:
-    *     aCustButton: An array of custom button definitions.
-    *  Return Value: The old array of custom button definitions.
-    */
    METHOD CustomButtons( aCustButton )         SETGET
-   /*
-    *  Method: DefaultButton( nDefaultButton )
-    *  Purpose:  Getter/Setter for the ID of the default button.
-    *  Parameters:
-    *     nDefaultButton: The ID of the default button (Numeric).
-    *  Return Value: The old ID of the default button.
-    */
    METHOD DefaultButton( nDefaultButton )      SETGET
-   /*
-    *  Method: CustomRadioButtons( aCustButton )
-    *  Purpose:  Getter/Setter for the array of custom radio buttons.
-    *  Parameters:
-    *     aCustButton: An array of custom radio button definitions.
-    *  Return Value: The old array of custom radio button definitions.
-    */
    METHOD CustomRadioButtons( aCustButton )    SETGET
-   /*
-    *  Method: DefaultRadioButton( nDefaultButton )
-    *  Purpose:  Getter/Setter for the ID of the default radio button.
-    *  Parameters:
-    *     nDefaultButton: The ID of the default radio button (Numeric).
-    *  Return Value: The old ID of the default radio button.
-    */
    METHOD DefaultRadioButton( nDefaultButton ) SETGET
-   /*
-    *  Method: VerificationText( cText )
-    *  Purpose:  Getter/Setter for the text of the verification checkbox.
-    *  Parameters:
-    *     cText: The new text for the verification checkbox (String or Numeric).
-    *  Return Value: The old text of the verification checkbox.
-    */
    METHOD VerificationText( cText )            SETGET
-   /*
-    *  Method: ExpandedInfo( cText )
-    *  Purpose:  Getter/Setter for the expanded information text.
-    *  Parameters:
-    *     cText: The new expanded information text (String or Numeric).
-    *  Return Value: The old expanded information text.
-    */
    METHOD ExpandedInfo( cText )                SETGET
-   /*
-    *  Method: ExpandedControlText( cText )
-    *  Purpose:  Getter/Setter for the text of the button that collapses the expanded information.
-    *  Parameters:
-    *     cText: The new text for the collapse button (String or Numeric).
-    *  Return Value: The old text of the collapse button.
-    */
    METHOD ExpandedControlText( cText )         SETGET
-   /*
-    *  Method: ExpandedCtrlText( cText )
-    *  Purpose:  Alias for ExpandedControlText.
-    *  Parameters:
-    *     cText: The new text for the collapse button (String or Numeric).
-    *  Return Value: The old text of the collapse button.
-    */
    METHOD ExpandedCtrlText( cText )            SETGET
-   /*
-    *  Method: CollapsedControlText( cText )
-    *  Purpose:  Getter/Setter for the text of the button that expands the expanded information.
-    *  Parameters:
-    *     cText: The new text for the expand button (String or Numeric).
-    *  Return Value: The old text of the expand button.
-    */
    METHOD CollapsedControlText( cText )        SETGET
-   /*
-    *  Method: CollapsedCtrlText( cText )
-    *  Purpose:  Alias for CollapsedControlText.
-    *  Parameters:
-    *     cText: The new text for the expand button (String or Numeric).
-    *  Return Value: The old text of the expand button.
-    */
    METHOD CollapsedCtrlText( cText )           SETGET
-   /*
-    *  Method: FooterIcon( nIcon )
-    *  Purpose:  Getter/Setter for the footer icon flag.
-    *  Parameters:
-    *     nIcon: The new footer icon flag (Numeric).
-    *  Return Value: The old footer icon flag value.
-    */
    METHOD FooterIcon( nIcon )                  SETGET
-   /*
-    *  Method: Footer( cFooter )
-    *  Purpose:  Getter/Setter for the dialog's footer text.
-    *  Parameters:
-    *     cFooter: The new footer text (String or Numeric).
-    *  Return Value: The old footer text.
-    */
    METHOD Footer( cFooter )                    SETGET
-   /*
-    *  Method: Width( nWidth )
-    *  Purpose:  Getter/Setter for the width of the dialog's client area.
-    *  Parameters:
-    *     nWidth: The new width in dialog units (Numeric).
-    *  Return Value: The old width.
-    */
    METHOD Width( nWidth )                      SETGET
-   /*
-    *  Method: Parent( cFormName )
-    *  Purpose:  Getter/Setter for the name of the parent form.
-    *  Parameters:
-    *     cFormName: The name of the parent form (String).
-    *  Return Value: The old name of the parent form.
-    */
    METHOD Parent( cFormName )                  SETGET
-   /*
-    *  Method: ParentHandle( nHandle )
-    *  Purpose:  Getter/Setter for the handle of the parent window.
-    *  Parameters:
-    *     nHandle: The handle of the parent window (Numeric).
-    *  Return Value: The old handle of the parent window.
-    */
    METHOD ParentHandle( nHandle )              SETGET
-   /*
-    *  Method: CallBackBlock( bCode )
-    *  Purpose:  Getter/Setter for the callback block that is executed for Task Dialog events.
-    *  Parameters:
-    *     bCode: The callback block (Eval Item).
-    *  Return Value: The old callback block.
-    */
    METHOD CallBackBlock( bCode )               SETGET
-   /*
-    *  Method: Flags( nFlags )
-    *  Purpose:  Getter/Setter for the Task Dialog flags.
-    *  Parameters:
-    *     nFlags: The new Task Dialog flags (Numeric).
-    *  Return Value: The old Task Dialog flags.
-    */
    METHOD Flags( nFlags )                      SETGET
-   /*
-    *  Method: AllowDialogCancellation( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that allows the dialog to be cancelled.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to allow cancellation (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD AllowDialogCancellation( lNewVal )   SETGET
-   /*
-    *  Method: CanBeMinimized( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the dialog can be minimized.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether the dialog can be minimized (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD CanBeMinimized( lNewVal )            SETGET
-   /*
-    *  Method: EnableHyperlinks( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that enables hyperlinks in the content, expanded information, and footer.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to enable hyperlinks (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD EnableHyperlinks( lNewVal )          SETGET
-   /*
-    *  Method: ExpandedByDefault( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the expanded information is displayed by default.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to expand by default (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD ExpandedByDefault( lNewVal )         SETGET
-   /*
-    *  Method: ExpandFooterArea( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the expanded information is displayed in the footer area.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to expand in the footer area (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD ExpandFooterArea( lNewVal )          SETGET
-   /*
-    *  Method: NoDefaultRadioButton( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether no default radio button should be selected.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to select no default radio button (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD NoDefaultRadioButton( lNewVal )      SETGET
-   /*
-    *  Method: PositionRelativeToWindow( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the dialog is positioned relative to the parent window.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to position relative to the window (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD PositionRelativeToWindow( lNewVal )  SETGET
-   /*
-    *  Method: RightToLeftLayout( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the text is displayed right to left.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to use right-to-left layout (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD RightToLeftLayout( lNewVal )         SETGET
-   /*
-    *  Method: VerificationEnabled( lNewVal )
-    *  Purpose:  Getter/Setter for the flag that enables the verification checkbox.
-    *  Parameters:
-    *     lNewVal: A logical value indicating whether to enable the verification checkbox (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD VerificationEnabled( lNewVal )       SETGET
-   /*
-    *  Method: timeoutMS( nMS )
-    *  Purpose:  Getter/Setter for the timeout value in milliseconds.
-    *  Parameters:
-    *     nMS: The new timeout value in milliseconds (Numeric).
-    *  Return Value: The old timeout value.
-    */
    METHOD timeoutMS( nMS )                     SETGET
-   /*
-    *  Method: TimedOut( lOut )
-    *  Purpose:  Getter/Setter for the flag that indicates whether the dialog timed out.
-    *  Parameters:
-    *     lOut: A logical value indicating whether the dialog timed out (.T.) or not (.F.).
-    *  Return Value: The old value of the flag.
-    */
    METHOD TimedOut( lOut )                     SETGET
    // NOTE: Next method returns valid (non NIL) result if a the dialog has been shown
    // The ID of the clicked button
-   METHOD SelectedButton()      INLINE ::nButtonResult  // Returns the ID of the button that was clicked. INLINE:  The compiler may choose to replace the call to SelectedButton() with the code of ::nButtonResult directly for performance.
+   METHOD SelectedButton()      INLINE ::nButtonResult
    // The ID of the selected radio button
-   METHOD SelectedRadioButton() INLINE ::nRadioButtonResult  // Returns the ID of the radio button that was selected. INLINE:  The compiler may choose to replace the call to SelectedRadioButton() with the code of ::nRadioButtonResult directly for performance.
+   METHOD SelectedRadioButton() INLINE ::nRadioButtonResult
    // The state of the verification checkbox (read only)
-   METHOD VerificationChecked() INLINE ::lVerifyResult  // Returns the state of the verification checkbox. INLINE:  The compiler may choose to replace the call to VerificationChecked() with the code of ::lVerifyResult directly for performance.
+   METHOD VerificationChecked() INLINE ::lVerifyResult
 
    PROTECTED:
-   VAR aConfig                  INIT Array( TDC_CONFIG )  // Array to store the configuration parameters for the TaskDialog.  TDC_CONFIG is a constant representing the number of configuration parameters. INIT Array( TDC_CONFIG ): Initializes the array with a specific size.
-   VAR HWND            READONLY INIT NIL  // Stores the Windows handle (HWND) of the TaskDialog. READONLY: Can only be set internally by the class. INIT NIL: Initialized to NIL (no handle yet).
-   VAR lTimeOut        READONLY INIT .F.  // Flag indicating whether the TaskDialog timed out. READONLY: Can only be set internally by the class. INIT .F.: Initialized to False (no timeout yet).
-   VAR nTimeOutMS      READONLY INIT 0  // Stores the timeout value in milliseconds. READONLY: Can only be set internally by the class. INIT 0: Initialized to 0 (no timeout).
+   VAR aConfig                  INIT Array( TDC_CONFIG )
+   VAR HWND            READONLY INIT NIL
+   VAR lTimeOut        READONLY INIT .F.
+   VAR nTimeOutMS      READONLY INIT 0
 
 ENDCLASS
-////////////////////////////////////////////////////////////////////////////////
 
+/*-----------------------------------------------------------------------------*
+METHOD New( cTitle, cInstruction, cContent, cFooter, nCommonButtons, nMainIcon ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Constructor for the TTaskDialog class.  Initializes the Task Dialog with the specified parameters.
+*
+*  Parameters:
+*     cTitle - The title of the Task Dialog (String or Numeric).
+*     cInstruction - The main instruction text (String or Numeric).
+*     cContent - The main content text (String or Numeric).
+*     cFooter - The footer text (String or Numeric).
+*     nCommonButtons - A numeric value representing the common buttons to display (e.g., OK, Cancel, Yes, No).  See TaskDlgs.ch for possible values.
+*     nMainIcon - A numeric value representing the main icon to display. See TaskDlgs.ch for possible values.
+*
+*  Return Value:
+*     The newly created TTaskDialog object (Self).
+*
+*  Purpose:
+*     This method is responsible for creating a new instance of the TTaskDialog class and initializing its configuration parameters.
+*     It takes the title, instruction, content, footer, common buttons, and main icon as input and stores them in the aConfig array.
+*     This array is used later when the ShowDialog method is called to create and display the Task Dialog.
+*
+*  Notes:
+*     The parameters can be either strings or numeric values.  If a parameter is not a string or numeric, it will be treated as NIL.
+*     The HB_ISNUMERIC, HB_ISSTRING, and HB_ISNULL functions are used to check the data type of the parameters.
+*
+*/
 METHOD New( cTitle, cInstruction, cContent, cFooter, nCommonButtons, nMainIcon ) CLASS TTaskDialog
 
    ::aConfig[ TDC_WINDOWTITLE ]     := iif( HB_ISNUMERIC( cTitle ), cTitle, iif( ! HB_ISSTRING( cTitle ), NIL, iif( HB_ISNULL( cTitle ), NIL, cTitle ) ) )
@@ -771,12 +447,33 @@ METHOD New( cTitle, cInstruction, cContent, cFooter, nCommonButtons, nMainIcon )
 
 RETURN Self
 
-/*
-   Shows the dialog.
-
-   NOTE: Returns true if everything worked right. Returns false if creation of dialog failed.
-   Requires Windows Vista or newer.
- */
+/*-----------------------------------------------------------------------------*
+METHOD ShowDialog() CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Shows the Task Dialog.
+*
+*  Parameters:
+*     None
+*
+*  Return Value:
+*     .T. if the dialog was created and displayed successfully, .F. otherwise.
+*
+*  Purpose:
+*     This method is responsible for creating and displaying the Task Dialog using the Windows TaskDialogIndirect API.
+*     It retrieves the configuration parameters from the aConfig array and passes them to the win_TaskDialogIndirect0 function.
+*     It also handles error checking and sets the nButtonResult, nRadioButtonResult, and lVerifyResult properties based on the user's interaction with the dialog.
+*
+*  Notes:
+*     Requires Windows Vista or newer.  Older operating systems will result in an error.
+*     The win_TaskDialogIndirect0 function is a wrapper around the Windows TaskDialogIndirect API.
+*     The os_IsWinVista_Or_Later function is used to check the operating system version.
+*     The E_NOTIMPL constant represents an error code indicating that the function is not implemented.
+*     The NOERROR constant represents a success code.
+*     If a timeout is specified or an ONTIMER method exists, the TDF_CALLBACK_TIMER flag is set.
+*
+*/
 METHOD ShowDialog() CLASS TTaskDialog
 
    LOCAL nResult
@@ -815,17 +512,50 @@ METHOD ShowDialog() CLASS TTaskDialog
 
 RETURN ( ! ::lError )
 
-/*
-   The handle of the dialog.
-
-   NOTE: This is only valid (and non NIL) while dialog is visible (read only).
- */
+/*-----------------------------------------------------------------------------*
+METHOD DialogHandle() CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Returns the handle of the dialog.
+*
+*  Parameters:
+*     None
+*
+*  Return Value:
+*     The Windows handle (HWND) of the Task Dialog (Numeric). Returns NIL if the dialog is not currently showing.
+*
+*  Purpose:
+*     This method provides access to the Windows handle (HWND) of the Task Dialog.
+*     This handle can be used to interact with the Task Dialog directly using Windows API functions.
+*     For example, you can use the handle to change the dialog's title, move it to a different location, or send it messages.
+*
+*  Notes:
+*     This handle is only valid (and non NIL) while the dialog is visible.
+*
+*/
 METHOD DialogHandle() CLASS TTaskDialog
 RETURN ::HWND
 
-/*
-   Whether dialog is currently showing (read/write).
- */
+/*-----------------------------------------------------------------------------*
+METHOD Showing( lState ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Getter/Setter for the flag indicating whether the dialog is currently showing.
+*
+*  Parameters:
+*     lState - A logical value indicating whether the dialog should be shown (.T.) or not (.F.).  This parameter is optional.  If omitted, the method returns the current state.
+*
+*  Return Value:
+*     A logical value indicating whether the dialog is currently showing (.T.) or not (.F.).
+*
+*  Purpose:
+*     This method provides a way to check whether the Task Dialog is currently being displayed and to show the dialog if it is not already visible.
+*     If the lState parameter is set to .T. and the dialog is not currently active, the ShowDialog method is called to display the dialog.
+*     This method can be used to ensure that the dialog is only displayed once and that it is properly managed.
+*
+*/
 METHOD Showing( lState ) CLASS TTaskDialog
 
    hb_default( @lState, .F. )
@@ -836,8 +566,27 @@ METHOD Showing( lState ) CLASS TTaskDialog
 
 RETURN ::lActive
 
-/*
-   Indicates that the Task Dialog has been created.
+/*-----------------------------------------------------------------------------*
+METHOD OnCreated( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Indicates that the Task Dialog has been created.
+*
+*  Parameters:
+*     hWnd - The handle of the Task Dialog window (Numeric).
+*     nNotify - The notification code (Numeric).  This should be TDN_CREATED.
+*     nWParam - Unused parameter (Numeric).
+*     nLParam - Unused parameter (Numeric).
+*
+*  Return Value:
+*     .F. (always).
+*
+*  Purpose:
+*     This method is called when the Task Dialog has been successfully created.
+*     It sets the lActive flag to .T. to indicate that the dialog is active and stores the window handle in the HWND property.
+*     This method is typically called by the Windows Task Dialog API as a callback function.
+*
 */
 METHOD OnCreated( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
@@ -851,8 +600,27 @@ METHOD OnCreated( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
 RETURN .F.
 
-/*
-   Indicates that the Task Dialog has been destroyed.
+/*-----------------------------------------------------------------------------*
+METHOD OnDestroyed( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Indicates that the Task Dialog has been destroyed.
+*
+*  Parameters:
+*     hWnd - The handle of the Task Dialog window (Numeric).
+*     nNotify - The notification code (Numeric).  This should be TDN_DESTROYED.
+*     nWParam - Unused parameter (Numeric).
+*     nLParam - Unused parameter (Numeric).
+*
+*  Return Value:
+*     .F. (always).
+*
+*  Purpose:
+*     This method is called when the Task Dialog has been destroyed.
+*     It sets the lActive flag to .F. to indicate that the dialog is no longer active and sets the HWND property to NIL.
+*     This method is typically called by the Windows Task Dialog API as a callback function.
+*
 */
 METHOD OnDestroyed( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
@@ -867,8 +635,35 @@ METHOD OnDestroyed( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
 RETURN .F.
 
-/*
-   The default Events Listener.
+/*-----------------------------------------------------------------------------*
+METHOD Listener( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     The default event listener for the Task Dialog.  It calls the user-defined callback function (if any) to handle Task Dialog events.
+*
+*  Parameters:
+*     hWnd    - The handle of the Task Dialog window.
+*     nNotify - The notification code (e.g., button click, radio button selection).
+*     nWParam - Additional information specific to the notification.
+*     nLParam - Additional information specific to the notification.
+*
+*  Return Value:
+*     .T. (True) if the callback function is not defined or if the callback function returns .T., otherwise the return value of the callback function.
+*
+*  Purpose:
+*     This method acts as a central point for handling events generated by the Task Dialog. It checks if a user-defined callback
+*     function has been specified in the ::aConfig[ TDC_CALLBACK ] array. If a callback function exists, it is executed with
+*     the event parameters. This allows developers to customize the behavior of the Task Dialog in response to various events,
+*     such as button clicks, radio button selections, and hyperlink clicks.
+*
+*  Notes:
+*     The callback function should be defined as an Eval item (code block) that accepts the following parameters:
+*       - The TTaskDialog object itself (self).
+*       - The notification code (nNotify).
+*       - The WPARAM value (nWParam).
+*       - The LPARAM value (nLParam).
+*
 */
 METHOD Listener( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
@@ -880,13 +675,29 @@ METHOD Listener( hWnd, nNotify, nWParam, nLParam ) CLASS TTaskDialog
 
 RETURN .T.
 
-/*
-   Specifies the push buttons displayed in the task dialog (read/write).
-
-   NOTE:  If  no  common  buttons  are  specified  and  no  custom buttons are
-   specified through buttons array, the task dialog will contain the OK button
-   by default.
- */
+/*-----------------------------------------------------------------------------*
+METHOD CommonButtons( nCBs ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the common buttons displayed in the Task Dialog.
+*
+*  Parameters:
+*     nCBs - (Optional) A numeric value representing the common button flags (e.g., IDYES, IDNO, IDOK, IDCANCEL). If omitted, the current value is returned.
+*
+*  Return Value:
+*     The previous value of the common button flags.
+*
+*  Purpose:
+*     This method allows developers to specify which standard buttons (e.g., Yes, No, OK, Cancel) should be displayed in the Task Dialog.
+*     It provides a convenient way to control the basic interaction options available to the user.
+*
+*  Notes:
+*     The nCBs parameter should be a combination of the predefined ID constants for common buttons (e.g., IDYES + IDNO).
+*     If no common buttons are specified and no custom buttons are specified, the Task Dialog will contain the OK button by default.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD CommonButtons( nCBs ) CLASS TTaskDialog
 
    LOCAL nOldCBS := ::aConfig[ TDC_COMMON_BUTTON_FLAGS ]
@@ -899,9 +710,28 @@ METHOD CommonButtons( nCBs ) CLASS TTaskDialog
 
 RETURN nOldCBS
 
-/*
-   The string to be used for the task dialog title (read/write, LIVE).
- */
+/*-----------------------------------------------------------------------------*
+METHOD WindowTitle( cTitle ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the title of the Task Dialog window.
+*
+*  Parameters:
+*     cTitle - (Optional) A string or numeric value representing the new title for the Task Dialog. If omitted, the current title is returned.
+*
+*  Return Value:
+*     The previous title of the Task Dialog window.
+*
+*  Purpose:
+*     This method allows developers to customize the title bar text of the Task Dialog.  A clear and informative title helps the user
+*     understand the purpose of the dialog and the context of the information being presented.
+*
+*  Notes:
+*     If the Task Dialog is currently active (::lActive is .T.), the window title is updated immediately using the _SetWindowTitle function.
+*     If cTitle is NIL, it is treated as an empty string.
+*
+*/
 METHOD WindowTitle( cTitle ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_WINDOWTITLE ]
@@ -915,11 +745,47 @@ METHOD WindowTitle( cTitle ) CLASS TTaskDialog
 
 RETURN cOldVal
 
+/*-----------------------------------------------------------------------------*
+METHOD Title( cTitle ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     An alias for the WindowTitle method. Sets or retrieves the title of the Task Dialog window.
+*
+*  Parameters:
+*     cTitle - (Optional) A string or numeric value representing the new title for the Task Dialog. If omitted, the current title is returned.
+*
+*  Return Value:
+*     The previous title of the Task Dialog window.
+*
+*  Purpose:
+*     Provides a more concise and readable way to set or retrieve the window title.  This is purely for convenience and code readability.
+*
+*/
 METHOD Title( cTitle ) CLASS TTaskDialog
 RETURN ::WindowTitle( cTitle )
 
-/*
-   TODO
+/*-----------------------------------------------------------------------------*
+METHOD MainIcon( nIcon ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the main icon displayed in the Task Dialog.
+*
+*  Parameters:
+*     nIcon - (Optional) A numeric value representing the icon resource ID. If omitted, the current icon is returned.
+*
+*  Return Value:
+*     The previous icon resource ID.
+*
+*  Purpose:
+*     This method allows developers to customize the main icon displayed in the Task Dialog.  Using appropriate icons can visually
+*     communicate the type of message being presented (e.g., information, warning, error).
+*
+*  Notes:
+*     The nIcon parameter should be a valid icon resource ID.
+*     If the Task Dialog is currently active (::lActive is .T.), the icon is updated immediately using the _UpdateMainIcon function.
+*
 */
 METHOD MainIcon( nIcon ) CLASS TTaskDialog
 
@@ -932,9 +798,28 @@ METHOD MainIcon( nIcon ) CLASS TTaskDialog
 
 RETURN ::aConfig[ TDC_MAINICON ]
 
-/*
-   The string to be used for the main instruction (read/write, LIVE).
- */
+/*-----------------------------------------------------------------------------*
+METHOD MainInstruction( cInstruction ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the main instruction text displayed in the Task Dialog.
+*
+*  Parameters:
+*     cInstruction - (Optional) A string or numeric value representing the main instruction text. If omitted, the current instruction text is returned.
+*
+*  Return Value:
+*     The previous main instruction text.
+*
+*  Purpose:
+*     This method allows developers to set the main instruction text, which is typically displayed prominently at the top of the Task Dialog.
+*     The main instruction should provide a concise and clear statement of the user's task or the purpose of the dialog.
+*
+*  Notes:
+*     If the Task Dialog is currently active (::lActive is .T.), the instruction text is updated immediately using the _SetMainInstruction function.
+*     If cInstruction is NIL, it is treated as an empty string.
+*
+*/
 METHOD MainInstruction( cInstruction ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_MAININSTRUCTION ]
@@ -948,12 +833,48 @@ METHOD MainInstruction( cInstruction ) CLASS TTaskDialog
 
 RETURN cOldVal
 
+/*-----------------------------------------------------------------------------*
+METHOD Instruction( cInstruction ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     An alias for the MainInstruction method. Sets or retrieves the main instruction text displayed in the Task Dialog.
+*
+*  Parameters:
+*     cInstruction - (Optional) A string or numeric value representing the main instruction text. If omitted, the current instruction text is returned.
+*
+*  Return Value:
+*     The previous main instruction text.
+*
+*  Purpose:
+*     Provides a more concise and readable way to set or retrieve the main instruction. This is purely for convenience and code readability.
+*
+*/
 METHOD Instruction( cInstruction ) CLASS TTaskDialog
 RETURN ::MainInstruction( cInstruction )
 
-/*
-   The string to be used for the dialog's primary content (read/write, LIVE).
- */
+/*-----------------------------------------------------------------------------*
+METHOD Content( cContent ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the main content text displayed in the Task Dialog.
+*
+*  Parameters:
+*     cContent - (Optional) A string or numeric value representing the main content text. If omitted, the current content text is returned.
+*
+*  Return Value:
+*     The previous main content text.
+*
+*  Purpose:
+*     This method allows developers to set the main content text, which provides detailed information or instructions to the user.
+*     The content should be clear, concise, and relevant to the main instruction.
+*
+*  Notes:
+*     If the Task Dialog is currently active (::lActive is .T.), the content text is updated immediately using the _SetContent function.
+*     If cContent is NIL, it is treated as an empty string.
+*
+*/
 METHOD Content( cContent ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_CONTENT ]
@@ -967,8 +888,27 @@ METHOD Content( cContent ) CLASS TTaskDialog
 
 RETURN cOldVal
 
-/*
-   TODO
+/*-----------------------------------------------------------------------------*
+METHOD CustomButtons( aCustButton ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the array of custom buttons displayed in the Task Dialog.
+*
+*  Parameters:
+*     aCustButton - (Optional) An array of custom button definitions. Each element in the array should be an array containing the button ID and the button text. If omitted, the current array of custom buttons is returned.
+*
+*  Return Value:
+*     The previous array of custom button definitions.
+*
+*  Purpose:
+*     This method allows developers to define custom buttons with specific IDs and labels, providing more flexible interaction options
+*     than the standard common buttons.
+*
+*  Notes:
+*     The aCustButton parameter should be an array where each element is an array of the form { nButtonID, cButtonText }.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
 */
 METHOD CustomButtons( aCustButton ) CLASS TTaskDialog
 
@@ -983,12 +923,27 @@ METHOD CustomButtons( aCustButton ) CLASS TTaskDialog
 
 RETURN aOldVal
 
-/*
-   The default button for the task dialog (read/write).
-
-   Note:  This may be any of the values specified in ID of one of the buttons,
-   or   one  of  the  IDs  corresponding  to  the  buttons  specified  in  the
-   CommonButtons property.
+/*-----------------------------------------------------------------------------*
+METHOD DefaultButton( nDefaultButton ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the ID of the default button in the Task Dialog.
+*
+*  Parameters:
+*     nDefaultButton - (Optional) A numeric value representing the ID of the default button. If omitted, the current default button ID is returned.
+*
+*  Return Value:
+*     The previous default button ID.
+*
+*  Purpose:
+*     This method allows developers to specify which button should be the default (i.e., the button that is activated when the user presses Enter).
+*     Setting a default button improves usability by providing a clear and predictable action for the user.
+*
+*  Notes:
+*     The nDefaultButton parameter should be the ID of one of the buttons in the Task Dialog (either a common button or a custom button).
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
 */
 METHOD DefaultButton( nDefaultButton ) CLASS TTaskDialog
 
@@ -1002,8 +957,26 @@ METHOD DefaultButton( nDefaultButton ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   TODO
+/*-----------------------------------------------------------------------------*
+METHOD CustomRadioButtons( aCustButton ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the array of custom radio buttons displayed in the Task Dialog.
+*
+*  Parameters:
+*     aCustButton - (Optional) An array of custom radio button definitions. Each element in the array should be an array containing the button ID and the button text. If omitted, the current array of custom radio buttons is returned.
+*
+*  Return Value:
+*     The previous array of custom radio button definitions.
+*
+*  Purpose:
+*     This method allows developers to define custom radio buttons with specific IDs and labels, providing a way for the user to select one option from a set of mutually exclusive choices.
+*
+*  Notes:
+*     The aCustButton parameter should be an array where each element is an array of the form { nButtonID, cButtonText }.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
 */
 METHOD CustomRadioButtons( aCustButton ) CLASS TTaskDialog
 
@@ -1018,11 +991,29 @@ METHOD CustomRadioButtons( aCustButton ) CLASS TTaskDialog
 
 RETURN aOldVal
 
-/*
-   The button ID of the radio button that is selected by default (read/write).
-
-   NOTE: If this value does not correspond to a button ID, the first button in the array is selected by default.
- */
+/*-----------------------------------------------------------------------------*
+METHOD DefaultRadioButton( nDefaultButton ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the ID of the radio button that is selected by default in the Task Dialog.
+*
+*  Parameters:
+*     nDefaultButton - (Optional) A numeric value representing the ID of the default radio button. If omitted, the current default radio button ID is returned.
+*
+*  Return Value:
+*     The previous default radio button ID.
+*
+*  Purpose:
+*     This method allows developers to specify which radio button should be selected by default when the Task Dialog is displayed.
+*     Setting a default radio button provides a convenient starting point for the user and can guide them towards the most common or recommended option.
+*
+*  Notes:
+*     The nDefaultButton parameter should be the ID of one of the radio buttons in the Task Dialog.
+*     If this value does not correspond to a button ID, the first button in the array is selected by default.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD DefaultRadioButton( nDefaultButton ) CLASS TTaskDialog
 
    LOCAL nOldVal := ::aConfig[ TDC_DEFAULTRADIOBUTTON ]
@@ -1035,8 +1026,26 @@ METHOD DefaultRadioButton( nDefaultButton ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   The string to be used to label the verification checkbox (read/write).
+/*-----------------------------------------------------------------------------*
+METHOD VerificationText( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the text displayed next to the verification checkbox in the Task Dialog.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the verification text. If omitted, the current verification text is returned.
+*
+*  Return Value:
+*     The previous verification text.
+*
+*  Purpose:
+*     This method allows developers to customize the text displayed next to the verification checkbox. The verification checkbox is typically used
+*     to allow the user to confirm that they understand the implications of their actions or that they want to perform a specific action in addition to the main task.
+*
+*  Notes:
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
 */
 METHOD VerificationText( cText ) CLASS TTaskDialog
 
@@ -1050,20 +1059,31 @@ METHOD VerificationText( cText ) CLASS TTaskDialog
 
 RETURN cOldVal
 
-/* ExpandedInformation
-   The string to be used for displaying additional information (read/write,
-   LIVE).
-
-   NOTE:  The additional information is displayed either immediately below the
-   content  or below the footer text depending on whether the ExpandFooterArea
-   flag  is  true.  If the EnableHyperlinks flag is true, then this string may
-   contain   hyperlinks  in  the  form:
-
-   <A  HREF="executablestring">Hyperlink Text</A>.
-
-   WARNING:  Enabling  hyperlinks when using content from an unsafe source may
-   cause security vulnerabilities.
- */
+/*-----------------------------------------------------------------------------*
+METHOD ExpandedInfo( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the expanded information text displayed in the Task Dialog.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the expanded information text. If omitted, the current expanded information text is returned.
+*
+*  Return Value:
+*     The previous expanded information text.
+*
+*  Purpose:
+*     This method allows developers to provide additional, less critical information that is initially hidden but can be revealed by the user
+*     by clicking an expand/collapse button. This is useful for presenting detailed explanations, technical details, or optional instructions
+*     without cluttering the main dialog content.
+*
+*  Notes:
+*     If the Task Dialog is currently active (::lActive is .T.), the expanded information text is updated immediately using the _SetExpandedInformation function.
+*     The expanded information is displayed either immediately below the content or below the footer text depending on whether the ExpandFooterArea flag is true.
+*     If the EnableHyperlinks flag is true, then this string may contain hyperlinks in the form: <A HREF="executablestring">Hyperlink Text</A>.
+*     Enabling hyperlinks when using content from an unsafe source may cause security vulnerabilities.
+*
+*/
 METHOD ExpandedInfo( cText ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_EXPANDEDINFORMATION ]
@@ -1077,14 +1097,29 @@ METHOD ExpandedInfo( cText ) CLASS TTaskDialog
 
 RETURN cOldVal
 
-/* ExpandedControlText
-   The  string  to  be  used to label the button for collapsing the expandable
-   information (read/write).
-
-   NOTE: This member is ignored when the ExpandedInformation member is empty.
-   If this member is empty and the CollapsedControlText is specified, then the
-   CollapsedControlText value will be used for this member as well.
- */
+/*-----------------------------------------------------------------------------*
+METHOD ExpandedControlText( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the text used to label the button for collapsing the expandable information.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the collapse button text. If omitted, the current collapse button text is returned.
+*
+*  Return Value:
+*     The previous collapse button text.
+*
+*  Purpose:
+*     This method allows developers to customize the text displayed on the button that collapses the expanded information area.
+*     A clear and descriptive label helps the user understand the purpose of the button.
+*
+*  Notes:
+*     This member is ignored when the ExpandedInformation member is empty.
+*     If this member is empty and the CollapsedControlText is specified, then the CollapsedControlText value will be used for this member as well.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD ExpandedControlText( cText ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_EXPANDEDCONTROLTEXT ]
@@ -1097,17 +1132,49 @@ METHOD ExpandedControlText( cText ) CLASS TTaskDialog
 
 RETURN cOldVal
 
+/*-----------------------------------------------------------------------------*
+METHOD ExpandedCtrlText( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     An alias for the ExpandedControlText method. Sets or retrieves the text used to label the button for collapsing the expandable information.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the collapse button text. If omitted, the current collapse button text is returned.
+*
+*  Return Value:
+*     The previous collapse button text.
+*
+*  Purpose:
+*     Provides a more concise and readable way to set or retrieve the collapse button text. This is purely for convenience and code readability.
+*
+*/
 METHOD ExpandedCtrlText( cText ) CLASS TTaskDialog
 RETURN ::ExpandedControlText( cText )
 
-/* CollapsedControlText
-   The  string  to  be  used  to label the button for expanding the expandable
-   information (read/write).
-
-   NOTE: This member  is ignored when the ExpandedInformation member is empty.
-   If this member is empty and the CollapsedControlText is specified, then the
-   CollapsedControlText value will be used for this member as well.
- */
+/*-----------------------------------------------------------------------------*
+METHOD CollapsedControlText( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the text used to label the button for expanding the expandable information.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the expand button text. If omitted, the current expand button text is returned.
+*
+*  Return Value:
+*     The previous expand button text.
+*
+*  Purpose:
+*     This method allows developers to customize the text displayed on the button that expands the hidden information area.
+*     A clear and descriptive label helps the user understand the purpose of the button.
+*
+*  Notes:
+*     This member is ignored when the ExpandedInformation member is empty.
+*     If this member is empty and the ExpandedControlText is specified, then the ExpandedControlText value will be used for this member as well.
+*     This method only modifies the button configuration if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD CollapsedControlText( cText ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_COLLAPSEDCONTROLTEXT ]
@@ -1120,11 +1187,48 @@ METHOD CollapsedControlText( cText ) CLASS TTaskDialog
 
 RETURN cOldVal
 
+/*-----------------------------------------------------------------------------*
+METHOD CollapsedCtrlText( cText ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     An alias for the CollapsedControlText method. Sets or retrieves the text used to label the button for expanding the expandable information.
+*
+*  Parameters:
+*     cText - (Optional) A string or numeric value representing the expand button text. If omitted, the current expand button text is returned.
+*
+*  Return Value:
+*     The previous expand button text.
+*
+*  Purpose:
+*     Provides a more concise and readable way to set or retrieve the expand button text. This is purely for convenience and code readability.
+*
+*/
 METHOD CollapsedCtrlText( cText ) CLASS TTaskDialog
 RETURN ::CollapsedControlText( cText )
 
-/*
-   TODO
+/*-----------------------------------------------------------------------------*
+METHOD FooterIcon( nIcon ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the footer icon displayed in the Task Dialog.
+*
+*  Parameters:
+*     nIcon - (Optional) A numeric value representing the icon resource ID. If omitted, the current footer icon is returned.
+*
+*  Return Value:
+*     The previous footer icon resource ID.
+*
+*  Purpose:
+*     This method allows developers to customize the icon displayed in the footer area of the Task Dialog.  Using appropriate icons can visually
+*     communicate the type of message being presented (e.g., information, warning, error).  The footer icon is often used to indicate the
+*     severity or importance of the footer text.
+*
+*  Notes:
+*     The nIcon parameter should be a valid icon resource ID.
+*     If the Task Dialog is currently active (::lActive is .T.), the icon is updated immediately using the _UpdateFooterIcon function.
+*
 */
 METHOD FooterIcon( nIcon ) CLASS TTaskDialog
 
@@ -1139,11 +1243,28 @@ METHOD FooterIcon( nIcon ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   The string to be used in the footer area of the task dialog (read/write).
-
-   NOTE: If EnableHyperlinks is true, this can show clickable links.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Footer( cFooter ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the footer text displayed in the Task Dialog.
+*
+*  Parameters:
+*     cFooter - (Optional) A string or numeric value representing the footer text. If omitted, the current footer text is returned.
+*
+*  Return Value:
+*     The previous footer text.
+*
+*  Purpose:
+*     This method allows developers to set the footer text, which is typically displayed at the bottom of the Task Dialog.
+*     The footer can be used to provide additional information, legal disclaimers, or copyright notices.
+*
+*  Notes:
+*     If the Task Dialog is currently active (::lActive is .T.), the footer text is updated immediately using the _SetFooter function.
+*     If EnableHyperlinks is true, this can show clickable links.
+*
+*/
 METHOD Footer( cFooter ) CLASS TTaskDialog
 
    LOCAL cOldVal := ::aConfig[ TDC_FOOTER ]
@@ -1157,11 +1278,28 @@ METHOD Footer( cFooter ) CLASS TTaskDialog
 
 RETURN cOldVal
 
-/*
-   The width of the task dialog's client area, in dialog units (read/write).
-
-   NOTE: If 0, the task dialog manager will calculate the ideal width.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Width( nWidth ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the width of the Task Dialog's client area, in dialog units.
+*
+*  Parameters:
+*     nWidth - (Optional) A numeric value representing the width in dialog units. If omitted, the current width is returned.
+*
+*  Return Value:
+*     The previous width of the Task Dialog's client area.
+*
+*  Purpose:
+*     This method allows developers to control the width of the Task Dialog.  Setting an appropriate width ensures that the content is displayed
+*     correctly and that the dialog fits well within the user's screen.
+*
+*  Notes:
+*     If nWidth is 0, the Task Dialog manager will calculate the ideal width.
+*     This method only modifies the width if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD Width( nWidth ) CLASS TTaskDialog
 
    LOCAL nOldVal := ::aConfig[ TDC_WIDTH ]
@@ -1172,9 +1310,28 @@ METHOD Width( nWidth ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   Parent window handle (read/write).
- */
+/*-----------------------------------------------------------------------------*
+METHOD ParentHandle( nHandle ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the handle of the parent window for the Task Dialog.
+*
+*  Parameters:
+*     nHandle - (Optional) A numeric value representing the window handle of the parent window. If omitted, the current parent window handle is returned.
+*
+*  Return Value:
+*     The previous parent window handle.
+*
+*  Purpose:
+*     This method allows developers to specify the parent window for the Task Dialog.  Setting a parent window ensures that the Task Dialog is displayed
+*     on top of the parent window and that it is properly associated with the parent window's application.
+*
+*  Notes:
+*     The nHandle parameter should be a valid window handle.
+*     This method only modifies the parent window handle if the Task Dialog is not currently active (::lActive is .F.) and the provided handle is a valid window handle.
+*
+*/
 METHOD ParentHandle( nHandle ) CLASS TTaskDialog
 
    LOCAL nOldVal := ::aConfig[ TDC_HWND ]
@@ -1185,14 +1342,57 @@ METHOD ParentHandle( nHandle ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   Parent window name (read/write).
- */
+/*-----------------------------------------------------------------------------*
+METHOD Parent( cFormName ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the name of the parent form for the Task Dialog.
+*
+*  Parameters:
+*     cFormName - (Optional) A string representing the name of the parent form. If omitted, the current parent form name is returned.
+*
+*  Return Value:
+*     The previous parent form name.
+*
+*  Purpose:
+*     This method allows developers to specify the parent form for the Task Dialog by its name.  It retrieves the window handle of the form
+*     using GetFormHandle and then sets the parent window handle using ::ParentHandle.  This provides a more convenient way to specify
+*     the parent window than directly using the window handle.
+*
+*  Notes:
+*     This method relies on the _HMG_aFormNames and _HMG_aFormHandles arrays, which are part of the HMG Extended framework.
+*
+*/
 METHOD Parent( cFormName ) CLASS TTaskDialog
 RETURN _HMG_aFormNames[ AScan ( _HMG_aFormHandles, ::ParentHandle( GetFormHandle( cFormName ) ) ) ]
 
-/*
-   NOTE: Method CallBackBlock will be deleted in future (not near)
+/*-----------------------------------------------------------------------------*
+METHOD CallBackBlock( bCode ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the callback code block for the Task Dialog.
+*
+*  Parameters:
+*     bCode - (Optional) A code block to be executed when Task Dialog events occur. If omitted, the current callback code block is returned.
+*
+*  Return Value:
+*     The previous callback code block.
+*
+*  Purpose:
+*     This method allows developers to define a custom code block that will be executed in response to various events generated by the Task Dialog.
+*     This provides a flexible way to customize the behavior of the Task Dialog and handle user interactions.
+*
+*  Notes:
+*     The callback code block should accept the following parameters:
+*       - The TTaskDialog object itself (self).
+*       - The notification code (nNotify).
+*       - The WPARAM value (nWParam).
+*       - The LPARAM value (nLParam).
+*     This method only modifies the callback code block if the Task Dialog is not currently active (::lActive is .F.).
+*     This method will be deleted in a future version.
+*
 */
 METHOD CallBackBlock( bCode ) CLASS TTaskDialog
 
@@ -1204,12 +1404,30 @@ METHOD CallBackBlock( bCode ) CLASS TTaskDialog
 
 RETURN ::aConfig[ TDC_CALLBACK ]
 
-/*
-   The flags (read/write).
-
-   NOTE:  Maybe You should not need to set flags as we have properties for all
-   relevant flags.
- */
+/*-----------------------------------------------------------------------------*
+METHOD Flags( nFlags ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the raw flags for the Task Dialog.  This method provides direct access to the underlying Task Dialog flags.
+*
+*  Parameters:
+*     nFlags - (Optional) A numeric value representing the Task Dialog flags.  If provided, the flags are set.
+*              If omitted, the current flags are returned.
+*
+*  Return Value:
+*     The previous value of the Task Dialog flags (numeric).
+*
+*  Purpose:
+*     This method allows developers to directly manipulate the Task Dialog flags, providing fine-grained control over the dialog's behavior.
+*     It's primarily used for advanced scenarios where the individual flag properties don't offer sufficient control.
+*
+*  Notes:
+*     Directly manipulating the flags can be complex and requires a thorough understanding of the Task Dialog API.
+*     It's generally recommended to use the individual property methods (e.g., AllowDialogCancellation, CanBeMinimized) for setting flags.
+*     This method only sets the flags if the Task Dialog is not currently active (::lActive is .F.).
+*
+*/
 METHOD Flags( nFlags ) CLASS TTaskDialog
 
    LOCAL nOldVal := ::aConfig[ TDC_TASKDIALOG_FLAGS ]
@@ -1221,13 +1439,29 @@ METHOD Flags( nFlags ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   Whether to allow cancel (read/write).
-
-   NOTE: Indicates that the dialog  should be  able to be closed using Alt-F4,
-   Escape,  and  the  title  bar's  close  button  even if no cancel button is
-   specified  in  either the CommonButtons or Buttons members.
- */
+/*-----------------------------------------------------------------------------*
+METHOD AllowDialogCancellation( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the Task Dialog can be cancelled using Alt-F4, Escape, or the title bar's close button.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to allow cancellation.  .T. enables cancellation, .F. disables it.
+*               If omitted, the current cancellation state is returned.
+*
+*  Return Value:
+*     The previous cancellation state (logical).  .T. if cancellation was previously allowed, .F. otherwise.
+*
+*  Purpose:
+*     This method provides a convenient way to control whether the user can close the Task Dialog without explicitly clicking a button.
+*     It's useful for scenarios where you want to prevent the user from prematurely dismissing the dialog.
+*
+*  Notes:
+*     This method only modifies the cancellation state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_ALLOW_DIALOG_CANCELLATION flag within the overall Task Dialog flags.
+*
+*/
 METHOD AllowDialogCancellation( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1247,9 +1481,29 @@ METHOD AllowDialogCancellation( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Indicates that the task dialog can be minimized (read/write).
- */
+/*-----------------------------------------------------------------------------*
+METHOD CanBeMinimized( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the Task Dialog can be minimized.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether the dialog can be minimized. .T. enables minimization, .F. disables it.
+*               If omitted, the current minimization state is returned.
+*
+*  Return Value:
+*     The previous minimization state (logical). .T. if minimization was previously allowed, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to control whether the Task Dialog can be minimized, providing flexibility in managing the user's workflow.
+*     It's useful for scenarios where you want to allow the user to temporarily hide the dialog without closing it.
+*
+*  Notes:
+*     This method only modifies the minimization state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_CAN_BE_MINIMIZED flag within the overall Task Dialog flags.
+*
+*/
 METHOD CanBeMinimized( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1269,21 +1523,31 @@ METHOD CanBeMinimized( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Whether to enable hyperlinks (read/write).
-
-   NOTE:  Enables  hyperlink  processing  for  the  strings  specified  in the
-   Content,  ExpandedInformation  and  Footer  members.  When  enabled,  these
-   members may point to strings that contain hyperlinks in the following form:
-
-   <A HREF="executablestring">Hyperlink Text</A>
-
-   NOTE:  Task  Dialogs  will  not  actually execute any hyperlinks. Hyperlink
-   execution _must be handled_ in the OnHyperlinkClicked event.
-
-   WARNING:  Enabling  hyperlinks when using content from an unsafe source may
-   cause security vulnerabilities.
- */
+/*-----------------------------------------------------------------------------*
+METHOD EnableHyperlinks( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether hyperlinks are enabled in the Task Dialog's content, expanded information, and footer.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to enable hyperlinks. .T. enables hyperlinks, .F. disables them.
+*               If omitted, the current hyperlink state is returned.
+*
+*  Return Value:
+*     The previous hyperlink state (logical). .T. if hyperlinks were previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to include clickable hyperlinks within the Task Dialog's text.
+*     It's useful for providing users with quick access to related information or external resources.
+*
+*  Notes:
+*     This method only modifies the hyperlink state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_ENABLE_HYPERLINKS flag within the overall Task Dialog flags.
+*     Hyperlink execution must be handled in the OnHyperlinkClicked event.  The Task Dialog itself does not execute the hyperlinks.
+*     Enabling hyperlinks with content from untrusted sources can pose security risks.
+*
+*/
 METHOD EnableHyperlinks( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1303,12 +1567,30 @@ METHOD EnableHyperlinks( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Indicates  that  the  string specified by the ExpandedInformation member is
-   displayed when the dialog is initially displayed (read/write).
-
-   NOTE: This flag is ignored if the ExpandedInformation member is empty.
- */
+/*-----------------------------------------------------------------------------*
+METHOD ExpandedByDefault( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the expanded information section of the Task Dialog is displayed by default.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to expand the information by default. .T. expands by default, .F. does not.
+*               If omitted, the current expanded-by-default state is returned.
+*
+*  Return Value:
+*     The previous expanded-by-default state (logical). .T. if expanded by default was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to control whether the expanded information section is initially visible to the user.
+*     It's useful for providing additional details that are not essential but may be helpful to some users.
+*
+*  Notes:
+*     This method only modifies the expanded-by-default state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_EXPANDED_BY_DEFAULT flag within the overall Task Dialog flags.
+*     This flag is ignored if the ExpandedInformation member is empty.
+*
+*/
 METHOD ExpandedByDefault( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1328,14 +1610,30 @@ METHOD ExpandedByDefault( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Whether expand footer area is displayed at the bottom (read/write).
-
-   NOTE: Indicates that the string specified by the ExpandedInformation member
-   is  displayed  at  the  bottom  of  the  dialog's  footer  area  instead of
-   immediately  after  the  dialog's  content.  This  flag  is  ignored if the
-   ExpandedInformation member is empty.
- */
+/*-----------------------------------------------------------------------------*
+METHOD ExpandFooterArea( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the expanded information is displayed in the footer area of the Task Dialog.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to expand the footer area. .T. expands the footer area, .F. does not.
+*               If omitted, the current expand-footer-area state is returned.
+*
+*  Return Value:
+*     The previous expand-footer-area state (logical). .T. if expanding the footer area was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to control where the expanded information is displayed within the Task Dialog.
+*     It's useful for organizing the dialog's content and providing a consistent user experience.
+*
+*  Notes:
+*     This method only modifies the expand-footer-area state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_EXPAND_FOOTER_AREA flag within the overall Task Dialog flags.
+*     This flag is ignored if the ExpandedInformation member is empty.
+*
+*/
 METHOD ExpandFooterArea( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1355,9 +1653,29 @@ METHOD ExpandFooterArea( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Indicates that no default item will be selected (read/write)
- */
+/*-----------------------------------------------------------------------------*
+METHOD NoDefaultRadioButton( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether no radio button is selected by default in the Task Dialog.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to have no default radio button. .T. disables the default selection, .F. enables it.
+*               If omitted, the current no-default-radio-button state is returned.
+*
+*  Return Value:
+*     The previous no-default-radio-button state (logical). .T. if no default radio button was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to force the user to explicitly select a radio button before proceeding.
+*     It's useful for scenarios where a default selection might lead to unintended consequences.
+*
+*  Notes:
+*     This method only modifies the no-default-radio-button state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_NO_DEFAULT_RADIO_BUTTON flag within the overall Task Dialog flags.
+*
+*/
 METHOD NoDefaultRadioButton( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1377,13 +1695,30 @@ METHOD NoDefaultRadioButton( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Indicates  that  the  task  dialog is positioned (centered) relative to the
-   window specified by parent.
-
-   NOTE:  If  the flag is not supplied (or no parent member is specified), the
-   task dialog is positioned (centered) relative to the monitor.
- */
+/*-----------------------------------------------------------------------------*
+METHOD PositionRelativeToWindow( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the Task Dialog is positioned relative to its parent window.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to position relative to the parent window. .T. positions relative to the parent, .F. positions relative to the monitor.
+*               If omitted, the current position-relative-to-window state is returned.
+*
+*  Return Value:
+*     The previous position-relative-to-window state (logical). .T. if positioning relative to the window was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to control the positioning of the Task Dialog on the screen.
+*     It's useful for ensuring that the dialog is displayed in a contextually relevant location.
+*
+*  Notes:
+*     This method only modifies the position-relative-to-window state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_POSITION_RELATIVE_TO_WINDOW flag within the overall Task Dialog flags.
+*     If this flag is not set (or no parent window is specified), the dialog is centered on the monitor.
+*
+*/
 METHOD PositionRelativeToWindow( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1403,9 +1738,29 @@ METHOD PositionRelativeToWindow( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   Indicates that text is displayed reading right to left (read/write).
- */
+/*-----------------------------------------------------------------------------*
+METHOD RightToLeftLayout( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the Task Dialog's layout is right-to-left.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether to use right-to-left layout. .T. enables right-to-left, .F. uses left-to-right.
+*               If omitted, the current right-to-left-layout state is returned.
+*
+*  Return Value:
+*     The previous right-to-left-layout state (logical). .T. if right-to-left layout was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to support right-to-left languages in their applications.
+*     It's useful for ensuring that the Task Dialog is displayed correctly in cultures that use right-to-left text direction.
+*
+*  Notes:
+*     This method only modifies the right-to-left-layout state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_RTL_LAYOUT flag within the overall Task Dialog flags.
+*
+*/
 METHOD RightToLeftLayout( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1425,11 +1780,29 @@ METHOD RightToLeftLayout( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   The enable state of the verification checkbox.
-
-   NOTE: Can be true to enable the checkbox or false to disable.
- */
+/*-----------------------------------------------------------------------------*
+METHOD VerificationEnabled( lNewVal ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the enable state of the verification checkbox in the Task Dialog.
+*
+*  Parameters:
+*     lNewVal - (Optional) A logical value indicating whether the verification checkbox is enabled. .T. enables the checkbox, .F. disables it.
+*               If omitted, the current verification-enabled state is returned.
+*
+*  Return Value:
+*     The previous verification-enabled state (logical). .T. if the verification checkbox was previously enabled, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to include a verification checkbox in the Task Dialog, allowing the user to confirm an action or setting.
+*     It's useful for scenarios where you want to provide an extra layer of confirmation before proceeding.
+*
+*  Notes:
+*     This method only modifies the verification-enabled state if the Task Dialog is not currently active (::lActive is .F.).
+*     It uses bitwise operations to manipulate the TDF_VERIFICATION_FLAG_CHECKED flag within the overall Task Dialog flags.
+*
+*/
 METHOD VerificationEnabled( lNewVal ) CLASS TTaskDialog
 
    LOCAL nCurFlags := ::Flags(), lOldVal
@@ -1449,11 +1822,29 @@ METHOD VerificationEnabled( lNewVal ) CLASS TTaskDialog
 
 RETURN lOldVal
 
-/*
-   The timeout for the dialog (read/write).
-
-   NOTE: In Milliseconds. The dialog closes after given time.
- */
+/*-----------------------------------------------------------------------------*
+METHOD timeoutMS ( nMS ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves the timeout value for the Task Dialog, in milliseconds.
+*
+*  Parameters:
+*     nMS - (Optional) A numeric value representing the timeout in milliseconds. If provided, the timeout is set.
+*           If omitted, the current timeout value is returned.
+*
+*  Return Value:
+*     The previous timeout value in milliseconds (numeric).
+*
+*  Purpose:
+*     This method allows developers to automatically close the Task Dialog after a specified period of time.
+*     It's useful for scenarios where you want to display a temporary message or notification without requiring user interaction.
+*
+*  Notes:
+*     This method only modifies the timeout value if the Task Dialog is not currently active (::lActive is .F.).
+*     The Task Dialog will close automatically after the specified timeout, regardless of user interaction.
+*
+*/
 METHOD timeoutMS ( nMS ) CLASS TTaskDialog
 
    LOCAL nOldVal := ::nTimeOutMS
@@ -1464,9 +1855,29 @@ METHOD timeoutMS ( nMS ) CLASS TTaskDialog
 
 RETURN nOldVal
 
-/*
-   Whether we got a timeout (read/write, read only in future, maybe)
- */
+/*-----------------------------------------------------------------------------*
+METHOD TimedOut( lOut ) CLASS TTaskDialog
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets or retrieves whether the Task Dialog has timed out.
+*
+*  Parameters:
+*     lOut - (Optional) A logical value indicating whether the dialog has timed out. If provided, the timeout state is set.
+*           If omitted, the current timeout state is returned.
+*
+*  Return Value:
+*     The current timeout state (logical). .T. if the dialog has timed out, .F. otherwise.
+*
+*  Purpose:
+*     This method allows developers to determine whether the Task Dialog was closed due to a timeout.
+*     It's useful for handling different scenarios based on whether the user interacted with the dialog or it closed automatically.
+*
+*  Notes:
+*     This method can only set the timeout state if the Task Dialog is currently active (::lActive is .T.).
+*     The intention is that this method will be read-only in the future.
+*
+*/
 METHOD TimedOut( lOut ) CLASS TTaskDialog
 
    IF ::lActive .AND. HB_ISLOGICAL( lOut )

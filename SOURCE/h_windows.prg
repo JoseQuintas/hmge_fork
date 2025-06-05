@@ -1304,7 +1304,7 @@ FUNCTION _EndWindow ()
    CASE _HMG_MdiChildActive == .T.  // JP MDI
       _EndMdiChildWindow ()
    OTHERWISE
-      _DefineTimer( "0", _HMG_ActiveFormName, 100, {|| AltD( 1 ) }, .T. )
+      _DefineTimer( "0", _HMG_ActiveFormName, 100, {|| _AltD( 1 ) }, .T. )
       _HMG_BeginWindowActive := .F.
       _HMG_ActiveFormName := ""
    ENDCASE
@@ -2779,7 +2779,7 @@ FUNCTION MsgDebug ( ... )
 
       AlertInfo( cMsg, "DEBUG INFO", "_dbgicon" )
 
-      SwitchToThisWindow( hWnd )
+      SetFocus( hWnd )
       IF ISCHAR( cFormName )
          _HMG_BeginWindowActive := .T.
          _HMG_ActiveFormName := cFormName
@@ -3128,6 +3128,26 @@ STATIC PROCEDURE EfeitoLabel ( cTxt )
    ENDIF
 
    SetProperty( cFormName, "Message", "Value", cDescEfeito )
+
+RETURN
+
+#define ALTD_DISABLE  0
+#define ALTD_ENABLE   1
+
+*-----------------------------------------------------------------------------*
+STATIC PROCEDURE _AltD( nAction )
+*-----------------------------------------------------------------------------*
+   IF HB_ISNUMERIC( nAction )
+
+      SWITCH nAction
+      CASE ALTD_DISABLE
+         Set( _SET_DEBUG, .F. )
+         EXIT
+      CASE ALTD_ENABLE
+         Set( _SET_DEBUG, .T. )
+      ENDSWITCH
+
+   ENDIF
 
 RETURN
 

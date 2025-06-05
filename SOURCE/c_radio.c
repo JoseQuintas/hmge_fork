@@ -61,7 +61,7 @@ LPWSTR      AnsiToWide( LPCSTR );
 // Function declaration to get the instance handle of the application
 HINSTANCE   GetInstance( void );
 
-/**
+/*
  * Function: INITRADIOGROUP
  * Initializes a group of radio buttons with specified styles and attributes.
  * Parameters:
@@ -127,7 +127,7 @@ HB_FUNC( INITRADIOGROUP )
 #endif
 }
 
-/**
+/*
  * Function: INITRADIOBUTTON
  * Initializes a single radio button with specified styles and attributes.
  * Parameters:

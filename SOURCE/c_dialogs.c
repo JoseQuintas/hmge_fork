@@ -43,13 +43,14 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #define _WIN32_IE 0x0501
 #ifdef __POCC__
 #define _WIN32_WINNT 0x0500
 #else
 #define _WIN32_WINNT 0x0400
 #endif
+
 #include <mgdefs.h>
 #include <commdlg.h>
 #include <shlobj.h>
@@ -63,8 +64,36 @@ LPSTR    WideToAnsi( LPWSTR );
 
 /**
  * Function: CHOOSEFONT
- * Description: Displays a font selection dialog where users can choose font name,
- *              size, style (bold/italic), color, and effects (underline, strikethrough).
+ *
+ * Description:
+ *   Displays a font selection dialog, allowing the user to choose a font and its attributes.
+ *
+ * Parameters:
+ *   1: cFaceName (STRING) - Initial font face name.
+ *   2: nPointSize (NUMERIC) - Initial font point size.
+ *   3: lBold (LOGICAL) - Initial bold state (TRUE for bold, FALSE for normal).
+ *   4: lItalic (LOGICAL) - Initial italic state (TRUE for italic, FALSE for normal).
+ *   5: nColor (NUMERIC) - Initial font color (COLORREF value).
+ *   6: lUnderline (LOGICAL) - Initial underline state (TRUE for underline, FALSE for normal).
+ *   7: lStrikeOut (LOGICAL) - Initial strikeout state (TRUE for strikeout, FALSE for normal).
+ *   8: nCharset (NUMERIC) - Initial charset.
+ *   9: nFlags (NUMERIC) - Flags to customize the dialog.
+ *
+ * Return Value:
+ *   ARRAY - An array containing the selected font attributes, or an empty array if the dialog is canceled.
+ *           The array elements are:
+ *           [1]: cFaceName (STRING) - Selected font face name.
+ *           [2]: nPointSize (NUMERIC) - Selected font point size.
+ *           [3]: lBold (LOGICAL) - Selected bold state.
+ *           [4]: lItalic (LOGICAL) - Selected italic state.
+ *           [5]: nColor (NUMERIC) - Selected font color (COLORREF value).
+ *           [6]: lUnderline (LOGICAL) - Selected underline state.
+ *           [7]: lStrikeOut (LOGICAL) - Selected strikeout state.
+ *           [8]: nCharset (NUMERIC) - Selected charset.
+ *
+ * Purpose:
+ *   Provides a user interface for selecting a font and its attributes, returning the selected values.
+ *   It uses the Windows API ChooseFont function to display the dialog.
  */
 HB_FUNC( CHOOSEFONT )
 {
@@ -157,8 +186,22 @@ static TCHAR   s_szWinName[MAX_PATH + 1];
 
 /**
  * Function: BrowseCallbackProc
- * Description: callback function for C_BROWSEFORFOLDER().
- * Contributed By Andy Wos.
+ *
+ * Description:
+ *   Callback function for the SHBrowseForFolder API, used to customize the folder selection dialog.
+ *
+ * Parameters:
+ *   hWnd (HWND) - Handle to the browse dialog window.
+ *   uMsg (UINT) - Message being sent to the callback function.
+ *   lParam (LPARAM) - Message-specific value.
+ *   lpData (LPARAM) - Application-defined value passed to the SHBrowseForFolder function.
+ *
+ * Return Value:
+ *   INT - 0 to allow the browse operation to continue, non-zero to prevent it.
+ *
+ * Purpose:
+ *   Allows customization of the browse dialog, such as setting the initial selection,
+ *   handling validation failures, and updating the status text.
  */
 int CALLBACK BrowseCallbackProc( HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData )
 {
@@ -195,9 +238,23 @@ int CALLBACK BrowseCallbackProc( HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpD
 
 /**
  * Function: C_BROWSEFORFOLDER
- * Syntax: C_BROWSEFORFOLDER([<hWnd>],[<cTitle>],[<nFlags>],[<nFolderType>],[<cInitPath>])
- * Description: Displays a folder selection dialog and returns the selected path.
- *              Supports customization for initial path, dialog title, and flags.
+ *
+ * Description:
+ *   Displays a folder selection dialog, allowing the user to choose a folder.
+ *
+ * Parameters:
+ *   1: hWnd (NUMERIC) - Handle to the parent window (optional, defaults to the active window).
+ *   2: cTitle (STRING) - Title of the browse dialog (optional, defaults to "Select a Folder").
+ *   3: nFlags (NUMERIC) - Flags to customize the dialog (optional).
+ *   4: nFolderType (NUMERIC) - Special folder type (CSIDL value) to use as the root (optional, defaults to CSIDL_DRIVES).
+ *   5: cInitPath (STRING) - Initial path to select in the dialog (optional).
+ *
+ * Return Value:
+ *   STRING - The path of the selected folder, or an empty string if the dialog is canceled.
+ *
+ * Purpose:
+ *   Provides a user interface for selecting a folder, returning the selected path.
+ *   It uses the Windows API SHBrowseForFolder function to display the dialog.
  */
 HB_FUNC( C_BROWSEFORFOLDER )
 {
@@ -270,7 +327,24 @@ HB_FUNC( C_BROWSEFORFOLDER )
 
 /**
  * Function: CHOOSECOLOR
- * Description: Displays a color selection dialog with an optional custom color palette.
+ *
+ * Description:
+ *   Displays a color selection dialog, allowing the user to choose a color.
+ *
+ * Parameters:
+ *   1: hWnd (NUMERIC) - Handle to the parent window (optional, defaults to the active window).
+ *   2: nColor (NUMERIC) - Initial color (COLORREF value).
+ *   3: aCustColors (ARRAY) - Array of 16 custom colors (optional). If not provided, system default colors are used.
+ *                             Each element of the array should be an array of 3 numeric values representing RGB components.
+ *   4: nFlags (NUMERIC) - Flags to customize the dialog (optional, defaults to CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT).
+ *
+ * Return Value:
+ *   NUMERIC - The selected color (COLORREF value), or -1 if the dialog is canceled.
+ *
+ * Purpose:
+ *   Provides a user interface for selecting a color, returning the selected color value.
+ *   It uses the Windows API ChooseColor function to display the dialog.
+ *   If aCustColors is passed by reference, it will be updated with the colors selected by the user.
  */
 HB_FUNC( CHOOSECOLOR )
 {
@@ -326,7 +400,20 @@ HB_FUNC( CHOOSECOLOR )
 
 /**
  * Function: UNITSTOPIXELSX
- * Description: Converts horizontal DLUs to pixels based on system metrics.
+ *
+ * Description:
+ *   Converts horizontal dialog units (DLUs) to pixels.
+ *
+ * Parameters:
+ *   1: nUnitsX (NUMERIC) - The number of horizontal DLUs to convert.
+ *
+ * Return Value:
+ *   NUMERIC - The equivalent number of pixels.
+ *
+ * Purpose:
+ *   Dialog units are device-independent units used in dialog box layouts. This function converts them to pixels
+ *   based on the current system's dialog base units. This is important for ensuring that dialog boxes are
+ *   displayed consistently across different screen resolutions and DPI settings.
  */
 HB_FUNC( UNITSTOPIXELSX )
 {
@@ -338,7 +425,20 @@ HB_FUNC( UNITSTOPIXELSX )
 
 /**
  * Function: UNITSTOPIXELSY
- * Description: Converts vertical DLUs to pixels based on system metrics.
+ *
+ * Description:
+ *   Converts vertical dialog units (DLUs) to pixels.
+ *
+ * Parameters:
+ *   1: nUnitsY (NUMERIC) - The number of vertical DLUs to convert.
+ *
+ * Return Value:
+ *   NUMERIC - The equivalent number of pixels.
+ *
+ * Purpose:
+ *   Dialog units are device-independent units used in dialog box layouts. This function converts them to pixels
+ *   based on the current system's dialog base units. This is important for ensuring that dialog boxes are
+ *   displayed consistently across different screen resolutions and DPI settings.
  */
 HB_FUNC( UNITSTOPIXELSY )
 {

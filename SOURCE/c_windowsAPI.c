@@ -152,7 +152,7 @@ HB_FUNC( DOMESSAGELOOP )
          // Process the message if it's not an accelerator key or dialog message
          if( hDlgModeless == ( HWND ) NULL || !TranslateAccelerator( g_hWndMain, g_hAccel, &Msg ) )
          {
-            if( !IsDialogMessage( hDlgModeless, &Msg ) ) // If not a dialog message, translate and dispatch it
+            if( !IsDialogMessage( hDlgModeless, &Msg ) )       // If not a dialog message, translate and dispatch it
             {
                TranslateMessage( &Msg );                 // Prepare message for handling
                DispatchMessage( &Msg );                  // Dispatch message to the window procedure
@@ -191,7 +191,7 @@ HB_FUNC( EXITPROCESS )
 
 HB_FUNC( SHOWWINDOW )
 {
-   ShowWindow( hmg_par_raw_HWND( 1 ), HB_ISNUM( 2 ) ? hb_parni( 2 ) : SW_SHOW );
+   hb_retl( ShowWindow( hmg_par_raw_HWND( 1 ), HB_ISNUM( 2 ) ? hb_parni( 2 ) : SW_SHOW ) );
 }
 
 HB_FUNC( GETACTIVEWINDOW )
@@ -201,7 +201,7 @@ HB_FUNC( GETACTIVEWINDOW )
 
 HB_FUNC( SETACTIVEWINDOW )
 {
-   SetActiveWindow( hmg_par_raw_HWND( 1 ) );
+   hmg_ret_raw_HWND( SetActiveWindow( hmg_par_raw_HWND( 1 ) ) );
 }
 
 HB_FUNC( POSTQUITMESSAGE )
@@ -211,37 +211,39 @@ HB_FUNC( POSTQUITMESSAGE )
 
 HB_FUNC( DESTROYWINDOW )
 {
-   DestroyWindow( hmg_par_raw_HWND( 1 ) );
+   hb_retl( DestroyWindow( hmg_par_raw_HWND( 1 ) ) );
 }
 
 HB_FUNC( ISWINDOWVISIBLE )
 {
-   hb_retl( IsWindowVisible( hmg_par_raw_HWND( 1 ) ) );
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   hb_retl( IsWindow( hwnd ) ? IsWindowVisible( hwnd ) : FALSE );
 }
 
 HB_FUNC( ISWINDOWENABLED )
 {
-   hb_retl( IsWindowEnabled( hmg_par_raw_HWND( 1 ) ) );
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   hb_retl( IsWindow( hwnd ) ? IsWindowEnabled( hwnd ) : FALSE );
 }
 
 HB_FUNC( ENABLEWINDOW )
 {
-   EnableWindow( hmg_par_raw_HWND( 1 ), TRUE );
+   hb_retl( EnableWindow( hmg_par_raw_HWND( 1 ), TRUE ) );
 }
 
 HB_FUNC( DISABLEWINDOW )
 {
-   EnableWindow( hmg_par_raw_HWND( 1 ), FALSE );
+   hb_retl( EnableWindow( hmg_par_raw_HWND( 1 ), FALSE ) );
 }
 
 HB_FUNC( SETFOREGROUNDWINDOW )
 {
-   SetForegroundWindow( hmg_par_raw_HWND( 1 ) );
+   hb_retl( SetForegroundWindow( hmg_par_raw_HWND( 1 ) ) );
 }
 
 HB_FUNC( BRINGWINDOWTOTOP )
 {
-   BringWindowToTop( hmg_par_raw_HWND( 1 ) );
+   hb_retl( BringWindowToTop( hmg_par_raw_HWND( 1 ) ) );
 }
 
 HB_FUNC( GETFOREGROUNDWINDOW )
@@ -253,19 +255,17 @@ HB_FUNC( SETWINDOWTEXT )
 {
 #ifndef UNICODE
    LPCSTR   lpString = ( LPCSTR ) hb_parc( 2 );
+   hb_retl( SetWindowText( hmg_par_raw_HWND( 1 ), lpString ) );
 #else
    LPCWSTR  lpString = AnsiToWide( ( char * ) hb_parc( 2 ) );
-#endif
-   SetWindowText( hmg_par_raw_HWND( 1 ), lpString );
-
-#ifdef UNICODE
+   hb_retl( SetWindowText( hmg_par_raw_HWND( 1 ), lpString ) );
    hb_xfree( ( TCHAR * ) lpString );
 #endif
 }
 
 HB_FUNC( SETWINDOWTEXTW )
 {
-   SetWindowTextW( hmg_par_raw_HWND( 1 ), ( LPCWSTR ) hb_parc( 2 ) );
+   hb_retl( SetWindowTextW( hmg_par_raw_HWND( 1 ), ( LPCWSTR ) hb_parc( 2 ) ) );
 }
 
 HB_FUNC( SETWINDOWPOS )
@@ -329,10 +329,14 @@ HB_FUNC( SETLAYEREDWINDOWATTRIBUTES )
             hmg_ret_L( fn_SetLayeredWindowAttributes( hWnd, crKey, bAlpha, dwFlags ) );
          }
       }
+      else
+      {
+         hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to load user32.dll", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      }
    }
    else
    {
-      hb_errRT_BASE_SubstR( EG_ARG, 3012, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      hb_errRT_BASE_SubstR( EG_ARG, 5001, "Invalid window handle", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
    }
 }
 
@@ -392,10 +396,15 @@ HB_FUNC( C_CENTER )
    int   w, h, x, y;
 
    hwnd = hmg_par_raw_HWND( 1 );
+   if( !IsWindow( hwnd ) )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 5001, "Invalid window handle", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    if( hb_parl( 2 ) )
    {
-      CenterIntoParent( hwnd );
+      hb_retl( CenterIntoParent( hwnd ) );
    }
    else
    {
@@ -406,7 +415,7 @@ HB_FUNC( C_CENTER )
       SystemParametersInfo( SPI_GETWORKAREA, 1, &rect, 0 );
       y = rect.bottom - rect.top;
 
-      SetWindowPos( hwnd, HWND_TOP, ( x - w ) / 2, ( y - h ) / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE );
+      hb_retl( SetWindowPos( hwnd, HWND_TOP, ( x - w ) / 2, ( y - h ) / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE ) );
    }
 }
 
@@ -448,9 +457,19 @@ void SwitchToWindow( HWND hwnd, BOOL fRestore )
    }
 }
 #endif
+
 HB_FUNC( SWITCHTOTHISWINDOW )
 {
-   SwitchToWindow( hmg_par_raw_HWND( 1 ), hb_parldef( 2, HB_TRUE ) );
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   if( !IsWindow( hwnd ) )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 5001, "Invalid window handle", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
+
+   SwitchToWindow( hwnd, hb_parldef( 2, HB_TRUE ) );
+
+   hb_retl( GetForegroundWindow() == hwnd );
 }
 
 HB_FUNC( GETWINDOWTEXT )
@@ -476,27 +495,76 @@ HB_FUNC( GETWINDOWTEXT )
 
 HB_FUNC( SENDMESSAGE )
 {
-   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   HWND     hwnd = hmg_par_raw_HWND( 1 );
+   UINT     msg = hmg_par_UINT( 2 );
+   WPARAM   wParam = hmg_par_WPARAM( 3 );
+   LPARAM   lParam = hmg_par_LPARAM( 4 );
+   LRESULT  result;
 
-   if( IsWindow( hwnd ) )
+   // Validate inputs
+   if( !IsWindow( hwnd ) || !msg )
    {
-      hmg_ret_raw_HWND( SendMessage( hwnd, hmg_par_UINT( 2 ), hmg_par_WPARAM( 3 ), hmg_par_LPARAM( 4 ) ) );
+      hb_errRT_BASE_SubstR
+      (
+         EG_ARG,
+         !IsWindow( hwnd ) ? 5001 : 5002,
+         !IsWindow( hwnd ) ? "Invalid window handle" : "Invalid message ID",
+         HB_ERR_FUNCNAME,
+         HB_ERR_ARGS_BASEPARAMS
+      );
+      return;
    }
-   else
-   {
-      hb_errRT_BASE_SubstR( EG_ARG, 5001, "MiniGUI Error", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
-   }
+
+   // Send the message and return the result
+   result = SendMessage( hwnd, msg, wParam, lParam );
+   hmg_ret_LRESULT( result );
 }
 
 HB_FUNC( SENDMESSAGESTRING )
 {
-   hmg_ret_raw_HWND( SendMessage( hmg_par_raw_HWND( 1 ), hmg_par_UINT( 2 ), hmg_par_WPARAM( 3 ), ( LPARAM ) ( LPSTR ) hb_parc( 4 ) ) );
+   HWND     hwnd = hmg_par_raw_HWND( 1 );
+   UINT     msg = hmg_par_UINT( 2 );
+   WPARAM   wParam = hmg_par_WPARAM( 3 );
+   LRESULT  result;
+
+#ifndef UNICODE
+   LPARAM   lParam = ( LPARAM ) ( LPSTR ) hb_parc( 4 );
+#else
+   LPWSTR   lpString = hb_parc( 4 ) ? AnsiToWide( ( char * ) hb_parc( 4 ) ) : NULL;
+   LPARAM   lParam = ( LPARAM ) lpString;
+#endif
+   if( !IsWindow( hwnd ) || !msg )
+   {
+      hb_errRT_BASE_SubstR
+      (
+         EG_ARG,
+         !IsWindow( hwnd ) ? 5001 : 5002,
+         !IsWindow( hwnd ) ? "Invalid window handle" : "Invalid message ID",
+         HB_ERR_FUNCNAME,
+         HB_ERR_ARGS_BASEPARAMS
+      );
+      return;
+   }
+
+   result = SendMessage( hwnd, msg, wParam, lParam );
+#ifdef UNICODE
+   if( lpString )
+   {
+      hb_xfree( lpString );
+   }
+#endif
+   hmg_ret_LRESULT( result );
 }
 
 HB_FUNC( GETNOTIFYCODE )
 {
    LPARAM   lParam = hmg_par_raw_LPARAM( 1 );
    NMHDR    *nmhdr = ( NMHDR * ) lParam;
+   if( !nmhdr )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Invalid notification data", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    hb_retni( nmhdr->code );
 }
@@ -518,6 +586,11 @@ HB_FUNC( GETNOTIFYID )
 {
    LPARAM   lParam = hmg_par_raw_LPARAM( 1 );
    NMHDR    *nmhdr = ( NMHDR * ) lParam;
+   if( !nmhdr )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Invalid notification data", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    hmg_ret_raw_HWND( nmhdr->idFrom );
 }
@@ -526,6 +599,11 @@ HB_FUNC( GETHWNDFROM )
 {
    LPARAM   lParam = hmg_par_raw_LPARAM( 1 );
    NMHDR    *nmhdr = ( NMHDR * ) lParam;
+   if( !nmhdr )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Invalid notification data", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    hmg_ret_raw_HWND( nmhdr->hwndFrom );
 }
@@ -562,9 +640,14 @@ HB_FUNC( GETSYSTEMMETRICS )
 
 HB_FUNC( GETWINDOWRECT )
 {
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
    RECT  rect;
 
-   GetWindowRect( hmg_par_raw_HWND( 1 ), &rect );
+   if( !IsWindow( hwnd ) || !GetWindowRect( hwnd, &rect ) )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to get window rect", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    if( HB_ISNUM( 2 ) )
    {
@@ -622,10 +705,17 @@ HB_FUNC( GETDESKTOPAREA )
 
 HB_FUNC( GETTASKBARHEIGHT )
 {
-   RECT  rect;
-
-   GetWindowRect( FindWindow( TEXT( "Shell_TrayWnd" ), NULL ), &rect );
-   hmg_ret_LONG( rect.bottom - rect.top );
+   HWND  hwnd = FindWindow( TEXT( "Shell_TrayWnd" ), NULL );
+   if( hwnd )
+   {
+      RECT  rect;
+      GetWindowRect( hwnd, &rect );
+      hmg_ret_LONG( rect.bottom - rect.top );
+   }
+   else
+   {
+      hb_retni( 0 );
+   }
 }
 
 static BOOL ShowNotifyIcon( HWND hWnd, BOOL bAdd, HICON hIcon, TCHAR *szText )
@@ -663,23 +753,20 @@ HB_FUNC( GETCURSORPOS )
 {
    POINT pt;
 
-   GetCursorPos( &pt );
+   if( !GetCursorPos( &pt ) )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to get cursor position", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
+
    if( hb_pcount() == 1 )
    {
       ScreenToClient( hmg_par_raw_HWND( 1 ), &pt );
    }
 
    hb_reta( 2 );
-   if( hb_pcount() == 0 )
-   {
-      HB_STORNI( pt.y, -1, 1 );
-      HB_STORNI( pt.x, -1, 2 );
-   }
-   else
-   {
-      HB_STORNI( pt.x, -1, 1 );
-      HB_STORNI( pt.y, -1, 2 );
-   }
+   HB_STORNI( hb_pcount() == 0 ? pt.y : pt.x, -1, 1 );
+   HB_STORNI( hb_pcount() == 0 ? pt.x : pt.y, -1, 2 );
 }
 
 HB_FUNC( SCREENTOCLIENT )
@@ -797,11 +884,15 @@ HB_FUNC( GETSCROLLPOS )
 
 HB_FUNC( GETWINDOWSTATE )
 {
+   HWND              hwnd = hmg_par_raw_HWND( 1 );
    WINDOWPLACEMENT   wp;
 
    wp.length = sizeof( WINDOWPLACEMENT );
-
-   GetWindowPlacement( hmg_par_raw_HWND( 1 ), &wp );
+   if( !IsWindow( hwnd ) || !GetWindowPlacement( hwnd, &wp ) )
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to get window placement", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      return;
+   }
 
    hmg_ret_UINT( wp.showCmd );
 }
@@ -883,7 +974,7 @@ HB_FUNC( ISWOW64PROCESS )
 
    if( fnIsWow64Process != NULL )
    {
-      if( HB_ISNUM( 1 ) == FALSE )
+      if( !HB_ISNUM( 1 ) )
       {
          fnIsWow64Process( GetCurrentProcess(), &IsWow64 );
       }
@@ -891,7 +982,7 @@ HB_FUNC( ISWOW64PROCESS )
       {
          DWORD    ProcessID = hmg_par_DWORD( 1 );
          HANDLE   hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
-         if( hProcess != NULL )
+         if( hProcess )
          {
             fnIsWow64Process( hProcess, &IsWow64 );
             CloseHandle( hProcess );
@@ -1017,7 +1108,7 @@ HB_FUNC( GETPROCESSNAME )
    }
 
    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
-   if( hProcess != NULL )
+   if( hProcess )
    {
       HMODULE  hMod;
       DWORD    cbNeeded;
@@ -1083,7 +1174,7 @@ HB_FUNC( GETPROCESSFULLNAME )
    }
 
    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessID );
-   if( hProcess != NULL )
+   if( hProcess )
    {
       HMODULE  hMod;
       DWORD    cbNeeded;
@@ -1110,13 +1201,13 @@ HB_FUNC( TERMINATEPROCESS )
    UINT     uExitCode = hmg_par_UINT( 2 );
    HANDLE   hProcess = OpenProcess( PROCESS_TERMINATE, FALSE, ProcessID );
 
-   if( hProcess != NULL )
+   if( hProcess )
    {
-      if( TerminateProcess( hProcess, uExitCode ) == FALSE )
-      {
-         CloseHandle( hProcess );
-      }
+      TerminateProcess( hProcess, uExitCode );
+      CloseHandle( hProcess );
    }
+
+   hb_retl( hProcess != NULL );
 }
 
 HB_FUNC( REDRAWWINDOWCONTROLRECT )
@@ -1128,7 +1219,7 @@ HB_FUNC( REDRAWWINDOWCONTROLRECT )
    r.bottom = hb_parni( 4 );
    r.right = hb_parni( 5 );
 
-   RedrawWindow( hmg_par_raw_HWND( 1 ), &r, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_ERASENOW | RDW_UPDATENOW );
+   hb_retl( RedrawWindow( hmg_par_raw_HWND( 1 ), &r, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_ERASENOW | RDW_UPDATENOW ) );
 }
 
 HB_FUNC( ADDSPLITBOXITEM )
@@ -1206,7 +1297,7 @@ HB_FUNC( ADDSPLITBOXITEM )
       }
    }
 
-   SendMessage( hmg_par_raw_HWND( 2 ), RB_INSERTBAND, ( WPARAM ) - 1, ( LPARAM ) & rbBand );
+   hmg_ret_LRESULT( SendMessage( hmg_par_raw_HWND( 2 ), RB_INSERTBAND, ( WPARAM ) - 1, ( LPARAM ) & rbBand ) );
 
 #ifdef UNICODE
    hb_xfree( lpText );
@@ -1220,7 +1311,7 @@ HB_FUNC( C_SETWINDOWRGN )
 
    if( hb_parni( 6 ) == 0 )
    {
-      SetWindowRgn( GetActiveWindow(), NULL, TRUE );
+      hb_retl( SetWindowRgn( GetActiveWindow(), NULL, TRUE ) );
    }
    else
    {
@@ -1253,10 +1344,16 @@ HB_FUNC( C_SETWINDOWRGN )
             break;
       }
 
-      SetWindowRgn( hmg_par_raw_HWND( 1 ), hRgn, TRUE );
-
-      RegisterResource( hRgn, "REGION" );
-      hmg_ret_raw_HANDLE( hRgn );
+      if( hRgn )
+      {
+         SetWindowRgn( hmg_par_raw_HWND( 1 ), hRgn, TRUE );
+         RegisterResource( hRgn, "REGION" );
+         hmg_ret_raw_HANDLE( hRgn );
+      }
+      else
+      {
+         hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to create region", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+      }
    }
 }
 
@@ -1284,10 +1381,17 @@ HB_FUNC( C_SETPOLYWINDOWRGN )
 
    hRgn = CreatePolygonRgn( lppt, nPoints, fnPolyFillMode );
 
-   SetWindowRgn( GetActiveWindow(), hRgn, TRUE );
+   if( hRgn )
+   {
+      SetWindowRgn( GetActiveWindow(), hRgn, TRUE );
 
-   RegisterResource( hRgn, "REGION" );
-   hmg_ret_raw_HANDLE( hRgn );
+      RegisterResource( hRgn, "REGION" );
+      hmg_ret_raw_HANDLE( hRgn );
+   }
+   else
+   {
+      hb_errRT_BASE_SubstR( EG_ARG, 3012, "Failed to create region", HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+   }
 }
 
 HB_FUNC( GETHELPDATA )
@@ -1489,9 +1593,11 @@ HB_FUNC( GETTABBRUSH )
    SendMessage( hWnd, WM_PRINTCLIENT, ( WPARAM ) hDCMem, ( LPARAM ) PRF_ERASEBKGND | PRF_CLIENT | PRF_NONCLIENT );
 
    hBrush = CreatePatternBrush( hBmp );
-
-   RegisterResource( hBrush, "BRUSH" );
-   hmg_ret_raw_HBRUSH( hBrush );
+   if( hBrush )
+   {
+      RegisterResource( hBrush, "BRUSH" );
+      hmg_ret_raw_HBRUSH( hBrush );
+   }
 
    SelectObject( hDCMem, hOldBmp );
 
@@ -1564,27 +1670,29 @@ HB_FUNC( ISWINDOWHANDLE )
 
 HB_FUNC( ISICONIC )
 {
-   hb_retl( IsIconic( hmg_par_raw_HWND( 1 ) ) );
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   hb_retl( IsWindow( hwnd ) ? IsIconic( hwnd ) : FALSE );
 }
 
 HB_FUNC( ISZOOMED )
 {
-   hb_retl( IsZoomed( hmg_par_raw_HWND( 1 ) ) );
+   HWND  hwnd = hmg_par_raw_HWND( 1 );
+   hb_retl( IsWindow( hwnd ) ? IsZoomed( hwnd ) : FALSE );
 }
 
 HB_FUNC( SETWINDOWHICON )
 {
-   hmg_ret_raw_HWND( SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HICON, hmg_par_raw_LONG_PTR( 2 ) ) );
+   hmg_ret_LONG_PTR( SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HICON, hmg_par_raw_LONG_PTR( 2 ) ) );
 }
 
 HB_FUNC( GETWINDOWBRUSH )
 {
-   hmg_ret_raw_HWND( GetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HBRBACKGROUND ) );
+   hmg_ret_LONG_PTR( GetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HBRBACKGROUND ) );
 }
 
 HB_FUNC( SETWINDOWBRUSH )
 {
-   hmg_ret_raw_HWND( SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HBRBACKGROUND, hmg_par_raw_LONG_PTR( 2 ) ) );
+   hmg_ret_LONG_PTR( SetClassLongPtr( hmg_par_raw_HWND( 1 ), GCLP_HBRBACKGROUND, hmg_par_raw_LONG_PTR( 2 ) ) );
 }
 
 HB_FUNC( CREATEHATCHBRUSH )
@@ -1620,7 +1728,7 @@ HB_FUNC( CREATEPATTERNBRUSH )
 
    if( hImage == NULL )
    {
-      hmg_ret_raw_HANDLE( 0 );
+      hb_ret();
    }
    else
    {

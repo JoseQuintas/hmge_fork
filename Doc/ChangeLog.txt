@@ -1,3 +1,118 @@
+2025/06/05: HMG Extended Edition version 25.06.
+  * Fixed: Corrections in the MiniGUI core C code based on an analysis of
+           potential issues related to the return values of WinAPI functions,
+           focusing on correctness, error handling, and type consistency.
+           For example, the essential SendMessage() function was reworked
+           following this analysis.
+           This was a postponed major modification.
+           Contributed by Grigory Filatov
+           (see c_windowsAPI.c in folder \Source)
+  * Enhanced: Splitbox control supports getting of 'Width' and 'Height'
+           properties at runtime.
+           You can get these properties with
+           - function syntax:
+             nWidth := GetProperty ( FormName, 'Splitbox', 'Width' )
+             nHeight := GetProperty ( FormName, 'Splitbox', 'Height' )
+           - pseudo-OOP syntax:
+             FormName.SplitBox.Width --> nWidth
+             FormName.SplitBox.Height --> nHeight
+           If SplitBox control is not used on the form, then these properties
+           return 0.
+           Requested by Sergej Kiselev.
+           Contributed by Grigory Filatov
+  * Enhanced: Panel window supports the 'Border' read/write property.
+           You can set/get this property at runtime as usually:
+             Panel.Border := .F.
+             SetProperty( PanelForm, 'Border', .T. )
+             lBorder := GetProperty( PanelForm, 'Border' )
+           Contributed by Grigory Filatov
+           (see demo2.prg in folder \samples\Basic\CONTAINERS\Panel)
+  * Updated: 'HMG Debugger' library:
+           - fixed procedure UpdateGridRec().
+           Contributed by Grigory Filatov
+           (see source in folder \Source\Debugger)
+  * Updated: 'HMG EasySQL' library:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \Source\HMG_EasySQL)
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - minor corrections in the method RButtonDown();
+           - added chess-style cell rendering in the _TBrowse() function.
+           Suggested and contributed by Sergej Kiselev.
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.49.2 (from 3.49.1).
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\SQLITE_2)
+  * Updated: 'Comparison of standard and professional MiniGUI builds' table.
+           Contributed by Grigory Filatov
+           (see in folder \Doc) [STANDARD VERSION]
+  * New: 'Tsbrowse (TSB) object - a card of one dbf-file record' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_EditDbf)
+  * Updated: 'Table of Colors' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\ColorsTable)
+  * Updated: 'Fast Find' sample:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\FastFind)
+  * Updated: 'Get Windows By Type' sample:
+           - the MsgTest() helper function was used to display the array;
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\GetWindowsByType)
+  * Updated: 'Simple app for test of Virtual Grid' sample:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\Grid_Virtual)
+  * Updated: 'ActiveX Report Generator' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\ActiveX_Report)
+  * Updated: 'Combo Color' sample:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\ComboColor)
+  * Updated: 'Rendering multi-colored text on the form' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\COLORFUL_TEXT)
+  * Updated: 'Increments the value of a key field in a target database'
+           sample by Marcos Jarrin Pita:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\NextNumber)
+  * Updated: 'Nested TABs workaround' sample:
+           - fixed TBROWSE properties definition structure;
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\Tsb_TabInsideTab)
+  * Updated: 'Windows Version' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\WinVersion)
+  * Updated: 'Screen zoomer and color picker' sample:
+           - added detailed comments to the code.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\ZOOM)
+  * Updated: 'Password Generator' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\PassGen) [PRO VERSION]
+  * Updated: 'Run Dialog Box' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\RunCmd) [PRO VERSION]
+  * Updated: 'UPX shell' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\UPXshell) [PRO VERSION]
+  * Updated: 'DBF Browser' sample:
+           - added comments describing the purpose of each function.
+           Contributed by Grigory Filatov
+           (see in folder \Utils\hmg_dbview) [PRO VERSION]
+
 2025/05/05: HMG Extended Edition version 25.05.
   * Modified: Adaptation of MiniGUI core has been revised to be compatible with
            Embarcadero C++ 7.70 and Visual C++ 2022 Community Edition compilers:

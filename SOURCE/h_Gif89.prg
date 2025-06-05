@@ -10,9 +10,41 @@ ANNOUNCE CLASS_TGIF
 
 #include "minigui.ch"
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION _DefineAniGif ( cControlName, cParentForm, cFilename, nRow, nCol, nWidth, nHeight, nDelay, aBKColor )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Defines and initializes an animated GIF control within a MiniGUI form.
+*
+*  Parameters:
+*     cControlName  - The name of the animated GIF control (CHARACTER).  Must be unique within the parent form. If "0", a unique name is generated.
+*     cParentForm   - The name of the parent form or dialog where the control will be placed (CHARACTER).
+*     cFilename     - The path to the GIF file (CHARACTER). Can be a disk file or a resource name.
+*     nRow          - The row position of the control within the parent form (NUMERIC).
+*     nCol          - The column position of the control within the parent form (NUMERIC).
+*     nWidth        - The width of the control (NUMERIC).
+*     nHeight       - The height of the control (NUMERIC).
+*     nDelay        - The default delay (in milliseconds) between frames if not specified in the GIF file (NUMERIC).
+*     aBKColor      - An array representing the background color of the control (ARRAY).
+*
+*  Return Value:
+*     Returns an object of the TGif class, representing the created animated GIF control.
+*
+*  Purpose:
+*     This function is the core of the animated GIF control integration within HMG Extended.
+*     It handles the creation of the control, loading the GIF file, splitting it into individual frames,
+*     and setting up a timer to animate the frames.  It also manages resource loading and temporary file creation
+*     if the GIF is embedded as a resource.  The function ensures that the control is properly initialized
+*     and linked to its parent form.
+*
+*  Notes:
+*     - The function creates temporary files if the GIF is embedded as a resource. These files are deleted when the control is released.
+*     - The function relies on the TGif class to handle the actual GIF animation.
+*     - Error handling is performed to ensure that the control is properly defined and that the GIF file exists.
+*
+*/
+FUNCTION _DefineAniGif ( cControlName, cParentForm, cFilename, nRow, nCol, nWidth, nHeight, nDelay, aBKColor )
    LOCAL nControlHandle, nParentFormHandle
    LOCAL mVar
    LOCAL k
@@ -125,23 +157,49 @@ FUNCTION _DefineAniGif ( cControlName, cParentForm, cFilename, nRow, nCol, nWidt
 
 RETURN oGif
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 PROCEDURE _ReleaseAniGif ( GifName, FormName )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Releases the resources associated with an animated GIF control.
+*
+*  Parameters:
+*     GifName  - The name of the animated GIF control to release (CHARACTER).
+*     FormName - The name of the parent form containing the control (CHARACTER).
+*
+*  Return Value:
+*     None. This procedure releases resources and modifies global arrays.
+*
+*  Purpose:
+*     This procedure is responsible for properly releasing the resources associated with an animated GIF control
+*     when it is no longer needed. This includes stopping the animation, deleting temporary files,
+*     and removing the control from the internal HMG Extended control arrays.  This prevents memory leaks
+*     and ensures that the application remains stable.
+*
+*  Notes:
+*     - It's crucial to call this procedure when a form containing an animated GIF control is closed or when the control is no longer needed.
+*     - The procedure iterates through the control arrays to find the correct GIF control to release.
+*
+*/
+PROCEDURE _ReleaseAniGif ( GifName, FormName )
    LOCAL hWnd
    LOCAL oGif
    LOCAL i
 
+   // Check if the GIF control name exists in the control names array
    IF AScan ( _HMG_aControlNames, GifName ) > 0
 
       hWnd := GetFormHandle ( FormName )
 
+      // Iterate through the control handles array to find the GIF control
       FOR i := 1 TO Len ( _HMG_aControlHandles )
 
+         // Check if the control is an ANIGIF and belongs to the specified form
          IF _HMG_aControlParentHandles[ i ] == hWnd .AND. _HMG_aControlType[ i ] == "ANIGIF"
             oGif := _HMG_aControlIds[ i ]
-            oGif:End()
-            _EraseGifDef ( FormName, i )
+            oGif:End() // Call the End() method of the TGif class to release resources
+            _EraseGifDef ( FormName, i ) // Erase the control definition from the HMG arrays
             EXIT
          ENDIF
 
@@ -151,9 +209,31 @@ PROCEDURE _ReleaseAniGif ( GifName, FormName )
 
 RETURN
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 STATIC PROCEDURE _EraseGifDef ( FormName, i )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Erases the definition of an animated GIF control from the HMG Extended control arrays.
+*
+*  Parameters:
+*     FormName - The name of the parent form containing the control (CHARACTER).
+*     i        - The index of the control in the HMG Extended control arrays (NUMERIC).
+*
+*  Return Value:
+*     None. This procedure modifies global arrays.
+*
+*  Purpose:
+*     This procedure is a helper function for _ReleaseAniGif. It removes the control's information
+*     from the HMG Extended control arrays, effectively deleting the control definition.  This is necessary
+*     to prevent memory leaks and ensure that the control is no longer accessible.
+*
+*  Notes:
+*     - This procedure is called by _ReleaseAniGif after the TGif object's End() method has been called.
+*     - The procedure sets various control properties to NIL or empty values to release memory.
+*
+*/
+STATIC PROCEDURE _EraseGifDef ( FormName, i )
    LOCAL mVar
 
    mVar := '_' + FormName + '_' + _HMG_aControlNames[ i ]
@@ -246,7 +326,38 @@ CLASS TGif
 ENDCLASS
 
 
-// Method to initialize a new TGif object and set up GIF display
+/*-----------------------------------------------------------------------------*
+METHOD New( cFileName, nTop, nLeft, nBottom, nRight, nDelay, aBKColor, cControlName, cParentName ) CLASS TGif
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Constructor for the TGif class. Initializes a new TGif object and sets up the GIF display.
+*
+*  Parameters:
+*     cFileName     - The path to the GIF file (CHARACTER).
+*     nTop          - The top position of the control within the parent form (NUMERIC).
+*     nLeft         - The left position of the control within the parent form (NUMERIC).
+*     nBottom       - The bottom position of the control within the parent form (NUMERIC).
+*     nRight        - The right position of the control within the parent form (NUMERIC).
+*     nDelay        - The default delay (in milliseconds) between frames if not specified in the GIF file (NUMERIC).
+*     aBKColor      - An array representing the background color of the control (ARRAY).
+*     cControlName  - The name of the animated GIF control (CHARACTER).
+*     cParentName   - The name of the parent form containing the control (CHARACTER).
+*
+*  Return Value:
+*     Returns a reference to the newly created TGif object (OBJECT).
+*
+*  Purpose:
+*     This method is the constructor for the TGif class. It initializes the object's properties,
+*     loads the GIF file, splits it into individual frames, creates an image control to display the GIF,
+*     and sets up a timer to animate the frames.  It uses the LoadGif function to load the GIF data
+*     and the HMG Extended control definition syntax to create the image control.
+*
+*  Notes:
+*     - The method uses temporary files to store the individual frames of the GIF. These files are deleted when the control is released.
+*     - The method relies on the LoadGif function to handle the actual GIF loading and splitting.
+*
+*/
 METHOD New( cFileName, nTop, nLeft, nBottom, nRight, nDelay, aBKColor, cControlName, cParentName ) CLASS TGif
 
    LOCAL nId               // Unique ID for the control
@@ -303,7 +414,30 @@ METHOD New( cFileName, nTop, nLeft, nBottom, nRight, nDelay, aBKColor, cControlN
 RETURN Self
 
 
-// Method to advance to the next frame
+/*-----------------------------------------------------------------------------*
+METHOD PlayGif() CLASS TGif
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Advances the animated GIF to the next frame.
+*
+*  Parameters:
+*     None.
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This method is called by the timer control to update the displayed frame of the animated GIF.
+*     It increments the current frame counter, loops back to the first frame if necessary,
+*     and updates the Picture property of the image control to display the next frame.  It also updates
+*     the timer's interval to match the delay for the current frame.
+*
+*  Notes:
+*     - This method is called automatically by the timer control.
+*     - The method assumes that the GIF has been loaded and split into individual frames.
+*
+*/
 METHOD PlayGif() CLASS TGif
 
    // Move to the next frame, looping back if needed
@@ -320,7 +454,30 @@ METHOD PlayGif() CLASS TGif
 RETURN NIL
 
 
-// Update the GIF display if the control has been moved or resized
+/*-----------------------------------------------------------------------------*
+METHOD Update() CLASS TGif
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Updates the position and size of the GIF control if the underlying control has been moved or resized.
+*
+*  Parameters:
+*     None.
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This method is used to synchronize the position and size of the GIF image control with the
+*     position and size of the control that was used to define the GIF.  This is necessary because
+*     the GIF is actually displayed using an image control, but the user defines the GIF using a custom
+*     control definition.  This method ensures that the image control is always in the correct location
+*     and has the correct dimensions.
+*
+*  Notes:
+*     - This method should be called whenever the parent control is moved or resized.
+*
+*/
 METHOD Update() CLASS TGif
 
    IF ! Empty( ::hGif ) .AND. _IsControlDefined ( ::hGif, ::cParentName )
@@ -340,7 +497,29 @@ METHOD Update() CLASS TGif
 RETURN NIL
 
 
-// Reloads and resets the GIF from the start
+/*-----------------------------------------------------------------------------*
+METHOD RestartGif() CLASS TGif
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Reloads the GIF file and restarts the animation from the beginning.
+*
+*  Parameters:
+*     None.
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This method is used to reload the GIF file and restart the animation from the first frame.
+*     This is useful if the GIF file has been modified or if the animation needs to be restarted for
+*     any other reason.  The method stops the current animation, deletes the existing frame images,
+*     reloads the GIF data, and restarts the animation.
+*
+*  Notes:
+*     - This method deletes the temporary files created for the GIF frames.
+*
+*/
 METHOD RestartGif() CLASS TGif
 
    LOCAL aPictures := {}, aImageInfo := {}
@@ -364,7 +543,28 @@ METHOD RestartGif() CLASS TGif
 RETURN NIL
 
 
-// Method to stop the GIF and release resources
+/*-----------------------------------------------------------------------------*
+METHOD End() CLASS TGif
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Releases the resources associated with the TGif object.
+*
+*  Parameters:
+*     None.
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This method is responsible for releasing all resources associated with the TGif object,
+*     including deleting temporary files, releasing the timer control, and releasing the image control.
+*     This is crucial to prevent memory leaks and ensure that the application remains stable.
+*
+*  Notes:
+*     - This method should be called when the form containing the GIF control is closed or when the control is no longer needed.
+*
+*/
 METHOD End() CLASS TGif
 
    IF _IsControlDefined ( ::cControlName, ::cParentName )
@@ -388,6 +588,27 @@ RETURN NIL
  *  Auxiliary Static Functions
  */
 
+/*-----------------------------------------------------------------------------*
+STATIC FUNCTION GifPlay( oGif )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Enables the timer to start the GIF animation.
+*
+*  Parameters:
+*     oGif - A reference to the TGif object (OBJECT).
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This function is a helper function that enables the timer associated with the TGif object,
+*     thereby starting the GIF animation.  It's used as an inline function for the Play() method.
+*
+*  Notes:
+*     - This function only enables the timer if the GIF has more than one frame.
+*
+*/
 STATIC FUNCTION GifPlay( oGif )
 
    IF oGif:nTotalFrames > 1
@@ -397,6 +618,27 @@ STATIC FUNCTION GifPlay( oGif )
 RETURN NIL
 
 
+/*-----------------------------------------------------------------------------*
+STATIC FUNCTION GifStop( oGif )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Disables the timer to stop the GIF animation.
+*
+*  Parameters:
+*     oGif - A reference to the TGif object (OBJECT).
+*
+*  Return Value:
+*     NIL.
+*
+*  Purpose:
+*     This function is a helper function that disables the timer associated with the TGif object,
+*     thereby stopping the GIF animation.  It's used as an inline function for the Stop() method.
+*
+*  Notes:
+*     - This function only disables the timer if the GIF has more than one frame.
+*
+*/
 STATIC FUNCTION GifStop( oGif )
 
    IF oGif:nTotalFrames > 1
@@ -406,6 +648,27 @@ STATIC FUNCTION GifStop( oGif )
 RETURN NIL
 
 
+/*-----------------------------------------------------------------------------*
+STATIC FUNCTION GifIsRunning( oGif )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Checks if the GIF animation is currently running.
+*
+*  Parameters:
+*     oGif - A reference to the TGif object (OBJECT).
+*
+*  Return Value:
+*     .T. if the GIF animation is running, .F. otherwise (LOGICAL).
+*
+*  Purpose:
+*     This function is a helper function that checks if the timer associated with the TGif object is enabled,
+*     indicating whether the GIF animation is currently running.  It's used as an inline function for the IsRunning() method.
+*
+*  Notes:
+*     - This function only checks the timer if the GIF has more than one frame.
+*
+*/
 STATIC FUNCTION GifIsRunning( oGif )
 
    LOCAL lRunning := .F.
@@ -423,122 +686,209 @@ RETURN lRunning
 
 #include "fileio.ch"
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION LoadGif ( GIF, aFrames, aImgInfo, oGif )
 *------------------------------------------------------------------------------*
-   LOCAL cPath := GetTempFolder()
-   LOCAL cGifHeader
-   LOCAL cGifEnd := Chr( 0 ) + Chr( 33 ) + Chr( 249 )
-   LOCAL cStream
-   LOCAL cFile
-   LOCAL cPicBuf
-   LOCAL imgHeader
-   LOCAL nImgCount
-   LOCAL nFileHandle
-   LOCAL i, j
+*
+*  Description:
+*     Loads a GIF file, extracts individual frames, and retrieves frame delay information.
+*
+*  Parameters:
+*     GIF     - The path to the GIF file (CHARACTER).  Specifies the location of the GIF file to be processed.
+*     aFrames - An array to store the file names of the extracted GIF frames (ARRAY).  This array is passed by reference and will be populated with the paths to the extracted frame files.
+*     aImgInfo - An array to store image information (ARRAY). This array is passed by reference and will be modified by the function. Currently not used.
+*     oGif    - A TGif object (OBJECT).  The frame delays are stored in the oGif:aDelay property.
+*
+*  Return Value:
+*     .T. if the GIF file was successfully loaded and split into frames, .F. otherwise (LOGICAL).
+*
+*  Purpose:
+*     This function is the core of the GIF animation process. It reads a GIF file, identifies individual frames,
+*     extracts each frame as a separate GIF file in the temporary folder, and stores the file names of the extracted frames in the aFrames array.
+*     It also extracts the delay information for each frame and stores it in the oGif:aDelay array.
+*     This information is then used to animate the GIF by displaying the frames in sequence with the correct delays.
+*
+*     Example Usage:
+*       LOCAL aFrames := {}
+*       LOCAL aImgInfo := {}
+*       LOCAL oGif := TGif():New()
+*       IF LoadGif( "MyAnimation.gif", aFrames, aImgInfo, oGif )
+*          // Process the extracted frames and delay information
+*          FOR i := 1 TO Len( aFrames )
+*             // Display aFrames[i] with a delay of oGif:aDelay[i]
+*          NEXT
+*       ENDIF
+*
+*  Notes:
+*     - The function creates temporary files for each frame of the GIF in the temporary folder. These files should be deleted after use to avoid cluttering the file system.
+*     - The function assumes that the GIF file is in a valid format. Invalid GIF files may cause unexpected behavior or errors.
+*     - The function uses a static variable nID to generate unique file names for the extracted frames. This ensures that the temporary files do not conflict with each other.
+*     - The ReadFromStream function is used to read the GIF file into memory. This allows the function to process the GIF data more efficiently.
+*     - The function relies on the GIF file format structure, specifically the GIF header and the Graphic Control Extension block (identified by Chr(0) + Chr(33) + Chr(249)).
+*     - The aImgInfo parameter is currently not used but is included for potential future use.
+*
+*/
+FUNCTION LoadGif ( GIF, aFrames, aImgInfo, oGif )
+   LOCAL cPath := GetTempFolder()  // Get the path to the temporary folder.
+   LOCAL cGifHeader                // Stores the GIF header.
+   LOCAL cGifEnd := Chr( 0 ) + Chr( 33 ) + Chr( 249 )  // Marks the end of a GIF frame.
+   LOCAL cStream                   // Stores the entire GIF file content as a string.
+   LOCAL cFile                     // Stores the file name of the extracted GIF frame.
+   LOCAL cPicBuf                   // Stores the content of a single GIF frame.
+   LOCAL imgHeader                 // Stores the header of a single GIF frame.
+   LOCAL nImgCount                 // Counts the number of extracted GIF frames.
+   LOCAL nFileHandle               // File handle for file I/O operations.
+   LOCAL i, j                      // Loop counters.
 
-   STATIC nID := 0
+   STATIC nID := 0  // Static variable to generate unique file names for extracted frames.
 
-   nID++
+   nID++  // Increment the static ID for each call to the function.
 
-   oGif:aDelay := {}
-   hb_default( @aFrames, {} )
-   hb_default( @aImgInfo, {} )
+   oGif:aDelay := {}           // Initialize the delay array in the TGif object.
+   hb_default( @aFrames, {} )  // Initialize aFrames to an empty array if it's not already initialized.
+   hb_default( @aImgInfo, {} ) // Initialize aImgInfo to an empty array if it's not already initialized.
 
-   IF ! ReadFromStream( GIF, @cStream )
-      RETURN FALSE
+   IF ! ReadFromStream( GIF, @cStream )  // Read the GIF file into the cStream variable.
+      RETURN FALSE  // Return .F. if the file could not be read.
    ENDIF
 
-   nImgCount := 0
-   i := 1
-   j := At( cGifEnd, cStream, i ) + 1
-   cGifHeader = Left( cStream, j )
+   nImgCount := 0  // Initialize the frame counter.
+   i := 1          // Initialize the starting position for parsing the GIF file.
+   j := At( cGifEnd, cStream, i ) + 1  // Find the first occurrence of the GIF frame end marker.
+   cGifHeader = Left( cStream, j )     // Extract the GIF header.
 
-   i := j + 2
+   i := j + 2      // Update the starting position for the next frame.
 
    /* Split GIF Files at separate pictures and load them into ImageList */
 
-   DO WHILE .T.
+   DO WHILE .T.    // Loop through the GIF file to extract frames.
 
-      nImgCount++
+      nImgCount++  // Increment the frame counter.
 
-      j := At( cGifEnd, cStream, i ) + 3
+      j := At( cGifEnd, cStream, i ) + 3  // Find the end of the current frame.
 
-      IF j > Len( cGifEnd )
-         cFile := cPath + hb_ps() + cFileNoExt( GIF ) + "_frame_" + hb_ntos( nID ) + "_" + StrZero( nImgCount, 4 ) + ".gif"
-         nFileHandle := FCreate( cFile, FC_NORMAL )
-         IF FError() <> 0
-            RETURN FALSE
+      IF j > Len( cGifEnd )  // Check if a valid frame end marker was found.
+         cFile := cPath + hb_ps() + cFileNoExt( GIF ) + "_frame_" + hb_ntos( nID ) + "_" + StrZero( nImgCount, 4 ) + ".gif"  // Construct the file name for the extracted frame.
+         nFileHandle := FCreate( cFile, FC_NORMAL )  // Create the file.
+         IF FError() <> 0  // Check for file creation errors.
+            RETURN FALSE  // Return .F. if there was an error creating the file.
          ENDIF
 
-         cPicBuf := cGifHeader + SubStr( cStream, i - 1, j - i )
-         imgHeader = Left( SubStr ( cStream, i - 1, j - i ), 16 )
+         cPicBuf := cGifHeader + SubStr( cStream, i - 1, j - i )  // Extract the frame data.
+         imgHeader = Left( SubStr ( cStream, i - 1, j - i ), 16 ) // Extract the image header.
 
-         IF FWrite( nFileHandle, cPicBuf ) <> Len( cPicBuf )
-            RETURN FALSE
+         IF FWrite( nFileHandle, cPicBuf ) <> Len( cPicBuf )  // Write the frame data to the file.
+            RETURN FALSE  // Return .F. if there was an error writing to the file.
          ENDIF
 
-         IF .NOT. FClose( nFileHandle )
-            RETURN FALSE
+         IF .NOT. FClose( nFileHandle )  // Close the file.
+            RETURN FALSE  // Return .F. if there was an error closing the file.
          ENDIF
 
-         AAdd( aFrames, cFile )
-         AAdd( oGif:aDelay, GetFrameDelay( imgHeader, oGif:nDelay ) )
+         AAdd( aFrames, cFile )  // Add the file name to the aFrames array.
+         AAdd( oGif:aDelay, GetFrameDelay( imgHeader, oGif:nDelay ) )  // Add the frame delay to the oGif:aDelay array.
       ENDIF
 
-      DO EVENTS
+      DO EVENTS  // Process events to keep the application responsive.
 
-      IF j == 3
-         EXIT
+      IF j == 3  // Check if the end of the GIF file has been reached.
+         EXIT    // Exit the loop if the end of the file has been reached.
       ELSE
-         i := j
+         i := j  // Update the starting position for the next frame.
       ENDIF
 
    ENDDO
 
-   IF i < Len( cStream )
+   IF i < Len( cStream )  // Handle the case where there is remaining data after the loop.
 
-      cFile := cPath + hb_ps() + cFileNoExt( GIF ) + "_frame_" + hb_ntos( nID ) + "_" + StrZero( ++nImgCount, 4 ) + ".gif"
-      nFileHandle := FCreate( cFile, FC_NORMAL )
-      IF FError() <> 0
-         RETURN FALSE
+      cFile := cPath + hb_ps() + cFileNoExt( GIF ) + "_frame_" + hb_ntos( nID ) + "_" + StrZero( ++nImgCount, 4 ) + ".gif"  // Construct the file name for the extracted frame.
+      nFileHandle := FCreate( cFile, FC_NORMAL )  // Create the file.
+      IF FError() <> 0  // Check for file creation errors.
+         RETURN FALSE   // Return .F. if there was an error creating the file.
       ENDIF
 
-      cPicBuf := cGifHeader + SubStr( cStream, i - 1, Len( cStream ) - i )
-      imgHeader := Left( SubStr( cStream, i - 1, Len( cStream ) - i ), 16 )
+      cPicBuf := cGifHeader + SubStr( cStream, i - 1, Len( cStream ) - i )  // Extract the frame data.
+      imgHeader := Left( SubStr( cStream, i - 1, Len( cStream ) - i ), 16 ) // Extract the image header.
 
-      IF FWrite( nFileHandle, cPicBuf ) <> Len( cPicBuf )
-         RETURN FALSE
+      IF FWrite( nFileHandle, cPicBuf ) <> Len( cPicBuf )  // Write the frame data to the file.
+         RETURN FALSE  // Return .F. if there was an error writing to the file.
       ENDIF
 
-      IF .NOT. FClose( nFileHandle )
-         RETURN FALSE
+      IF .NOT. FClose( nFileHandle )  // Close the file.
+         RETURN FALSE  // Return .F. if there was an error closing the file.
       ENDIF
 
-      AAdd( aFrames, cFile )
-      AAdd( oGif:aDelay, GetFrameDelay( imgHeader, oGif:nDelay ) )
+      AAdd( aFrames, cFile )  // Add the file name to the aFrames array.
+      AAdd( oGif:aDelay, GetFrameDelay( imgHeader, oGif:nDelay ) )  // Add the frame delay to the oGif:aDelay array.
 
    ENDIF
 
-RETURN TRUE
+RETURN TRUE  // Return .T. if the GIF file was successfully processed.
 
-*------------------------------------------------------------------------------*
+/*------------------------------------------------------------------------------*
 STATIC FUNCTION ReadFromStream( cFile, cStream )
 *------------------------------------------------------------------------------*
-   LOCAL nFileSize
-   LOCAL nFileHandle := FOpen( cFile )
+*
+*  Description:
+*     Reads the entire content of a file into a string variable.
+*
+*  Parameters:
+*     cFile   - The path to the file to be read (CHARACTER).
+*     cStream - A variable (passed by reference) to store the file content as a string (CHARACTER).
+*
+*  Return Value:
+*     .T. if the file was successfully read, .F. otherwise (LOGICAL).
+*
+*  Purpose:
+*     This function reads the entire content of a file into a string variable.
+*     It is used to load the GIF file into memory for processing.
+*     This approach allows for efficient parsing and manipulation of the GIF data.
+*
+*  Notes:
+*     - The function reads the entire file into memory. This may not be suitable for very large files.
+*     - The function checks for file I/O errors and returns .F. if an error occurs.
+*
+*/
+STATIC FUNCTION ReadFromStream( cFile, cStream )
+   LOCAL nFileSize                     // Stores the size of the file.
+   LOCAL nFileHandle := FOpen( cFile ) // Open the file for reading.
 
-   IF FError() == 0
-      nFileSize := FSeek( nFileHandle, 0, FS_END )
-      cStream := Space( nFileSize )
-      FSeek( nFileHandle, 0, FS_SET )
-      FRead( nFileHandle, @cStream, nFileSize )
-      FClose( nFileHandle )
+   IF FError() == 0                    // Check if the file was opened successfully.
+      nFileSize := FSeek( nFileHandle, 0, FS_END )  // Get the file size by seeking to the end of the file.
+      cStream := Space( nFileSize )    // Allocate memory for the file content.
+      FSeek( nFileHandle, 0, FS_SET )  // Seek back to the beginning of the file.
+      FRead( nFileHandle, @cStream, nFileSize )  // Read the file content into the cStream variable.
+      FClose( nFileHandle )            // Close the file.
    ENDIF
 
-RETURN ( FError() == 0 .AND. .NOT. Empty( cStream ) )
+RETURN ( FError() == 0 .AND. .NOT. Empty( cStream ) )  // Return .T. if the file was successfully read and the content is not empty.
 
-*------------------------------------------------------------------------------*
+/*------------------------------------------------------------------------------*
 FUNCTION GetFrameDelay( cImageInfo, nDelay )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Extracts the frame delay from the image header and applies a default multiplier.
+*
+*  Parameters:
+*     cImageInfo - The image header (CHARACTER).  A string containing the first 16 bytes of the image data.
+*     nDelay     - The default delay multiplier (NUMERIC).  An optional parameter that specifies a multiplier for the extracted delay value. Defaults to 10 if not provided.
+*
+*  Return Value:
+*     The frame delay in milliseconds (NUMERIC).
+*
+*  Purpose:
+*     This function extracts the frame delay information from the image header of a GIF frame.
+*     The delay is stored as a 2-byte value in the image header.
+*     The function converts this value to a numeric representation and multiplies it by a default value (typically 10) to get the delay in milliseconds.
+*     This delay value is then used to control the speed of the GIF animation.
+*
+*  Notes:
+*     - The function assumes that the image header is in a valid format and contains the delay information at the correct offset.
+*     - The default delay multiplier (nDelay) can be adjusted to control the overall speed of the GIF animation.
+*     - The delay value is in hundredths of a second, so multiplying by 10 converts it to milliseconds.
+*
+*/
+FUNCTION GetFrameDelay( cImageInfo, nDelay )
+// Extract the delay value from the image header, convert it to a number, and multiply it by the default delay.
 RETURN ( Bin2W( SubStr( cImageInfo, 4, 2 ) ) * hb_defaultValue( nDelay, 10 ) )

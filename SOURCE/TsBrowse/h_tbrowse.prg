@@ -9356,7 +9356,7 @@ METHOD LoadFields( lEditable, aColSel, cAlsSel, aNameSel, aHeadSel ) CLASS TSBro
       cOrder, nEle, ;
       cAlias, cName, aStru, ;
       aAlign := { "LEFT", "CENTER", "RIGHT", "VERT" }
-   LOCAL cTmp, cHead, hFontH, aAdsType := ::aAdsFieldTypes, nType
+   LOCAL cTmp := "", cHead, hFontH, aAdsType := ::aAdsFieldTypes, nType
 
    DEFAULT lEditable := ::lEditable, ;
       aColSizes := {}
@@ -9366,6 +9366,18 @@ METHOD LoadFields( lEditable, aColSel, cAlsSel, aNameSel, aHeadSel ) CLASS TSBro
    aNames := iif( HB_ISARRAY( aColSel ), aColSel, ::aColSel )
    nCols := iif( aNames == NIL, ( cAlias )->( FCount() ), Len( aNames ) )
    aColSizes := iif( Len( ::aColumns ) == Len( aColSizes ), NIL, aColSizes )
+
+   IF HB_ISARRAY( aNames )
+      FOR n := 1 TO nCols
+         nE := ( cAlias )->( FieldPos( aNames[ n ] ) )
+         IF nE == 0
+            cTmp += hb_ntos( n ) + ". " + aNames[ n ] + CRLF
+         ENDIF
+      NEXT
+      IF Len( cTmp ) > 0
+         MsgStop( "Fields could not be found for " + cAlias + CRLF + CRLF + cTmp, "Error" )
+      ENDIF
+   ENDIF
 
    FOR n := 1 TO nCols
 
@@ -11971,6 +11983,10 @@ METHOD RButtonDown( nRowPix, nColPix, nFlags ) CLASS TSBrowse
 
    HB_SYMBOL_UNUSED( nFlags )
 
+   IF ! ::lEnabled
+      RETURN 0
+   ENDIF
+
    DEFAULT ::lNoPopup := .T., ;
       ::lNoMoveCols := .F.
 
@@ -12010,11 +12026,11 @@ METHOD RButtonDown( nRowPix, nColPix, nFlags ) CLASS TSBrowse
       ::nRowPos += nSkipped
       ::nCell := nCol
 
-      IF ! ::lNoVScroll
+      IF ! ::lNoVScroll .AND. ::oVScroll != NIL
          ::oVScroll:SetPos( ::RelPos( ::nLogicPos() ) )
       ENDIF
 
-      IF ! ::lNoHScroll
+      IF ! ::lNoHScroll .AND. ::oHScroll != NIL
          ::oHScroll:SetPos( ::nCell )
       ENDIF
 

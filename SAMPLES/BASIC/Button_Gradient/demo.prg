@@ -5,6 +5,12 @@
 #include "minigui.ch"
 
 FUNCTION Main()
+/*
+ *  Main function of the application.
+ *
+ *  This function defines and activates the main window of the application, which demonstrates the use of gradient buttons.
+ *  It initializes color arrays, gradient arrays, and button names, then creates a window with two button bars: one with gradient colors and one with solid colors.
+ */
 
    LOCAL aButtonBackColor1, aButtonBackColor2, aButtonBackColor3, aButtonBackColor4, aButtonBackColor5
    LOCAL aGradientFill1, aGradientFill2, aGradientFill3, aGradientFill4, aGradientFill5, nProcenatGrad
@@ -68,6 +74,29 @@ RETURN NIL
 
 FUNCTION CreateButtonBar( nRow, nCol, aButtonName, aBackColor, aGradient, nWidth, nHeight, nGap, ;
       aFontColor, aFocusedColor, aHoverColor, aButtonAction )
+/*
+ *  Creates a button bar dynamically.
+ *
+ *  This function creates a series of buttons with specified properties, including position, size, colors, and actions.
+ *  It supports both gradient and solid color buttons.
+ *
+ *  Parameters:
+ *      nRow          - The row position of the first button.
+ *      nCol          - The column position of the first button.
+ *      aButtonName   - An array of button names (captions).
+ *      aBackColor    - An array of background colors for the buttons.
+ *      aGradient     - An array of gradient fill definitions for the buttons (NIL for solid color).
+ *      nWidth        - The width of each button.
+ *      nHeight       - The height of each button.
+ *      nGap          - The horizontal gap between buttons.
+ *      aFontColor    - The font color for the buttons.
+ *      aFocusedColor - The font color when the button is focused or hovered.
+ *      aHoverColor   - The background color when the button is hovered (only for solid color buttons).
+ *      aButtonAction - An array of actions to be executed when each button is clicked.
+ *
+ *  Return:
+ *      NIL
+ */
 
    LOCAL cButtonName, i, aHColor, aBColor, cAction
    LOCAL cParentName := ThisWindow.Name
@@ -120,11 +149,25 @@ FUNCTION CreateButtonBar( nRow, nCol, aButtonName, aBackColor, aGradient, nWidth
 RETURN NIL
 
 
-/*
- * Function GetGradient() returns gradient info for input color depending on number of gradients (1 or 2),
- * percentage of color change (to lighter and darker color from input color).
-*/
 FUNCTION GetGradient( aBackColor, lAutoGradient, nGradPercent, aGradFrom, aGradTo, nGradPreliv, lInvert )
+/*
+ *  Generates gradient information for a given background color.
+ *
+ *  This function calculates the gradient colors based on the input background color, gradient percentage, and other parameters.
+ *  It supports both automatic gradient generation (lighter and darker shades) and custom gradient colors.
+ *
+ *  Parameters:
+ *      aBackColor    - The base background color (RGB array).
+ *      lAutoGradient - A logical value indicating whether to automatically generate gradient colors (TRUE) or use custom colors (FALSE).
+ *      nGradPercent  - The percentage of color change for the gradient (used only when lAutoGradient is TRUE).
+ *      aGradFrom     - The custom "from" color for the gradient (used only when lAutoGradient is FALSE).
+ *      aGradTo       - The custom "to" color for the gradient (used only when lAutoGradient is FALSE).
+ *      nGradPreliv   - The number of gradient levels (1 or 2).
+ *      lInvert       - A logical value indicating whether to invert the gradient colors.
+ *
+ *  Return:
+ *      aGradientFill - An array defining the gradient fill, suitable for use with the GRADIENTFILL property.
+ */
 
    LOCAL aColorFrom, aColorTo, nGradientFrom, nGradientTo, nTmp, aGradientFill
 

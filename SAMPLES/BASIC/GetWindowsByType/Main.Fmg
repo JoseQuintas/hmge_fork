@@ -7,7 +7,8 @@ DEFINE WINDOW TEMPLATE AT 0 , 0 WIDTH GetDesktopWidth() HEIGHT 150 VIRTUAL WIDTH
         DEFINE POPUP "Menu"
             MENUITEM "Child Window" ACTION ChildForm()
             MENUITEM "Standard Window" ACTION StdForm()
-            MENUITEM "Get All Windows" ACTION Msgdebug(GetWindowsByType())
+            MENUITEM "Get All Windows" ACTION MsgTest(GetWindowsByType(),;
+                     "FormNames, FormType, FormDeleted, FormActive, FormHandle, FormParentHandle")
             MENUITEM "Exit" ACTION ReleaseAllWindows()
         END POPUP
     END MENU

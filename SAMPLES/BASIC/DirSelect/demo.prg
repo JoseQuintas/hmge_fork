@@ -10,7 +10,11 @@
 #include "directry.ch"
 
 FUNCTION Main()
-
+/*
+   Purpose:  This is the main function of the application. It defines the main window,
+             its controls (grid, button, menu, statusbar), and sets up the initial
+             state of the application. It also handles window resizing events.
+*/
    LOCAL cSMsg := ""
    LOCAL aHeaders := { 'Select', 'Path', 'Name', 'Bytes', 'Date', 'Time', 'Attr' }
    LOCAL aLijst := {}
@@ -62,9 +66,12 @@ FUNCTION Main()
    MainForm.Activate
 
 RETURN NIL
-//-----------------------
-PROCEDURE About()
 
+PROCEDURE About()
+/*
+   Purpose:  Displays an "About" dialog box with information about the application
+             and the MiniGUI version.
+*/
    DEFINE FONT DlgFont FONTNAME "Verdana" SIZE 10
 
    AlertInfo( "hb_DirScan() Function Example;;" + MiniguiVersion() )
@@ -72,18 +79,30 @@ PROCEDURE About()
    RELEASE FONT DlgFont
 
 RETURN
-//-----------------------
-PROCEDURE Resize()
 
+PROCEDURE Resize()
+/*
+   Purpose:  Handles the resizing of the main window and adjusts the size and position
+             of the grid and button controls accordingly. This ensures that the layout
+             remains consistent when the window is resized.
+*/
    MainForm.Grid_1.Width := MainForm.Width - 25
    MainForm.Grid_1.Height := MainForm.Height - 125
 
    MainForm.Button_1.Row := MainForm.Height - 110 - GetBorderHeight() / 2
 
 RETURN
-//-----------------------
-PROCEDURE SelectMe()
 
+PROCEDURE SelectMe()
+/*
+   Purpose:  Handles the double-click event on a grid row. It toggles the "Select"
+             column (the first column) of the clicked row between "x" (selected) and
+             " " (not selected).
+
+   Parameters: None (implicitly receives the This object representing the grid)
+
+   Return Value: None
+*/
    LOCAL aLine := MainForm.Grid_1.Item( This.CellRowIndex )
 
    MainForm.Grid_1.Item( This.CellRowIndex ) := iif( Empty( aLine[1] ), { "x" }, { " " } )
@@ -91,9 +110,12 @@ PROCEDURE SelectMe()
    MainForm.Grid_1.Refresh()
 
 RETURN
-//-----------------------
-PROCEDURE SelectAll()
 
+PROCEDURE SelectAll()
+/*
+   Purpose:  Selects all rows in the grid by setting the "Select" column (the first
+             column) of each row to "x".
+*/
    LOCAL i
    LOCAL nCnt := MainForm.Grid_1.ItemCount
 
@@ -105,9 +127,20 @@ PROCEDURE SelectAll()
    MainForm.Grid_1.Refresh()
 
 RETURN
-//------------------------
-PROCEDURE DoFolder( cNewDir )
 
+PROCEDURE DoFolder( cNewDir )
+/*
+   Purpose:  Allows the user to select a directory and then scans it for *.prg files
+             using the hb_DirScan() function. The results are displayed in the grid.
+             It also saves the last selected directory to an INI file for persistence.
+
+   Parameters:
+      - cNewDir:  An optional string containing a directory path. If empty, the user
+                  is prompted to select a directory. If not empty, the specified
+                  directory is used directly.
+
+   Return Value: None
+*/
    STATIC cFolder := "", cNewFolder := "", cMsg := ""
    LOCAL cExePath := Left( ExeName(), RAt( "\", ExeName() ) )
    LOCAL aDir
@@ -141,9 +174,9 @@ PROCEDURE DoFolder( cNewDir )
 
    IF !Empty( cFolder )
 
-      IF !( DirChange( cFolder ) == 0 )    // changing to the directory in question to read it
+      IF !( DirChange( cFolder ) == 0 )  // changing to the directory in question to read it
          MsgStop( "Error Changing to " + cFolder )
-         RETURN  // get outta here - there's nothing left to do 4 u.
+         RETURN
       ENDIF
 
       WAIT WINDOW "Scanning Directories" NOWAIT
@@ -162,7 +195,7 @@ PROCEDURE DoFolder( cNewDir )
             hb_DirSepAdd( cFolder ) + hb_FNameDir( aItem[ F_NAME ] ), ;
             hb_FNameNameExt( aItem[ F_NAME ] ), ;
             Transform( aItem[ F_SIZE ], "999,999,999" ), ;
-            DToC( aItem[ F_DATE ] ), aItem [F_TIME ], aItem[ F_ATTR ] } )
+            DToC( aItem[ F_DATE ] ), aItem [ F_TIME ], aItem[ F_ATTR ] } )
 
          cMsg := "Reading " + hb_ntos( Int( hb_enumIndex( aItem ) / k * 100 ) ) + "%"
 

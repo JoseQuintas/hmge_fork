@@ -11,7 +11,7 @@
 
    This   program   is   distributed  in  the hope that it will be useful, but
    WITHOUT    ANY    WARRANTY;    without   even   the   implied  warranty  of
-   MERCHANTABILITY  or  FITNESS  FOR A PARTICULAR PURPOSE. See the GNU General
+   MERCHANTABILITY  or  FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
    Public License for more details.
 
    You   should  have  received a copy of the GNU General Public License along
@@ -71,7 +71,29 @@ void     RegisterResource( HANDLE hResource, LPCSTR szType );
 #define HB_ISBLOCK   ISBLOCK
 #endif
 
-// Function to prepare a font using given specifications
+/*
+   PrepareFont
+
+   This function creates a Windows font (HFONT) based on the provided specifications.
+   It calculates the font size based on the screen's DPI and creates the font using CreateFont.
+
+   Parameters:
+      FontName (TCHAR*): The name of the font (e.g., "Arial").
+      FontSize (int): The desired font size in points.
+      Weight (int): The font weight (e.g., FW_BOLD, FW_NORMAL).
+      Italic (DWORD): A flag indicating whether the font should be italic (TRUE) or not (FALSE).
+      Underline (DWORD): A flag indicating whether the font should be underlined (TRUE) or not (FALSE).
+      StrikeOut (DWORD): A flag indicating whether the font should be struck out (TRUE) or not (FALSE).
+      Angle (DWORD): The angle of the font in tenths of a degree.
+      charset (DWORD): The character set to use for the font (e.g., DEFAULT_CHARSET).
+
+   Returns:
+      HFONT: A handle to the created font.  Returns NULL if the font creation fails.
+
+   Purpose:
+      This function encapsulates the font creation process, handling DPI scaling and calling the Windows API to create the font.
+      It is used to ensure that fonts are created consistently across different screen resolutions.
+*/
 HFONT PrepareFont( TCHAR *FontName, int FontSize, int Weight, DWORD Italic, DWORD Underline, DWORD StrikeOut, DWORD Angle, DWORD charset )
 {
    // Get device context for the desktop
@@ -103,7 +125,29 @@ HFONT PrepareFont( TCHAR *FontName, int FontSize, int Weight, DWORD Italic, DWOR
       );
 }
 
-// Harbour function to initialize a font with given attributes
+/*
+   INITFONT
+
+   This Harbour function initializes a font with the given attributes and returns a handle to the created font.
+
+   Parameters:
+      1: FontName (STRING): The name of the font (e.g., "Arial").
+      2: FontSize (NUMERIC): The desired font size in points.
+      3: Bold (LOGICAL): A flag indicating whether the font should be bold (TRUE) or not (FALSE).
+      4: Italic (LOGICAL): A flag indicating whether the font should be italic (TRUE) or not (FALSE).
+      5: Underline (LOGICAL): A flag indicating whether the font should be underlined (TRUE) or not (FALSE).
+      6: StrikeOut (LOGICAL): A flag indicating whether the font should be struck out (TRUE) or not (FALSE).
+      7: Angle (NUMERIC): The angle of the font in tenths of a degree.
+      8: Charset (NUMERIC, optional): The character set to use for the font (e.g., DEFAULT_CHARSET). Defaults to DEFAULT_CHARSET if not provided.
+
+   Returns:
+      HANDLE: A handle to the created font.
+
+   Purpose:
+      This function serves as a Harbour-callable interface to create fonts. It takes font attributes as parameters,
+      calls the PrepareFont function to create the font, registers the font as a resource, and returns the font handle.
+      It handles UNICODE conversions if necessary.
+*/
 HB_FUNC( INITFONT )
 {
    HFONT hFont;
@@ -126,7 +170,30 @@ HB_FUNC( INITFONT )
    hmg_ret_raw_HANDLE( hFont );           // Return the font handle
 }
 
-// Harbour function to set a font to a specified window
+/*
+   _SETFONT
+
+   This Harbour function sets a font to a specified window. It creates a new font based on the provided attributes and applies it to the window.
+
+   Parameters:
+      1: hwnd (HANDLE): The handle of the window to which the font should be applied.
+      2: FontName (STRING): The name of the font (e.g., "Arial").
+      3: FontSize (NUMERIC): The desired font size in points.
+      4: Bold (LOGICAL): A flag indicating whether the font should be bold (TRUE) or not (FALSE).
+      5: Italic (LOGICAL): A flag indicating whether the font should be italic (TRUE) or not (FALSE).
+      6: Underline (LOGICAL): A flag indicating whether the font should be underlined (TRUE) or not (FALSE).
+      7: StrikeOut (LOGICAL): A flag indicating whether the font should be struck out (TRUE) or not (FALSE).
+      8: Angle (NUMERIC): The angle of the font in tenths of a degree.
+      9: Charset (NUMERIC, optional): The character set to use for the font (e.g., DEFAULT_CHARSET). Defaults to DEFAULT_CHARSET if not provided.
+
+   Returns:
+      HANDLE: A handle to the created font.
+
+   Purpose:
+      This function provides a way to dynamically change the font of a window at runtime. It creates a new font with the specified attributes,
+      sets it as the window's font, registers the font as a resource, and returns the font handle.  It also includes error handling to ensure
+      that the window handle is valid.
+*/
 HB_FUNC( _SETFONT )
 {
 #ifdef UNICODE
@@ -166,7 +233,23 @@ HB_FUNC( _SETFONT )
    }
 }
 
-// Function to directly set an existing font handle to a window
+/*
+   _SETFONTHANDLE
+
+   This Harbour function directly sets an existing font handle to a window.
+
+   Parameters:
+      1: hwnd (HANDLE): The handle of the window to which the font should be applied.
+      2: hFont (HANDLE): The handle of the font to be applied to the window.
+
+   Returns:
+      None.
+
+   Purpose:
+      This function provides a way to apply an existing font (identified by its handle) to a window.
+      It checks if the window and font handles are valid before applying the font.  It is more efficient than _SETFONT
+      if the font has already been created.
+*/
 HB_FUNC( _SETFONTHANDLE )
 {
    HWND  hwnd = hmg_par_raw_HWND( 1 );
@@ -188,7 +271,22 @@ HB_FUNC( _SETFONTHANDLE )
    }
 }
 
-// Function to get the system font used in non-client area metrics (e.g., window borders)
+/*
+   GETSYSTEMFONT
+
+   This Harbour function retrieves the system font used in non-client area metrics (e.g., window borders, menus).
+
+   Parameters:
+      None.
+
+   Returns:
+      ARRAY: An array containing the font name (string) and font height (numeric).
+
+   Purpose:
+      This function allows Harbour applications to access the system's default font settings.
+      It retrieves the NONCLIENTMETRICS structure, extracts the font information, and returns it as an array.
+      This is useful for ensuring that custom controls and dialogs are consistent with the system's appearance.
+*/
 HB_FUNC( GETSYSTEMFONT )
 {
    LOGFONT           lfDlgFont;
@@ -218,11 +316,29 @@ HB_FUNC( GETSYSTEMFONT )
 }
 
 /*
-   Function for enumerating fonts based on provided criteria
+   ENUMFONTSEX
+
+   This Harbour function enumerates fonts based on provided criteria.
    This code is partially based on original work by Dr. Claudio Soto (2014)
 
    EnumFontsEx ([ hDC ], [ cFontFamilyName ], [ nCharSet ], [ nPitch ], [ nFontType ], [ SortCodeBlock ], [ @aFontName ])
-   Returns an array of font properties { { cFontName, nCharSet, nPitchAndFamily, nFontType }, ... }
+
+   Parameters:
+      1: hDC (HANDLE, optional): The handle of the device context to enumerate fonts from. If not provided, the default DC is used.
+      2: cFontFamilyName (STRING, optional): The name of the font family to filter by (e.g., "Arial"). If not provided, all font families are enumerated.
+      3: nCharSet (NUMERIC, optional): The character set to filter by (e.g., DEFAULT_CHARSET). If not provided, the DC's character set is used.
+      4: nPitch (NUMERIC, optional): The pitch and family to filter by (e.g., DEFAULT_PITCH). If not provided, all pitches are enumerated.
+      5: nFontType (NUMERIC, optional): The font type to filter by.
+      6: SortCodeBlock (BLOCK, optional): A code block to sort the resulting array of font properties.
+      7: aFontName (ARRAY, by reference, optional): An array to store the font names.
+
+   Returns:
+      ARRAY: An array of font properties { { cFontName, nCharSet, nPitchAndFamily, nFontType }, ... }
+
+   Purpose:
+      This function provides a way to retrieve a list of available fonts on the system, filtered by various criteria.
+      It uses the Windows API EnumFontFamiliesEx to enumerate the fonts and returns an array of font properties.
+      It also allows for sorting the results and storing the font names in a separate array.
 */
 int CALLBACK   EnumFontFamExProc( ENUMLOGFONTEX *lpelfe, NEWTEXTMETRICEX *lpntme, DWORD FontType, LPARAM lParam );
 
@@ -291,7 +407,25 @@ HB_FUNC( ENUMFONTSEX )
    hb_itemReturnRelease( pArray );              // Return font enumeration array
 }
 
-// Callback function for EnumFontFamExProc to handle each font found
+/*
+   EnumFontFamExProc
+
+   This is a callback function used by EnumFontFamiliesEx to handle each font found during enumeration.
+
+   Parameters:
+      lpelfe (ENUMLOGFONTEX*): A pointer to an ENUMLOGFONTEX structure containing information about the font.
+      lpntme (NEWTEXTMETRICEX*): A pointer to a NEWTEXTMETRICEX structure containing information about the physical font.
+      FontType (DWORD): The type of the font.
+      lParam (LPARAM): A user-defined value passed to the function (in this case, a pointer to the Harbour array to store the font properties).
+
+   Returns:
+      int: 1 to continue enumeration, 0 to stop.
+
+   Purpose:
+      This function is called for each font that matches the criteria specified in EnumFontFamiliesEx.
+      It extracts the font name, character set, pitch and family, and font type, and stores them in a Harbour array.
+      It avoids fonts prefixed with '@' (which are typically device fonts).
+*/
 int CALLBACK EnumFontFamExProc( ENUMLOGFONTEX *lpelfe, NEWTEXTMETRICEX *lpntme, DWORD FontType, LPARAM lParam )
 {
 #ifdef UNICODE

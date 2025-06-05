@@ -46,18 +46,34 @@
  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
-// INITTIMER
-// Initializes a timer for a specific window with a given interval.
-// Parameters:
-//   1. hwnd - Handle of the window associated with the timer.
-//   2. nIDEvent - Unique identifier for the timer within the window's scope.
-//   3. uElapse - Time interval in milliseconds between timer events.
-// Returns:
-//   Logical (TRUE/FALSE) indicating if the timer was successfully created.
+/*-----------------------------------------------------------------------------*
+FUNCTION INITTIMER ( hwnd, nIDEvent, uElapse )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Initializes a Windows timer associated with a specific window.
+*
+*  Parameters:
+*     hwnd    - The handle of the window to which the timer will be associated.
+*     nIDEvent - A non-zero timer identifier.  This is used to distinguish between multiple timers associated with the same window.
+*     uElapse - The timeout value, in milliseconds.  The system sends a WM_TIMER message to the application's message queue when this interval elapses.
+*
+*  Return Value:
+*     .T. (TRUE) if the timer was successfully created; otherwise, .F. (FALSE).
+*
+*  Purpose:
+*     This function provides a way to execute code at regular intervals within a window.
+*     It wraps the Windows API SetTimer to create a timer that sends WM_TIMER messages to the specified window.
+*     This is useful for tasks such as updating a clock display, polling for data changes, or triggering animations.
+*
+*  Notes:
+*     The nIDEvent must be unique for each timer associated with the same window.
+*     The timer continues to send messages until it is explicitly destroyed using KILLTIMER.
+*     The resolution of Windows timers is limited, and the actual interval may be slightly longer than the specified uElapse.
+*
+*/
 HB_FUNC( INITTIMER )
 {
-   // SetTimer returns the timer ID if successful, 0 otherwise.
-   // Convert this result to a logical value and return it.
    hb_retl
    (
       ( UINT ) SetTimer
@@ -70,19 +86,35 @@ HB_FUNC( INITTIMER )
    );
 }
 
-// KILLTIMER
-// Stops and destroys the timer for a specific window and timer ID.
-// Parameters:
-//   1. hwnd - Handle of the window associated with the timer.
-//   2. nIDEvent - Unique identifier of the timer to destroy.
-// Returns:
-//   Logical (TRUE/FALSE) indicating if the timer was successfully destroyed.
+/*-----------------------------------------------------------------------------*
+FUNCTION KILLTIMER ( hwnd, nIDEvent )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Destroys a Windows timer associated with a specific window.
+*
+*  Parameters:
+*     hwnd    - The handle of the window whose timer is to be destroyed.
+*     nIDEvent - The identifier of the timer to be destroyed.
+*
+*  Return Value:
+*     .T. (TRUE) if the timer was successfully destroyed; otherwise, .F. (FALSE).
+*
+*  Purpose:
+*     This function stops and removes a timer that was previously created using INITTIMER.
+*     It wraps the Windows API KillTimer to prevent the timer from sending further WM_TIMER messages.
+*     It is crucial to call this function when a timer is no longer needed to avoid resource leaks and unexpected behavior.
+*
+*  Notes:
+*     If the specified timer does not exist, the function returns .F. (FALSE).
+*
+*/
 HB_FUNC( KILLTIMER )
 {
    hb_retl(
       KillTimer(
-         hmg_par_raw_HWND(1),  // Window handle associated with the timer
-         hmg_par_UINT(2)       // Timer ID to destroy
+         hmg_par_raw_HWND( 1 ),  // Window handle associated with the timer
+         hmg_par_UINT( 2 )       // Timer ID to destroy
       ) != 0
    );
 }

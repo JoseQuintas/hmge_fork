@@ -2,13 +2,19 @@
  * MINIGUI - Harbour Win32 GUI library Demo
  *
  * Copyright 2016 Grigory Filatov <gfilatov@inbox.ru>
-*/
+ */
 
 #include "minigui.ch"
 #include "Selector.ch"
 
+*------------------------------------------------------------------------------*
 PROCEDURE Main()
-
+/*
+ *  Main procedure of the application.
+ *  This procedure defines the main window of the application, sets its properties (size, title),
+ *  and defines the main menu. It also registers the ActiveX control when the window is initialized
+ *  and unregisters it when the window is released.
+ */
    DEFINE WINDOW Form_1 ;
          AT 0, 0 ;
          WIDTH 334 ;
@@ -38,6 +44,11 @@ RETURN
 
 *------------------------------------------------------------------------------*
 STATIC PROCEDURE REPORT()
+/*
+ *  Generates and displays a simple report using the CatchysoftReport ActiveX control.
+ *  This procedure creates an instance of the ActiveX control, initializes the report,
+ *  defines the columns, adds data rows, sets a summary, and displays the report in print preview.
+ */
 *------------------------------------------------------------------------------*
    LOCAL i, SUM
    LOCAL oreport := CreateObject( "CatchysoftReport.Report" )
@@ -72,6 +83,12 @@ RETURN
 
 *------------------------------------------------------------------------------*
 STATIC PROCEDURE REPORT2()
+/*
+ *  Generates and displays a more complex report using the CatchysoftReport ActiveX control.
+ *  This procedure reads data from a database table ("country"), groups it by continent,
+ *  calculates totals for area and population for each continent, and displays the report.
+ *  It also calculates and displays the overall totals for area and population.
+ */
 *------------------------------------------------------------------------------*
    LOCAL i, total1, total2, aContinent := {}
    LOCAL oreport := CreateObject( "CatchysoftReport.Report" )
@@ -170,6 +187,12 @@ RETURN
 
 *------------------------------------------------------------------------------*
 PROCEDURE RegActiveX()
+/*
+ *  Registers the CatchysoftReport ActiveX control.
+ *  This procedure checks if the CatchysoftReport.dll file exists in the startup folder.
+ *  If the file exists, it executes the regsvr32 command to register the ActiveX control.
+ *  This allows the application to use the ActiveX control. The /s parameter makes the registration silent.
+ */
 *------------------------------------------------------------------------------*
 
    IF File( GetStartUpFolder() + '\CatchysoftReport.dll' )
@@ -180,6 +203,12 @@ RETURN
 
 *------------------------------------------------------------------------------*
 PROCEDURE UnRegActiveX()
+/*
+ *  Unregisters the CatchysoftReport ActiveX control.
+ *  This procedure checks if the CatchysoftReport.dll file exists in the startup folder.
+ *  If the file exists, it executes the regsvr32 command with the /u parameter to unregister the ActiveX control.
+ *  This is typically done when the application is closed or uninstalled. The /s parameter makes the unregistration silent.
+ */
 *------------------------------------------------------------------------------*
 
    IF File( GetStartUpFolder() + '\CatchysoftReport.dll' )

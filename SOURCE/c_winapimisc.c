@@ -43,7 +43,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
 #if defined( _MSC_VER )
@@ -93,6 +93,18 @@ BOOL     SysRefresh( void );
 // Minigui Resources control system
 void     RegisterResource( HANDLE hResource, LPCSTR szType );
 
+/*
+   wapi_GetProcAddress
+
+   Retrieves the address of an exported function or variable from the specified DLL.
+
+   Parameters:
+     hModule: A handle to the DLL module.
+     lpProcName: The name of the function or variable, or the function's ordinal value.
+
+   Returns:
+     The address of the exported function or variable, or NULL if the function fails.
+*/
 HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName )
 {
    FARPROC pProc;
@@ -102,10 +114,20 @@ HB_PTRUINT wapi_GetProcAddress( HMODULE hModule, LPCSTR lpProcName )
 }
 
 /*
-   WaitRun function for Minigui With Pipe redirection
-   Author: Luiz Rafael Culik Guimaraes <culikr@uol.com.br>
-   Parameters WaitRunPipe(cCommand,nShowWindow,cFile)
- */
+   WAITRUNPIPE
+
+   Executes a command in a separate process and redirects its standard output and standard error to a file.
+
+   This function is useful for running console applications and capturing their output for later analysis or display.
+
+   Parameters:
+     cCommand: The command line to execute.
+     nShowWindow: The show window flag to pass to CreateProcess (e.g., SW_SHOWNORMAL, SW_HIDE).
+     cFile: The name of the file to which the output will be written.
+
+   Returns:
+     None.  The function returns -1 if an error occurs during pipe creation or process execution.
+*/
 HB_FUNC( WAITRUNPIPE )
 {
    STARTUPINFO          StartupInfo;
@@ -210,6 +232,17 @@ HB_FUNC( WAITRUNPIPE )
    hb_xfree( Data );
 }
 
+/*
+   COPYRTFTOCLIPBOARD
+
+   Copies an RTF (Rich Text Format) string to the Windows clipboard.
+
+   Parameters:
+     cRtfText: The RTF string to copy to the clipboard.
+
+   Returns:
+     None.
+*/
 HB_FUNC( COPYRTFTOCLIPBOARD ) // CopyRtfToClipboard(cRtfText) store cRTFText in Windows clipboard
 {
    HGLOBAL     hglbCopy;
@@ -244,6 +277,18 @@ HB_FUNC( COPYRTFTOCLIPBOARD ) // CopyRtfToClipboard(cRtfText) store cRTFText in 
    CloseClipboard();
 }
 
+/*
+   COPYTOCLIPBOARD
+
+   Copies a text string to the Windows clipboard.
+
+   Parameters:
+     cText: The text string to copy to the clipboard.
+     nFormat: (Optional) The clipboard format. Defaults to CF_TEXT if not provided.
+
+   Returns:
+     None.
+*/
 HB_FUNC( COPYTOCLIPBOARD ) // CopyToClipboard(cText) store cText in Windows clipboard
 {
    HGLOBAL     hglbCopy;
@@ -275,6 +320,17 @@ HB_FUNC( COPYTOCLIPBOARD ) // CopyToClipboard(cText) store cText in Windows clip
    CloseClipboard();
 }
 
+/*
+   RETRIEVETEXTFROMCLIPBOARD
+
+   Retrieves text from the Windows clipboard.
+
+   Parameters:
+     None.
+
+   Returns:
+     The text string from the clipboard, or NULL if the clipboard is empty or does not contain text.
+*/
 HB_FUNC( RETRIEVETEXTFROMCLIPBOARD )
 {
    HGLOBAL  hClipMem;
@@ -309,6 +365,17 @@ HB_FUNC( RETRIEVETEXTFROMCLIPBOARD )
    }
 }
 
+/*
+   CLEARCLIPBOARD
+
+   Clears the contents of the Windows clipboard.
+
+   Parameters:
+     hWnd: The handle of the window to associate with the clipboard operation.
+
+   Returns:
+     TRUE if the clipboard was successfully cleared, FALSE otherwise.
+*/
 HB_FUNC( CLEARCLIPBOARD )
 {
    if( OpenClipboard( hmg_par_raw_HWND( 1 ) ) )
@@ -323,31 +390,98 @@ HB_FUNC( CLEARCLIPBOARD )
    }
 }
 
+/*
+   GETBLUE
+
+   Extracts the blue component from a COLORREF value.
+
+   Parameters:
+     color: The COLORREF value.
+
+   Returns:
+     The blue component (0-255).
+*/
 HB_FUNC( GETBLUE )
 {
    hmg_ret_UINT( GetBValue( hmg_par_COLORREF( 1 ) ) );
 }
 
+/*
+   GETRED
+
+   Extracts the red component from a COLORREF value.
+
+   Parameters:
+     color: The COLORREF value.
+
+   Returns:
+     The red component (0-255).
+*/
 HB_FUNC( GETRED )
 {
    hmg_ret_UINT( GetRValue( hmg_par_COLORREF( 1 ) ) );
 }
 
+/*
+   GETGREEN
+
+   Extracts the green component from a COLORREF value.
+
+   Parameters:
+     color: The COLORREF value.
+
+   Returns:
+     The green component (0-255).
+*/
 HB_FUNC( GETGREEN )
 {
    hmg_ret_UINT( GetGValue( hmg_par_COLORREF( 1 ) ) );
 }
 
+/*
+   GETKEYSTATE
+
+   Retrieves the status of a specified virtual key.
+
+   Parameters:
+     nVirtKey: The virtual key code.
+
+   Returns:
+     The key state. The high-order bit is 1 if the key is down, 0 if it is up.
+     The low-order bit is 1 if the key is toggled.
+*/
 HB_FUNC( GETKEYSTATE )
 {
    hmg_ret_NI( GetKeyState( hb_parni( 1 ) ) );
 }
 
+/*
+   GETASYNCKEYSTATE
+
+   Retrieves the status of a specified virtual key asynchronously.
+
+   Parameters:
+     nVirtKey: The virtual key code.
+
+   Returns:
+     The key state. The high-order bit is 1 if the key is down, 0 if it is up.
+*/
 HB_FUNC( GETASYNCKEYSTATE )
 {
    hmg_ret_NI( GetAsyncKeyState( hb_parni( 1 ) ) );
 }
 
+/*
+   HMG_KEYBOARDCLEARBUFFER
+
+   Clears the keyboard buffer by removing all pending keyboard messages.
+
+   Parameters:
+     None.
+
+   Returns:
+     None.
+*/
 HB_FUNC( HMG_KEYBOARDCLEARBUFFER )
 {
    MSG   Msg;
@@ -355,6 +489,17 @@ HB_FUNC( HMG_KEYBOARDCLEARBUFFER )
    while( PeekMessage( &Msg, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE ) );
 }
 
+/*
+   HMG_MOUSECLEARBUFFER
+
+   Clears the mouse buffer by removing all pending mouse messages.
+
+   Parameters:
+     None.
+
+   Returns:
+     None.
+*/
 HB_FUNC( HMG_MOUSECLEARBUFFER )
 {
    MSG   Msg;
@@ -368,6 +513,24 @@ HB_FUNC( HMG_MOUSECLEARBUFFER )
 #ifndef USER_TIMER_MAXIMUM
 #define USER_TIMER_MAXIMUM 0x7FFFFFFF
 #endif
+
+/*
+   INKEYGUI
+
+   Waits for a key press or a specified time interval in a GUI environment.
+
+   This function provides a way to pause execution and wait for user input (key press or mouse click)
+   or for a timer to expire.  It's designed to be used in GUI applications where the standard
+   INKEY() function might not work correctly due to the message loop.
+
+   Parameters:
+     nElapse: (Optional) The time interval to wait in milliseconds. If 0, waits indefinitely.
+              Defaults to USER_TIMER_MINIMUM (10ms) if not specified.
+
+   Returns:
+     The virtual key code of the key that was pressed, or 0 if the timer expired.
+     Returns K_LBUTTONDOWN or K_RBUTTONDOWN if a left or right mouse button was clicked, respectively.
+*/
 HB_FUNC( INKEYGUI )
 {
    UINT     uElapse = hb_parnidef( 1, USER_TIMER_MINIMUM );
@@ -428,27 +591,83 @@ HB_FUNC( INKEYGUI )
    hb_retns( uRet );
 }
 
+/*
+   GETDC
+
+   Retrieves a device context (DC) for a window.
+
+   Parameters:
+     hWnd: The handle of the window.
+
+   Returns:
+     The handle of the device context.
+*/
 HB_FUNC( GETDC )
 {
    hmg_ret_raw_HDC( GetDC( hmg_par_raw_HWND( 1 ) ) );
 }
 
+/*
+   RELEASEDC
+
+   Releases a device context (DC), making it available for other applications to use.
+
+   Parameters:
+     hWnd: The handle of the window.
+     hDC: The handle of the device context.
+
+   Returns:
+     TRUE if the DC was successfully released, FALSE otherwise.
+*/
 HB_FUNC( RELEASEDC )
 {
    hb_retl( ReleaseDC( hmg_par_raw_HWND( 1 ), hmg_par_raw_HDC( 2 ) ) );
 }
 
+/*
+   HIWORD
+
+   Extracts the high-order word from a DWORD value.
+
+   Parameters:
+     dwValue: The DWORD value.
+
+   Returns:
+     The high-order word.
+*/
 HB_FUNC( HIWORD )
 {
    hmg_ret_WORD( HIWORD( hmg_par_DWORD( 1 ) ) );
 }
 
+/*
+   LOWORD
+
+   Extracts the low-order word from a DWORD value.
+
+   Parameters:
+     dwValue: The DWORD value.
+
+   Returns:
+     The low-order word.
+*/
 HB_FUNC( LOWORD )
 {
    hmg_ret_WORD( LOWORD( hmg_par_DWORD( 1 ) ) );
 }
 
-HB_FUNC( C_GETSPECIALFOLDER ) // Contributed By Ryszard Ryüko
+/*
+   C_GETSPECIALFOLDER
+
+   Retrieves the path of a special folder (e.g., My Documents, Program Files).
+
+   Parameters:
+     nFolder: The CSIDL value that identifies the special folder.
+
+   Returns:
+     The path of the special folder.
+*/
+HB_FUNC( C_GETSPECIALFOLDER ) // Contributed By Ryszard Ry ko
 {
 #ifdef UNICODE
    LPSTR          pStr;
@@ -472,9 +691,19 @@ HB_FUNC( C_GETSPECIALFOLDER ) // Contributed By Ryszard Ryüko
 #ifdef __WIN98__
 
 /*
-   Based Upon Code Contributed By Jacek Kubica <kubica@wssl.wroc.pl>
-   Updated by Vailton Renato <vailtom@gmail.com>
- */
+   C_GETDLLSPECIALFOLDER
+
+   Retrieves the path of a special folder using SHGetFolderPath from SHFolder.dll.
+
+   This function is specifically designed for older systems (like Windows 98) where
+   SHGetFolderPath is not directly available in the standard Shell API.
+
+   Parameters:
+     nFolder: The CSIDL value that identifies the special folder.
+
+   Returns:
+     The path of the special folder, or an empty string if the function fails.
+*/
 HB_FUNC( C_GETDLLSPECIALFOLDER )
 {
    TCHAR    szPath[MAX_PATH];
@@ -504,6 +733,17 @@ HB_FUNC( C_GETDLLSPECIALFOLDER )
 // Memory Management Functions
 typedef BOOL ( WINAPI *GetPhysicallyInstalledSystemMemory_ptr ) ( ULONGLONG * );
 
+/*
+   GETPHYSICALLYINSTALLEDSYSTEMMEMORY
+
+   Retrieves the amount of physically installed system memory in kilobytes.
+
+   Parameters:
+     None.
+
+   Returns:
+     The amount of physically installed system memory in kilobytes, or 0 if the function fails.
+*/
 HB_FUNC( GETPHYSICALLYINSTALLEDSYSTEMMEMORY )
 {
    HMODULE  hDll = GetModuleHandle( TEXT( "kernel32.dll" ) );
@@ -533,6 +773,23 @@ HB_FUNC( GETPHYSICALLYINSTALLEDSYSTEMMEMORY )
 typedef BOOL ( WINAPI *GlobalMemoryStatusEx_ptr ) ( MEMORYSTATUSEX * );
 #define DIV ( 1024 * 1024 )
 
+/*
+   MEMORYSTATUS
+
+   Retrieves information about the system's current memory usage.
+
+   Parameters:
+     nInfoType: An integer specifying the type of memory information to retrieve:
+       1: Total physical memory (in MB).
+       2: Available physical memory (in MB).
+       3: Total page file size (in MB).
+       4: Available page file size (in MB).
+       5: Total virtual memory (in MB).
+       6: Available virtual memory (in MB).
+
+   Returns:
+     The requested memory information in megabytes (MB).
+*/
 HB_FUNC( MEMORYSTATUS )
 {
    HMODULE  hDll = GetModuleHandle( TEXT( "kernel32.dll" ) );
@@ -616,6 +873,20 @@ HB_FUNC( MEMORYSTATUS )
    }
 }
 
+/*
+   C_SHELLABOUT
+
+   Displays the ShellAbout dialog box.
+
+   Parameters:
+     hWnd: The handle of the parent window.
+     szApp: The application name.
+     szOtherStuff: Additional information to display in the dialog box.
+     hIcon: The handle of the icon to display in the dialog box.
+
+   Returns:
+     TRUE if the function succeeds, FALSE otherwise.
+*/
 HB_FUNC( C_SHELLABOUT )
 {
 #ifndef UNICODE
@@ -632,6 +903,19 @@ HB_FUNC( C_SHELLABOUT )
 #endif
 }
 
+/*
+   PAINTBKGND
+
+   Paints the background of a window with a specified color or the default button face color.
+
+   Parameters:
+     hWnd: The handle of the window.
+     aColor: (Optional) An array containing the RGB color values (e.g., {255, 0, 0} for red).
+             If not provided, the background is painted with the default button face color.
+
+   Returns:
+     The handle of the brush used to paint the background.
+*/
 HB_FUNC( PAINTBKGND )
 {
    HWND     hwnd;
@@ -661,7 +945,17 @@ HB_FUNC( PAINTBKGND )
    hmg_ret_raw_HBRUSH( hBrush );
 }
 
-/* Functions Contributed  By Luiz Rafael Culik Guimaraes( culikr@uol.com.br) */
+/*
+   GETWINDOWSDIR
+
+   Retrieves the path of the Windows directory.
+
+   Parameters:
+     None.
+
+   Returns:
+     The path of the Windows directory.
+*/
 HB_FUNC( GETWINDOWSDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
@@ -680,6 +974,17 @@ HB_FUNC( GETWINDOWSDIR )
 #endif
 }
 
+/*
+   GETSYSTEMDIR
+
+   Retrieves the path of the system directory.
+
+   Parameters:
+     None.
+
+   Returns:
+     The path of the system directory.
+*/
 HB_FUNC( GETSYSTEMDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
@@ -698,6 +1003,17 @@ HB_FUNC( GETSYSTEMDIR )
 #endif
 }
 
+/*
+   GETTEMPDIR
+
+   Retrieves the path of the temporary directory.
+
+   Parameters:
+     None.
+
+   Returns:
+     The path of the temporary directory.
+*/
 HB_FUNC( GETTEMPDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
@@ -716,30 +1032,104 @@ HB_FUNC( GETTEMPDIR )
 #endif
 }
 
+/*
+   POSTMESSAGE
+
+   Posts a message to the message queue of a specified window.
+
+   Parameters:
+     hWnd: The handle of the window.
+     nMessage: The message to post.
+     wParam: Additional message-specific information.
+     lParam: Additional message-specific information.
+
+   Returns:
+     A value indicating the success or failure of the operation.
+*/
 HB_FUNC( POSTMESSAGE )
 {
    hmg_ret_LONG( PostMessage( hmg_par_raw_HWND( 1 ), hmg_par_UINT( 2 ), hmg_par_WPARAM( 3 ), hmg_par_LPARAM( 4 ) ) );
 }
 
+/*
+   DEFWINDOWPROC
+
+   Calls the default window procedure to provide default processing for any window messages that an application does not process.
+   This ensures that standard window behavior is maintained even if the application doesn't explicitly handle a specific message.
+
+   Input Parameters:
+     hWnd: HWND - The handle of the window receiving the message.
+     nMessage: UINT - The message identifier (e.g., WM_PAINT, WM_CLOSE).
+     wParam: WPARAM - Additional message-specific data.  The exact meaning depends on the message.
+     lParam: LPARAM - Additional message-specific data.  The exact meaning depends on the message.
+
+   Return Value:
+     LRESULT - The result of the message processing.  The meaning of the return value depends on the message.
+*/
 HB_FUNC( DEFWINDOWPROC )
 {
    hmg_ret_LRESULT( DefWindowProc( hmg_par_raw_HWND( 1 ), hmg_par_UINT( 2 ), hmg_par_WPARAM( 3 ), hmg_par_LPARAM( 4 ) ) );
 }
 
+/*
+   GETSTOCKOBJECT
+
+   Retrieves a handle to one of the predefined stock objects.  Stock objects are GDI objects (like brushes, pens, fonts) that are commonly used.
+   Using stock objects avoids the need to create and manage these objects manually.
+
+   Input Parameters:
+     nIndex: int - The type of stock object to retrieve.  This is one of the predefined constants like BLACK_BRUSH, WHITE_PEN, etc.
+
+   Return Value:
+     HGDIOBJ - The handle of the stock object.  Returns NULL on failure.
+*/
 HB_FUNC( GETSTOCKOBJECT )
 {
    hmg_ret_raw_HGDIOBJ( GetStockObject( hb_parni( 1 ) ) );
 }
 
+/*
+   GETNEXTDLGTABITEM
+
+   Retrieves a handle to the next control in a dialog box that has the WS_TABSTOP style.
+   This function is used to implement tab-based navigation within a dialog.
+
+   Input Parameters:
+     hWndDlg: HWND - The handle of the dialog box.
+     hWndCtl: HWND - The handle of the control from which to begin the search.
+     bPrevious: BOOL - TRUE to search for the previous control; FALSE to search for the next control.
+
+   Return Value:
+     HWND - The handle of the next (or previous) control with the WS_TABSTOP style.  Returns NULL if no such control is found.
+*/
 HB_FUNC( GETNEXTDLGTABITEM )
 {
    hmg_ret_raw_HWND( GetNextDlgTabItem( hmg_par_raw_HWND( 1 ), hmg_par_raw_HWND( 2 ), hb_parl( 3 ) ) );
 }
 
+// Define function pointer types for dynamic linking of Windows API functions.
 typedef BOOL ( WINAPI *LPFN_ISWOW64PROCESS ) ( HANDLE, PBOOL );
 typedef BOOL ( WINAPI *LPFN_WOW64DISABLEWOW64FSREDIRECTION ) ( PVOID * );
 typedef BOOL ( WINAPI *LPFN_WOW64REVERTWOW64FSREDIRECTION ) ( PVOID );
 
+/*
+   SHELLEXECUTE
+
+   Executes a specified program or opens a file using its associated application.
+   This function provides a high-level way to launch processes and interact with the shell.
+
+   Input Parameters:
+     hWnd: HWND - A handle to a parent window.  This window receives any message boxes that the executed application produces.  Can be NULL.
+     lpOperation: string - The operation to perform (e.g., "open", "print", "explore").  If NULL, the default operation is performed.
+     lpFile: string - The file to execute or open.
+     lpParameters: string - Parameters to pass to the executable.  If NULL, no parameters are passed.
+     lpDirectory: string - The default directory.  If NULL, the current directory is used.
+     nShowCmd: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
+
+   Return Value:
+     HANDLE - If successful, returns a value greater than 32. If an error occurs, the function returns an error value that is less than or equal to 32.
+              Use GetLastError() to get extended error information.
+*/
 HB_FUNC( SHELLEXECUTE )
 {
 #ifndef UNICODE
@@ -761,12 +1151,14 @@ HB_FUNC( SHELLEXECUTE )
    LPFN_WOW64REVERTWOW64FSREDIRECTION  fnRevert;
    HMODULE                             hDll = GetModuleHandle( TEXT( "kernel32.dll" ) );
 
+   // Dynamically load IsWow64Process to check if the process is running under WOW64 (Windows 32-bit on Windows 64-bit).
    fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( hDll, "IsWow64Process" );
    if( NULL != fnIsWow64Process )
    {
       fnIsWow64Process( GetCurrentProcess(), &bIsWow64 );
    }
 
+   // If running under WOW64, disable file system redirection to access the native system directories.
    if( bIsWow64 )
    {
       fnDisable = ( LPFN_WOW64DISABLEWOW64FSREDIRECTION ) wapi_GetProcAddress( hDll, "Wow64DisableWow64FsRedirection" );
@@ -779,7 +1171,7 @@ HB_FUNC( SHELLEXECUTE )
       }
    }
 
-   CoInitialize( NULL );
+   CoInitialize( NULL ); // Initialize COM library for ShellExecute
 
    hmg_ret_raw_HANDLE
    (
@@ -794,8 +1186,9 @@ HB_FUNC( SHELLEXECUTE )
          )
    );
 
-   hb_idleSleep( 1.0 );
+   hb_idleSleep( 1.0 ); // Introduce a short delay to allow the launched process to initialize.
 
+   // If file system redirection was disabled, restore it.
    if( bRestore )
    {
       fnRevert = ( LPFN_WOW64REVERTWOW64FSREDIRECTION ) wapi_GetProcAddress( hDll, "Wow64RevertWow64FsRedirection" );
@@ -813,6 +1206,23 @@ HB_FUNC( SHELLEXECUTE )
 #endif
 }
 
+/*
+   SHELLEXECUTEEX
+
+   Executes a program using extended parameters, providing more control over the execution process.
+   This function uses the SHELLEXECUTEINFO structure to specify various options.
+
+   Input Parameters:
+     hWnd: HWND - A handle to a parent window.  This window receives any message boxes that the executed application produces.  Can be NULL.
+     lpOperation: string - The operation to perform (e.g., "open", "print", "explore").  If NULL, the default operation is performed.
+     lpFile: string - The file to execute or open.
+     lpParameters: string - Parameters to pass to the executable.  If NULL, no parameters are passed.
+     lpDirectory: string - The default directory.  If NULL, the current directory is used.
+     nShowCmd: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
+
+   Return Value:
+     HANDLE - If successful, returns the process handle of the newly executed process. Returns NULL on failure.
+*/
 HB_FUNC( SHELLEXECUTEEX )
 {
 #ifndef UNICODE
@@ -830,8 +1240,8 @@ HB_FUNC( SHELLEXECUTEEX )
    ZeroMemory( &SHExecInfo, sizeof( SHExecInfo ) );
 
    SHExecInfo.cbSize = sizeof( SHExecInfo );
-   SHExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-   SHExecInfo.hwnd = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 );
+   SHExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS; // Request the process handle to be returned.
+   SHExecInfo.hwnd = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 ); // Use active window if hWnd is NIL
    SHExecInfo.lpVerb = HB_ISNIL( 2 ) ? NULL : lpOperation;
    SHExecInfo.lpFile = lpFile;
    SHExecInfo.lpParameters = HB_ISNIL( 4 ) ? NULL : lpParameters;
@@ -840,11 +1250,11 @@ HB_FUNC( SHELLEXECUTEEX )
 
    if( ShellExecuteEx( &SHExecInfo ) )
    {
-      hmg_ret_raw_HWND( SHExecInfo.hProcess );
+      hmg_ret_raw_HWND( SHExecInfo.hProcess ); // Return the process handle.
    }
    else
    {
-      hmg_ret_raw_HWND( NULL );
+      hmg_ret_raw_HWND( NULL ); // Return NULL on failure.
    }
 
 #ifdef UNICODE
@@ -855,6 +1265,19 @@ HB_FUNC( SHELLEXECUTEEX )
 #endif
 }
 
+/*
+   WAITRUN
+
+   Executes a command line and waits for the process to terminate.
+   This function is useful for running external programs and ensuring they complete before continuing.
+
+   Input Parameters:
+     lpCommandLine: string - The command line to execute.
+     nShowWindow: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
+
+   Return Value:
+     DWORD - The exit code of the process.  Returns -1 if the process could not be created.
+*/
 HB_FUNC( WAITRUN )
 {
    DWORD                dwExitCode;
@@ -876,6 +1299,7 @@ HB_FUNC( WAITRUN )
 
    stInfo.wShowWindow = hmg_par_WORD( 2 );
 
+   // Create the process with a new console and normal priority.
    bResult = CreateProcess( NULL, lpCommandLine, NULL, NULL, TRUE, CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS, NULL, NULL, &stInfo, &prInfo );
 
 #ifdef UNICODE
@@ -883,21 +1307,36 @@ HB_FUNC( WAITRUN )
 #endif
    if( !bResult )
    {
-      hb_retni( -1 );
+      hb_retni( -1 ); // Return -1 if process creation failed.
       return;
    }
 
-   WaitForSingleObject( prInfo.hProcess, INFINITE );
+   WaitForSingleObject( prInfo.hProcess, INFINITE ); // Wait indefinitely for the process to terminate.
 
-   GetExitCodeProcess( prInfo.hProcess, &dwExitCode );
+   GetExitCodeProcess( prInfo.hProcess, &dwExitCode ); // Get the exit code of the process.
 
-   CloseHandle( prInfo.hThread );
-   CloseHandle( prInfo.hProcess );
+   CloseHandle( prInfo.hThread ); // Close the thread handle.
+   CloseHandle( prInfo.hProcess ); // Close the process handle.
 
-   hmg_ret_DWORD( dwExitCode );
+   hmg_ret_DWORD( dwExitCode ); // Return the exit code.
 }
 
-/* WaitRunTerm contributed by Kevin Carmody (i@kevincarmody.com) 2007.11.16 */
+/*
+   WAITRUNTERM
+
+   Executes a command line and waits for the process to terminate, allowing for termination via a callback block.
+   This function provides a mechanism to monitor the process and terminate it if necessary.
+
+   Input Parameters:
+     lpCommandLine: string - The command line to execute.
+     lpCurrentDirectory: string - The current directory for the process.
+     nShowWindow: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
+     pWaitProc: block - A code block to execute while waiting for the process to terminate.  The block should return .T. to continue waiting, .F. to terminate the process.
+     ulWaitMsec: numeric - The number of milliseconds to wait before executing the callback block.
+
+   Return Value:
+     DWORD - The exit code of the process.  Returns -2 if the process could not be created, -1 if the process was terminated by the callback.
+*/
 HB_FUNC( WAITRUNTERM )
 {
 #ifndef UNICODE
@@ -908,7 +1347,7 @@ HB_FUNC( WAITRUNTERM )
    LPCWSTR              lpCurrentDirectory = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
    PHB_ITEM             pWaitProc = hb_param( 4, HB_IT_BLOCK );
-   ULONG                ulWaitMsec = ( HB_ISNIL( 5 ) ? 2000 : hb_parnl( 5 ) );
+   ULONG                ulWaitMsec = ( HB_ISNIL( 5 ) ? 2000 : hb_parnl( 5 ) ); // Default wait time is 2000ms.
    BOOL                 bTerm = FALSE;
    BOOL                 bWait;
    ULONG                ulNoSignal;
@@ -942,7 +1381,7 @@ HB_FUNC( WAITRUNTERM )
 #endif
    if( !bResult )
    {
-      hb_retni( -2 );
+      hb_retni( -2 ); // Return -2 if process creation failed.
       return;
    }
 
@@ -950,71 +1389,120 @@ HB_FUNC( WAITRUNTERM )
    {
       do
       {
-         ulNoSignal = WaitForSingleObject( prInfo.hProcess, ulWaitMsec );
-         if( ulNoSignal )
+         ulNoSignal = WaitForSingleObject( prInfo.hProcess, ulWaitMsec ); // Wait for the process or the timeout.
+         if( ulNoSignal ) // Timeout occurred.
          {
-            hb_evalBlock0( pWaitProc );
-            bWait = hb_parl( -1 );
-            if( !bWait )
+            hb_evalBlock0( pWaitProc ); // Execute the callback block.
+            bWait = hb_parl( -1 ); // Get the return value from the callback block.
+            if( !bWait ) // Callback returned .F., terminate the process.
             {
                if( TerminateProcess( prInfo.hProcess, 0 ) != 0 )
                {
-                  bTerm = TRUE;
+                  bTerm = TRUE; // Process terminated successfully.
                }
                else
                {
-                  bWait = TRUE;
+                  bWait = TRUE; // Termination failed, continue waiting.
                }
             }
          }
          else
          {
-            bWait = FALSE;
+            bWait = FALSE; // Process terminated normally.
          }
       }
       while( bWait );
    }
    else
    {
-      WaitForSingleObject( prInfo.hProcess, INFINITE );
+      WaitForSingleObject( prInfo.hProcess, INFINITE ); // Wait indefinitely if no callback is provided.
    }
 
    if( bTerm )
    {
-      dwExitCode = ( DWORD ) -1;
+      dwExitCode = ( DWORD ) -1; // Set exit code to -1 if terminated by the callback.
    }
    else
    {
-      GetExitCodeProcess( prInfo.hProcess, &dwExitCode );
+      GetExitCodeProcess( prInfo.hProcess, &dwExitCode ); // Get the exit code of the process.
    }
 
-   CloseHandle( prInfo.hThread );
-   CloseHandle( prInfo.hProcess );
-   hmg_ret_DWORD( dwExitCode );
+   CloseHandle( prInfo.hThread ); // Close the thread handle.
+   CloseHandle( prInfo.hProcess ); // Close the process handle.
+   hmg_ret_DWORD( dwExitCode ); // Return the exit code.
 }
 
+/*
+   ISEXERUNNING
+
+   Checks if an executable is already running by attempting to create a named mutex.
+   If the mutex already exists, it indicates that the executable is running.
+
+   Input Parameters:
+     cExeNameCaseSensitive: string - The name of the executable (case-sensitive).  This is used as the name of the mutex.
+
+   Return Value:
+     BOOL - TRUE if the executable is already running, FALSE otherwise.
+*/
 HB_FUNC( ISEXERUNNING ) // ( cExeNameCaseSensitive ) --> lResult
 {
-   HANDLE   hMutex = CreateMutex( NULL, FALSE, ( LPTSTR ) hb_parc( 1 ) );
+   HANDLE   hMutex = CreateMutex( NULL, FALSE, ( LPTSTR ) hb_parc( 1 ) ); // Create a named mutex.
 
-   hb_retl( GetLastError() == ERROR_ALREADY_EXISTS );
+   hb_retl( GetLastError() == ERROR_ALREADY_EXISTS ); // Check if the mutex already exists.
 
    if( hMutex != NULL )
    {
-      ReleaseMutex( hMutex );
+      ReleaseMutex( hMutex ); // Release the mutex if it was successfully created.
    }
 }
 
+/*
+   SETSCROLLPOS
+
+   Sets the position of the scroll box (thumb) in the specified scroll bar.
+
+   Input Parameters:
+     hWnd: HWND - Handle to the window containing the scroll bar.
+     nBar: int - Specifies the scroll bar to be set. Can be SB_HORZ or SB_VERT.
+     nPos: int - Specifies the new position of the scroll box.
+     bRedraw: BOOL - Specifies whether the scroll bar should be redrawn to reflect the new position.
+
+   Return Value:
+     int - The previous position of the scroll box.
+*/
 HB_FUNC( SETSCROLLPOS )
 {
    hmg_ret_NINT( SetScrollPos( hmg_par_raw_HWND( 1 ), hb_parni( 2 ), hb_parni( 3 ), hb_parl( 4 ) ) );
 }
 
+/*
+   GETLASTERROR
+
+   Retrieves the calling thread's last-error code value.
+   This function is useful for determining the cause of a failure in a Windows API function.
+
+   Input Parameters:
+     None
+
+   Return Value:
+     DWORD - The last-error code value.
+*/
 HB_FUNC( GETLASTERROR )
 {
    hmg_ret_DWORD( GetLastError() );
 }
 
+/*
+   CREATEFOLDER
+
+   Creates a new directory.
+
+   Input Parameters:
+     lpPathName: string - The path of the directory to create.
+
+   Return Value:
+     BOOL - TRUE if the directory was created successfully, FALSE otherwise.
+*/
 HB_FUNC( CREATEFOLDER )
 {
 #ifndef UNICODE
@@ -1022,12 +1510,23 @@ HB_FUNC( CREATEFOLDER )
 #else
    LPCWSTR  lpPathName = AnsiToWide( hb_parc( 1 ) );
 #endif
-   hb_retl( CreateDirectory( lpPathName, NULL ) );
+   hb_retl( CreateDirectory( lpPathName, NULL ) ); // Create the directory.
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpPathName );
 #endif
 }
 
+/*
+   SETCURRENTFOLDER
+
+   Sets the current directory for the current process.
+
+   Input Parameters:
+     lpPathName: string - The path of the directory to set as the current directory.
+
+   Return Value:
+     BOOL - TRUE if the current directory was set successfully, FALSE otherwise.
+*/
 HB_FUNC( SETCURRENTFOLDER )
 {
 #ifndef UNICODE
@@ -1035,12 +1534,23 @@ HB_FUNC( SETCURRENTFOLDER )
 #else
    LPCWSTR  lpPathName = AnsiToWide( hb_parc( 1 ) );
 #endif
-   hb_retl( SetCurrentDirectory( lpPathName ) );
+   hb_retl( SetCurrentDirectory( lpPathName ) ); // Set the current directory.
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpPathName );
 #endif
 }
 
+/*
+   REMOVEFOLDER
+
+   Deletes an existing directory.
+
+   Input Parameters:
+     lpPathName: string - The path of the directory to delete.
+
+   Return Value:
+     BOOL - TRUE if the directory was deleted successfully, FALSE otherwise.
+*/
 HB_FUNC( REMOVEFOLDER )
 {
 #ifndef UNICODE
@@ -1048,12 +1558,23 @@ HB_FUNC( REMOVEFOLDER )
 #else
    LPCWSTR  lpPathName = AnsiToWide( hb_parc( 1 ) );
 #endif
-   hb_retl( RemoveDirectory( lpPathName ) );
+   hb_retl( RemoveDirectory( lpPathName ) ); // Delete the directory.
 #ifdef UNICODE
    hb_xfree( ( TCHAR * ) lpPathName );
 #endif
 }
 
+/*
+   GETCURRENTFOLDER
+
+   Retrieves the current directory for the current process.
+
+   Input Parameters:
+     None
+
+   Return Value:
+     string - The path of the current directory.
+*/
 HB_FUNC( GETCURRENTFOLDER )
 {
    TCHAR Path[MAX_PATH + 1] = { 0 };
@@ -1061,54 +1582,114 @@ HB_FUNC( GETCURRENTFOLDER )
 #ifdef UNICODE
    LPSTR pStr;
 #endif
-   GetCurrentDirectory( MAX_PATH, Path );
+   GetCurrentDirectory( MAX_PATH, Path ); // Get the current directory.
 #ifndef UNICODE
-   hb_retc( Path );
+   hb_retc( Path ); // Return the path as a string.
 #else
-   pStr = WideToAnsi( Path );
-   hb_retc( pStr );
-   hb_xfree( pStr );
+   pStr = WideToAnsi( Path ); // Convert the wide string to an ANSI string.
+   hb_retc( pStr ); // Return the ANSI string.
+   hb_xfree( pStr ); // Free the allocated memory.
 #endif
 }
 
+/*
+   CREATESOLIDBRUSH
+
+   Creates a solid-color brush.  A brush is a GDI object used to fill the interior of shapes.
+
+   Input Parameters:
+     nRed: int - The red component of the color (0-255).
+     nGreen: int - The green component of the color (0-255).
+     nBlue: int - The blue component of the color (0-255).
+
+   Return Value:
+     HBRUSH - The handle of the newly created brush.  Returns NULL on failure.
+*/
 HB_FUNC( CREATESOLIDBRUSH )
 {
-   HBRUSH   hBrush = CreateSolidBrush( RGB( hb_parni( 1 ), hb_parni( 2 ), hb_parni( 3 ) ) );
+   HBRUSH   hBrush = CreateSolidBrush( RGB( hb_parni( 1 ), hb_parni( 2 ), hb_parni( 3 ) ) ); // Create the solid brush.
 
-   RegisterResource( hBrush, "BRUSH" );
-   hmg_ret_raw_HBRUSH( hBrush );
+   RegisterResource( hBrush, "BRUSH" ); // Register the brush for resource management.
+   hmg_ret_raw_HBRUSH( hBrush ); // Return the brush handle.
 }
 
+/*
+   SETTEXTCOLOR
+
+   Sets the text color for the specified device context.
+
+   Input Parameters:
+     hDC: HDC - The handle of the device context.
+     nRed: int - The red component of the color (0-255).
+     nGreen: int - The green component of the color (0-255).
+     nBlue: int - The blue component of the color (0-255).
+
+   Return Value:
+     COLORREF - The previous text color.
+*/
 HB_FUNC( SETTEXTCOLOR )
 {
    hmg_ret_COLORREF( SetTextColor( hmg_par_raw_HDC( 1 ), RGB( hb_parni( 2 ), hb_parni( 3 ), hb_parni( 4 ) ) ) );
 }
 
+/*
+   SETBKCOLOR
+
+   Sets the background color for the specified device context.
+
+   Input Parameters:
+     hDC: HDC - The handle of the device context.
+     nRed: int - The red component of the color (0-255).
+     nGreen: int - The green component of the color (0-255).
+     nBlue: int - The blue component of the color (0-255).
+
+   Return Value:
+     COLORREF - The previous background color.
+*/
 HB_FUNC( SETBKCOLOR )
 {
    hmg_ret_COLORREF( SetBkColor( hmg_par_raw_HDC( 1 ), RGB( hb_parni( 2 ), hb_parni( 3 ), hb_parni( 4 ) ) ) );
 }
 
+/*
+   GETSYSCOLOR
+
+   Retrieves the color of the specified system color element.
+   System color elements are colors used for various parts of the Windows interface (e.g., window background, button face).
+
+   Input Parameters:
+     nIndex: int - The index of the system color element to retrieve.  This is one of the predefined constants like COLOR_WINDOW, COLOR_BTNFACE, etc.
+
+   Return Value:
+     DWORD - The RGB color value of the system color element.
+*/
 HB_FUNC( GETSYSCOLOR )
 {
    hmg_ret_DWORD( GetSysColor( hb_parni( 1 ) ) );
 }
 
-/**************************************************************************************/
-/*                                                                                    */
-/*  This function returns the Windows Version on which the app calling the function   */
-/*  is running.                                                                       */
-/*                                                                                    */
-/*  The return value is an 4-th dimensinal array containing the OS in the first,      */
-/*  the servicepack or the system release number in the second, the build number      */
-/*  in the third and extended OS information in the fourth array element.             */
-/*                                                                                    */
-/**************************************************************************************/
+/*
+   WINVERSION
+
+   Retrieves detailed information about the operating system version.
+   This function provides a more comprehensive way to determine the OS version than GetVersion.
+
+   Input Parameters:
+     None
+
+   Return Value:
+     array - A 4-element array containing the following information:
+       [1]: string - The OS name (e.g., "Windows 10", "Windows Server 2019").
+       [2]: string - The service pack or system release number.
+       [3]: string - The build number.
+       [4]: string - Extended OS information (e.g., "Professional", "Datacenter Edition").
+*/
 HB_FUNC( WINVERSION )
 {
 #if defined( __BORLANDC__ )
-#define VER_SUITE_PERSONAL 0x00000200
-#define VER_SUITE_BLADE    0x00000400
+   // These constants are specific to Borland C++ and define suite masks for OS version identification.
+   #define VER_SUITE_PERSONAL 0x00000200 // Indicates Windows Personal Edition
+   #define VER_SUITE_BLADE    0x00000400 // Indicates Windows Web Edition (Blade Server)
 #endif
 
    // Struct for OS version information and extended OS information
@@ -1126,18 +1707,22 @@ HB_FUNC( WINVERSION )
    LPSTR             pStr; // Pointer for ANSI conversion in Unicode build
 #endif
 
+   // Initialize the OSVERSIONINFOEX structure with zeros.
    ZeroMemory( &osvi, sizeof( OSVERSIONINFOEX ) );
+   // Set the size of the structure.  This is required for GetVersionEx to work correctly.
    osvi.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEX );
 
    // Attempt to get extended version information (OSVERSIONINFOEX)
    bOsVersionInfoEx = GetVersionEx( ( OSVERSIONINFO * ) &osvi );
    if( !bOsVersionInfoEx )
    {
+      // If extended info retrieval fails, try basic version info
       osvi.dwOSVersionInfoSize = sizeof( OSVERSIONINFO );
 
       // If extended info retrieval fails, try basic version info
       if( !GetVersionEx( ( OSVERSIONINFO * ) &osvi ) )
       {
+         // If even basic version info retrieval fails, set the OS name to "Unknown Operating System".
          szVersion = TEXT( "Unknown Operating System" );
       }
    }
@@ -1145,6 +1730,7 @@ HB_FUNC( WINVERSION )
    // Identify OS version and service pack based on version number and platform
    if( szVersion == NULL )
    {
+      // Determine the OS version based on the platform ID.
       switch( osvi.dwPlatformId )
       {
          case VER_PLATFORM_WIN32_NT:
@@ -1297,6 +1883,7 @@ HB_FUNC( WINVERSION )
                DWORD dwBufLen = 80;
                LONG  lRetVal;
 
+               // Open the registry key to get the product type.
                lRetVal = RegOpenKeyEx( HKEY_LOCAL_MACHINE, TEXT( "SYSTEM\\CurrentControlSet\\Control\\ProductOptions" ), 0, KEY_QUERY_VALUE, &hKey );
 
                if( lRetVal != ERROR_SUCCESS )
@@ -1305,6 +1892,7 @@ HB_FUNC( WINVERSION )
                }
                else
                {
+                  // Query the registry value for the product type.
                   lRetVal = RegQueryValueEx( hKey, TEXT( "ProductType" ), NULL, NULL, ( LPBYTE ) szProductType, &dwBufLen );
                   if( ( lRetVal != ERROR_SUCCESS ) || ( dwBufLen > 80 ) )
                   {
@@ -1332,17 +1920,20 @@ HB_FUNC( WINVERSION )
                      szVersionEx = TEXT( "Advanced Server " );
                   }
 
+                  // Concatenate the major and minor version numbers to the OS name.
                   szVersion = lstrcat( szVersion, _itot( osvi.dwMajorVersion, buffer, 10 ) );
                   szVersion = lstrcat( szVersion, TEXT( "." ) );
                   szVersion = lstrcat( szVersion, _itot( osvi.dwMinorVersion, buffer, 10 ) );
                }
             }
 
+            // Check for Service Pack 6a on Windows NT 4.0
             if( osvi.dwMajorVersion == 4 && lstrcmpi( osvi.szCSDVersion, TEXT( "Service Pack 6" ) ) == 0 )
             {
                HKEY  hKey;
                LONG  lRetVal;
 
+               // Check for the Q246009 hotfix to determine if it's Service Pack 6a.
                lRetVal = RegOpenKeyEx( HKEY_LOCAL_MACHINE, TEXT( "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Hotfix\\Q246009" ), 0, KEY_QUERY_VALUE, &hKey );
                if( lRetVal == ERROR_SUCCESS )
                {
@@ -1359,6 +1950,7 @@ HB_FUNC( WINVERSION )
             }
             else
             {
+               // Get the service pack and build number from the OSVERSIONINFOEX structure.
                szServicePack = osvi.szCSDVersion;
                szBuild = _itot( osvi.dwBuildNumber & 0xFFFF, buffer, 10 );
             }
@@ -1416,13 +2008,15 @@ HB_FUNC( WINVERSION )
    }
 
    // Final storage and return of collected OS version details
-   hb_reta( 4 );
+   hb_reta( 4 ); // Create an array with 4 elements to store the OS information.
 #ifndef UNICODE
+   // Store the OS version, service pack, build number, and extended version information in the array (ANSI version).
    HB_STORC( szVersion, -1, 1 );
    HB_STORC( szServicePack, -1, 2 );
    HB_STORC( szBuild, -1, 3 );
    HB_STORC( szVersionEx, -1, 4 );
 #else
+   // Convert the wide character strings to ANSI strings and store them in the array (Unicode version).
    pStr = WideToAnsi( szVersion );
    HB_STORC( pStr, -1, 1 );
    hb_xfree( pStr );
@@ -1439,11 +2033,38 @@ HB_FUNC( WINVERSION )
 }
 
 #if defined( __XHARBOUR__ )
+/*
+   ISEXE64
+
+   Checks if the application is running in 64-bit mode.
+
+   Input Parameters:
+     None
+
+   Return Value:
+     .T. (TRUE) if the application is 64-bit, .F. (FALSE) otherwise.
+*/
 HB_FUNC( ISEXE64 )      // Check if our app is 64 bits
 {
+   // The size of a pointer is 8 bytes in 64-bit mode and 4 bytes in 32-bit mode.
    hb_retl( ( sizeof( void * ) == 8 ) );
 }
 #endif
+
+/*
+   GETDLLVERSION
+
+   Retrieves the version information of a DLL using the DllGetVersion function.
+
+   Input Parameters:
+     1: string - The file name of the DLL.
+
+   Return Value:
+     array - A 3-element array containing the following information:
+       [1]: numeric - The major version number of the DLL.
+       [2]: numeric - The minor version number of the DLL.
+       [3]: numeric - The build number of the DLL.
+*/
 HB_FUNC( GETDLLVERSION )
 {
    HMODULE  hModule;
@@ -1452,25 +2073,32 @@ HB_FUNC( GETDLLVERSION )
    DWORD    dwBuildNumber = 0;
 
 #ifndef UNICODE
-   LPCSTR   lpLibFileName = hb_parc( 1 );
+   LPCSTR   lpLibFileName = hb_parc( 1 ); // Get the DLL file name from the first parameter (ANSI version).
 #else
-   LPCWSTR  lpLibFileName = AnsiToWide( hb_parc( 1 ) );
+   LPCWSTR  lpLibFileName = AnsiToWide( hb_parc( 1 ) ); // Get the DLL file name from the first parameter and convert it to a wide string (Unicode version).
 #endif
+   // Load the specified DLL into memory.
    hModule = LoadLibrary( lpLibFileName );
    if( hModule )
    {
+      // Define a pointer to the DllGetVersion function.
       DLLGETVERSIONPROC fnDllGetVersion;
 
+      // Get the address of the DllGetVersion function from the loaded DLL.
       fnDllGetVersion = ( DLLGETVERSIONPROC ) wapi_GetProcAddress( hModule, "DllGetVersion" );
 
       if( fnDllGetVersion )
       {
+         // Create a DLLVERSIONINFO structure to store the version information.
          DLLVERSIONINFO dvi = { 0 };
 
+         // Set the size of the structure.
          dvi.cbSize = sizeof( dvi );
 
+         // Call the DllGetVersion function to retrieve the version information.
          if( fnDllGetVersion( &dvi ) == S_OK )
          {
+            // Store the major, minor, and build numbers from the DLLVERSIONINFO structure.
             dwMajorVersion = dvi.dwMajorVersion;
             dwMinorVersion = dvi.dwMinorVersion;
             dwBuildNumber = dvi.dwBuildNumber;
@@ -1478,65 +2106,108 @@ HB_FUNC( GETDLLVERSION )
       }
       else
       {
+         // If the DllGetVersion function is not found, display an error message.
          MessageBox( NULL, TEXT( "Cannot get DllGetVersion function." ), TEXT( "DllGetVersion" ), MB_OK | MB_ICONERROR );
       }
 
+      // Free the loaded DLL from memory.
       FreeLibrary( hModule );
    }
 
+   // Create an array with 3 elements to store the version information.
    hb_reta( 3 );
+   // Store the major, minor, and build numbers in the array.
    HB_STORVNL( dwMajorVersion, -1, 1 );
    HB_STORVNL( dwMinorVersion, -1, 2 );
    HB_STORVNL( dwBuildNumber, -1, 3 );
 
 #ifdef UNICODE
+   // Free the allocated memory for the wide string (Unicode version).
    hb_xfree( ( TCHAR * ) lpLibFileName );
 #endif
 }
 
+/*
+   SELECTOBJECT
+
+   Selects an object into a specified device context (DC).
+
+   Input Parameters:
+     1: HDC - Handle to the device context.
+     2: HGDIOBJ - Handle to the object to be selected.
+
+   Return Value:
+     HGDIOBJ - Handle to the previously selected object.  This is important to save so you can restore the DC to its original state.
+*/
 // Jacek Kubica <kubica@wssk.wroc.pl> HMG 1.0 Experimental Build 9a
 HB_FUNC( SELECTOBJECT )
 {
+   // Call the Windows API SelectObject to select the object into the device context.
    hmg_ret_raw_HGDIOBJ( SelectObject( hmg_par_raw_HDC( 1 ), // handle of device context
    hmg_par_raw_HGDIOBJ( 2 ) // handle of object
    ) );
 }
 
+/*
+   FILLRECT
+
+   Fills a rectangle using the specified brush.
+
+   Input Parameters:
+     1: HWND or HDC - Handle to the window or device context. If a HWND is provided, the function obtains the DC.
+     2: array or numeric - Either an array containing the RECT structure (left, top, right, bottom) or the left coordinate of the rectangle.
+     3: numeric (optional) - Top coordinate of the rectangle (if using numeric parameters).
+     4: numeric (optional) - Right coordinate of the rectangle (if using numeric parameters).
+     5: numeric (optional) - Bottom coordinate of the rectangle (if using numeric parameters).
+     6: HBRUSH (optional) - Handle to the brush to be used to fill the rectangle. If an array is passed as the second parameter, this is the third parameter.
+
+   Return Value:
+     NINT - Nonzero if the function is successful, zero otherwise.
+*/
 HB_FUNC( FILLRECT )
 {
    HWND  hWnd = hmg_par_raw_HWND( 1 );
    HDC   hDC;
    BOOL  bDC = FALSE;
 
+   // Check if the first parameter is a valid window handle.
    if( IsWindow( hWnd ) )
    {
+      // If it's a window handle, get the device context for the window.
       hDC = GetDC( hWnd );
-      bDC = TRUE;
+      bDC = TRUE; // Flag to indicate that the DC was obtained from a window.
    }
    else
    {
+      // If it's not a window handle, assume it's a device context handle.
       hDC = hmg_par_raw_HDC( 1 );
    }
 
+   // Verify that the handle is a valid device context.
    if( GetObjectType( ( HGDIOBJ ) hDC ) == OBJ_DC )
    {
       RECT  rc;
       int   iParam = 6;
 
+      // Check if the second parameter is an array representing a RECT structure.
       if( Array2Rect( hb_param( 2, HB_IT_ANY ), &rc ) )
       {
+         // If it's an array, adjust the parameter index for the brush.
          iParam = 3;
       }
       else
       {
+         // If it's not an array, assume it's a set of numeric coordinates.
          rc.left = hb_parni( 2 );
          rc.top = hb_parni( 3 );
          rc.right = hb_parni( 4 );
          rc.bottom = hb_parni( 5 );
       }
 
+      // Call the Windows API FillRect to fill the rectangle with the specified brush.
       hmg_ret_NINT( FillRect( hDC, &rc, hmg_par_raw_HBRUSH( iParam ) ) );
 
+      // If the DC was obtained from a window, release the DC.
       if( bDC )
       {
          ReleaseDC( hWnd, hDC );
@@ -1544,31 +2215,50 @@ HB_FUNC( FILLRECT )
    }
    else
    {
+      // If the handle is not a valid device context, return 0.
       hb_retni( 0 );
    }
 }
 
 #if defined( __MINGW32__ )
+// Disable strict aliasing warning for MinGW compiler.  This is needed because of the type casting used with FARPROC.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif /* __MINGW32__ */
 
 #if ( defined( __POCC__ ) && __POCC__ >= 900 )
+// Define IN and OUT macros for Parameter passing for POCC compiler
 #ifndef _NO_W32_PSEUDO_MODIFIERS
 #define IN
 #define OUT
 #endif
 #endif
+
+/*
+   IsAppHung
+
+   Determines if a window is hung (unresponsive).
+
+   Input Parameters:
+     hWnd: HWND - Handle to the window to check.
+     pbHung: PBOOL - Pointer to a BOOL variable to receive the result.
+
+   Return Value:
+     BOOL - TRUE if the function succeeds, FALSE otherwise.  Use GetLastError() to get the specific error.
+*/
 BOOL IsAppHung( IN HWND hWnd, OUT PBOOL pbHung )
 {
    OSVERSIONINFO  osvi;
    HINSTANCE      hUser;
 
+   // Check if the window handle is valid.
    if( !IsWindow( hWnd ) )
    {
+      // If the window handle is invalid, set the last error and return FALSE.
       return SetLastError( ERROR_INVALID_PARAMETER ), FALSE;
    }
 
+   // Initialize the OSVERSIONINFO structure.
    osvi.dwOSVersionInfoSize = sizeof( osvi );
 
    // detect OS version
@@ -1577,14 +2267,17 @@ BOOL IsAppHung( IN HWND hWnd, OUT PBOOL pbHung )
    // get handle of USER32.DLL
    hUser = GetModuleHandle( TEXT( "user32.dll" ) );
 
+   // Different methods are used to detect hung applications based on the OS version.
    if( osvi.dwPlatformId == VER_PLATFORM_WIN32_NT )
    {
+      // For Windows NT-based systems, use the IsHungAppWindow function.
       BOOL ( WINAPI *_IsHungAppWindow ) ( HWND );
 
       // found the function IsHungAppWindow
       *( FARPROC * ) &_IsHungAppWindow = GetProcAddress( hUser, "IsHungAppWindow" );
       if( _IsHungAppWindow == NULL )
       {
+         // If the IsHungAppWindow function is not found, set the last error and return FALSE.
          return SetLastError( ERROR_PROC_NOT_FOUND ), FALSE;
       }
 
@@ -1593,6 +2286,7 @@ BOOL IsAppHung( IN HWND hWnd, OUT PBOOL pbHung )
    }
    else
    {
+      // For Windows 9x-based systems, use the IsHungThread function.
       DWORD dwThreadId = GetWindowThreadProcessId( hWnd, NULL );
 
       BOOL ( WINAPI *_IsHungThread ) ( DWORD );
@@ -1601,6 +2295,7 @@ BOOL IsAppHung( IN HWND hWnd, OUT PBOOL pbHung )
       *( FARPROC * ) &_IsHungThread = GetProcAddress( hUser, "IsHungThread" );
       if( _IsHungThread == NULL )
       {
+         // If the IsHungThread function is not found, set the last error and return FALSE.
          return SetLastError( ERROR_PROC_NOT_FOUND ), FALSE;
       }
 
@@ -1612,33 +2307,64 @@ BOOL IsAppHung( IN HWND hWnd, OUT PBOOL pbHung )
 }
 
 #if defined( __MINGW32__ )
+// Restore strict aliasing warning for MinGW compiler.
 #pragma GCC diagnostic pop
 #endif \
  \
    /* __MINGW32__ */
+
+/*
+   ISAPPHUNG
+
+   Determines if a window is hung (unresponsive) and returns the result as a logical value.
+
+   Input Parameters:
+     1: HWND - Handle to the window to check.
+
+   Return Value:
+     .T. (TRUE) if the window is hung, .F. (FALSE) otherwise.  Displays a warning message if the process is not found.
+*/
 HB_FUNC( ISAPPHUNG )
 {
    BOOL  bIsHung;
 
+   // Call the IsAppHung function to determine if the window is hung.
    if( IsAppHung( hmg_par_raw_HWND( 1 ), &bIsHung ) )
    {
+      // If the function succeeds, return the result as a logical value.
       hb_retl( bIsHung );
    }
    else
    {
+      // If the function fails, check the last error.
       if( GetLastError() != ERROR_INVALID_PARAMETER )
       {
+         // If the error is not ERROR_INVALID_PARAMETER, display a warning message.
          MessageBox( NULL, TEXT( "Process not found" ), TEXT( "Warning" ), MB_OK | MB_ICONWARNING );
       }
 
+      // Return .F. (FALSE) if the function fails.
       hb_retl( HB_FALSE );
    }
 }
 
 #ifndef PROCESS_QUERY_LIMITED_INFORMATION
+// Define PROCESS_QUERY_LIMITED_INFORMATION if it's not already defined.  This is used for OpenProcess on newer systems.
 #define PROCESS_QUERY_LIMITED_INFORMATION ( 0x1000 )
 #endif
 
+/*
+   EMPTYWORKINGSET
+
+   Removes as many pages as possible from the process working set (clean the working set memory).
+   This operation is useful primarily for testing and tuning.
+
+   Input Parameters:
+     1: DWORD (optional) - The process ID. If not specified, the current process ID is used.
+
+   Return Value:
+     lBoolean - .T. (TRUE) if the function is successful, .F. (FALSE) otherwise.
+*/
 // EmptyWorkingSet( [ ProcessID ] ) ---> lBoolean
 HB_FUNC( EMPTYWORKINGSET )
 {
@@ -1647,50 +2373,87 @@ HB_FUNC( EMPTYWORKINGSET )
    DWORD    ProcessID;
    HANDLE   hProcess;
 
+   // Define a function pointer for the EmptyWorkingSet function.
    typedef BOOL ( WINAPI *Func_EmptyWorkingSet ) ( HANDLE );
 
+   // Static function pointer to avoid loading the library multiple times.
    static Func_EmptyWorkingSet   pEmptyWorkingSet = NULL;
 
+   // Load the Kernel32.dll library and get the address of the K32EmptyWorkingSet function.
    if( pEmptyWorkingSet == NULL )
    {
       HMODULE  hLib = LoadLibrary( TEXT( "Kernel32.dll" ) );
       pEmptyWorkingSet = ( Func_EmptyWorkingSet ) wapi_GetProcAddress( hLib, "K32EmptyWorkingSet" );
    }
 
+   // If K32EmptyWorkingSet is not found in Kernel32.dll, try loading Psapi.dll.
    if( pEmptyWorkingSet == NULL )
    {
       HMODULE  hLib = LoadLibrary( TEXT( "Psapi.dll" ) );
       pEmptyWorkingSet = ( Func_EmptyWorkingSet ) wapi_GetProcAddress( hLib, "K32EmptyWorkingSet" );
    }
 
+   // If the EmptyWorkingSet function is found, call it.
    if( pEmptyWorkingSet != NULL )
    {
+      // Get the process ID from the first parameter, or use the current process ID if no parameter is specified.
       ProcessID = HB_ISNUM( 1 ) ? hmg_par_DWORD( 1 ) : GetCurrentProcessId();
 
+      // Open the process with the necessary permissions.
       hProcess = OpenProcess( PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SET_QUOTA, FALSE, ProcessID );
       if( hProcess != NULL )
       {
+         // Call the EmptyWorkingSet function and return the result as a logical value.
          hb_retl( ( BOOL ) pEmptyWorkingSet( hProcess ) );
 
+         // Close the process handle.
          CloseHandle( hProcess );
       }
       else
       {
+         // Return .F. (FALSE) if the process could not be opened.
          hb_retl( FALSE );
       }
    }
    else
    {
+      // Return .F. (FALSE) if the EmptyWorkingSet function could not be found.
       hb_retl( FALSE );
    }
 }
 
+/*
+   CLEANPROGRAMMEMORY
+
+   Reduces the working set size of the current process to a minimum.
+
+   Input Parameters:
+     None
+
+   Return Value:
+     lBoolean - .T. (TRUE) if the function is successful, .F. (FALSE) otherwise.
+*/
 // Grigory Filatov <gfilatov@gmail.com> HMG 1.1 Experimental Build 10d
 HB_FUNC( CLEANPROGRAMMEMORY )
 {
+   // Call the SetProcessWorkingSetSize function to set the minimum and maximum working set sizes to -1, which effectively trims the working set.
    hb_retl( SetProcessWorkingSetSize( GetCurrentProcess(), ( SIZE_T ) - 1, ( SIZE_T ) - 1 ) );
 }
 
+/*
+   GETCOMPACTPATH
+
+   Converts a long file path to a compact form that fits within a specified width.
+
+   Input Parameters:
+     1: string - The buffer to receive the compact path.
+     2: string - The long file path to compact.
+     3: INT - The maximum number of characters to fit in the output buffer.
+     4: DWORD - Flags that control the compacting process.
+
+   Return Value:
+     INT - The length of the compact path, or 0 if the function fails.
+*/
 // Grigory Filatov <gfilatov@gmail.com> HMG 1.1 Experimental Build 11a
 typedef INT ( WINAPI *_GETCOMPACTPATH ) ( LPTSTR pszOut, LPTSTR pszSrc, INT cchMax, DWORD dwFlags );
 
@@ -1698,301 +2461,467 @@ HB_FUNC( GETCOMPACTPATH )
 {
    HINSTANCE   handle = LoadLibrary( TEXT( "shlwapi.dll" ) );
 
+   // Load the shlwapi.dll library.
    if( handle )
    {
       _GETCOMPACTPATH   pFunc;
+      // Get the address of the PathCompactPathExA function.
       pFunc = ( _GETCOMPACTPATH ) wapi_GetProcAddress( handle, "PathCompactPathExA" );
+      // Call the PathCompactPathExA function and return the result.
       hb_retni( pFunc( ( LPTSTR ) hb_parc( 1 ), ( LPTSTR ) hb_parc( 2 ), hmg_par_INT( 3 ), hmg_par_DWORD( 4 ) ) );
+      // Free the loaded library.
       FreeLibrary( handle );
    }
 }
 
+/*
+   GETSHORTPATHNAME
+
+   Retrieves the short path name of a specified file.
+
+   Parameters:
+     1: cLongPath (STRING) - The long file path.
+
+   Returns:
+     (NUMERIC) - The length of the short path name. Returns 0 if the function fails.
+                 The short path name itself is stored in parameter 2 (passed by reference).
+
+   Purpose:
+     This function is used to obtain the 8.3 short file name representation of a given long file name.
+     This can be useful for compatibility with older systems or applications that do not support long file names.
+*/
 // Jacek Kubica <kubica@wssk.wroc.pl> HMG 1.1 Experimental Build 11a
 HB_FUNC( GETSHORTPATHNAME )
 {
    HB_SIZE  iRet;
 
 #ifndef UNICODE
-   char     buffer[MAX_PATH + 1] = { 0 };
-   LPCSTR   lpszLongPath = hb_parc( 1 );
+   char     buffer[MAX_PATH + 1] = { 0 }; // Buffer to store the short path name. Initialized to empty.
+   LPCSTR   lpszLongPath = hb_parc( 1 );   // Pointer to the long path name passed as parameter 1.
 #else
-   TCHAR    buffer[MAX_PATH + 1] = { 0 };
-   LPCWSTR  lpszLongPath = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPSTR    pStr;
+   TCHAR    buffer[MAX_PATH + 1] = { 0 }; // Buffer to store the short path name (Unicode version). Initialized to empty.
+   LPCWSTR  lpszLongPath = AnsiToWide( ( char * ) hb_parc( 1 ) ); // Convert the ANSI long path to a wide character string.
+   LPSTR    pStr; // Pointer to store the converted ANSI string from the wide character string.
 #endif
-   iRet = GetShortPathName( lpszLongPath, buffer, MAX_PATH );
-   if( iRet < MAX_PATH )
+   iRet = GetShortPathName( lpszLongPath, buffer, MAX_PATH ); // Call the Windows API to get the short path name.
+
+   if( iRet < MAX_PATH ) // Check if the short path name was successfully retrieved and fits within the buffer.
    {
 #ifndef UNICODE
 #ifndef __XHARBOUR__
-      hb_retni( hb_storclen( buffer, ( HB_SIZE ) iRet, 2 ) );
+      hb_retni( hb_storclen( buffer, ( HB_SIZE ) iRet, 2 ) ); // Store the short path name in parameter 2 and return its length.
 #else
-      hb_storclen( buffer, ( HB_SIZE ) iRet, 2 );
-      hb_retni( iRet );
+      hb_storclen( buffer, ( HB_SIZE ) iRet, 2 ); // Store the short path name in parameter 2.
+      hb_retni( iRet ); // Return the length of the short path name.
 #endif
 #else
-      pStr = WideToAnsi( buffer );
-      hb_retni( hb_storclen( pStr, ( HB_SIZE ) iRet, 2 ) );
-      hb_xfree( pStr );
+      pStr = WideToAnsi( buffer ); // Convert the wide character short path name to an ANSI string.
+      hb_retni( hb_storclen( pStr, ( HB_SIZE ) iRet, 2 ) ); // Store the ANSI short path name in parameter 2 and return its length.
+      hb_xfree( pStr ); // Free the memory allocated for the ANSI string.
 #endif
    }
-   else
+   else // If GetShortPathName fails or the buffer is too small.
    {
 #ifndef __XHARBOUR__
-      hb_retni( hb_storc( "", 2 ) );
+      hb_retni( hb_storc( "", 2 ) ); // Store an empty string in parameter 2 and return 0.
 #else
-      hb_storc( "", 2 );
-      hb_retni( 0 );
+      hb_storc( "", 2 ); // Store an empty string in parameter 2.
+      hb_retni( 0 ); // Return 0 to indicate failure.
 #endif
    }
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpszLongPath );
+   hb_xfree( ( TCHAR * ) lpszLongPath ); // Free the memory allocated for the wide character long path name.
 #endif
 }
 
+/*
+   DRAWTEXT
+
+   Draws formatted text in the specified rectangle.
+
+   Parameters:
+     1: hDC (HANDLE) - Handle to the device context.
+     2: cText (STRING) - The text to be drawn.
+     3: nLeft (NUMERIC) - The left coordinate of the rectangle.
+     4: nTop (NUMERIC) - The top coordinate of the rectangle.
+     5: nRight (NUMERIC) - The right coordinate of the rectangle.
+     6: nBottom (NUMERIC) - The bottom coordinate of the rectangle.
+     7: nFormat (NUMERIC) - The formatting options for the text (e.g., DT_CENTER, DT_WORDBREAK).
+
+   Returns:
+     None.
+
+   Purpose:
+     This function provides a way to draw text within a defined rectangular area, with control over formatting options
+     such as alignment, word breaking, and clipping. It uses the Windows API DrawText function.
+*/
 HB_FUNC( DRAWTEXT )
 {
 #ifndef UNICODE
-   LPCSTR   lpchText = hb_parc( 2 );
+   LPCSTR   lpchText = hb_parc( 2 ); // Pointer to the text string (ANSI version).
 #else
-   LPCWSTR  lpchText = AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPCWSTR  lpchText = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Pointer to the text string (Unicode version), converted from ANSI.
 #endif
-   RECT     rc;
+   RECT     rc; // Rectangle structure to define the drawing area.
 
-   rc.left = hb_parni( 3 );
-   rc.top = hb_parni( 4 );
-   rc.right = hb_parni( 5 );
-   rc.bottom = hb_parni( 6 );
+   rc.left = hb_parni( 3 ); // Set the left coordinate of the rectangle.
+   rc.top = hb_parni( 4 ); // Set the top coordinate of the rectangle.
+   rc.right = hb_parni( 5 ); // Set the right coordinate of the rectangle.
+   rc.bottom = hb_parni( 6 ); // Set the bottom coordinate of the rectangle.
 
    DrawText
    (
-      hmg_par_raw_HDC( 1 ),         // device context
-      lpchText,                     // pointer to string
-      ( int ) lstrlen( lpchText ),  // length of  string
-      &rc,              // rectangle
-      hb_parni( 7 )     // draw style
+      hmg_par_raw_HDC( 1 ),         // device context - Handle to the device context obtained from parameter 1.
+      lpchText,                     // pointer to string - Pointer to the text string to be drawn.
+      ( int ) lstrlen( lpchText ),  // length of  string - Length of the text string.
+      &rc,              // rectangle - Pointer to the rectangle structure defining the drawing area.
+      hb_parni( 7 )     // draw style - Formatting options for the text.
    );
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpchText );
+   hb_xfree( ( TCHAR * ) lpchText ); // Free the memory allocated for the wide character text string.
 #endif
 }
 
+/*
+   GETTEXTMETRIC
+
+   Retrieves the text metrics for the current font of the specified device context.
+
+   Parameters:
+     1: hDC (HANDLE) - Handle to the device context.
+
+   Returns:
+     (ARRAY) - An array containing the following text metrics:
+       [1]: tmHeight - The height of characters (ascent + descent).
+       [2]: tmAveCharWidth - The average width of characters.
+       [3]: tmMaxCharWidth - The width of the widest character.
+       [4]: tmAscent - The ascent of characters (units above the base line).
+       [5]: tmDescent - The descent of characters (units below the base line).
+       [6]: tmInternalLeading - The amount of leading inside the bounds set by tmHeight.
+       [7]: tmExternalLeading - The amount of extra leading that the application adds between rows.
+
+   Purpose:
+     This function allows you to obtain detailed information about the current font used in a device context.
+     This information can be used for precise text layout and measurement.
+*/
 HB_FUNC( GETTEXTMETRIC )
 {
-   TEXTMETRIC  tm;
-   PHB_ITEM    aMetr = hb_itemArrayNew( 7 );
+   TEXTMETRIC  tm; // Structure to store the text metrics.
+   PHB_ITEM    aMetr = hb_itemArrayNew( 7 ); // Create a new Harbour array to store the text metrics.
 
-   if( GetTextMetrics( hmg_par_raw_HDC( 1 ), // handle of device context
-   &tm // address of text metrics structure
+   if( GetTextMetrics( hmg_par_raw_HDC( 1 ), // handle of device context - Handle to the device context obtained from parameter 1.
+   &tm // address of text metrics structure - Address of the TEXTMETRIC structure to receive the text metrics.
    ) )
    {
       //tmHeight
       //Specifies the height (ascent + descent) of characters.
-      HB_arraySetNL( aMetr, 1, tm.tmHeight );
+      HB_arraySetNL( aMetr, 1, tm.tmHeight ); // Store the tmHeight value in the array at index 1.
 
       //tmAveCharWidth Specifies the average width of characters in the font
       //(generally defined as the width of the letter x).
       //This value does not include the overhang required for bold or italic characters.
-      HB_arraySetNL( aMetr, 2, tm.tmAveCharWidth );
+      HB_arraySetNL( aMetr, 2, tm.tmAveCharWidth ); // Store the tmAveCharWidth value in the array at index 2.
 
       //tmMaxCharWidth
       //Specifies the width of the widest character in the font.
-      HB_arraySetNL( aMetr, 3, tm.tmMaxCharWidth );
+      HB_arraySetNL( aMetr, 3, tm.tmMaxCharWidth ); // Store the tmMaxCharWidth value in the array at index 3.
 
       //tmAscent
       //Specifies the ascent (units above the base line) of characters.
-      HB_arraySetNL( aMetr, 4, tm.tmAscent );
+      HB_arraySetNL( aMetr, 4, tm.tmAscent ); // Store the tmAscent value in the array at index 4.
 
       //tmDescent
       //Specifies the descent (units below the base line) of characters.
-      HB_arraySetNL( aMetr, 5, tm.tmDescent );
+      HB_arraySetNL( aMetr, 5, tm.tmDescent ); // Store the tmDescent value in the array at index 5.
 
       //tmInternalLeading
       //Specifies the amount of leading (space) inside the bounds set by the tmHeight member.
       //Accent marks and other diacritical characters may occur in this area.
       //The designer may set this member to zero.
-      HB_arraySetNL( aMetr, 6, tm.tmInternalLeading );
+      HB_arraySetNL( aMetr, 6, tm.tmInternalLeading ); // Store the tmInternalLeading value in the array at index 6.
 
       //tmExternalLeading
       //The amount of extra leading (space) that the application adds between rows.
       //Since this area is outside the font, it contains no marks and is not altered by text
       //output calls in either OPAQUE or TRANSPARENT mode.
       //The designer may set this member to zero.
-      HB_arraySetNL( aMetr, 7, tm.tmExternalLeading );
+      HB_arraySetNL( aMetr, 7, tm.tmExternalLeading ); // Store the tmExternalLeading value in the array at index 7.
    }
 
-   hb_itemReturnRelease( aMetr );
+   hb_itemReturnRelease( aMetr ); // Return the array containing the text metrics and release the memory.
 }
 
+/*
+   _GETCLIENTRECT
+
+   Retrieves the coordinates of a window's client area. The client area excludes the window's title bar, borders, and scroll bars.
+
+   Parameters:
+     1: hWnd (HANDLE) - Handle to the window.
+
+   Returns:
+     (ARRAY) - An array containing the coordinates of the client rectangle: {Left, Top, Right, Bottom}.
+               Returns an error if the window handle is invalid.
+
+   Purpose:
+     This function is used to determine the usable area within a window, excluding the window's frame and other non-client elements.
+     This is useful for positioning controls and drawing within the window's content area.
+*/
 HB_FUNC( _GETCLIENTRECT )
 {
-   RECT  rc;
-   HWND  hWnd = hmg_par_raw_HWND( 1 );
+   RECT  rc; // Rectangle structure to store the client area coordinates.
+   HWND  hWnd = hmg_par_raw_HWND( 1 ); // Handle to the window obtained from parameter 1.
 
-   if( IsWindow( hWnd ) )
+   if( IsWindow( hWnd ) ) // Check if the window handle is valid.
    {
-      GetClientRect( hWnd, &rc );
+      GetClientRect( hWnd, &rc ); // Get the client rectangle coordinates of the window.
 
-      hb_itemReturnRelease( Rect2Array( &rc ) );
+      hb_itemReturnRelease( Rect2Array( &rc ) ); // Convert the rectangle structure to a Harbour array and return it.
    }
-   else
+   else // If the window handle is invalid.
    {
-      hb_errRT_BASE_SubstR( EG_ARG, 0, "MiniGUI Err.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) );
+      hb_errRT_BASE_SubstR( EG_ARG, 0, "MiniGUI Err.", HB_ERR_FUNCNAME, 1, hb_paramError( 1 ) ); // Raise a runtime error indicating an invalid argument.
    }
 }
 
-// Grigory Filatov <gfilatov@gmail.com> HMG 1.1 Experimental Build 17d
+/*
+   ISOEMTEXT
+
+   Checks if a string contains OEM characters (characters with ASCII codes between 128 and 168).
+
+   Parameters:
+     1: cString (STRING) - The string to be checked.
+
+   Returns:
+     (LOGICAL) - .T. if the string contains OEM characters, .F. otherwise.
+
+   Purpose:
+     This function is useful for determining if a string contains characters that are specific to a particular OEM code page.
+     This can be important for handling text encoding and display issues.
+*/
 HB_FUNC( ISOEMTEXT )
 {
-   LPBYTE   pString = ( LPBYTE ) hb_parc( 1 );
-   WORD     w = 0, wLen = ( WORD ) hb_parclen( 1 );
-   BOOL     bOem = FALSE;
+   LPBYTE   pString = ( LPBYTE ) hb_parc( 1 ); // Pointer to the string passed as parameter 1.
+   WORD     w = 0, wLen = ( WORD ) hb_parclen( 1 ); // Initialize the loop counter and get the length of the string.
+   BOOL     bOem = FALSE; // Flag to indicate if an OEM character has been found.
 
-   while( w < wLen && !bOem )
+   while( w < wLen && !bOem ) // Iterate through the string until an OEM character is found or the end of the string is reached.
    {
-      bOem = pString[w] >= 128 && pString[w] <= 168;
-      w++;
+      bOem = pString[w] >= 128 && pString[w] <= 168; // Check if the current character is an OEM character.
+      w++; // Increment the loop counter.
    }
 
-   hb_retl( bOem );
+   hb_retl( bOem ); // Return .T. if an OEM character was found, .F. otherwise.
 }
 
 /*
-   Harbour MiniGUI 1.3 Extended (Build 33)
-   added by P.Chornyj
+   GETOBJECTTYPE
 
-   Function GetObjectType()
-   ------------------------
-   The GetObjectType identifies the type of the specified object.
+   Identifies the type of the specified GDI object.
 
-   Syntax
-     GetObjectType( nObject ) --> nType
+   Parameters:
+     1: hGDIObject (HANDLE) - Handle to the GDI object.
 
-   Arguments
-     nObject is identifies the object
+   Returns:
+     (NUMERIC) - A numeric code representing the object type. Possible values include:
+       OBJ_PEN         1
+       OBJ_BRUSH       2
+       OBJ_DC          3
+       OBJ_METADC      4
+       OBJ_PAL         5
+       OBJ_FONT        6
+       OBJ_BITMAP      7
+       OBJ_REGION      8
+       OBJ_METAFILE    9
+       OBJ_MEMDC       10
+       OBJ_EXTPEN      11
+       OBJ_ENHMETADC   12
+       OBJ_ENHMETAFILE 13
+       OBJ_COLORSPACE  14
 
-   Returns
-     If the function succeeds, the return value identifies the object.
-   This value can be one of the following:
-     OBJ_PEN         1
-     OBJ_BRUSH       2
-     OBJ_DC          3
-     OBJ_METADC      4
-     OBJ_PAL         5
-     OBJ_FONT        6
-     OBJ_BITMAP      7
-     OBJ_REGION      8
-     OBJ_METAFILE    9
-     OBJ_MEMDC       10
-     OBJ_EXTPEN      11
-     OBJ_ENHMETADC   12
-     OBJ_ENHMETAFILE 13
-     OBJ_COLORSPACE  14
- */
+   Purpose:
+     This function allows you to determine the type of a GDI object based on its handle.
+     This can be useful for validating object types before performing operations on them.
+*/
 HB_FUNC( GETOBJECTTYPE )
 {
-   hmg_ret_DWORD( GetObjectType( hmg_par_raw_HGDIOBJ( 1 ) ) );
+   hmg_ret_DWORD( GetObjectType( hmg_par_raw_HGDIOBJ( 1 ) ) ); // Call the Windows API GetObjectType and return the result as a numeric value.
 }
 
 /*
-   Harbour MiniGUI 1.4 Extended (Build 47)
-   added by Grigory Filatov
- */
+   DRAGACCEPTFILES
+
+   Registers whether a window accepts dragged files.
+
+   Parameters:
+     1: hWnd (HANDLE) - Handle to the window.
+     2: lAccept (LOGICAL) - .T. to accept dragged files, .F. to reject them.
+
+   Returns:
+     None.
+
+   Purpose:
+     This function enables or disables the ability of a window to receive files dragged from other applications.
+     When a window accepts dragged files, it will receive WM_DROPFILES messages when files are dropped onto it.
+*/
 HB_FUNC( DRAGACCEPTFILES )
 {
-   DragAcceptFiles( hmg_par_raw_HWND( 1 ), hb_parl( 2 ) );
+   DragAcceptFiles( hmg_par_raw_HWND( 1 ), hb_parl( 2 ) ); // Call the Windows API DragAcceptFiles to register the window for drag and drop.
 }
 
+/*
+   DRAGQUERYFILES
+
+   Retrieves the file names of dropped files from a HDROP handle.
+
+   Parameters:
+     1: hDrop (HANDLE) - Handle to the HDROP structure received in the WM_DROPFILES message.
+
+   Returns:
+     (ARRAY) - An array containing the file names of the dropped files. The first element of the array
+               is the number of files dropped. Subsequent elements contain the file names.
+
+   Purpose:
+     This function is used to extract the file names from the HDROP handle that is passed to a window when files are dropped onto it.
+     It allows the application to access the dropped files and perform operations on them.
+*/
 HB_FUNC( DRAGQUERYFILES )
 {
-   HDROP hDrop = hmg_par_raw_HDROP( 1 );
-   UINT  iFiles = DragQueryFile( hDrop, 0xFFFFFFFF, NULL, 0 );
-   UINT  i;
-   TCHAR bBuffer[250];
+   HDROP hDrop = hmg_par_raw_HDROP( 1 ); // Handle to the HDROP structure obtained from parameter 1.
+   UINT  iFiles = DragQueryFile( hDrop, 0xFFFFFFFF, NULL, 0 ); // Get the number of files dropped.
+   UINT  i; // Loop counter.
+   TCHAR bBuffer[250]; // Buffer to store the file name.
 
 #ifdef UNICODE
-   LPSTR pStr;
+   LPSTR pStr; // Pointer to store the converted ANSI string from the wide character string.
 #endif
-   hb_reta( iFiles );
+   hb_reta( iFiles ); // Create a new Harbour array with the size equal to the number of files.
 
-   for( i = 0; i < iFiles; i++ )
+   for( i = 0; i < iFiles; i++ ) // Iterate through the dropped files.
    {
-      DragQueryFile( hDrop, i, ( TCHAR * ) bBuffer, 249 );
+      DragQueryFile( hDrop, i, ( TCHAR * ) bBuffer, 249 ); // Get the file name of the i-th dropped file.
 #ifndef UNICODE
-      HB_STORC( ( TCHAR * ) bBuffer, -1, i + 1 );
+      HB_STORC( ( TCHAR * ) bBuffer, -1, i + 1 ); // Store the file name in the array at index i+1.
 #else
-      pStr = WideToAnsi( bBuffer );
-      HB_STORC( pStr, -1, i + 1 );
-      hb_xfree( pStr );
+      pStr = WideToAnsi( bBuffer ); // Convert the wide character file name to an ANSI string.
+      HB_STORC( pStr, -1, i + 1 ); // Store the ANSI file name in the array at index i+1.
+      hb_xfree( pStr ); // Free the memory allocated for the ANSI string.
 #endif
    }
 }
 
+/*
+   DRAGFINISH
+
+   Releases the HDROP handle after processing dropped files.
+
+   Parameters:
+     1: hDrop (HANDLE) - Handle to the HDROP structure.
+
+   Returns:
+     None.
+
+   Purpose:
+     This function should be called after processing the dropped files to release the HDROP handle and free the associated resources.
+     Failing to call this function can lead to memory leaks.
+*/
 HB_FUNC( DRAGFINISH )
 {
-   DragFinish( hmg_par_raw_HDROP( 1 ) );
+   DragFinish( hmg_par_raw_HDROP( 1 ) ); // Call the Windows API DragFinish to release the HDROP handle.
 }
 
+/*
+   HMG_CHARSETNAME
+
+   Returns the character set name used by the application (ANSI or UNICODE).
+
+   Parameters:
+     None.
+
+   Returns:
+     (STRING) - "UNICODE" if the application is compiled with Unicode support, "ANSI" otherwise.
+
+   Purpose:
+     This function allows you to determine at runtime whether the application is using ANSI or Unicode character encoding.
+     This can be useful for handling text encoding and display issues.
+*/
 HB_FUNC( HMG_CHARSETNAME )
 {
 #ifdef UNICODE
-   hb_retc( WideToAnsi( TEXT( "UNICODE" ) ) );
+   hb_retc( WideToAnsi( TEXT( "UNICODE" ) ) ); // Return "UNICODE" if the application is compiled with Unicode support.
 #else
-   hb_retc( "ANSI" );
+   hb_retc( "ANSI" ); // Return "ANSI" if the application is compiled without Unicode support.
 #endif
-}
-
-HB_FUNC( HMG_GETLOCALEINFO )
-{
-   INT      LCType = hb_parni( 1 );
-
-#ifndef UNICODE
-   LPSTR    cText;
-#else
-   LPWSTR   cText;
-   LPSTR    pStr;
-#endif
-   cText = ( LPTSTR ) hb_xgrab( HB_FILE_TYPE_MAX );
-
-   GetLocaleInfo( LOCALE_USER_DEFAULT, LCType, cText, HB_FILE_TYPE_MAX );
-
-#ifdef UNICODE
-   pStr = WideToAnsi( cText );
-   hb_retc( pStr );
-   hb_xfree( pStr );
-#else
-   hb_retc( cText );
-#endif
-   hb_xfree( cText );
 }
 
 /*
-   --------------------------------------------------------------------------------
-   Description:
-   Creates the actual 'lnk' file (assumes COM has been initialized).
+   HMG_GETLOCALEINFO
+
+   Retrieves locale information for the user's default locale.
 
    Parameters:
-   pszTargetfile    - File name of the link's target, must be a non-empty string.
-   pszTargetargs    - Command line arguments passed to link's target, may be an empty string.
-   pszLinkfile      - File name of the actual link file, must be a non-empty string.
-   pszDescription   - Description of the linked item. If this is an empty string, the description is not set.
-   iShowmode        - ShowWindow() constant for the link's target:
+     1: nLCType (NUMERIC) - The type of locale information to retrieve (e.g., LOCALE_SCOUNTRY, LOCALE_SLANGUAGE).
+                             See the Windows API documentation for GetLocaleInfo for a list of valid values.
+
+   Returns:
+     (STRING) - The requested locale information as a string.
+
+   Purpose:
+     This function allows you to access various locale settings, such as the country code, language name, date format, and currency symbol.
+     This information can be used to adapt the application's behavior to the user's locale.
+*/
+HB_FUNC( HMG_GETLOCALEINFO )
+{
+   INT      LCType = hb_parni( 1 ); // The type of locale information to retrieve.
+
+#ifndef UNICODE
+   LPSTR    cText; // Pointer to store the locale information string (ANSI version).
+#else
+   LPWSTR   cText; // Pointer to store the locale information string (Unicode version).
+   LPSTR    pStr; // Pointer to store the converted ANSI string from the wide character string.
+#endif
+   cText = ( LPTSTR ) hb_xgrab( HB_FILE_TYPE_MAX ); // Allocate memory for the locale information string.
+
+   GetLocaleInfo( LOCALE_USER_DEFAULT, LCType, cText, HB_FILE_TYPE_MAX ); // Call the Windows API GetLocaleInfo to retrieve the locale information.
+
+#ifdef UNICODE
+   pStr = WideToAnsi( cText ); // Convert the wide character locale information string to an ANSI string.
+   hb_retc( pStr ); // Return the ANSI locale information string.
+   hb_xfree( pStr ); // Free the memory allocated for the ANSI string.
+#else
+   hb_retc( cText ); // Return the ANSI locale information string.
+#endif
+   hb_xfree( cText ); // Free the memory allocated for the locale information string.
+}
+
+/*
+   CreateShortCut (static function)
+
+   Creates a Windows shortcut (.lnk) file.
+
+   Parameters:
+     pszTargetfile    (STRING) - File name of the link's target (the application or file the shortcut points to).  Must be a non-empty string.
+     pszTargetargs    (STRING) - Command line arguments passed to the link's target. May be an empty string.
+     pszLinkfile      (STRING) - File name of the actual link file (.lnk). Must be a non-empty string.
+     pszDescription   (STRING) - Description of the linked item (the text displayed when hovering over the shortcut). If this is an empty string, the description is not set.
+     iShowmode        (NUMERIC) - ShowWindow() constant for the link's target:
                         1 (SW_SHOWNORMAL) = Normal window.
                         3 (SW_SHOWMAXIMIZED) = Maximized.
                         7 (SW_SHOWMINNOACTIVE) = Minimized.
-                      If zero, the showmode is not set.
-   pszCurdir        - Working directory of the active link. If this is an empty string, the directory is not set.
-   pszIconfile      - File name of the icon file used for the link.
-                      If this is an empty string, the icon is not set.
-   iIconindex       - Index of the icon in the icon file. If < 0, the icon is not set.
-   wHotKey          - The virtual key code is in the low-order byte,
-                      and the modifier flags are in the high-order byte.
+                      If zero, the showmode is not set (the target will use its default show mode).
+     pszCurdir        (STRING) - Working directory of the active link. If this is an empty string, the directory is not set.
+     pszIconfile      (STRING) - File name of the icon file used for the link. If this is an empty string, the icon is not set.
+     iIconindex       (NUMERIC) - Index of the icon in the icon file. If < 0, the icon is not set.
+     wHotKey          (NUMERIC) - The virtual key code is in the low-order byte, and the modifier flags are in the high-order byte.  Used to assign a hotkey to the shortcut.
 
    Returns:
-   HRESULT value >= 0 for success, < 0 for failure.
-   --------------------------------------------------------------------------------
+     (NUMERIC) - HRESULT value. >= 0 for success, < 0 for failure.
+
+   Purpose:
+     This function encapsulates the COM API calls required to create a Windows shortcut file.  It creates an IShellLink object,
+     sets its properties based on the input parameters, and then saves it to disk as a .lnk file.  It handles both ANSI and Unicode builds.
 */
 #ifndef UNICODE
 static HRESULT CreateShortCut
@@ -2008,66 +2937,92 @@ static HRESULT CreateShortCut
    )
 #endif
 {
-   HRESULT        hRes = E_INVALIDARG;             // Default return value for invalid arguments
-   IShellLink     *pShellLink = NULL;              // Pointer to IShellLink object
-   IPersistFile   *pPersistFile = NULL;            // Pointer to IPersistFile object
-   WCHAR          wszLinkfile[MAX_PATH] = { 0 };   // Buffer for wide-char link file name
+   HRESULT        hRes = E_INVALIDARG;             // Default return value for invalid arguments.  Initialized to an error code.
+   IShellLink     *pShellLink = NULL;              // Pointer to IShellLink object (COM interface for creating shortcuts). Initialized to NULL.
+   IPersistFile   *pPersistFile = NULL;            // Pointer to IPersistFile object (COM interface for saving files). Initialized to NULL.
+   WCHAR          wszLinkfile[MAX_PATH] = { 0 };   // Buffer for wide-char link file name (required for IPersistFile->Save). Initialized to empty.
 
-   // Validate mandatory parameters
+   // Validate mandatory parameters: target file and link file must be non-empty strings.
    if( pszTargetfile && *pszTargetfile && pszLinkfile && *pszLinkfile )
    {
-      // Create IShellLink instance
+      // Create IShellLink instance using CoCreateInstance.
       hRes = CoCreateInstance( &CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLink, ( LPVOID * ) &pShellLink );
 
-      if( SUCCEEDED( hRes ) && pShellLink )
+      if( SUCCEEDED( hRes ) && pShellLink ) // Check if the IShellLink object was successfully created.
       {
-         // Set link properties
-         pShellLink->lpVtbl->SetPath( pShellLink, pszTargetfile );
-         pShellLink->lpVtbl->SetArguments( pShellLink, pszTargetargs );
+         // Set link properties using the IShellLink interface.
+         pShellLink->lpVtbl->SetPath( pShellLink, pszTargetfile ); // Set the target file path.
+         pShellLink->lpVtbl->SetArguments( pShellLink, pszTargetargs ); // Set the command line arguments.
 
-         if( pszDescription && *pszDescription )
+         if( pszDescription && *pszDescription ) // If a description is provided.
          {
-            pShellLink->lpVtbl->SetDescription( pShellLink, pszDescription );
+            pShellLink->lpVtbl->SetDescription( pShellLink, pszDescription ); // Set the description.
          }
-         if( iShowmode > 0 )
+         if( iShowmode > 0 ) // If a show mode is specified.
          {
-            pShellLink->lpVtbl->SetShowCmd( pShellLink, iShowmode );
+            pShellLink->lpVtbl->SetShowCmd( pShellLink, iShowmode ); // Set the show mode.
          }
-         if( pszCurdir && *pszCurdir )
+         if( pszCurdir && *pszCurdir ) // If a working directory is provided.
          {
-            pShellLink->lpVtbl->SetWorkingDirectory( pShellLink, pszCurdir );
+            pShellLink->lpVtbl->SetWorkingDirectory( pShellLink, pszCurdir ); // Set the working directory.
          }
-         if( pszIconfile && *pszIconfile && iIconindex >= 0 )
+         if( pszIconfile && *pszIconfile && iIconindex >= 0 ) // If an icon file and index are provided.
          {
-            pShellLink->lpVtbl->SetIconLocation( pShellLink, pszIconfile, iIconindex );
+            pShellLink->lpVtbl->SetIconLocation( pShellLink, pszIconfile, iIconindex ); // Set the icon location.
          }
-         if( wHotKey != 0 )
+         if( wHotKey != 0 ) // If a hotkey is provided.
          {
-            pShellLink->lpVtbl->SetHotkey( pShellLink, wHotKey );
+            pShellLink->lpVtbl->SetHotkey( pShellLink, wHotKey ); // Set the hotkey.
          }
 
-         // Save the link using IPersistFile
+         // Save the link using IPersistFile.  First, get the IPersistFile interface from the IShellLink object.
          hRes = pShellLink->lpVtbl->QueryInterface( pShellLink, &IID_IPersistFile, ( LPVOID * ) &pPersistFile );
 
-         if( SUCCEEDED( hRes ) && pPersistFile )
+         if( SUCCEEDED( hRes ) && pPersistFile ) // Check if the IPersistFile interface was successfully obtained.
          {
 #ifndef UNICODE
-            MultiByteToWideChar( CP_ACP, 0, pszLinkfile, -1, wszLinkfile, MAX_PATH );
+            MultiByteToWideChar( CP_ACP, 0, pszLinkfile, -1, wszLinkfile, MAX_PATH ); // Convert the ANSI link file name to a wide character string.
 #else
-            lstrcpy( wszLinkfile, pszLinkfile );
+            lstrcpy( wszLinkfile, pszLinkfile ); // Copy the Unicode link file name to the wide character buffer.
 #endif
-            hRes = pPersistFile->lpVtbl->Save( pPersistFile, wszLinkfile, TRUE );
-            pPersistFile->lpVtbl->Release( pPersistFile );
+            hRes = pPersistFile->lpVtbl->Save( pPersistFile, wszLinkfile, TRUE ); // Save the shortcut file.
+            pPersistFile->lpVtbl->Release( pPersistFile ); // Release the IPersistFile object.
          }
 
-         // Release IShellLink object
+         // Release IShellLink object.
          pShellLink->lpVtbl->Release( pShellLink );
       }
    }
-   return hRes;
+   return hRes; // Return the HRESULT of the operation.
 }
 
-/***************************************************************************/
+/*
+   C_CREATELINK
+
+   Creates a Windows shortcut (.lnk) file.  This is the Harbour-callable function.
+
+   Parameters:
+     1: szTargetfile    (STRING) - File name of the link's target (the application or file the shortcut points to).
+     2: szTargetargs    (STRING) - Command line arguments passed to the link's target.
+     3: szLinkfile      (STRING) - File name of the actual link file (.lnk).
+     4: szDescription   (STRING) - Description of the linked item (the text displayed when hovering over the shortcut).
+     5: iShowmode        (NUMERIC) - ShowWindow() constant for the link's target:
+                        1 (SW_SHOWNORMAL) = Normal window.
+                        3 (SW_SHOWMAXIMIZED) = Maximized.
+                        7 (SW_SHOWMINNOACTIVE) = Minimized.
+     6: szCurdir        (STRING) - Working directory of the active link.
+     7: szIconfile      (STRING) - File name of the icon file used for the link.
+     8: iIconindex       (NUMERIC) - Index of the icon in the icon file.
+     9: uVirtualKeyCode (NUMERIC) - Virtual key code for the hotkey.
+    10: uModifiers      (NUMERIC) - Modifier flags for the hotkey (e.g., Ctrl, Shift, Alt).
+
+   Returns:
+     (NUMERIC) - HRESULT value. >= 0 for success, < 0 for failure.
+
+   Purpose:
+     This function provides a Harbour interface to the CreateShortCut function, allowing you to create Windows shortcut files from Harbour code.
+     It handles parameter parsing, COM initialization, and error handling.
+*/
 #if defined( __BORLANDC__ ) && ! defined( _WIN64 )
 #pragma warn -prc          /* suggest parentheses to clarify precedence */
 #endif

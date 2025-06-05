@@ -4,6 +4,8 @@
    Copyright 2002-2010 Roberto Lopez <harbourminigui@gmail.com>
    http://harbourminigui.googlepages.com/
 
+   (c) Grigory Filatov <gfilatov@gmail.com> HMG 18.05
+
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
    Foundation; either version 2 of the License, or (at your option) any later
@@ -43,7 +45,7 @@
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-   ---------------------------------------------------------------------------*/
+  ---------------------------------------------------------------------------*/
 #define _WIN32_IE 0x0501
 
 #include <mgdefs.h>
@@ -53,7 +55,32 @@ LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
 
-/* Grigory Filatov <gfilatov@gmail.com> HMG 18.05 */
+/*
+   HB_FUNC(GETNONCLIENT)
+
+   Retrieves the current non-client metrics settings from the system.
+   These metrics define the sizes and dimensions of various non-client elements of windows,
+   such as borders, scroll bars, and caption areas.
+
+   Parameters:
+       None
+
+   Return Value:
+       Returns an array containing the non-client metrics. The array elements are:
+       1: iBorderWidth - Width of the window border.
+       2: iScrollWidth - Width of the vertical scroll bar.
+       3: iScrollHeight - Height of the horizontal scroll bar.
+       4: iCaptionWidth - Width of the caption button.
+       5: iCaptionHeight - Height of the caption area.
+       6: iMenuWidth - Width of the menu button.
+       7: iMenuHeight - Height of the menu area.
+
+   Purpose:
+       This function is used to obtain the system-wide settings for non-client areas of windows,
+       allowing applications to adapt their user interface to match the user's preferences and system settings.
+       It retrieves the NONCLIENTMETRICS structure using SystemParametersInfo and then populates a Harbour array
+       with the relevant values.
+*/
 HB_FUNC( GETNONCLIENT )
 {
    NONCLIENTMETRICS  ncm;
@@ -73,6 +100,32 @@ HB_FUNC( GETNONCLIENT )
    HB_STORVNL( ncm.iMenuHeight, -1, 7 );
 }
 
+/*
+   HB_FUNC(GETNONCLIENTFONT)
+
+   Retrieves the font information for non-client areas of windows, such as the caption, menu, status, and message fonts.
+
+   Parameters:
+       1: nArea (Numeric) - Specifies the area for which to retrieve the font information.
+          1: Caption Font
+          2: Menu Font
+          3: Status Font
+          4: Message Font
+
+   Return Value:
+       Returns an array containing the font information for the specified area. The array elements are:
+       1: Font Face Name (Character)
+       2: Font Height (Numeric)
+       3: Font Bold (Logical) - .T. if the font is bold, .F. otherwise.
+       4: Font CharSet (Numeric)
+
+   Purpose:
+       This function allows applications to retrieve the system-wide font settings for different non-client areas.
+       This enables applications to use the same fonts as the system for a consistent look and feel.
+       It retrieves the NONCLIENTMETRICS structure using SystemParametersInfo, extracts the font information
+       for the specified area, and then populates a Harbour array with the font's face name, height, weight (bold), and charset.
+       The function handles Unicode conversions if the UNICODE preprocessor directive is defined.
+*/
 HB_FUNC( GETNONCLIENTFONT )
 {
 #ifdef UNICODE
@@ -143,6 +196,32 @@ HB_FUNC( GETNONCLIENTFONT )
    }
 }
 
+/*
+   HB_FUNC(SETNONCLIENT)
+
+   Sets the non-client metrics settings for the system.
+   These metrics define the sizes and dimensions of various non-client elements of windows,
+   such as borders, scroll bars, and caption areas.
+
+   Parameters:
+       1: nArea (Numeric) - Specifies the area to set.
+          1: Border Width
+          2: Scroll Bar Width/Height
+          3: Caption Width
+          4: Caption Height
+          5: Menu Width/Height
+       2: nValue (Numeric) - The new value for the specified area.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function allows applications to modify the system-wide settings for non-client areas of windows.
+       This can be used to customize the appearance of windows.
+       It retrieves the current NONCLIENTMETRICS structure using SystemParametersInfo, modifies the specified
+       metric, and then sets the updated structure using SystemParametersInfo.
+       The function limits the values to reasonable ranges to prevent unexpected behavior.
+*/
 HB_FUNC( SETNONCLIENT )
 {
    NONCLIENTMETRICS  ncm;
@@ -179,6 +258,33 @@ HB_FUNC( SETNONCLIENT )
    SystemParametersInfo( SPI_SETNONCLIENTMETRICS, sizeof( ncm ), &ncm, 0 );
 }
 
+/*
+   HB_FUNC(SETNONCLIENTFONT)
+
+   Sets the font information for non-client areas of windows, such as the caption, menu, status, and message fonts.
+
+   Parameters:
+       1: nArea (Numeric) - Specifies the area for which to set the font information.
+          1: Caption Font
+          2: Menu Font
+          3: Status Font
+          4: Message Font
+       2: cFaceName (Character) - The name of the font face.
+       3: nHeight (Numeric) - The height of the font in points.
+       4: lBold (Logical) - .T. if the font should be bold, .F. otherwise.
+       5: nCharSet (Numeric) - The character set of the font.
+
+   Return Value:
+       None
+
+   Purpose:
+       This function allows applications to modify the system-wide font settings for different non-client areas.
+       This can be used to customize the appearance of windows.
+       It retrieves the current NONCLIENTMETRICS structure using SystemParametersInfo, modifies the font information
+       for the specified area, and then sets the updated structure using SystemParametersInfo.
+       The function converts the font height from points to logical units using MulDiv and GetDeviceCaps.
+       It also handles Unicode conversions if the UNICODE preprocessor directive is defined.
+*/
 HB_FUNC( SETNONCLIENTFONT )
 {
 #ifdef UNICODE

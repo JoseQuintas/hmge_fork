@@ -53,25 +53,79 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #ifdef _USERINIT_
 #include "i_winuser.ch"
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 INIT PROCEDURE _InitWebCam
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Initializes the Webcam control by installing method handlers.
+*
+*  Parameters:
+*     None
+*
+*  Return Value:
+*     None
+*
+*  Purpose:
+*     This procedure is called during the initialization of the HMG environment.
+*     It registers the 'Start' and 'Release' methods for the Webcam control,
+*     associating them with the internal functions '_StartWebCam' and '_ReleaseWebCam' respectively.
+*     This allows developers to use the Start() and Release() methods on Webcam objects in their HMG applications.
+*
+*  Notes:
+*     This procedure is automatically called by HMG during startup if _USERINIT_ is defined.
+*
+*/
+INIT PROCEDURE _InitWebCam
 
    InstallMethodHandler ( 'Start', '_StartWebCam' )
    InstallMethodHandler ( 'Release', '_ReleaseWebCam' )
 
 RETURN
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION _DefineWebCam ( ControlName, ParentForm, x, y, w, h, lStart, nRate, tooltip, HelpId )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Defines a Webcam control within an HMG form.
+*
+*  Parameters:
+*     ControlName - The name of the Webcam control (string).
+*     ParentForm  - The name of the parent form (string).
+*     x           - The x-coordinate of the control's top-left corner (numeric).
+*     y           - The y-coordinate of the control's top-left corner (numeric).
+*     w           - The width of the control (numeric, optional, defaults to 320).
+*     h           - The height of the control (numeric, optional, defaults to 240).
+*     lStart      - A logical value indicating whether to start the webcam immediately after creation (.T.) or not (.F.).
+*     nRate       - The preview rate in frames per second (numeric, optional, defaults to 30).
+*     tooltip     - The tooltip text for the control (string, optional).
+*     HelpId      - The help ID associated with the control (string, optional).
+*
+*  Return Value:
+*     NIL
+*
+*  Purpose:
+*     This function creates a Webcam control and adds it to the specified form.
+*     It handles the creation of the underlying Windows capture window using cap_CreateCaptureWindow,
+*     registers the control within the HMG environment, and sets various properties such as position, size, and preview rate.
+*     It also handles optional features like tooltips and automatic webcam startup.
+*     This function is the core of the Webcam control's definition within HMG.
+*
+*  Notes:
+*     - The function checks for existing window and control definitions to prevent naming conflicts.
+*     - It adjusts the control's position if it's placed within a frame.
+*     - It uses the cap_CreateCaptureWindow function from the VFW (Video for Windows) API.
+*
+*/
+FUNCTION _DefineWebCam ( ControlName, ParentForm, x, y, w, h, lStart, nRate, tooltip, HelpId )
    LOCAL ControlHandle
    LOCAL cParentForm
    LOCAL mVar
 
-   hb_default( @w, 320 )
-   hb_default( @h, 240 )
-   hb_default( @nRate, 30 )
+   hb_default( @w, 320 )  // Default width if not specified
+   hb_default( @h, 240 )  // Default height if not specified
+   hb_default( @nRate, 30 ) // Default frame rate if not specified
 
    IF _HMG_BeginWindowActive
       ParentForm := _HMG_ActiveFormName
@@ -162,9 +216,33 @@ FUNCTION _DefineWebCam ( ControlName, ParentForm, x, y, w, h, lStart, nRate, too
 
 RETURN NIL
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 FUNCTION _StartWebCam ( cWindow, cControl )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Starts the webcam capture and preview for a given Webcam control.
+*
+*  Parameters:
+*     cWindow - The name of the window containing the Webcam control (string).
+*     cControl - The name of the Webcam control (string).
+*
+*  Return Value:
+*     .T. if the webcam started successfully, .F. otherwise.
+*
+*  Purpose:
+*     This function attempts to connect to the webcam driver, sets the video format,
+*     and starts the preview. It retries the connection a few times in case of initial failure.
+*     It's called when the user explicitly starts the webcam or when the 'lStart' parameter is set to .T. in _DefineWebCam.
+*     The function updates the control's visibility status in the HMG control array.
+*
+*  Notes:
+*     - The function uses the cap_DriverConnect, cap_SetVideoFormat, cap_PreviewScale, cap_PreviewRate, and cap_Preview functions from the VFW API.
+*     - If the connection to the webcam driver fails after multiple attempts, the function destroys the capture window.
+*     - The video format is set to a maximum of 320x240 to ensure compatibility across different webcams.
+*
+*/
+FUNCTION _StartWebCam ( cWindow, cControl )
    LOCAL hWnd
    LOCAL w
    LOCAL h
@@ -196,9 +274,32 @@ FUNCTION _StartWebCam ( cWindow, cControl )
 
 RETURN lSuccess
 
-*------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
 PROCEDURE _ReleaseWebCam ( cWindow, cControl )
 *------------------------------------------------------------------------------*
+*
+*  Description:
+*     Releases the webcam resources and destroys the capture window for a given Webcam control.
+*
+*  Parameters:
+*     cWindow - The name of the window containing the Webcam control (string).
+*     cControl - The name of the Webcam control (string).
+*
+*  Return Value:
+*     None
+*
+*  Purpose:
+*     This procedure disconnects from the webcam driver, destroys the capture window,
+*     and removes the control from the HMG control array. It's called when the user explicitly releases the webcam
+*     or when the window containing the webcam is closed. This ensures that resources are properly released to prevent memory leaks and other issues.
+*
+*  Notes:
+*     - The function uses the cap_DriverDisconnect and DestroyWindow functions from the VFW API and Windows API respectively.
+*     - It checks if the control is defined and is of type 'WEBCAM' before attempting to release it.
+*     - The _EraseControl function removes the control from the HMG control arrays.
+*
+*/
+PROCEDURE _ReleaseWebCam ( cWindow, cControl )
    LOCAL hWnd
 
    IF _IsControlDefined ( cControl, cWindow ) .AND. GetControlType ( cControl, cWindow ) == 'WEBCAM'
@@ -242,6 +343,36 @@ RETURN
 LPWSTR AnsiToWide( LPCSTR );
 #endif
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_CREATECAPTUREWINDOW )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Creates a capture window using the capCreateCaptureWindow function from the VFW API.
+*
+*  Parameters:
+*     1 - lpszWindowName: The name of the capture window (string).
+*     2 - dwStyle: The style of the capture window (DWORD).
+*     3 - x: The x-coordinate of the window's top-left corner (numeric).
+*     4 - y: The y-coordinate of the window's top-left corner (numeric).
+*     5 - nWidth: The width of the window (numeric).
+*     6 - nHeight: The height of the window (numeric).
+*     7 - hWndParent: The handle of the parent window (HWND).
+*     8 - nID: The ID of the window (numeric).
+*
+*  Return Value:
+*     The handle of the created capture window (HWND).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capCreateCaptureWindow function from the VFW API.
+*     It allows Harbour code to create a capture window, which is necessary for capturing video from a webcam.
+*     The function takes various parameters that define the window's properties, such as its name, style, position, size, and parent window.
+*
+*  Notes:
+*     - This function directly calls the capCreateCaptureWindow function from the VFW API.
+*     - The hmg_ret_raw_HWND macro is used to return the window handle as a raw HWND value.
+*
+*/
 HB_FUNC( CAP_CREATECAPTUREWINDOW )
 {
 #ifndef UNICODE
@@ -266,16 +397,89 @@ HB_FUNC( CAP_CREATECAPTUREWINDOW )
       );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_DRIVERCONNECT )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Connects to a capture driver using the capDriverConnect function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*     2 - i: The index of the capture driver to connect to (numeric).
+*
+*  Return Value:
+*     .T. if the connection was successful, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capDriverConnect function from the VFW API.
+*     It allows Harbour code to connect to a specific capture driver, which is necessary for accessing the webcam.
+*     The function takes the handle of the capture window and the index of the driver to connect to.
+*
+*  Notes:
+*     - This function directly calls the capDriverConnect function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_DRIVERCONNECT )
 {
    hb_retl( capDriverConnect( hmg_par_raw_HWND( 1 ), hb_parni( 2 ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_DRIVERDISCONNECT )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Disconnects from a capture driver using the capDriverDisconnect function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*
+*  Return Value:
+*     .T. if the disconnection was successful, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capDriverDisconnect function from the VFW API.
+*     It allows Harbour code to disconnect from a capture driver, releasing the webcam resources.
+*     The function takes the handle of the capture window.
+*
+*  Notes:
+*     - This function directly calls the capDriverDisconnect function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_DRIVERDISCONNECT )
 {
    hb_retl( capDriverDisconnect( hmg_par_raw_HWND( 1 ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_SETVIDEOFORMAT )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets the video format for the capture window using the capSetVideoFormat function from the VFW API.
+*
+*  Parameters:
+*     1 - hCapWnd: The handle of the capture window (HWND).
+*     2 - nWidth: The desired width of the video (numeric).
+*     3 - nHeight: The desired height of the video (numeric).
+*
+*  Return Value:
+*     .T. if the video format was set successfully, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capSetVideoFormat function from the VFW API.
+*     It allows Harbour code to set the video format for the capture window, specifying the desired width and height of the video.
+*     The function retrieves the current video format, modifies the width and height, and then sets the new format.
+*
+*  Notes:
+*     - This function directly calls the capSetVideoFormat function from the VFW API.
+*     - The function initializes a BITMAPINFO structure with the desired width and height.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_SETVIDEOFORMAT )
 {
    BITMAPINFO binf;
@@ -295,21 +499,119 @@ HB_FUNC( CAP_SETVIDEOFORMAT )
    hb_retl( capSetVideoFormat( hCapWnd, &binf, sizeof( BITMAPINFO ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_PREVIEWRATE )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets the preview frame rate for the capture window using the capPreviewRate function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*     2 - wMS: The desired frame rate in milliseconds per frame (WORD).
+*
+*  Return Value:
+*     .T. if the preview rate was set successfully, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capPreviewRate function from the VFW API.
+*     It allows Harbour code to set the preview frame rate for the capture window, controlling how often the preview image is updated.
+*     The function takes the handle of the capture window and the desired frame rate in milliseconds per frame.
+*
+*  Notes:
+*     - This function directly calls the capPreviewRate function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_PREVIEWRATE )
 {
    hb_retl( capPreviewRate( hmg_par_raw_HWND( 1 ), hmg_par_WORD( 2 ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_PREVIEWSCALE )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Enables or disables preview scaling for the capture window using the capPreviewScale function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*     2 - fScale: .T. to enable preview scaling, .F. to disable it (logical).
+*
+*  Return Value:
+*     .T. if the preview scaling was set successfully, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capPreviewScale function from the VFW API.
+*     It allows Harbour code to enable or disable preview scaling for the capture window.
+*     When preview scaling is enabled, the preview image is scaled to fit the window.
+*     The function takes the handle of the capture window and a logical value indicating whether to enable or disable scaling.
+*
+*  Notes:
+*     - This function directly calls the capPreviewScale function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_PREVIEWSCALE )
 {
    hb_retl( capPreviewScale( hmg_par_raw_HWND( 1 ), hb_parl( 2 ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_PREVIEW )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Enables or disables preview mode for the capture window using the capPreview function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*     2 - fPreview: .T. to enable preview mode, .F. to disable it (logical).
+*
+*  Return Value:
+*     .T. if the preview mode was set successfully, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capPreview function from the VFW API.
+*     It allows Harbour code to enable or disable preview mode for the capture window.
+*     When preview mode is enabled, the capture window displays a live preview of the video being captured.
+*     The function takes the handle of the capture window and a logical value indicating whether to enable or disable preview mode.
+*
+*  Notes:
+*     - This function directly calls the capPreview function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_PREVIEW )
 {
    hb_retl( capPreview( hmg_par_raw_HWND( 1 ), hb_parl( 2 ) ) );
 }
 
+/*-----------------------------------------------------------------------------*
+HB_FUNC( CAP_EDITCOPY )
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Copies the current frame from the capture window to the clipboard using the capEditCopy function from the VFW API.
+*
+*  Parameters:
+*     1 - hWnd: The handle of the capture window (HWND).
+*
+*  Return Value:
+*     .T. if the frame was copied successfully, .F. otherwise (logical).
+*
+*  Purpose:
+*     This function is a Harbour wrapper for the capEditCopy function from the VFW API.
+*     It allows Harbour code to copy the current frame from the capture window to the clipboard,
+*     allowing the user to paste the frame into other applications.
+*     The function takes the handle of the capture window.
+*
+*  Notes:
+*     - This function directly calls the capEditCopy function from the VFW API.
+*     - The hb_retl macro is used to return the logical result of the function.
+*
+*/
 HB_FUNC( CAP_EDITCOPY )
 {
    hb_retl( capEditCopy( hmg_par_raw_HWND( 1 ) ) );

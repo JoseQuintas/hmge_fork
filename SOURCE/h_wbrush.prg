@@ -56,148 +56,100 @@
 #xcommand OTHERWISE  => DEFAULT
 #endif
 
+/*-----------------------------------------------------------------------------*
 FUNCTION _SetWindowBKBrush( cWindow, lNoDelete, cBrushStyle, nHatch, aColor, xImage )
-/*
- *  Purpose: Sets the background brush for a specified window.
- *
- *  Parameters:
- *      cWindow     : Character string representing the window name.
- *      lNoDelete   : Logical value indicating whether the old brush should be deleted.
- *                    .T. - Do not delete the old brush. The function returns the handle to the old brush.
- *                    .F. - Delete the old brush (default).
- *      cBrushStyle : Character string specifying the brush style.
- *                    "SOLID" - Solid color brush.
- *                    "HATCH" - Hatched brush.
- *                    "PATTERN" - Pattern brush.
- *      nHatch      : Numeric value specifying the hatch style for hatched brushes (e.g., HS_VERTICAL).
- *      aColor      : Array containing the RGB color values (e.g., { 255, 0, 255 } for magenta).
- *      xImage      : Image name for pattern brush.
- *
- *  Return Value:
- *      hBrush      : Handle to the newly created brush.  Returns 0 if an error occurs or if the window is not found.
- *
- *  Notes:
- *      This function retrieves the window handle based on the window name, creates a brush based on the specified style,
- *      sets the brush as the window's background brush, and optionally deletes the old brush.
- *      The function uses the _HMG_aFormHandles and _HMG_aFormBrushHandle arrays to store window handles and brush handles, respectively.
- */
+*------------------------------------------------------------------------------*
+*
+*  Description:
+*     Sets the background brush for a specified window, allowing for different brush styles (solid, hatched, pattern).
+*
+*  Parameters:
+*     cWindow     : Character string. The name of the window to modify. This name must correspond to a window
+*                   previously created and registered within the HMG environment (e.g., a form name).
+*     lNoDelete   : Logical.  Optional.  If .T., the function does *not* delete the existing background brush of the window.
+*                   Instead, it returns the handle to the old brush. This allows the caller to manage the old brush.
+*                   If .F. (default), the function deletes the existing brush.
+*     cBrushStyle : Character string. Optional. Specifies the style of the new brush to create.  Valid values are:
+*                   "SOLID" (default): Creates a solid color brush.
+*                   "HATCH": Creates a hatched brush.  Requires the nHatch parameter to specify the hatch style.
+*                   "PATTERN": Creates a pattern brush using the image specified by the xImage parameter.
+*     nHatch      : Numeric. Optional.  Specifies the hatch style for hatched brushes.  This parameter is only relevant
+*                   if cBrushStyle is set to "HATCH".  Use predefined HMG constants like HS_VERTICAL, HS_HORIZONTAL, etc.
+*                   Default value is HS_VERTICAL.
+*     aColor      : Array. Optional. An array containing three numeric values representing the RGB color components (Red, Green, Blue)
+*                   for the brush.  Each value should be between 0 and 255.  This parameter is used for "SOLID" and "HATCH" brush styles.
+*                   Default value is { 255, 0, 255 } (magenta).
+*     xImage      : Character string. Optional. The name of the image to use for a pattern brush. This parameter is only relevant
+*                   if cBrushStyle is set to "PATTERN". The image must be loaded and available within the HMG environment.
+*                   Default value is "MINIGUI_EDIT_DELETE".
+*
+*  Return Value:
+*     hBrush      : Numeric.  The handle to the newly created brush.  Returns 0 if the window is not found or if an error occurs during brush creation.
+*                   If lNoDelete is .T., the function returns the handle to the *old* brush that was previously associated with the window.
+*
+*  Purpose:
+*     This function provides a way to dynamically change the background appearance of a window in an HMG application.
+*     It allows developers to set different background styles (solid color, hatched, or patterned) based on application logic or user preferences.
+*     The function manages the creation and assignment of the new brush to the window, and optionally handles the deletion of the old brush.
+*     This is useful for visually highlighting certain windows, providing visual cues to the user, or customizing the application's look and feel.
+*
+*     Example Usage:
+*     To set the background of a form named "MyForm" to a solid blue color:
+*        _SetWindowBKBrush( "MyForm", .F., "SOLID", , { 0, 0, 255 } )
+*
+*     To set the background of a form named "MyForm" to a hatched brush with a vertical pattern and a red color, and keep the old brush:
+*        hOldBrush := _SetWindowBKBrush( "MyForm", .T., "HATCH", HS_VERTICAL, { 255, 0, 0 } )
+*        // ... later, when the old brush is no longer needed:
+*        DELETE BRUSH hOldBrush
+*
+*  Notes:
+*     - The function relies on the global arrays _HMG_aFormHandles and _HMG_aFormBrushHandle to store window handles and brush handles, respectively.
+*     - Ensure that the window specified by cWindow exists and is properly registered within the HMG environment before calling this function.
+*     - When using a pattern brush, ensure that the image specified by xImage is loaded and available.
+*     - If lNoDelete is set to .T., the caller is responsible for deleting the old brush to prevent memory leaks.
+*     - Error handling is limited.  The function returns 0 if the window is not found, but it does not explicitly handle errors during brush creation.
+*/
+FUNCTION _SetWindowBKBrush( cWindow, lNoDelete, cBrushStyle, nHatch, aColor, xImage )
    LOCAL hWnd
    LOCAL hOldBrush
    LOCAL hBrush := 0
    LOCAL nIndex
 
    __defaultNIL( @lNoDelete, .F. )
-   /*
-    * Purpose: Sets the default value of lNoDelete to .F. if it is NIL.
-    * Explanation: This ensures that if the lNoDelete parameter is not provided, the old brush will be deleted by default.
-    */
    __defaultNIL( @cBrushStyle, "SOLID" )
-   /*
-    * Purpose: Sets the default value of cBrushStyle to "SOLID" if it is NIL.
-    * Explanation: This ensures that if the cBrushStyle parameter is not provided, a solid color brush will be created by default.
-    */
    __defaultNIL( @nHatch, HS_VERTICAL )
-   /*
-    * Purpose: Sets the default value of nHatch to HS_VERTICAL if it is NIL.
-    * Explanation: This ensures that if the nHatch parameter is not provided, a vertical hatch style will be used by default for hatched brushes.
-    */
    __defaultNIL( @aColor, { 255, 0, 255 } )
-   /*
-    * Purpose: Sets the default value of aColor to { 255, 0, 255 } (magenta) if it is NIL.
-    * Explanation: This ensures that if the aColor parameter is not provided, a magenta color will be used by default.
-    */
    __defaultNIL( @xImage, "MINIGUI_EDIT_DELETE" )
-   /*
-    * Purpose: Sets the default value of xImage to "MINIGUI_EDIT_DELETE" if it is NIL.
-    * Explanation: This ensures that if the xImage parameter is not provided, the "MINIGUI_EDIT_DELETE" image will be used by default for pattern brushes.
-    */
 
    nIndex := GetFormIndex ( cWindow )
-   /*
-    * Purpose: Gets the index of the window in the _HMG_aFormHandles array.
-    * Explanation: The GetFormIndex function (assumed to be defined elsewhere) retrieves the index of the window based on its name.
-    *              This index is used to access the window handle and brush handle in the _HMG_aFormHandles and _HMG_aFormBrushHandle arrays.
-    */
 
    IF nIndex > 0
       hWnd := _HMG_aFormHandles[ nIndex ]
-      /*
-       * Purpose: Retrieves the window handle from the _HMG_aFormHandles array using the index.
-       * Explanation: The _HMG_aFormHandles array (assumed to be a global array) stores the handles of all forms/windows.
-       */
 
       SWITCH Left ( cBrushStyle, 1 )
-      /*
-       * Purpose: Determines the brush style based on the first character of the cBrushStyle string.
-       * Explanation: This switch statement selects the appropriate brush creation function based on the specified brush style.
-       */
       CASE "S"
          hBrush := CreateSolidBrush ( aColor[ 1 ], aColor[ 2 ], aColor[ 3 ] )
-         /*
-          * Purpose: Creates a solid color brush.
-          * Explanation: The CreateSolidBrush function (assumed to be defined elsewhere) creates a brush with the specified RGB color.
-          */
          EXIT
-
       CASE "H"
          hBrush := CreateHatchBrush ( nHatch, RGB( aColor[ 1 ], aColor[ 2 ], aColor[ 3 ] ) )
-         /*
-          * Purpose: Creates a hatched brush.
-          * Explanation: The CreateHatchBrush function (assumed to be defined elsewhere) creates a brush with the specified hatch style and color.
-          */
          EXIT
-
       CASE "P"
          hBrush := CreatePatternBrush ( xImage )
-         /*
-          * Purpose: Creates a pattern brush.
-          * Explanation: The CreatePatternBrush function (assumed to be defined elsewhere) creates a brush with the specified image pattern.
-          */
          EXIT
-
       OTHERWISE
          hBrush := GetWindowBrush ( hWnd )
-         /*
-          * Purpose: Gets the existing window brush.
-          * Explanation: The GetWindowBrush function (assumed to be defined elsewhere) retrieves the current background brush of the window.
-          */
-
       END SWITCH
 
       IF GetObjectType ( hBrush ) == OBJ_BRUSH
-         /*
-          * Purpose: Checks if the created object is a brush.
-          * Explanation: The GetObjectType function (assumed to be defined elsewhere) returns the type of the object. This check ensures that the brush was created successfully.
-          */
          hOldBrush := SetWindowBrush ( hWnd, hBrush )
-         /*
-          * Purpose: Sets the new brush as the window's background brush and retrieves the old brush.
-          * Explanation: The SetWindowBrush function (assumed to be defined elsewhere) sets the background brush of the window to the new brush and returns the handle to the old brush.
-          */
          _HMG_aFormBrushHandle[ nIndex ] := hBrush
-         /*
-          * Purpose: Stores the new brush handle in the _HMG_aFormBrushHandle array.
-          * Explanation: The _HMG_aFormBrushHandle array (assumed to be a global array) stores the handles of the brushes associated with each form/window.
-          */
 
          IF lNoDelete
             RETURN hOldBrush
-            /*
-             * Purpose: Returns the handle to the old brush if lNoDelete is .T..
-             * Explanation: This allows the caller to manage the old brush if it should not be deleted.
-             */
          ELSE
             DELETE BRUSH hOldBrush
-            /*
-             * Purpose: Deletes the old brush if lNoDelete is .F..
-             * Explanation: This releases the resources associated with the old brush. The DELETE BRUSH command is assumed to be a Harbour command for deleting a brush handle.
-             */
          ENDIF
       ENDIF
    ENDIF
 
 RETURN hBrush
-/*
- * Purpose: Returns the handle to the newly created brush.
- * Explanation: This allows the caller to use the brush handle for other purposes.
- */
