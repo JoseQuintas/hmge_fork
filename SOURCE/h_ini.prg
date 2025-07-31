@@ -168,7 +168,7 @@ FUNCTION _BeginIni( cIniFile )
    LOCAL hFile
 
    IF At( "\", cIniFile ) == 0
-      cIniFile := ".\" + cIniFile
+      cIniFile := hb_DirBase() + cIniFile
    ENDIF
 
    IF Set( _SET_CODEPAGE ) == "UTF8"
@@ -184,6 +184,7 @@ FUNCTION _BeginIni( cIniFile )
       FClose( hFile )
 
    ELSE
+
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
       hFile := iif( File( cIniFile ), FOpen( cIniFile, FO_READ + FO_SHARED ), FCreate( cIniFile ) )
       IF hFile == F_ERROR
@@ -213,7 +214,7 @@ FUNCTION _GetIni( cSection, cEntry, cDefault, uVar )
    IF !Empty( _HMG_ActiveIniFile )
       __defaultNIL( @cDefault, cVar )
       __defaultNIL( @uVar, cDefault )
-      cVar  := GetPrivateProfileString( cSection, cEntry, xChar( cDefault ), _HMG_ActiveIniFile )
+      cVar := GetPrivateProfileString( cSection, cEntry, xChar( cDefault ), _HMG_ActiveIniFile )
    ELSE
       IF cDefault != NIL
          cVar := xChar( cDefault )
@@ -461,7 +462,7 @@ FUNCTION xValue( cValue, cType )
    CASE cType == "N" ; xValue := Val( cValue )
    CASE cType == "L" ; xValue := ( cValue == 'T' )
    CASE cType == "A" ; xValue := CToA( cValue )
-   OTHERWISE         ; xValue := NIL                 // Nil, Block, Object
+   OTHERWISE         ; xValue := NIL             // Nil, Block, Object
    ENDCASE
 
 RETURN xValue
@@ -508,6 +509,10 @@ FUNCTION _GetSectionNames( cIniFile )
    // or empty array if no sections are present
    LOCAL aSectionList := {}, aLista
 
+   IF At( "\", cIniFile ) == 0
+      cIniFile := hb_DirBase() + cIniFile
+   ENDIF
+
    IF File( cIniFile )
       aLista := _GetPrivateProfileSectionNames( cIniFile )
       IF ! Empty( aLista )
@@ -524,6 +529,10 @@ FUNCTION _GetSection( cSection, cIniFile )
 *-----------------------------------------------------------------------------*
    // return 2-dimensional array with {key,value} pairs from section cSection in cIniFile
    LOCAL aKeyValueList := {}, aLista, i, n
+
+   IF At( "\", cIniFile ) == 0
+      cIniFile := hb_DirBase() + cIniFile
+   ENDIF
 
    IF File( cIniFile )
       aLista := _GetPrivateProfileSection( cSection, cIniFile )

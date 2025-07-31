@@ -69,7 +69,8 @@
           [ STYLE ] [ <style:FLAT,RAISED> ] ;
           [ TOOLTIP <cToolTip> ] ;
           [ BACKCOLOR <backcolor> ] ;
-          [ FONTCOLOR <fontcolor> [ <c: CENTERALIGN> ] [ <r: RIGHTALIGN> ] ] ;
+          [ FONTCOLOR <fontcolor> ] ;
+          [ <c: CENTERALIGN> ] [ <r: RIGHTALIGN> ] ;
           [ <default: DEFAULT> ] ;
    => ;
    _DefineItemMessage( "STATUSITEM", , 0, 0, <cMsg>, <{uAction}>, <nSize>, 0, <cBitmap>, <"style">, <cToolTip>, <.default.>, <backcolor>, <fontcolor>, iif( <.r.> == .t., 2, iif( <.c.> == .t., 1, 0 ) ) )

@@ -52,6 +52,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "error.ch"
 #include "hbver.ch"
 
+//#define TRACE
 /*-----------------------------------------------------------------------------*
 * PROCEDURE ClipInit()
 *
@@ -72,8 +73,10 @@ INIT PROCEDURE ClipInit()
 
    ENDIF
 
+#ifdef TRACE
    __TRACEPRGCALLS( .T. )
    HB_TRACESTATE( .T. )
+#endif
    Init()
 
 RETURN
@@ -108,7 +111,7 @@ RETURN
 #endif
 
 /*-----------------------------------------------------------------------------*
-* FUNCTION MsgMiniGuiError( cMessage, lAddText )
+* FUNCTION MsgMiniGuiError( cErrorMessage, lAddText )
 *
 * Description:
 *   This function displays an error message using the MiniGUI framework.
@@ -121,19 +124,19 @@ RETURN
 *   ensure that errors are reported consistently and can be handled gracefully.
 *
 * Parameters:
-*   cMessage: The error message to display.
+*   cErrorMessage: The error message to display.
 *   lAddText: Optional. If .T. (default), appends " Program terminated." to the message.
 *
 * Return Value:
-*   The return value of Eval( ErrorBlock(), HMG_GenError( cMessage ) ).  This is typically NIL, but depends on the ErrorBlock() implementation.
+*   The return value depends on the ErrorBlock() implementation.
 *-----------------------------------------------------------------------------*/
-FUNCTION MsgMiniGuiError( cMessage, lAddText )
+FUNCTION MsgMiniGuiError( cErrorMessage, lAddText )
 
    IF hb_defaultValue( lAddText, .T. )
-      cMessage += " Program terminated."
+      cErrorMessage += " Program terminated."
    ENDIF
 
-RETURN Eval( ErrorBlock(), HMG_GenError( cMessage ) )
+RETURN Eval( ErrorBlock(), HMG_GenError( cErrorMessage ) )
 
 /*-----------------------------------------------------------------------------*
 * STATIC FUNCTION HMG_GenError( cMsg )
@@ -166,7 +169,7 @@ STATIC FUNCTION HMG_GenError( cMsg )
 
 RETURN oError
 
-#define MG_VERSION "Harbour MiniGUI Extended Edition 25.06 ("
+#define MG_VERSION "Harbour MiniGUI Extended Edition 25.08 ("
 
 /*-----------------------------------------------------------------------------*
 * FUNCTION MiniGuiVersion( nVer )
@@ -198,6 +201,7 @@ FUNCTION MiniGuiVersion( nVer )
    LOCAL cVer := MG_VERSION + iif( IsExe64(), "64", "32" ) + "-bit) "
 #endif
    LOCAL anOfs
+   LOCAL nIndex
 
    hb_default( @nVer, 0 )
 
@@ -208,5 +212,6 @@ FUNCTION MiniGuiVersion( nVer )
    ENDIF
 
    anOfs := { Len( cVer ), 38, 15 }
+   nIndex := Max( 0, Min( nVer, 2 ) ) + 1
 
-RETURN Left( cVer, anOfs[ iif( nVer > 2, 2, iif( nVer < 0, 0, nVer ) ) + 1 ] )
+RETURN Left( cVer, anOfs[ nIndex ] )
