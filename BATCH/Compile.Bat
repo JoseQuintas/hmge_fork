@@ -353,8 +353,8 @@ goto PARPARSE
 
 :NCOMP
   rem Non-debug compile
-  if %MV_ERRFILE%==N %MV_HRB%\bin\harbour %MV_SRC%.prg -n -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH%
-  if %MV_ERRFILE%==Y %MV_HRB%\bin\harbour %MV_SRC%.prg -n -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH% >%MV_SRC%.err
+  if %MV_ERRFILE%==N %MV_HRB%\bin\harbour %MV_SRC%.prg -n -p -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH%
+  if %MV_ERRFILE%==Y %MV_HRB%\bin\harbour %MV_SRC%.prg -n -p -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH% >%MV_SRC%.err
   if not errorlevel 1 goto CCOMP
   echo.
   echo Compile error.
@@ -366,8 +366,8 @@ goto PARPARSE
   rem Debug compile
   if not exist init.mgd echo Screen Size 50 80 > init.mgd
   if not exist init.cld echo Options NoRunAtStartup > init.cld 
-  if %MV_ERRFILE%==N %MV_HRB%\bin\harbour %MV_SRC%.prg -n -b -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH%
-  if %MV_ERRFILE%==Y %MV_HRB%\bin\harbour %MV_SRC%.prg -n -b -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH% >%MV_SRC%.err
+  if %MV_ERRFILE%==N %MV_HRB%\bin\harbour %MV_SRC%.prg -n -p -b -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH%
+  if %MV_ERRFILE%==Y %MV_HRB%\bin\harbour %MV_SRC%.prg -n -p -b -i%MV_HRB%\include;%MG_ROOT%\include; %MV_SWITCH% >%MV_SRC%.err
   if not errorlevel 1 goto CCOMP
   echo.
   echo Compile error.
@@ -535,8 +535,6 @@ goto PARPARSE
   echo %MV_HRB%\lib\hbvpdf.lib + >> _temp.rsp
   echo %MV_HRB%\lib\hbwin.lib + >> _temp.rsp
   echo %MV_HRB%\lib\xhb.lib + >> _temp.rsp
-  echo %MV_HRB%\lib\hbmzip.lib + >> _temp.rsp
-  echo %MV_HRB%\lib\minizip.lib + >> _temp.rsp
   echo ws2_32.lib + >> _temp.rsp
   if %MV_INTMODE%==C goto RSPEND
   echo %MV_HRB%\lib\bostaurus.lib + >> _temp.rsp

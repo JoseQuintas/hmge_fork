@@ -49,7 +49,7 @@
    Copyright 2005 (C) Andy Wos <andywos@unwired.com.au>
  + DrawGlyph()
    Copyright 2005 (C) Jacek Kubica <kubica@wssk.wroc.pl>
- + GetBitmapSize(),GetIconSize(),DrawGlyphMask()
+ + GetBitmapSize(), GetIconSize(), DrawGlyphMask()
    Copyright 2009 (C) Andi Jahja <harbour@cbn.net.id>
  + GetImageSize()
  ---------------------------------------------------------------------------*/
@@ -59,251 +59,363 @@
 #include "hbapifs.h"
 
 #ifdef UNICODE
-LPWSTR AnsiToWide( LPCSTR );
+LPWSTR      AnsiToWide( LPCSTR );
 #endif
 
 // Function to convert a bitmap to a DIB (Device Independent Bitmap)
-HANDLE DibFromBitmap( HBITMAP, HPALETTE );
+HANDLE      DibFromBitmap( HBITMAP, HPALETTE );
 
 // Function to get the number of colors in a DIB
-WORD GetDIBColors( LPSTR );
+WORD        GetDIBColors( LPSTR );
 
 // Function to get the instance handle of the application resources
-HINSTANCE GetResources( void );
+HINSTANCE   GetResources( void );
 
 // Function to register a resource in the Minigui resource management system
-void RegisterResource( HANDLE hResource, LPCSTR szType );
+void        RegisterResource( HANDLE hResource, LPCSTR szType );
 
 /*
- * FUNCTION: SAVEWINDOWBYHANDLE
+ * FUNCTION SaveWindowToBitmap( HWND hWnd, LPCTSTR lpFile, const RECT *rc )
  *
- * Saves a window or a portion of a window to a bitmap file.
+ * Captures the content of a window or a portion of it and saves it to a bitmap file.
  *
  * Parameters:
- *   1: HWND - Handle to the window to be saved.
- *   2: LPCSTR/LPCWSTR - File name to save the bitmap.
- *   3: INT - Top coordinate of the rectangle to save.
- *   4: INT - Left coordinate of the rectangle to save.
- *   5: INT - Bottom coordinate of the rectangle to save.
- *   6: INT - Right coordinate of the rectangle to save.
+ *   hWnd: HWND - Handle of the window to capture.
+ *   lpFile: LPCTSTR - Path and filename where the bitmap will be saved. Can be ANSI or Unicode depending on the build.
+ *   rc: const RECT* - Pointer to a RECT structure defining the area to capture in client coordinates.
  *
  * Returns:
- *   None.
+ *   BOOL - TRUE if the capture and save were successful, FALSE otherwise.
  *
  * Purpose:
- *   Captures the content of a window or a specified portion of a window and saves it to a bitmap file.
+ *   This function allows saving a snapshot of a window's content to a bitmap file. It's useful for creating screenshots
+ *   or capturing specific regions of a window for further processing or storage. The function handles the necessary
+ *   device context creation, bitmap manipulation, and file writing operations.
+ *
+ * Notes:
+ *   The RECT structure 'rc' must contain coordinates relative to the client area of the window.
+ *   The function creates a new file or overwrites an existing one at the specified path.
+ *   Error handling is implemented to ensure resources are released even if the process fails.
+ */
+static BOOL SaveWindowToBitmap( HWND hWnd, LPCTSTR lpFile, const RECT *rc )
+{
+   HDC                  hDC, hMemDC = NULL;
+   HBITMAP              hBitmap = NULL, hOldBmp;
+   HANDLE               hDIB = NULL;
+   HANDLE               filehandle = INVALID_HANDLE_VALUE;
+   LPBITMAPINFOHEADER   lpBI = NULL;
+   BITMAPFILEHEADER     bmfHdr;
+   DWORD                dwDIBSize, dwWritten, dwBmBitsSize;
+   BOOL                 result = FALSE;
+   HPALETTE             hPal = NULL;
+
+   int                  width = rc->right - rc->left;
+   int                  height = rc->bottom - rc->top;
+
+   if( width <= 0 || height <= 0 )
+   {
+      return FALSE;
+   }
+
+   // Get DC for window (client area)
+   hDC = GetDC( hWnd );
+   if( !hDC )
+   {
+      goto cleanup;
+   }
+
+   // Create memory DC + compatible bitmap
+   hMemDC = CreateCompatibleDC( hDC );
+   if( !hMemDC )
+   {
+      goto cleanup;
+   }
+
+   hBitmap = CreateCompatibleBitmap( hDC, width, height );
+   if( !hBitmap )
+   {
+      goto cleanup;
+   }
+
+   hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBitmap );
+   if( !hOldBmp )
+   {
+      goto cleanup;
+   }
+
+   // Copy window area to memory DC
+   if( !BitBlt( hMemDC, 0, 0, width, height, hDC, rc->left, rc->top, SRCCOPY ) )
+   {
+      goto cleanup;
+   }
+
+   // Restore previous object BEFORE we delete hBitmap later
+   SelectObject( hMemDC, hOldBmp );
+
+   // Convert bitmap to DIB
+   hDIB = DibFromBitmap( hBitmap, hPal );
+   if( !hDIB )
+   {
+      goto cleanup;
+   }
+
+   filehandle = CreateFile( lpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL );
+   if( filehandle == INVALID_HANDLE_VALUE )
+   {
+      goto cleanup;
+   }
+
+   lpBI = ( LPBITMAPINFOHEADER ) GlobalLock( hDIB );
+   if( !lpBI || lpBI->biSize != sizeof( BITMAPINFOHEADER ) )
+   {
+      goto cleanup;
+   }
+
+   // Setup bitmap file header
+   bmfHdr.bfType = 0x4D42;          // "BM"
+   dwDIBSize = lpBI->biSize + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBQUAD ) );
+   dwBmBitsSize = ( ( ( lpBI->biWidth * ( DWORD ) lpBI->biBitCount ) + 31 ) / 32 * 4 ) * lpBI->biHeight;
+   dwDIBSize += dwBmBitsSize;
+   lpBI->biSizeImage = dwBmBitsSize;
+
+   bmfHdr.bfSize = dwDIBSize + sizeof( BITMAPFILEHEADER );
+   bmfHdr.bfReserved1 = 0;
+   bmfHdr.bfReserved2 = 0;
+   bmfHdr.bfOffBits = sizeof( BITMAPFILEHEADER ) + lpBI->biSize + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBQUAD ) );
+
+   // Write headers + DIB data
+   if( !WriteFile( filehandle, &bmfHdr, sizeof( BITMAPFILEHEADER ), &dwWritten, NULL ) || dwWritten != sizeof( BITMAPFILEHEADER ) )
+   {
+      goto cleanup;
+   }
+
+   if( !WriteFile( filehandle, lpBI, dwDIBSize, &dwWritten, NULL ) || dwWritten != dwDIBSize )
+   {
+      goto cleanup;
+   }
+
+   result = TRUE;
+
+cleanup:
+   if( lpBI )
+   {
+      GlobalUnlock( hDIB );
+   }
+
+   if( filehandle != INVALID_HANDLE_VALUE )
+   {
+      CloseHandle( filehandle );
+   }
+
+   if( hDIB )
+   {
+      GlobalFree( hDIB );
+   }
+
+   if( hBitmap )
+   {
+      DeleteObject( hBitmap );
+   }
+
+   if( hMemDC )
+   {
+      DeleteDC( hMemDC );
+   }
+
+   if( hDC )
+   {
+      ReleaseDC( hWnd, hDC );
+   }
+
+   return result;
+}
+
+/*
+ * FUNCTION SaveClientAreaToBitmap( HWND hWnd, LPCTSTR lpFile )
+ *
+ * Captures the client area of a window and saves it to a bitmap file.
+ *
+ * Parameters:
+ *   hWnd: HWND - Handle of the window to capture.
+ *   lpFile: LPCTSTR - Path and filename where the bitmap will be saved. Can be ANSI or Unicode depending on the build.
+ *
+ * Returns:
+ *   BOOL - TRUE if the capture and save were successful, FALSE otherwise.
+ *
+ * Purpose:
+ *   This function simplifies capturing the entire client area of a window by automatically retrieving the client rectangle
+ *   and then calling SaveWindowToBitmap to perform the actual capture and save. It's a convenience function for capturing
+ *   the visible content of a window without including the title bar or borders.
+ */
+static BOOL SaveClientAreaToBitmap( HWND hWnd, LPCTSTR lpFile )
+{
+   RECT  rc;
+   if( !GetClientRect( hWnd, &rc ) )
+   {
+      return FALSE;
+   }
+
+   return SaveWindowToBitmap( hWnd, lpFile, &rc );
+}
+
+/*
+ * FUNCTION SaveWindowAreaToBitmap( HWND hWnd, LPCTSTR lpFile )
+ *
+ * Captures the entire window area (including borders and title bar) and saves it to a bitmap file.
+ *
+ * Parameters:
+ *   hWnd: HWND - Handle of the window to capture.
+ *   lpFile: LPCTSTR - Path and filename where the bitmap will be saved. Can be ANSI or Unicode depending on the build.
+ *
+ * Returns:
+ *   BOOL - TRUE if the capture and save were successful, FALSE otherwise.
+ *
+ * Purpose:
+ *   This function captures the entire window, including the non-client area (title bar, borders, etc.). It retrieves the
+ *   window rectangle, converts it to client coordinates, and then calls SaveWindowToBitmap to perform the actual capture
+ *   and save. This is useful for capturing the complete visual representation of a window as seen on the screen.
+ */
+static BOOL SaveWindowAreaToBitmap( HWND hWnd, LPCTSTR lpFile )
+{
+   POINT ptTL;
+   POINT ptBR;
+   RECT  rcClient;
+   RECT  rc;
+   if( !GetWindowRect( hWnd, &rc ) )
+   {
+      return FALSE;
+   }
+
+   // Convert screen coords to client coords
+   ptTL.x = rc.left;
+   ptTL.y = rc.top;
+   ptBR.x = rc.right;
+   ptBR.y = rc.bottom;
+   if( !ScreenToClient( hWnd, &ptTL ) || !ScreenToClient( hWnd, &ptBR ) )
+   {
+      return FALSE;
+   }
+
+   rcClient.left = ptTL.x;
+   rcClient.top = ptTL.y;
+   rcClient.right = ptBR.x;
+   rcClient.bottom = ptBR.y;
+
+   return SaveWindowToBitmap( hWnd, lpFile, &rcClient );
+}
+
+/*
+ * FUNCTION SAVEWINDOWBYHANDLE( hWnd, lpFileName, top, left, bottom, right )
+ *
+ * Saves the client area or a specified portion of a window to a bitmap file.
+ *
+ * Parameters:
+ *   1: hWnd: HWND - Handle of the window to capture.
+ *   2: lpFileName: STRING - Path and filename where the bitmap will be saved.
+ *   3: top: NUMERIC - Top coordinate of the capture area (optional, -1 for full client area).
+ *   4: left: NUMERIC - Left coordinate of the capture area (optional, -1 for full client area).
+ *   5: bottom: NUMERIC - Bottom coordinate of the capture area (optional, -1 for full client area).
+ *   6: right: NUMERIC - Right coordinate of the capture area (optional, -1 for full client area).
+ *
+ * Returns:
+ *   LOGICAL - .T. if the capture and save were successful, .F. otherwise.
+ *
+ * Purpose:
+ *   This function provides a Harbour-callable interface to save a window's content to a bitmap file. It allows specifying
+ *   a rectangular region within the client area to capture, or capturing the entire client area if no coordinates are provided.
+ *   It uses the SaveWindowToBitmap and SaveClientAreaToBitmap functions to perform the actual capture and save operations.
+ *
+ * Notes:
+ *   If top, left, bottom, and right are all -1, the entire client area is captured.
+ *   Otherwise, the specified rectangular region is captured.
  */
 HB_FUNC( SAVEWINDOWBYHANDLE )
 {
-   HWND     hWnd = hmg_par_raw_HWND( 1 ); // Handle to the window to be saved
-   HDC      hDC  = GetDC( hWnd );         // Get the device context of the window
-   HDC      hMemDC;                       // Memory device context for creating the bitmap
-   RECT     rc;                           // Rectangle structure to define the area to capture
-   HBITMAP  hBitmap;                      // Handle to the bitmap
-   HBITMAP  hOldBmp;                      // Handle to the old bitmap
-   HPALETTE hPal = 0;                     // Handle to the palette
-   HANDLE   hDIB;                         // Handle to the DIB (Device Independent Bitmap)
-
+   HWND     hWnd = hmg_par_raw_HWND( 1 );
 #ifndef UNICODE
-   LPCSTR lpFileName = ( char * ) hb_parc( 2 );                // File name to save the bitmap (ANSI)
+   LPCSTR   lpFileName = hb_parc( 2 );
 #else
-   LPCWSTR lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // File name to save the bitmap (Unicode)
+   LPWSTR   lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
+   RECT     rc;
+   int      top = hb_parni( 3 ), left = hb_parni( 4 ), bottom = hb_parni( 5 ), right = hb_parni( 6 );
 
-   int top    = hb_parni( 3 ); // Top coordinate of the rectangle to save
-   int left   = hb_parni( 4 ); // Left coordinate of the rectangle to save
-   int bottom = hb_parni( 5 ); // Bottom coordinate of the rectangle to save
-   int right  = hb_parni( 6 ); // Right coordinate of the rectangle to save
-
-   BITMAPFILEHEADER   bmfHdr;  // Bitmap file header
-   LPBITMAPINFOHEADER lpBI;    // Pointer to the bitmap info header
-   HANDLE filehandle;          // Handle to the file
-   DWORD  dwDIBSize;           // Size of the DIB
-   DWORD  dwWritten;           // Number of bytes written to the file
-   DWORD  dwBmBitsSize;        // Size of the bitmap bits
-
-   // Set the rectangle coordinates based on the provided parameters or the entire client area
+   BOOL     ok;
    if( top != -1 && left != -1 && bottom != -1 && right != -1 )
    {
-      rc.top    = top;
-      rc.left   = left;
+      rc.top = top;
+      rc.left = left;
       rc.bottom = bottom;
-      rc.right  = right;
+      rc.right = right;
+      ok = SaveWindowToBitmap( hWnd, lpFileName, &rc );
    }
    else
    {
-      GetClientRect( hWnd, &rc );
-   }
-
-   // Create a compatible memory DC and bitmap for capturing the window content
-   hMemDC  = CreateCompatibleDC( hDC );
-   hBitmap = CreateCompatibleBitmap( hDC, rc.right - rc.left, rc.bottom - rc.top );
-   hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBitmap );
-
-   // Copy the content of the window to the bitmap
-   BitBlt( hMemDC, 0, 0, rc.right - rc.left, rc.bottom - rc.top, hDC, rc.top, rc.left, SRCCOPY );
-
-   // Restore the old bitmap and convert the captured bitmap to a DIB
-   SelectObject( hMemDC, hOldBmp );
-   hDIB = DibFromBitmap( hBitmap, hPal );
-
-   // Create a file to save the bitmap
-   filehandle = CreateFile( lpFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL );
-
-   // Lock the DIB and write the bitmap file header and DIB to the file
-   lpBI = ( LPBITMAPINFOHEADER ) GlobalLock( hDIB );
-   if( lpBI && lpBI->biSize == sizeof( BITMAPINFOHEADER ) )
-   {
-      bmfHdr.bfType = ( ( WORD ) ( 'M' << 8 ) | 'B' );
-
-      dwDIBSize = *( LPDWORD ) lpBI + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBTRIPLE ) );
-
-      dwBmBitsSize      = ( ( ( ( lpBI->biWidth ) * ( ( DWORD ) lpBI->biBitCount ) ) + 31 ) / 32 * 4 ) * lpBI->biHeight;
-      dwDIBSize        += dwBmBitsSize;
-      lpBI->biSizeImage = dwBmBitsSize;
-
-      bmfHdr.bfSize      = dwDIBSize + sizeof( BITMAPFILEHEADER );
-      bmfHdr.bfReserved1 = 0;
-      bmfHdr.bfReserved2 = 0;
-
-      bmfHdr.bfOffBits = ( DWORD ) sizeof( BITMAPFILEHEADER ) + lpBI->biSize + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBTRIPLE ) );
-
-      WriteFile( filehandle, ( LPSTR ) &bmfHdr, sizeof( BITMAPFILEHEADER ), &dwWritten, NULL );
-      WriteFile( filehandle, ( LPSTR ) lpBI, dwDIBSize, &dwWritten, NULL );
+      ok = SaveClientAreaToBitmap( hWnd, lpFileName );
    }
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpFileName ); // Free the allocated memory for the Unicode file name
+   hb_xfree( lpFileName );
 #endif
-
-   // Clean up resources
-   GlobalUnlock( hDIB );
-   CloseHandle( filehandle );
-   DeleteObject( hBitmap );
-   DeleteDC( hMemDC );
-   GlobalFree( hDIB );
-   ReleaseDC( hWnd, hDC );
+   hb_retl( ok );
 }
 
 /*
- * FUNCTION: WNDCOPY
+ * FUNCTION WNDCOPY( hWnd, bRect, lpFileName )
  *
- * Saves a window or a portion of a window to a bitmap file.
+ * Saves either the entire window (including borders and title bar) or the client area to a bitmap file.
  *
  * Parameters:
- *   1: HWND - Handle to the window to be saved.
- *   2: LOGICAL - Flag to determine if the entire window or client area should be saved.
- *   3: LPCSTR/LPCWSTR - File name to save the bitmap.
+ *   1: hWnd: HWND - Handle of the window to capture.
+ *   2: bRect: LOGICAL - .T. to capture the entire window, .F. to capture only the client area.
+ *   3: lpFileName: STRING - Path and filename where the bitmap will be saved.
  *
  * Returns:
- *   None.
+ *   LOGICAL - .T. if the capture and save were successful, .F. otherwise.
  *
  * Purpose:
- *   Captures the content of a window or a specified portion of a window and saves it to a bitmap file.
+ *   This function provides a Harbour-callable interface to save either the entire window or just the client area to a bitmap file.
+ *   It uses the SaveWindowAreaToBitmap and SaveClientAreaToBitmap functions to perform the actual capture and save operations,
+ *   based on the value of the bRect parameter.
  */
 HB_FUNC( WNDCOPY )
 {
-   HWND     hWnd = hmg_par_raw_HWND( 1 ); // Handle to the window to be saved
-   HDC      hDC  = GetDC( hWnd );         // Get the device context of the window
-   HDC      hMemDC;                       // Memory device context for creating the bitmap
-   RECT     rc;                           // Rectangle structure to define the area to capture
-   HBITMAP  hBitmap;                      // Handle to the bitmap
-   HBITMAP  hOldBmp;                      // Handle to the old bitmap
-   HPALETTE hPal  = 0;                    // Handle to the palette
-   BOOL     bRect = hb_parl( 2 );         // Flag to determine if the entire window or client area should be saved
-
+   HWND     hWnd = hmg_par_raw_HWND( 1 );
+   BOOL     bRect = hb_parl( 2 );   // TRUE=full window, FALSE=client area
 #ifndef UNICODE
-   LPCSTR lpFileName = ( char * ) hb_parc( 3 );                // File name to save the bitmap (ANSI)
+   LPCSTR   lpFileName = hb_parc( 3 );
 #else
-   LPCWSTR lpFileName = AnsiToWide( ( char * ) hb_parc( 3 ) ); // File name to save the bitmap (Unicode)
+   LPWSTR   lpFileName = AnsiToWide( ( char * ) hb_parc( 3 ) );
 #endif
-
-   HANDLE hDIB;               // Handle to the DIB (Device Independent Bitmap)
-   BITMAPFILEHEADER   bmfHdr; // Bitmap file header
-   LPBITMAPINFOHEADER lpBI;   // Pointer to the bitmap info header
-   HANDLE filehandle;         // Handle to the file
-   DWORD  dwDIBSize;          // Size of the DIB
-   DWORD  dwWritten;          // Number of bytes written to the file
-   DWORD  dwBmBitsSize;       // Size of the bitmap bits
-
-   // Set the rectangle coordinates based on the provided parameters or the entire window area
-   if( bRect )
-   {
-      GetWindowRect( hWnd, &rc );
-   }
-   else
-   {
-      GetClientRect( hWnd, &rc );
-   }
-
-   // Create a compatible memory DC and bitmap for capturing the window content
-   hMemDC  = CreateCompatibleDC( hDC );
-   hBitmap = CreateCompatibleBitmap( hDC, rc.right - rc.left, rc.bottom - rc.top );
-   hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBitmap );
-
-   // Copy the content of the window to the bitmap
-   BitBlt( hMemDC, 0, 0, rc.right - rc.left, rc.bottom - rc.top, hDC, 0, 0, SRCCOPY );
-
-   // Restore the old bitmap and convert the captured bitmap to a DIB
-   SelectObject( hMemDC, hOldBmp );
-   hDIB = DibFromBitmap( hBitmap, hPal );
-
-   // Create a file to save the bitmap
-   filehandle = CreateFile( lpFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL );
-
-   // Lock the DIB and write the bitmap file header and DIB to the file
-   lpBI = ( LPBITMAPINFOHEADER ) GlobalLock( hDIB );
-   if( lpBI && lpBI->biSize == sizeof( BITMAPINFOHEADER ) )
-   {
-      bmfHdr.bfType = ( ( WORD ) ( 'M' << 8 ) | 'B' );
-
-      dwDIBSize = *( LPDWORD ) lpBI + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBTRIPLE ) );
-
-      dwBmBitsSize      = ( ( ( ( lpBI->biWidth ) * ( ( DWORD ) lpBI->biBitCount ) ) + 31 ) / 32 * 4 ) * lpBI->biHeight;
-      dwDIBSize        += dwBmBitsSize;
-      lpBI->biSizeImage = dwBmBitsSize;
-
-      bmfHdr.bfSize      = dwDIBSize + sizeof( BITMAPFILEHEADER );
-      bmfHdr.bfReserved1 = 0;
-      bmfHdr.bfReserved2 = 0;
-
-      bmfHdr.bfOffBits = ( DWORD ) sizeof( BITMAPFILEHEADER ) + lpBI->biSize + ( GetDIBColors( ( LPSTR ) lpBI ) * sizeof( RGBTRIPLE ) );
-
-      WriteFile( filehandle, ( LPSTR ) &bmfHdr, sizeof( BITMAPFILEHEADER ), &dwWritten, NULL );
-      WriteFile( filehandle, ( LPSTR ) lpBI, dwDIBSize, &dwWritten, NULL );
-   }
+   BOOL     ok = bRect ? SaveWindowAreaToBitmap( hWnd, lpFileName ) : SaveClientAreaToBitmap( hWnd, lpFileName );
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpFileName ); // Free the allocated memory for the Unicode file name
+   hb_xfree( lpFileName );
 #endif
-
-   // Clean up resources
-   GlobalUnlock( hDIB );
-   CloseHandle( filehandle );
-   DeleteDC( hMemDC );
-   GlobalFree( hDIB );
-   ReleaseDC( hWnd, hDC );
+   hb_retl( ok );
 }
 
 /*
- * FUNCTION: DibNumColors
+ * FUNCTION DibNumColors( pv )
  *
  * Determines the number of colors in a DIB (Device Independent Bitmap).
  *
  * Parameters:
- *   pv: VOID FAR * - Pointer to the DIB.
+ *   pv: VOID FAR* - Pointer to the DIB data.
  *
  * Returns:
- *   WORD - Number of colors in the DIB.
+ *   WORD - The number of colors in the DIB.
  *
  * Purpose:
- *   Calculates the number of colors in a DIB based on its bit count.
+ *   This function analyzes the DIB header to determine the number of colors used in the bitmap.
+ *   It checks the biClrUsed field (for BITMAPINFO headers) or calculates the number of colors based on the bits per pixel (for BITMAPCORE headers).
+ *   This information is crucial for correctly interpreting the color palette of the DIB.
  */
-WORD DibNumColors( VOID FAR * pv )
+WORD DibNumColors( VOID FAR *pv )
 {
-   int bits;
-   LPBITMAPINFOHEADER lpbi;
-   LPBITMAPCOREHEADER lpbc;
+   int                  bits;
+   LPBITMAPINFOHEADER   lpbi;
+   LPBITMAPCOREHEADER   lpbc;
 
    lpbi = ( ( LPBITMAPINFOHEADER ) pv );
    lpbc = ( ( LPBITMAPCOREHEADER ) pv );
@@ -345,23 +457,26 @@ WORD DibNumColors( VOID FAR * pv )
 }
 
 /*
- * FUNCTION: PaletteSize
+ * FUNCTION PaletteSize( pv )
  *
- * Determines the size of the palette in a DIB (Device Independent Bitmap).
+ * Determines the size, in bytes, of the color palette in a DIB (Device Independent Bitmap).
  *
  * Parameters:
- *   pv: VOID FAR * - Pointer to the DIB.
+ *   pv: VOID FAR* - Pointer to the DIB data.
  *
  * Returns:
- *   WORD - Size of the palette in bytes.
+ *   WORD - The size of the palette in bytes.
  *
  * Purpose:
- *   Calculates the size of the palette in a DIB based on the number of colors.
+ *   This function calculates the size of the color palette based on the DIB header information.
+ *   It uses the DibNumColors function to determine the number of colors and then multiplies it by the size of each color entry
+ *   (RGBTRIPLE for BITMAPCORE headers, RGBQUAD for BITMAPINFO headers). This is essential for correctly allocating memory
+ *   and accessing the color palette data.
  */
-static WORD PaletteSize( VOID FAR * pv )
+static WORD PaletteSize( VOID FAR *pv )
 {
-   LPBITMAPINFOHEADER lpbi;
-   WORD NumColors;
+   LPBITMAPINFOHEADER   lpbi;
+   WORD                 NumColors;
 
    lpbi = ( LPBITMAPINFOHEADER ) pv;
 
@@ -378,48 +493,56 @@ static WORD PaletteSize( VOID FAR * pv )
 }
 
 /*
- * Macro: WIDTHBYTES
+ * Macro WIDTHBYTES( i )
  *
- * Calculates the number of bytes required for a given number of bits.
+ * Calculates the number of bytes required to store a scan line of a bitmap, rounded up to the nearest DWORD boundary.
  *
  * Parameters:
- *   i: int - Number of bits.
+ *   i: int - The width of the scan line in bits.
  *
  * Returns:
- *   int - Number of bytes.
+ *   int - The number of bytes required to store the scan line.
  *
  * Purpose:
- *   Calculates the number of bytes required to store a given number of bits, rounded up to the nearest DWORD boundary.
+ *   This macro ensures that each scan line of a bitmap is aligned to a 4-byte boundary, which is a common requirement for
+ *   bitmap storage and processing. It's used to calculate the size of the bitmap data buffer.
  */
-#define WIDTHBYTES( i )  ( ( ( i ) + 31 ) / 32 * 4 )
+#define WIDTHBYTES( i ) ( ( ( i ) + 31 ) / 32 * 4 )
 
 /*
- * FUNCTION: DibFromBitmap
+ * FUNCTION DibFromBitmap( hbm, hpal )
  *
- * Converts a bitmap to a DIB (Device Independent Bitmap).
+ * Converts a bitmap (HBITMAP) to a DIB (Device Independent Bitmap).
  *
  * Parameters:
- *   hbm: HBITMAP - Handle to the bitmap.
- *   hpal: HPALETTE - Handle to the palette.
+ *   hbm: HBITMAP - Handle to the bitmap to convert.
+ *   hpal: HPALETTE - Handle to the palette to use for the DIB. If NULL, the default palette is used.
  *
  * Returns:
- *   HANDLE - Handle to the DIB.
+ *   HANDLE - Handle to the newly created DIB. Returns NULL on failure.
  *
  * Purpose:
- *   Converts a bitmap to a DIB, which can be used for various operations such as saving to a file.
+ *   This function converts a device-dependent bitmap (HBITMAP) into a device-independent bitmap (DIB).
+ *   DIBs are more portable and can be used in various contexts, such as saving to a file or displaying on different devices.
+ *   The function allocates memory for the DIB, copies the bitmap data, and sets the appropriate header information.
+ *
+ * Notes:
+ *   The function allocates memory using GlobalAlloc, which must be freed using GlobalFree when the DIB is no longer needed.
+ *   The function uses GetDIBits to retrieve the bitmap data, which requires a compatible device context.
  */
 HANDLE DibFromBitmap( HBITMAP hbm, HPALETTE hpal )
 {
-   BITMAP bm;
-   BITMAPINFOHEADER       bi;
-   BITMAPINFOHEADER FAR * lpbi;
-   DWORD  dwLen;
-   WORD   biBits;
-   HANDLE hdib;
-   HANDLE h;
-   HDC    hdc;
+   BITMAP               bm;
+   BITMAPINFOHEADER     bi;
+   BITMAPINFOHEADER FAR *lpbi;
+   DWORD                dwLen;
+   WORD                 biBits;
+   HANDLE               hdib;
+   HANDLE               h;
+   HDC                  hdc;
+   HPALETTE             hOldPal;
 
-   if( ! hbm )
+   if( !hbm )
    {
       return NULL;
    }
@@ -433,29 +556,29 @@ HANDLE DibFromBitmap( HBITMAP hbm, HPALETTE hpal )
 
    biBits = ( WORD ) ( bm.bmPlanes * bm.bmBitsPixel );
 
-   bi.biSize          = sizeof( BITMAPINFOHEADER );
-   bi.biWidth         = bm.bmWidth;
-   bi.biHeight        = bm.bmHeight;
-   bi.biPlanes        = 1;
-   bi.biBitCount      = biBits;
-   bi.biCompression   = BI_RGB;
-   bi.biSizeImage     = 0;
+   bi.biSize = sizeof( BITMAPINFOHEADER );
+   bi.biWidth = bm.bmWidth;
+   bi.biHeight = bm.bmHeight;
+   bi.biPlanes = 1;
+   bi.biBitCount = biBits;
+   bi.biCompression = BI_RGB;
+   bi.biSizeImage = 0;
    bi.biXPelsPerMeter = 0;
    bi.biYPelsPerMeter = 0;
-   bi.biClrUsed       = 0;
-   bi.biClrImportant  = 0;
+   bi.biClrUsed = 0;
+   bi.biClrImportant = 0;
 
    dwLen = bi.biSize + PaletteSize( &bi );
 
-   hdc  = GetDC( NULL );
-   hpal = SelectPalette( hdc, hpal, FALSE );
+   hdc = GetDC( NULL );
+   hOldPal = SelectPalette( hdc, hpal, FALSE );
    RealizePalette( hdc );
 
    hdib = GlobalAlloc( GHND, dwLen );
 
-   if( ! hdib )
+   if( !hdib )
    {
-      SelectPalette( hdc, hpal, FALSE );
+      SelectPalette( hdc, hOldPal, FALSE );
       ReleaseDC( NULL, hdc );
       return NULL;
    }
@@ -490,7 +613,7 @@ HANDLE DibFromBitmap( HBITMAP hbm, HPALETTE hpal )
    {
       GlobalFree( hdib );
 
-      SelectPalette( hdc, hpal, FALSE );
+      SelectPalette( hdc, hOldPal, FALSE );
       ReleaseDC( NULL, hdc );
       return NULL;
    }
@@ -500,7 +623,19 @@ HANDLE DibFromBitmap( HBITMAP hbm, HPALETTE hpal )
     */
    lpbi = ( LPBITMAPINFOHEADER ) GlobalLock( hdib );
 
-   if( GetDIBits( hdc, hbm, 0L, ( DWORD ) bi.biHeight, ( LPBYTE ) lpbi + ( WORD ) lpbi->biSize + PaletteSize( lpbi ), ( LPBITMAPINFO ) lpbi, ( DWORD ) DIB_RGB_COLORS ) == 0 )
+   if
+   (
+      GetDIBits
+         (
+            hdc,
+            hbm,
+            0L,
+            ( DWORD ) bi.biHeight,
+            ( LPBYTE ) lpbi + ( WORD ) lpbi->biSize + PaletteSize( lpbi ),
+            ( LPBITMAPINFO ) lpbi,
+            ( DWORD ) DIB_RGB_COLORS
+         ) == 0
+   )
    {
       GlobalUnlock( hdib );
 
@@ -517,45 +652,52 @@ HANDLE DibFromBitmap( HBITMAP hbm, HPALETTE hpal )
 }
 
 /*
- * FUNCTION: GetDIBColors
+ * FUNCTION GetDIBColors( lpDIB )
  *
  * Gets the number of colors in a DIB (Device Independent Bitmap).
  *
  * Parameters:
- *   lpDIB: LPSTR - Pointer to the DIB.
+ *   lpDIB: LPSTR - Pointer to the DIB data.
  *
  * Returns:
- *   WORD - Number of colors in the DIB.
+ *   WORD - The number of colors in the DIB.
  *
  * Purpose:
- *   Retrieves the number of colors in a DIB based on its bit count.
+ *   This function retrieves the number of colors used in a DIB by accessing the bcBitCount field of the BITMAPCOREHEADER structure.
+ *   It's a simplified version of DibNumColors, specifically designed for BITMAPCOREHEADER format.
  */
 WORD GetDIBColors( LPSTR lpDIB )
 {
-   WORD wBitCount = ( ( LPBITMAPCOREHEADER ) lpDIB )->bcBitCount;
+   WORD  wBitCount = ( ( LPBITMAPCOREHEADER ) lpDIB )->bcBitCount;
 
    return wBitCount;
 }
 
 /*
- * FUNCTION: C_HASALPHA
+ * FUNCTION C_HASALPHA( hBitmap )
  *
- * Checks if a bitmap has an alpha channel.
+ * Checks if a bitmap has an alpha channel (transparency).
  *
  * Parameters:
- *   1: HBITMAP - Handle to the bitmap.
+ *   1: hBitmap: HBITMAP - Handle to the bitmap to check.
  *
  * Returns:
- *   LOGICAL - TRUE if the bitmap has an alpha channel, FALSE otherwise.
+ *   LOGICAL - .T. if the bitmap has an alpha channel, .F. otherwise.
  *
  * Purpose:
- *   Determines if a bitmap has an alpha channel by examining its pixel data.
+ *   This function determines if a given bitmap contains an alpha channel, indicating the presence of transparency.
+ *   It converts the bitmap to a DIB, then iterates through the pixel data, checking the alpha component of each pixel.
+ *   If any pixel has a non-zero alpha value, the function returns .T., indicating that the bitmap has an alpha channel.
+ *
+ * Notes:
+ *   The function checks the device capabilities to ensure that the display supports 32-bit color depth (required for alpha channels).
+ *   The function allocates memory for the DIB, which must be freed using GlobalFree when the DIB is no longer needed.
  */
 HB_FUNC( C_HASALPHA )
 {
-   HANDLE hDib;
-   BOOL   bAlphaChannel = FALSE;
-   HDC    hDC = GetDC( GetDesktopWindow() );
+   HANDLE   hDib;
+   BOOL     bAlphaChannel = FALSE;
+   HDC      hDC = GetDC( GetDesktopWindow() );
 
    if( GetDeviceCaps( hDC, BITSPIXEL ) < 32 )
    {
@@ -570,13 +712,13 @@ HB_FUNC( C_HASALPHA )
 
    if( hDib )
    {
-      LPBITMAPINFO    lpbmi = ( LPBITMAPINFO ) GlobalLock( hDib );
-      unsigned char * uc    = ( LPBYTE ) lpbmi + ( WORD ) lpbmi->bmiHeader.biSize + PaletteSize( lpbmi );
-      unsigned long   ul;
+      LPBITMAPINFO   lpbmi = ( LPBITMAPINFO ) GlobalLock( hDib );
+      unsigned char  *uc = ( LPBYTE ) lpbmi + ( WORD ) lpbmi->bmiHeader.biSize + PaletteSize( lpbmi );
+      unsigned long  ul;
 
-      for( ul = 0; ul < lpbmi->bmiHeader.biSizeImage && ! bAlphaChannel; ul += 4 )
+      for( ul = 0; ul < lpbmi->bmiHeader.biSizeImage && !bAlphaChannel; ul += 4 )
       {
-         if( uc[ ul + 3 ] != 0 )
+         if( uc[ul + 3] != 0 )
          {
             bAlphaChannel = TRUE;
          }
@@ -590,22 +732,26 @@ HB_FUNC( C_HASALPHA )
 }
 
 /*
- * FUNCTION: Icon2Bmp
+ * FUNCTION Icon2Bmp( hIcon )
  *
- * Converts an icon to a bitmap.
+ * Converts an icon (HICON) to a bitmap (HBITMAP).
  *
  * Parameters:
- *   hIcon: HICON - Handle to the icon.
+ *   hIcon: HICON - Handle to the icon to convert.
  *
  * Returns:
- *   HBITMAP - Handle to the converted bitmap.
+ *   HBITMAP - Handle to the newly created bitmap.
  *
  * Purpose:
- *   Converts an icon to a bitmap by drawing the icon onto a compatible bitmap.
+ *   This function converts an icon into a bitmap by drawing the icon onto a compatible bitmap.
+ *   This is useful when you need to manipulate an icon as a bitmap, for example, to apply effects or save it to a file.
+ *
+ * Notes:
+ *   The function creates a compatible device context and bitmap, draws the icon onto the bitmap, and then cleans up the resources.
  */
 HBITMAP Icon2Bmp( HICON hIcon )
 {
-   HDC      hDC    = GetDC( NULL );
+   HDC      hDC = GetDC( NULL );
    HDC      hMemDC = CreateCompatibleDC( hDC );
    ICONINFO icon;
    BITMAP   bitmap;
@@ -614,7 +760,7 @@ HBITMAP Icon2Bmp( HICON hIcon )
 
    GetIconInfo( hIcon, &icon );
    GetObject( icon.hbmColor, sizeof( BITMAP ), ( LPVOID ) &bitmap );
-   hBmp    = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
+   hBmp = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
    hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBmp );
 
    PatBlt( hMemDC, 0, 0, bitmap.bmWidth, bitmap.bmHeight, PATCOPY );
@@ -631,22 +777,27 @@ HBITMAP Icon2Bmp( HICON hIcon )
 }
 
 /*
- * FUNCTION: IconMask2Bmp
+ * FUNCTION IconMask2Bmp( hIcon )
  *
- * Converts an icon mask to a bitmap.
+ * Converts an icon's mask (HICON) to a bitmap (HBITMAP).
  *
  * Parameters:
- *   hIcon: HICON - Handle to the icon.
+ *   hIcon: HICON - Handle to the icon whose mask is to be converted.
  *
  * Returns:
- *   HBITMAP - Handle to the converted bitmap.
+ *   HBITMAP - Handle to the newly created bitmap representing the icon's mask.
  *
  * Purpose:
- *   Converts an icon mask to a bitmap by drawing the icon mask onto a compatible bitmap.
+ *   This function extracts the mask from an icon and converts it into a bitmap. The mask defines the transparent areas of the icon.
+ *   This is useful for drawing icons with transparency or for creating custom drawing routines that require the icon's mask.
+ *
+ * Notes:
+ *   The function creates a compatible device context and bitmap, draws the icon's mask onto the bitmap, and then cleans up the resources.
+ *   The resulting bitmap is a monochrome bitmap where white represents the transparent areas of the icon.
  */
 HBITMAP IconMask2Bmp( HICON hIcon )
 {
-   HDC      hDC    = GetDC( 0 );
+   HDC      hDC = GetDC( 0 );
    HDC      hMemDC = CreateCompatibleDC( hDC );
    ICONINFO icon;
    BITMAP   bitmap;
@@ -655,7 +806,7 @@ HBITMAP IconMask2Bmp( HICON hIcon )
 
    GetIconInfo( hIcon, &icon );
    GetObject( icon.hbmColor, sizeof( BITMAP ), ( LPVOID ) &bitmap );
-   hBmp    = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
+   hBmp = CreateCompatibleBitmap( hDC, bitmap.bmWidth, bitmap.bmHeight );
    hOldBmp = ( HBITMAP ) SelectObject( hMemDC, hBmp );
 
    PatBlt( hMemDC, 0, 0, bitmap.bmWidth, bitmap.bmHeight, WHITENESS );
@@ -671,44 +822,50 @@ HBITMAP IconMask2Bmp( HICON hIcon )
 }
 
 /*
- * FUNCTION: DRAWGLYPH
+ * FUNCTION DRAWGLYPH
  *
- * Draws a glyph (bitmap or icon) with optional transparency and disabled effects.
+ * Draws a glyph (bitmap or icon) with optional transparency, disabled effects, and stretching.
  *
  * Parameters:
- *   1: HDC - Device context handle.
- *   2: INT - X coordinate.
- *   3: INT - Y coordinate.
- *   4: INT - Width.
- *   5: INT - Height.
- *   6: HBITMAP - Handle to the bitmap.
- *   7: COLORREF - Transparent color.
- *   8: LOGICAL - Flag to indicate if the glyph is disabled.
- *   9: LOGICAL - Flag to indicate if the glyph should be stretched.
+ *   1: hDC: HDC - Handle to the device context where the glyph will be drawn.
+ *   2: x: INT - X coordinate of the top-left corner of the glyph.
+ *   3: y: INT - Y coordinate of the top-left corner of the glyph.
+ *   4: dx: INT - Width of the glyph. If 0, the original width of the bitmap/icon is used.
+ *   5: dy: INT - Height of the glyph. If 0, the original height of the bitmap/icon is used.
+ *   6: hBmp: HBITMAP - Handle to the bitmap or icon to draw.
+ *   7: rgbTransparent: COLORREF - Color to treat as transparent. If NIL, the color of the top-left pixel is used.
+ *   8: disabled: LOGICAL - .T. to draw the glyph with a disabled (grayed-out) effect, .F. otherwise.
+ *   9: stretched: LOGICAL - .T. to stretch the glyph to fit the specified width and height, .F. otherwise.
  *
  * Returns:
  *   None.
  *
  * Purpose:
- *   Draws a glyph (bitmap or icon) with optional transparency and disabled effects.
+ *   This function provides a flexible way to draw bitmaps and icons with various options, including transparency, disabled effects, and stretching.
+ *   It handles both bitmaps and icons, automatically converting icons to bitmaps if necessary. It uses a mask to achieve transparency,
+ *   allowing for drawing glyphs with irregular shapes. The disabled effect is achieved by drawing a shadow and highlight, creating a 3D effect.
+ *
+ * Notes:
+ *   The function creates several temporary device contexts and bitmaps, which are deleted at the end of the function to avoid memory leaks.
+ *   The function uses BitBlt and StretchBlt to perform the drawing operations, which are optimized for performance.
  */
 HB_FUNC( DRAWGLYPH )
 {
-   HDC      hDC  = hmg_par_raw_HDC( 1 );
-   int      x    = hb_parni( 2 );
-   int      y    = hb_parni( 3 );
-   int      dx   = hb_parni( 4 );
-   int      dy   = hb_parni( 5 );
+   HDC      hDC = hmg_par_raw_HDC( 1 );
+   int      x = hb_parni( 2 );
+   int      y = hb_parni( 3 );
+   int      dx = hb_parni( 4 );
+   int      dy = hb_parni( 5 );
    HBITMAP  hBmp = hmg_par_raw_HBITMAP( 6 );
    COLORREF rgbTransparent = RGB( 255, 255, 255 );
-   BOOL     disabled       = hb_parl( 8 );
-   BOOL     stretched      = HB_ISNIL( 9 ) ? FALSE : hb_parl( 9 );
-   BOOL     bHasBkColor    = ! HB_ISNIL( 7 );
+   BOOL     disabled = hb_parl( 8 );
+   BOOL     stretched = HB_ISNIL( 9 ) ? FALSE : hb_parl( 9 );
+   BOOL     bHasBkColor = !HB_ISNIL( 7 );
 
-   HDC hDCMem;
-   HDC hDCMask;
-   HDC hDCStretch;
-   HDC hDCNoBlink;
+   HDC      hDCMem;
+   HDC      hDCMask;
+   HDC      hDCStretch;
+   HDC      hDCNoBlink;
 
    HBITMAP  hBmpDefault;
    HBITMAP  hBmpTransMask;
@@ -729,7 +886,7 @@ HB_FUNC( DRAWGLYPH )
    if( ( UINT ) GetObject( hBmp, sizeof( BITMAP ), ( LPVOID ) &bitmap ) != sizeof( BITMAP ) )
    {
       // Check if it is an icon
-      if( ! GetIconInfo( ( HICON ) hBmp, &icon ) )
+      if( !GetIconInfo( ( HICON ) hBmp, &icon ) )
       {
          return;
       }
@@ -737,12 +894,12 @@ HB_FUNC( DRAWGLYPH )
       DeleteObject( icon.hbmMask );
       DeleteObject( icon.hbmColor );
 
-      if( ! icon.fIcon )
+      if( !icon.fIcon )
       {
          return;
       }
 
-      if( ! disabled && ! stretched )
+      if( !disabled && !stretched )
       {
          // Just draw the icon directly
          DrawIconEx( hDC, x, y, ( HICON ) hBmp, dx, dy, 0, NULL, DI_NORMAL );
@@ -750,7 +907,7 @@ HB_FUNC( DRAWGLYPH )
       }
       else
       {
-         if( ! stretched )
+         if( !stretched )
          {
             // Convert icon to bitmap mask
             hBmp = IconMask2Bmp( ( HICON ) hBmp );
@@ -765,7 +922,7 @@ HB_FUNC( DRAWGLYPH )
 
          // Ignore the user-provided color
          rgbTransparent = RGB( 255, 255, 255 );
-         bHasBkColor    = TRUE;
+         bHasBkColor = TRUE;
          GetObject( hBmp, sizeof( BITMAP ), ( LPVOID ) &bitmap );
       }
    }
@@ -778,7 +935,7 @@ HB_FUNC( DRAWGLYPH )
       dy = ( dy > 0 ? dy : bitmap.bmHeight );
       hBmpStretch = CreateCompatibleBitmap( hDC, dx, dy );
       SelectObject( hDCMem, hBmpStretch );
-      hDCStretch  = CreateCompatibleDC( hDC );
+      hDCStretch = CreateCompatibleDC( hDC );
       hBmpDefault = ( HBITMAP ) SelectObject( hDCStretch, hBmp );
 
       StretchBlt( hDCMem, 0, 0, dx, dy, hDCStretch, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY );
@@ -794,22 +951,22 @@ HB_FUNC( DRAWGLYPH )
    }
 
    // Prime the "no blink" device context
-   hDCNoBlink     = CreateCompatibleDC( hDC );
-   hBmpNoBlink    = CreateCompatibleBitmap( hDC, dx, dy );
+   hDCNoBlink = CreateCompatibleDC( hDC );
+   hBmpNoBlink = CreateCompatibleBitmap( hDC, dx, dy );
    hBmpNoBlinkOld = ( HBITMAP ) SelectObject( hDCNoBlink, hBmpNoBlink );
    BitBlt( hDCNoBlink, 0, 0, dx, dy, hDC, x, y, SRCCOPY );
-   SetBkColor( hDCNoBlink, RGB( 255, 255, 255 ) ); // White
-   SetTextColor( hDCNoBlink, RGB( 0, 0, 0 ) );     // Black
+   SetBkColor( hDCNoBlink, RGB( 255, 255, 255 ) );                // White
+   SetTextColor( hDCNoBlink, RGB( 0, 0, 0 ) );                    // Black
 
    // Was background color given?
    // No? Get the color automatically
-   if( ! bHasBkColor )
+   if( !bHasBkColor )
    {
       rgbTransparent = GetPixel( hDCMem, 0, 0 );
    }
 
    // Build mask based on transparent color
-   hDCMask       = CreateCompatibleDC( hDCNoBlink );
+   hDCMask = CreateCompatibleDC( hDCNoBlink );
    hBmpTransMask = CreateBitmap( dx, dy, 1, 1, NULL );
    SelectObject( hDCMask, hBmpTransMask );
    SetBkColor( hDCMem, rgbTransparent );
@@ -817,13 +974,13 @@ HB_FUNC( DRAWGLYPH )
 
    if( disabled )
    {
-      hBr  = CreateSolidBrush( GetSysColor( COLOR_BTNHIGHLIGHT ) );
+      hBr = CreateSolidBrush( GetSysColor( COLOR_BTNHIGHLIGHT ) );
       hOld = ( HBRUSH ) SelectObject( hDCNoBlink, hBr );
       BitBlt( hDCNoBlink, 1, 1, dx - 0, dy - 0, hDCMask, 0, 0, 12060490 );
       SelectObject( hDCNoBlink, hOld );
       DeleteObject( hBr );
 
-      hBr  = CreateSolidBrush( GetSysColor( COLOR_BTNSHADOW ) );
+      hBr = CreateSolidBrush( GetSysColor( COLOR_BTNSHADOW ) );
       hOld = ( HBRUSH ) SelectObject( hDCNoBlink, hBr );
       BitBlt( hDCNoBlink, 0, 0, dx - 0, dy - 0, hDCMask, 0, 0, 12060490 );
       SelectObject( hDCNoBlink, hOld );
@@ -882,34 +1039,34 @@ HB_FUNC( DRAWGLYPH )
  */
 HB_FUNC( DRAWGLYPHMASK )
 {
-   HDC      hDC  = hmg_par_raw_HDC( 1 );
-   int      dx   = hb_parni( 4 );
-   int      dy   = hb_parni( 5 );
+   HDC      hDC = hmg_par_raw_HDC( 1 );
+   int      dx = hb_parni( 4 );
+   int      dy = hb_parni( 5 );
    HBITMAP  hBmp = hmg_par_raw_HBITMAP( 6 );
    COLORREF rgbTransparent;
    HWND     hwnd = hmg_par_raw_HWND( 10 );
 
-   HDC hDCMem;
-   HDC hDCMask;
+   HDC      hDCMem;
+   HDC      hDCMask;
 
-   HBITMAP hBmpDefault;
-   HBITMAP hBmpTransMask;
+   HBITMAP  hBmpDefault;
+   HBITMAP  hBmpTransMask;
 
-   BITMAP bitmap;
+   BITMAP   bitmap;
 
    GetObject( hBmp, sizeof( BITMAP ), ( LPVOID ) &bitmap );
 
-   SetBkColor( hDC, RGB( 255, 255, 255 ) ); // White
-   SetTextColor( hDC, RGB( 0, 0, 0 ) );     // Black
+   SetBkColor( hDC, RGB( 255, 255, 255 ) );                       // White
+   SetTextColor( hDC, RGB( 0, 0, 0 ) );                           // Black
    hDCMem = CreateCompatibleDC( hDC );
 
    dx = ( dx > 0 ? HB_MIN( dx, bitmap.bmWidth ) : bitmap.bmWidth );
    dy = ( dy > 0 ? HB_MIN( dy, bitmap.bmHeight ) : bitmap.bmHeight );
-   hBmpDefault    = ( HBITMAP ) SelectObject( hDCMem, hBmp );
+   hBmpDefault = ( HBITMAP ) SelectObject( hDCMem, hBmp );
    rgbTransparent = GetPixel( hDCMem, 0, 0 );
 
    // Build mask based on transparent color
-   hDCMask       = CreateCompatibleDC( hDC );
+   hDCMask = CreateCompatibleDC( hDC );
    hBmpTransMask = CreateBitmap( dx, dy, 1, 1, NULL );
 
    SelectObject( hDCMask, hBmpTransMask );
@@ -945,11 +1102,11 @@ HB_FUNC( DRAWGLYPHMASK )
 HB_FUNC( LOADBITMAP )
 {
 #ifndef UNICODE
-   LPCSTR lpImageName = hb_parc( 1 );                          // Bitmap name (ANSI)
+   LPCSTR   lpImageName = hb_parc( 1 );                           // Bitmap name (ANSI)
 #else
-   LPWSTR lpImageName = AnsiToWide( ( char * ) hb_parc( 1 ) ); // Bitmap name (Unicode)
+   LPWSTR   lpImageName = AnsiToWide( ( char * ) hb_parc( 1 ) );  // Bitmap name (Unicode)
 #endif
-   HBITMAP hBitmap;
+   HBITMAP  hBitmap;
 
    // Load the bitmap from resources
    hBitmap = ( HBITMAP ) LoadImage( GetResources(), lpImageName, IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR );
@@ -960,11 +1117,10 @@ HB_FUNC( LOADBITMAP )
       hBitmap = ( HBITMAP ) LoadImage( NULL, lpImageName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_DEFAULTCOLOR );
    }
 
-   RegisterResource( hBitmap, "BMP" ); // Register the bitmap resource
-   hmg_ret_raw_HANDLE( hBitmap );      // Return the handle to the loaded bitmap
-
+   RegisterResource( hBitmap, "BMP" );             // Register the bitmap resource
+   hmg_ret_raw_HANDLE( hBitmap );                  // Return the handle to the loaded bitmap
 #ifdef UNICODE
-   hb_xfree( lpImageName ); // Free the allocated memory for the Unicode bitmap name
+   hb_xfree( lpImageName );                        // Free the allocated memory for the Unicode bitmap name
 #endif
 }
 
@@ -999,13 +1155,13 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
    BITMAP   bitmap;
    ICONINFO icon;
    HBRUSH   hBr, hOld;
-   BOOL     bHasBkColor = ( rgbTransparent != CLR_INVALID );
+   BOOL     bHasBkColor = !HB_ISNIL( 7 );
 
    // Check if the handle is a bitmap
    if( ( UINT ) GetObject( hBmp, sizeof( BITMAP ), ( LPVOID ) &bitmap ) != sizeof( BITMAP ) )
    {
       // Check if it is an icon
-      if( ! GetIconInfo( ( HICON ) hBmp, &icon ) )
+      if( !GetIconInfo( ( HICON ) hBmp, &icon ) )
       {
          return;
       }
@@ -1013,12 +1169,12 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
       DeleteObject( icon.hbmMask );
       DeleteObject( icon.hbmColor );
 
-      if( ! icon.fIcon )
+      if( !icon.fIcon )
       {
          return;
       }
 
-      if( ! disabled && ! stretched )
+      if( !disabled && !stretched )
       {
          // Just draw the icon directly
          DrawIconEx( hDC, x, y, ( HICON ) hBmp, dx, dy, 0, NULL, DI_NORMAL );
@@ -1026,7 +1182,7 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
       }
       else
       {
-         if( ! stretched )
+         if( !stretched )
          {
             // Convert icon to bitmap mask
             hBmp = IconMask2Bmp( ( HICON ) hBmp );
@@ -1041,7 +1197,7 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
 
          // Ignore the user-provided color
          rgbTransparent = RGB( 255, 255, 255 );
-         bHasBkColor    = TRUE;
+         bHasBkColor = TRUE;
          GetObject( hBmp, sizeof( BITMAP ), ( LPVOID ) &bitmap );
       }
    }
@@ -1055,7 +1211,7 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
 
       hBmpStretch = CreateCompatibleBitmap( hDC, dx, dy );
       SelectObject( hDCMem, hBmpStretch );
-      hDCStretch  = CreateCompatibleDC( hDC );
+      hDCStretch = CreateCompatibleDC( hDC );
       hBmpDefault = ( HBITMAP ) SelectObject( hDCStretch, hBmp );
 
       StretchBlt( hDCMem, 0, 0, dx, dy, hDCStretch, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY );
@@ -1071,8 +1227,8 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
    }
 
    // Prime the "no blink" device context
-   hDCNoBlink     = CreateCompatibleDC( hDC );
-   hBmpNoBlink    = CreateCompatibleBitmap( hDC, dx, dy );
+   hDCNoBlink = CreateCompatibleDC( hDC );
+   hBmpNoBlink = CreateCompatibleBitmap( hDC, dx, dy );
    hBmpNoBlinkOld = ( HBITMAP ) SelectObject( hDCNoBlink, hBmpNoBlink );
    BitBlt( hDCNoBlink, 0, 0, dx, dy, hDC, x, y, SRCCOPY );
    SetBkColor( hDCNoBlink, RGB( 255, 255, 255 ) ); // White
@@ -1080,13 +1236,13 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
 
    // Was background color given?
    // No? Get the color automatically
-   if( ! bHasBkColor )
+   if( !bHasBkColor )
    {
       rgbTransparent = GetPixel( hDCMem, 0, 0 );
    }
 
    // Build mask based on transparent color
-   hDCMask       = CreateCompatibleDC( hDCNoBlink );
+   hDCMask = CreateCompatibleDC( hDCNoBlink );
    hBmpTransMask = CreateBitmap( dx, dy, 1, 1, NULL );
    SelectObject( hDCMask, hBmpTransMask );
    SetBkColor( hDCMem, rgbTransparent );
@@ -1094,13 +1250,13 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
 
    if( disabled )
    {
-      hBr  = CreateSolidBrush( GetSysColor( COLOR_BTNHIGHLIGHT ) );
+      hBr = CreateSolidBrush( GetSysColor( COLOR_BTNHIGHLIGHT ) );
       hOld = ( HBRUSH ) SelectObject( hDCNoBlink, hBr );
       BitBlt( hDCNoBlink, 1, 1, dx - 0, dy - 0, hDCMask, 0, 0, 12060490 );
       SelectObject( hDCNoBlink, hOld );
       DeleteObject( hBr );
 
-      hBr  = CreateSolidBrush( GetSysColor( COLOR_BTNSHADOW ) );
+      hBr = CreateSolidBrush( GetSysColor( COLOR_BTNSHADOW ) );
       hOld = ( HBRUSH ) SelectObject( hDCNoBlink, hBr );
       BitBlt( hDCNoBlink, 0, 0, dx - 0, dy - 0, hDCMask, 0, 0, 12060490 );
       SelectObject( hDCNoBlink, hOld );
@@ -1139,128 +1295,139 @@ VOID DrawGlyph( HDC hDC, int x, int y, int dx, int dy, HBITMAP hBmp, COLORREF rg
 /*
  * FUNCTION: GetImageSize
  *
- * Gets the dimensions of an image file.
+ * Purpose: Retrieves dimensions of an image file (JPG, GIF, PNG).
  *
  * Parameters:
  *   fn: const char* - File name of the image.
- *   x: int* - Pointer to store the width.
- *   y: int* - Pointer to store the height.
+ *   x: int* - Pointer to store width.
+ *   y: int* - Pointer to store height.
  *
- * Returns:
- *   BOOL - TRUE if successful, FALSE otherwise.
- *
- * Purpose:
- *   Retrieves the width and height of an image file (JPG, GIF, PNG).
+ * Returns: BOOL - TRUE if successful, FALSE otherwise.
  */
-BOOL GetImageSize( const char * fn, int * x, int * y )
+BOOL GetImageSize( const char *fn, int *x, int *y )
 {
-   unsigned char buf[ 24 ];
-   long          len;
+   unsigned char  buf[24];
+   FILE           *f;
 
-   FILE * f = hb_fopen( fn, "rb" );
+   *x = *y = 0;
 
-   if( ! f )
+   if( !fn || !*fn )
    {
       return FALSE;
    }
 
-   fseek( f, 0, SEEK_END );
+   // Open file in binary read mode
+   f = fopen( fn, "rb" );
+   if( !f )
+   {
+      return FALSE;
+   }
 
-   len = ftell( f );
-
-   fseek( f, 0, SEEK_SET );
-
-   if( len < 24 )
+   // Read first 24 bytes
+   if( fread( buf, 1, 24, f ) != 24 )
    {
       fclose( f );
       return FALSE;
    }
 
-   // Strategy:
-   // reading GIF dimensions requires the first 10 bytes of the file
-   // reading PNG dimensions requires the first 24 bytes of the file
-   // reading JPEG dimensions requires scanning through jpeg chunks
-   // In all formats, the file is at least 24 bytes big, so we'll read
-   // that always
-   fread( buf, 1, 24, f );
-
-   // For JPEGs, we need to read the first 12 bytes of each chunk.
-   // We'll read those 12 bytes at buf+2...buf+14, i.e. overwriting
-   // the existing buf.
-   if( buf[ 0 ] == 0xFF && buf[ 1 ] == 0xD8 && buf[ 2 ] == 0xFF && buf[ 3 ] == 0xE0 && buf[ 6 ] == 'J' && buf[ 7 ] == 'F' && buf[ 8 ] == 'I' && buf[ 9 ] == 'F' )
+   // JPEG: Check signature (FFD8)
+   if( buf[0] == 0xFF && buf[1] == 0xD8 )
    {
-      long pos = 2;
-      while( buf[ 2 ] == 0xFF )
+      unsigned char  marker[4];
+      int            segLength;
+
+      // Move past SOI
+      fseek( f, 2, SEEK_SET );
+
+      while( fread( marker, 1, 4, f ) == 4 )
       {
-         if( buf[ 3 ] == 0xC0 || buf[ 3 ] == 0xC1 || buf[ 3 ] == 0xC2 || buf[ 3 ] == 0xC3 || buf[ 3 ] == 0xC9 || buf[ 3 ] == 0xCA || buf[ 3 ] == 0xCB )
+         if( marker[0] != 0xFF )
          {
-            break;
+            break;   // invalid marker
          }
 
-         pos += 2 + ( buf[ 4 ] << 8 ) + buf[ 5 ];
-         if( pos + 12 > len )
+         segLength = ( marker[2] << 8 ) | marker[3];
+         if( segLength < 2 )
          {
-            break;
+            break;   // corrupt segment
          }
 
-         fseek( f, pos, SEEK_SET );
-         fread( buf + 2, 1, 12, f );
+         // SOF markers
+         if( marker[1] == 0xC0 || marker[1] == 0xC1 || marker[1] == 0xC2 || marker[1] == 0xC3 || marker[1] == 0xC9 || marker[1] == 0xCA || marker[1] == 0xCB )
+         {
+            unsigned char  dims[5];
+            if( fread( dims, 1, 5, f ) == 5 )
+            {
+               *y = ( dims[1] << 8 ) | dims[2];
+               *x = ( dims[3] << 8 ) | dims[4];
+               fclose( f );
+               return TRUE;
+            }
+            break;
+         }
+         else
+         {
+            // Skip rest of segment
+            fseek( f, segLength - 2, SEEK_CUR );
+         }
       }
+
+      fclose( f );
+      return FALSE;  // no SOF found
    }
 
-#if ! ( defined( __POCC__ ) && __POCC__ >= 1100 )
+   // GIF: Check "GIF" signature
+   if( buf[0] == 'G' && buf[1] == 'I' && buf[2] == 'F' )
+   {
+      *x = buf[6] + ( buf[7] << 8 );
+      *y = buf[8] + ( buf[9] << 8 );
+      fclose( f );
+      return TRUE;
+   }
+
+   // PNG: Check PNG signature and IHDR chunk
+   if
+   (
+      buf[0] == 0x89
+   && buf[1] == 'P'
+   && buf[2] == 'N'
+   && buf[3] == 'G'
+   && buf[4] == 0x0D
+   && buf[5] == 0x0A
+   && buf[6] == 0x1A
+   && buf[7] == 0x0A
+   && buf[12] == 'I'
+   && buf[13] == 'H'
+   && buf[14] == 'D'
+   && buf[15] == 'R'
+   )
+   {
+      *x = ( buf[16] << 24 ) + ( buf[17] << 16 ) + ( buf[18] << 8 ) + buf[19];
+      *y = ( buf[20] << 24 ) + ( buf[21] << 16 ) + ( buf[22] << 8 ) + buf[23];
+      fclose( f );
+      return TRUE;
+   }
+
    fclose( f );
-#endif /* __POCC__ */
-
-   // JPEG: (first two bytes of buf are first two bytes of the jpeg
-   // file; rest of buf is the DCT frame
-   if( buf[ 0 ] == 0xFF && buf[ 1 ] == 0xD8 && buf[ 2 ] == 0xFF )
-   {
-      *y = ( buf[ 7 ] << 8 ) + buf[ 8 ];
-      *x = ( buf[ 9 ] << 8 ) + buf[ 10 ];
-      return TRUE;
-   }
-
-   // GIF: first three bytes say "GIF", next three give version
-   // number. Then dimensions
-   if( buf[ 0 ] == 'G' && buf[ 1 ] == 'I' && buf[ 2 ] == 'F' )
-   {
-      *x = buf[ 6 ] + ( buf[ 7 ] << 8 );
-      *y = buf[ 8 ] + ( buf[ 9 ] << 8 );
-      return TRUE;
-   }
-
-   // PNG: the first frame is by definition an IHDR frame, which gives
-   // dimensions
-   if( buf[ 0 ] == 0x89 && buf[ 1 ] == 'P' && buf[ 2 ] == 'N' && buf[ 3 ] == 'G' && buf[ 4 ] == 0x0D && buf[ 5 ] == 0x0A && buf[ 6 ] == 0x1A && buf[ 7 ] == 0x0A && buf[ 12 ] == 'I' && buf[ 13 ] == 'H' && buf[ 14 ] == 'D' && buf[ 15 ] == 'R' )
-   {
-      *x = ( buf[ 16 ] << 24 ) + ( buf[ 17 ] << 16 ) + ( buf[ 18 ] << 8 ) + ( buf[ 19 ] << 0 );
-      *y = ( buf[ 20 ] << 24 ) + ( buf[ 21 ] << 16 ) + ( buf[ 22 ] << 8 ) + ( buf[ 23 ] << 0 );
-      return TRUE;
-   }
-
    return FALSE;
 }
 
 /*
  * FUNCTION: HB_GETIMAGESIZE
  *
- * Gets the dimensions of an image file.
+ * Purpose: Harbour wrapper for GetImageSize.
  *
- * Parameters:
- *   1: LPCSTR - File name of the image.
+ * Parameters: 1: LPCSTR - Image file name.
  *
- * Returns:
- *   Array - Array containing the width and height of the image.
- *
- * Purpose:
- *   Retrieves the width and height of an image file (JPG, GIF, PNG).
+ * Returns: Array - {width, height} or {0, 0} on failure.
  */
 HB_FUNC( HB_GETIMAGESIZE )
 {
-   int x = 0, y = 0;
-
-   GetImageSize( hb_parcx( 1 ), &x, &y );
+   int   x = 0, y = 0;
+   if( hb_parclen( 1 ) > 0 )
+   {
+      GetImageSize( hb_parcx( 1 ), &x, &y );
+   }
 
    hb_reta( 2 );
    HB_STORNI( x, -1, 1 );
@@ -1314,9 +1481,9 @@ HB_FUNC( GETBITMAPSIZE )
    if( hb_parclen( 1 ) > 0 )
    {
 #ifndef UNICODE
-      LPCSTR lpImageName = hb_parc( 1 );
+      LPCSTR   lpImageName = hb_parc( 1 );
 #else
-      LPWSTR lpImageName = AnsiToWide( ( char * ) hb_parc( 1 ) );
+      LPWSTR   lpImageName = AnsiToWide( ( char * ) hb_parc( 1 ) );
 #endif
       hBitmap = ( HBITMAP ) LoadImage( GetResources(), lpImageName, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION );
 
@@ -1342,7 +1509,7 @@ HB_FUNC( GETBITMAPSIZE )
 
    if( hBitmap != NULL )
    {
-      BITMAP bm;
+      BITMAP   bm;
 
       if( GetObject( hBitmap, sizeof( BITMAP ), &bm ) )
       {
@@ -1375,7 +1542,7 @@ HB_FUNC( GETBITMAPSIZE )
 HB_FUNC( GETICONSIZE )
 {
    PHB_ITEM pResult = hb_itemArrayNew( 3 );
-   HICON    hIcon   = hmg_par_raw_HICON( 1 );
+   HICON    hIcon = hmg_par_raw_HICON( 1 );
 
    _arraySet( pResult, 0, 0, 4 );
 
@@ -1385,7 +1552,7 @@ HB_FUNC( GETICONSIZE )
 
       if( GetIconInfo( hIcon, &sIconInfo ) )
       {
-         BITMAP bm;
+         BITMAP   bm;
 
          if( GetObject( sIconInfo.hbmColor, sizeof( BITMAP ), &bm ) )
          {

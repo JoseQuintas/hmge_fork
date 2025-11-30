@@ -76,6 +76,9 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
    LOCAL o
 #endif
 
+   IF _SetGetGlobal( "_HMG_SetBCC58Compatible" ) == NIL
+      STATIC _HMG_SetBCC58Compatible AS GLOBAL VALUE .F.
+   ENDIF
    hb_default( @panel, .F. )
 
    IF FormName == NIL
@@ -176,7 +179,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
          mVar := ( nocaption .AND. nosize )
          w := ClientWidth + iif( mVar, 0, GetBorderWidth() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          h := ClientHeight + iif( nocaption, 0, GetTitleHeight() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) + iif( mVar, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
-         IF MSC_VER() > 0 .OR. _HMG_IsBcc77
+         IF _HMG_IsBcc77OrLater
             IF !mVar .AND. nosize .AND. _HMG_IsThemed
                w += GetBorderWidth() + 2
                h += GetBorderHeight() + 2
@@ -184,7 +187,7 @@ FUNCTION _DefineWindow ( FormName, Caption, x, y, w, h, nominimize, nomaximize, 
          ENDIF
       ENDIF
    ELSE
-      IF MSC_VER() > 0 .OR. _HMG_IsBcc77
+      IF _SetGetGlobal( "_HMG_SetBCC58Compatible" ) .AND. _HMG_IsBcc77OrLater
          IF nosize .AND. !nocaption .AND. _HMG_IsThemed
             w += GetBorderWidth() + 2
             h += GetBorderHeight() + 2
@@ -515,6 +518,9 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
    LOCAL o
 #endif
 
+   IF _SetGetGlobal( "_HMG_SetBCC58Compatible" ) == NIL
+      STATIC _HMG_SetBCC58Compatible AS GLOBAL VALUE .F.
+   ENDIF
    IF FormName == NIL
       FormName := _HMG_TempWindowName
    ENDIF
@@ -548,14 +554,20 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
          mVar := ( nocaption .AND. nosize )
          w := ClientWidth + iif( mVar, 0, GetBorderWidth() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
          h := ClientHeight + iif( nocaption, 0, GetTitleHeight() ) + iif( mVar .OR. _HMG_IsThemed .AND. nosize, 0, GetBorderWidth() ) + iif( mVar, 0, GetBorderWidth() ) - iif( mVar .OR. (!_HMG_IsThemed .AND. !nosize) .OR. (_HMG_IsThemed .AND. !nocaption .AND. !nosize), 0, 2 )
-         IF MSC_VER() > 0 .OR. _HMG_IsBcc77
+         IF _HMG_IsBcc77OrLater
             IF ! mVar .AND. nosize .AND. _HMG_IsThemed
                w += GetBorderWidth() + 2
                h += GetBorderHeight() + 2
             ENDIF
          ENDIF
       ENDIF
-
+   ELSE
+      IF _SetGetGlobal( "_HMG_SetBCC58Compatible" ) .AND. _HMG_IsBcc77OrLater
+         IF nosize .AND. !nocaption .AND. _HMG_IsThemed
+            w += GetBorderWidth() + 2
+            h += GetBorderHeight() + 2
+         ENDIF
+      ENDIF
    ENDIF
 
    mVar := '_' + FormName
@@ -600,13 +612,6 @@ FUNCTION _DefineModalWindow ( FormName, Caption, x, y, w, h, Parent, nosize, nos
          MsgMiniGuiError( "DEFINE WINDOW: Virtual Width must be greater than Window Width." )
       ENDIF
       hscroll := .T.
-   ENDIF
-
-   IF ( MSC_VER() > 0 .OR. _HMG_IsBcc77 ) .AND. _HMG_IsThemed
-      IF nosize .AND. nosysmenu
-         w += GetBorderWidth() + 2
-         h += GetBorderHeight() + 2
-      ENDIF
    ENDIF
 
    IF ValType ( aRGB ) != 'C' .AND. IsArrayRGB ( aRGB ) == .F.
@@ -2047,7 +2052,10 @@ FUNCTION _DoControlEventProcedure ( bBlock, i, cEventType, nParam, nParam2 )
       _HMG_ThisControlName := _HMG_aControlNames[ _HMG_ThisIndex ]
 
       IF _HMG_BeginWindowActive == .F. .OR. !( hb_defaultValue( cEventType, '' ) == 'CONTROL_ONCHANGE' ) .OR. _HMG_MainClientMDIHandle != 0
-         lRetVal := Eval ( bBlock, hb_defaultValue( nParam, 0 ), nParam2 )
+#ifdef _OBJECT_
+         i := _WindowObj( _HMG_aFormHandles[ _HMG_ThisFormIndex ] )
+#endif
+         lRetVal := Eval ( bBlock, hb_defaultValue( nParam, 0 ), nParam2, _HMG_ThisControlName, i )
       ENDIF
 
       _PopEventInfo()
@@ -2080,7 +2088,10 @@ FUNCTION _DoWindowEventProcedure ( bBlock, i, cEventType )
       _HMG_ThisFormName := _HMG_aFormNames[ _HMG_ThisFormIndex ]
       _HMG_ThisControlName :=  ""
 
-      lRetVal := Eval ( bBlock )
+#ifdef _OBJECT_
+      i := _WindowObj( _HMG_aFormHandles[ _HMG_ThisFormIndex ] )
+#endif
+      lRetVal := Eval ( bBlock, _HMG_ThisFormName, i )
 
       _PopEventInfo()
    ENDIF
@@ -2462,7 +2473,7 @@ FUNCTION ReleaseAllWindows ()
 
    NEXT
 
-   IF IsExtendedMenuStyleActive() .AND. IsMenu ( hMenu := GetMenu ( _HMG_MainHandle ) )
+   IF IsExtendedMenuStyleActive() .AND. ! Empty ( _HMG_MainHandle ) .AND. IsMenu ( hMenu := GetMenu ( _HMG_MainHandle ) )
       _OnDestroyMenu ( hMenu )  // Release OwnerDraw Main Menu
    ENDIF
 
@@ -2913,11 +2924,14 @@ FUNCTION WaitWindow ( cMessage, lNoWait, nWidth, nSize, cFont, aFontColor, aBack
 *-----------------------------------------------------------------------------*
    LOCAL cFormName := "_HMG_CHILDWAITWINDOW"
    LOCAL lDefined := _IsWindowDefined( cFormName )
-   LOCAL lIsModal, hWnd
+   LOCAL lIsModal
    LOCAL lWidth := ( nWidth == NIL )
    LOCAL nHeight
    LOCAL nY, nX, nW, nH, nI, nK
    LOCAL hFont, cTmp, nTmp, cLbl, bOnInit, l_No_Wait := .T.
+#ifdef _HMG_COMPAT_
+   LOCAL hWnd
+#endif
 #ifdef _NAMES_LIST_
    LOCAL oo, lo
 #endif

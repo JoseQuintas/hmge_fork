@@ -43,8 +43,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
-----------------------------------------------------------------------------*/
-
+ ----------------------------------------------------------------------------*/
 #include "minigui.ch"
 #include "error.ch"
 #include "fileio.ch"
@@ -265,7 +264,7 @@ STATIC FUNCTION ErrorMessage( oError )
       FOR n := 1 TO Len( oError:args )
          cMessage += ;
             "     [" + hb_ntos( n, 2 ) + "] = " + ValType( oError:args[ n ] ) + ;
-            "   " + cValToChar( cValToChar( oError:args[ n ] ) ) + ;
+            "   " + cValToChar( oError:args[ n ] ) + ;
             iif( ValType( oError:args[ n ] ) == "A", " length: " + ;
             hb_ntos( Len( oError:args[ n ] ) ), "" ) + iif( n < Len( oError:args ), CRLF, "" )
       NEXT
@@ -300,7 +299,8 @@ STATIC PROCEDURE ShowError( cErrorMessage, oError )
 *
 */
 STATIC PROCEDURE ShowError( cErrorMessage, oError )
-   LOCAL cMsg := "", bInit
+   LOCAL cMsg := ""
+   LOCAL bInit
 
    IF _SetGetGlobal( "_HMG_ShowError" ) == NIL
       STATIC _HMG_ShowError AS GLOBAL VALUE .T.
@@ -313,35 +313,50 @@ STATIC PROCEDURE ShowError( cErrorMessage, oError )
       _TSB_aControlhWnd := {}
 #endif
       IF ISBLOCK( _HMG_bOnErrorInit )
-         cMsg := Eval( _HMG_bOnErrorInit, cMsg )
+         cMsg := Eval( _HMG_bOnErrorInit, cMsg, oError, ErrorMessage( oError ), cErrorMessage )
       ENDIF
 
       cMsg += iif( _lShowDetailError(), cErrorMessage, ErrorMessage( oError ) )
 
       IF ISLOGICAL( _HMG_lOnErrorStop ) .AND. _HMG_lOnErrorStop
 
-         bInit := {|| iif( GetControlType( "Say_01", "oDlg" ) == "EDIT",, ( ;
-            SetProperty( "oDlg", "Say_01", "FontColor", YELLOW ), ;
-            SetProperty( "oDlg", "Say_01", "Alignment", "CENTER" ), ;
-            SetProperty( "oDlg", "Say_02", "FontColor", YELLOW ), ;
-            SetProperty( "oDlg", "Say_02", "Alignment", "CENTER" ) ) ) }
+         bInit := {|| 
+            LOCAL n := 2, ;
+               aBackColor := hb_defaultValue( _HMG_aErrorBackColor, MAROON ), ;
+               aFontColor := hb_defaultValue( _HMG_aErrorFontColor, WHITE ), ;
+               aTopFontColor := hb_defaultValue( _HMG_aTopStringFontColor, YELLOW )
+            EraseWindow( "oDlg" )
+            SetProperty( "oDlg", "BackColor", aBackColor )
+            DRAW ICON IN WINDOW oDlg AT 37, 16 PICTURE "ZZZ_B_STOP64" WIDTH 64 HEIGHT 64 COLOR aBackColor
+            IF GetControlType( "Say_01", "oDlg" ) == "EDIT"
+               SetProperty( "oDlg", "Say_01", "FontColor", aFontColor )
+               SetProperty( "oDlg", "Say_01", "BackColor", aBackColor )
+            ELSE
+               SetProperty( "oDlg", "Say_01", "FontColor", aTopFontColor )
+               SetProperty( "oDlg", "Say_01", "BackColor", aBackColor )
+               SetProperty( "oDlg", "Say_01", "Alignment", "CENTER" )
+               SetProperty( "oDlg", "Say_02", "FontColor", aTopFontColor )
+               SetProperty( "oDlg", "Say_02", "BackColor", aBackColor )
+               SetProperty( "oDlg", "Say_02", "Alignment", "CENTER" )
+               WHILE _IsControlDefined( "Say_" + StrZero( ++n, 2 ), "oDlg" )
+                  SetProperty( "oDlg", "Say_" + StrZero( n, 2 ), "FontColor", aFontColor )
+                  SetProperty( "oDlg", "Say_" + StrZero( n, 2 ), "BackColor", aBackColor )
+               END
+            ENDIF
+            RETURN NIL
+            }
 
          IF AScan( _HMG_aFormType, 'A' ) == 0
             _HMG_MainWindowFirst := .F.
          ENDIF
 
-         SET MSGALERT BACKCOLOR TO MAROON
-         SET MSGALERT FONTCOLOR TO WHITE
-
          IF GetFontHandle( "DlgFont" ) == 0
             DEFINE FONT DlgFont FONTNAME "Verdana" SIZE 14
          ENDIF
 
-         IF _lShowDetailError()
-            HMG_Alert_MaxLines( 35 )
-         ENDIF
+         HMG_Alert_MaxLines( iif( _lShowDetailError(), 35, 25 ) )
 
-         AlertStop( cMsg, "Program Error", "ZZZ_B_STOP64", 64, { { 217, 67, 67 } }, .T., bInit )
+         AlertStop( cMsg, "Program Error: " + Upper( GetExeFileName() ), "ZZZ_B_STOP64", 64, { hb_defaultValue( _HMG_aButtonBackColor, { 217, 67, 67 } ) }, .T., bInit )
 
       ELSE
 

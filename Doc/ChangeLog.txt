@@ -1,3 +1,313 @@
+2025/11/06: HMG Extended Edition version 25.11.
+  * Fixed: Memory leaks in CHECKLABEL control: this fix avoids memory and
+           GDI leaks that would previously happen when replacing images or
+           destroying windows.
+           This is critical if you use the SWITCHER control.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\CheckLabel_3)
+  * Enhanced: Improved output of the Error message window with using
+           SET SHOWREDALERT ON command: in this form you can customize
+           the colors of the error message output with this pseudo-function:
+           SetProgramErrorColors( { MAROON, WHITE, YELLOW, ORANGE, BLACK } ),
+           where parameter is a five-element color array.
+           Requested by Verchenko Andrey.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\ShowDetailError)
+  * New: Adaptation of MiniGUI core is completed for using Zig language as
+           LLVM C compiler frontend at https://ziglang.org/download/
+           Please note that the library format is fully compatible with MinGW.
+           Contributed by Grigory Filatov.
+  * Updated: Implementation of UNICODE support in the MiniGUI core:
+           - fixed getting the name of the currently set hotkey in HotKeyBox.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\HotKeyBox)
+  * Updated: HbZipArc library:
+           * Fixed: hb_ZipFile() honors the <lFullPath> parameter. The default
+             value has been changed to .F.;
+           * Fixed: hb_UnzipFile() overwrites existing files in the unzip path.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\ZiparcUnitTests)
+  * Updated: Harbour contrib SevenZip library for 7zip compression:
+           * Added compression level handling for all compression methods,
+             not just zip archiving (default value is 6).
+           * Added recursive exclusion of folders by name or mask during
+             archiving.
+           * Added :Version() method to determine the 7-zip dll version.
+           Contributed by Grigory Filatov
+           (see source in folder \Source\SevenZip)
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - improved FilterFTS() method now works with arrays;
+           - added new CalcTotal() method to calculate column's summary.
+           This was a last minute modification for the 25.10 build.
+           Suggested and contributed by Sergej Kiselev
+           (see demos in folder \samples\Advanced\Tsb_FilterFTS)
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.51.0 (from 3.50.4).
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\SQLITE_2)
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2025-10-23 21:45):
+           * updated hbmk2 tool to define __ARCH64BIT__ at .prg level;
+           * added support for using Zig as LLVM C compiler frontend;
+           * added use of read lock when accessing the FPT memo file.
+           Contributed by Grigory Filatov
+           (look at ReadMe.txt in folder \harbour) [PRO VERSION]
+  * New: 'Simple ChartView class for GraphPlus library' sample.
+           Based on the 'Google Charts' example approach.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\ChartView)
+  * New: 'CSV Viewer for .txt, .csv and .arr files' sample:
+           - export files to .xls, .dbf, and .arr formats.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\mg_csv)
+  * Updated: 'Arkanoid Mini Game 2.0' sample by HMG user Edward:
+           - added lives system;
+           - replaced CPU-intensive delay loop with timer;
+           - simplified brick collision logic;
+           - added game over screen with restart/quit options;
+           - implemented delta-time-based ball movement and level-scaled
+             speed, enhancing gameplay smoothness and difficulty progression.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Applications\Arkanoid) [PRO VERSION]
+
+2025/10/09: HMG Extended Edition version 25.10.
+  * Fixed: MONTHCAL control refactoring focused on correctness of WinAPI calls,
+           pointer casts, and lifetime issues for memory passed to Windows.
+           Key fixes made
+           - store original WNDPROC with SetProp using safe (HANDLE)(LONG_PTR)
+             cast; retrieve with (WNDPROC)(LONG_PTR)GetProp(...) (no cast to HWND).
+           - do not free memory passed to Windows via NMDAYSTATE->prgDayState
+             (avoid use-after-free bug). Documented responsibility.
+           - removed misleading wDayOfWeek assignment in SETMONTHCALVALUE
+             (it's ignored by MonthCal_SetCurSel).
+           - consistent use of LONG_PTR casts for pointer -> integer -> handle
+             conversions.
+           - keep existing subclass helpers (SubclassWindow2) behavior but
+             restore previous proc using the stored WNDPROC.
+           Contributed by Grigory Filatov
+           (see month.prg in folder \samples\Basic\MONTHCAL)
+  * Fixed: Bad typo in the C LinearGradientBrush() function was corrected.
+           This problem exists since the MiniGUI Ex Build 33 (March 2007).
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\DrawGradient)
+  * Modified: SAVEWINDOWBYHANDLE() and WNDCOPY() functions have been internally
+           refactored into a single helper with proper cleanup/error handling
+           to remove duplication and fix memory leaks.
+           This was a postponed modification.
+           Contributed by Grigory Filatov
+           (see demo.prg in folder \samples\Advanced\BmpToJpg) 
+  * Modified: Fixed JPEG handling in the C GetImageSize() function:
+           - works with EXIF-heavy JPEGs and progressive JPEGs.
+           Bug was reported by Alexey Gustow <gustow33[at]mail.ru>.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\JpgViewer)
+  * Updated: STATUSBAR control C code has been revised:
+           - fixed wrong coordinates in CREATEPROGRESSBARITEM() function;
+           - fixed destroying icons in SETSTATUSITEMICON() function;
+           - indexing in SETITEMBAR()/GETITEMBAR() assumes a 1-based count from
+             Harbour and subtraction of 1 within both functions;
+           - various stability and speed improvements.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\Statusbar)
+  * Updated: Pacified the warnings in the C code for compatibility with MS
+           Visual C++ 2022 (64-bit) Community Edition compiler.
+           Contributed by Grigory Filatov
+  * Updated: Implementation of UNICODE support in the MiniGUI core:
+           - fixed Grid Grouping when processing header and footer text;
+           - improved C_BrowseForFolder() function.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\Grid_Groups)
+  * Updated: Header file i_hmgcompat.ch for compatibility with Official HMG:
+           - added pseudo-function HMG_LoadResourceRawFile( cResName, cResType ).
+           Contributed by Grigory Filatov
+           (see i_hmgcompat.ch in folder \include)
+  * Updated: Synchronized Extended HMG for compatibility with Official HMG:
+           - HMG_HPDF Library: The Image command now accepts JPG and PNG file
+             formats from either file or resource location.
+           Contributed by Grigory Filatov
+           (see source in folder \source\HMG_HPDF)
+  * Updated: Adaptation FiveWin Class TSBrowse 9.0 in HMG:
+           - improved code blocks processing in the function _TBrowse();
+           - added optional debug logging after processing each block of code.
+           Suggested and contributed by Sergej Kiselev
+           (see demos in folder \samples\Advanced\Tsb_2tsb)
+  * New: 'Grid Grouping workaround in Virtual grid control' sample.
+           Contributed by Grigory Filatov
+           (see demo2.prg in folder \samples\Basic\Grid_Groups)
+  * New: 'Virtual Grid with Nested Groups' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\Grid_Virtual_4)
+  * New: 'Zoom Form Usage' sample.
+           Contributed by Pierpaolo Martinello
+           (see in folder \samples\Basic\ZoomForm)
+  * New: 'SQL query to fetch rolename, max, and min salary of the employee
+           via SQLRDD' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\SQLRDD\GroupBy) [PRO VERSION]
+  * New: 'Arkanoid Mini Game' sample:
+           - added comments describing the purpose and parameters of each
+             function.
+           Don't miss this very interesting example!
+           Based upon a contribution of HMG user Edward.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \samples\Applications\Arkanoid) [PRO VERSION]
+  * Updated: 'Minigui Basic examples generated by ChatGPT AI' sample:
+           - updated 'Customer Manager' example with detailed comments.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\ChatGPT)
+  * Updated: 'Save/Load Array Items in Virtual Grid' sample:
+           - added comprehensive comments explaining the purpose and
+             functionality of each function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\Grid_Virtual_2)
+  * Updated: 'Draw Box and Panel Gradient' sample by Petr Chornyj.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\DrawGradient)
+  * Updated: 'Viewing arrays/dbf in a window using _TBrowse() function' sample.
+           Contributed by Verchenko Andrey
+           (see in folder \samples\Advanced\AlertTsb)
+  * Updated: 'Kaleidoscope - 3D' sample by S.Rathinagiri:
+           - added comments describing the purpose and parameters of each
+             function.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\Kaleidoscope)
+
+2025/09/12: HMG Extended Edition version 25.09.
+  * Fixed: ON SIZE event fires too early and acts similar to ON MOVE event.
+           This bug was reported on the Minigui forum.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\ON_INTERACTIVECLOSE)
+  * New: Added useful pseudo-functions IniRead() and IniWrite() to control
+           reading/writing of INI files.
+           Syntax:
+             IniRead ( cIniFile, cSection, cKey [, cDefault] ) -> cValue
+             IniWrite( cIniFile, cSection, cKey, cValue ) -> .T. / .F.
+           Usage:
+             cLang := IniRead( "config.ini", "App", "Language", "EN" )
+             IniWrite( "config.ini", "App", "Language", cLang )
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\ChatGPT\sqlite)
+  * Modified: Updated the GetSystemFont() function to accurately determine
+           the system font size. This avoids hard-coded offset and takes into
+           account the DPI of each monitor.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\MAINDEMO_(SYNTAX_I))
+  * Modified: The internal WinVersion() function has been rewritten using
+           the Microsoft recommended RtlGetVersion() approach so that it works
+           correctly on Windows 10/11 without being fooled by the version
+           specified in the deprecated GetVersionEx() function.
+           This was a postponed modification.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\WinVersion)
+  * Modified: Windows registry auxiliary PRG-functions have been internally
+           refactored to use the precompiled code blocks.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\RegistryUnitTests)
+  * Modified: The EDIT EXTENDED command is completed for compatibility with
+           SQLMIX RDD:
+           - updated edit procedure for timestamp field type.
+           Contributed by Grigory Filatov.
+  * Enhanced: The HMG_GetFormControls( cFormName [, aUserType ] ) function
+           supports a second parameter as an array of the types of the selected
+           controls to get an array of control names for specified window.
+           Sample code:
+             HMG_GetFormControls( App.FormName ) -> all controls of a Main form
+             MsgInfo( HMG_GetFormControls( ThisWindow.Name, "Label" ) -> all labels
+             MsgInfo( HMG_GetFormControls( ThisWindow.Name, ;
+             { "TextBox", "EditBox", "GetBox" } ) ) -> names of all entered fields
+           Contributed by Pierpaolo Martinello
+           (see demo in folder \samples\Basic\MAINDEMO_(SYNTAX_I))
+  * Updated: 'HMG EasySQL' library:
+           - fixed Disconnect() and AffectedRows() methods.
+           Contributed by HMG Founder Roberto Lopez.
+           Adapted for Minigui Extended by Grigory Filatov
+           (see in folder \Source\HMG_EasySQL)
+  * Updated: Shell32 library source code has been refactored again.
+           Contributed by Grigory Filatov
+           (see in folder \Source\Shell32)
+  * Updated: HbZipArc library:
+           - refactored hb_IsZipFile() function;
+           - removed unsupported dummy functions from source code.
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Basic\ZiparcUnitTests)
+  * Updated: Harbour contrib HbFImage library (see in folder \Source\hbfimage):
+           - fixed typo: FI_ALLOCATET() function use the same index for both
+             height and bpp parameters. It will cause incorrect behavior.
+           Contributed by Grigory Filatov
+  * Updated: HbSQLite3 library:
+           - update for using SQLITE3 version 3.50.4 (from 3.50.3).
+           Contributed by Grigory Filatov
+           (see demo in folder \samples\Advanced\SQLITE_2)
+  * Updated: Harbour Compiler 3.2.0dev (SVN 2025-09-09 19:55):
+           * added hbbmp library by Przemyslaw Czerpak;
+           * updated hbzebra library.
+           Contributed by Grigory Filatov
+           (look at ReadMe.txt in folder \harbour) [PRO VERSION]
+  * Updated: HMGS-IDE v.1.4.4.8 Project Manager and Two-Way Visual Form Designer:
+           - fixed incorrect double save of Tree control in TAB after modifying
+             the form. Reported by Varga Zsolt.
+           Contributed by Grigory Filatov
+           (see in folder \Ide)
+  * New: 'Minigui Basic examples generated by ChatGPT AI' sample:
+           - added 'Manage and export data from a SQLite database'.
+             It features a login system, data grid display, and export
+             functionality to CSV and XML formats.
+           (see in folder \samples\Basic\ChatGPT\sqlite)
+           - added 'Student Manager' - database, grid, add/edit/delete forms,
+             live CRUD at in-place grid cell editing.
+           (see in folder \samples\Basic\ChatGPT\StudentManager)
+           Contributed by Grigory Filatov
+  * New: 'Embedded PDF Viewer' sample:
+           - new command  @ <row>,<col> PDFVIEWER <name> FILE <pdfname>
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\CustomPDFViewer)
+  * New: 'CAB Creation, Info & Extraction' sample.
+           Based on an original work of Andi Jahja.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\HbCAB_2)
+  * New: 'Advanced examples using OOP' samples:
+           - basic ORM (Object-Relational Mapping) system, including its
+             corresponding test suite.  
+           - library management application that utilizes this ORM.  
+           Both programs include:  
+           - technical manual (documentation for developers);
+           - user manual (step-by-step guides for end users).
+           Contributed by Marcos Jarrin
+           (see in folder \samples\Advanced\HbORM)
+  * New: 'Solving the Amazon Interview Problem with HMG Easy SQL' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\HMG_EasySQL_3) [PRO VERSION]
+  * New: 'Solving the KPMG Interview Problem with HMG Easy SQL' sample.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\HMG_EasySQL_4) [PRO VERSION]
+  * New: 'Using the SCOPE, FILTER, INDEX operators for reporting' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_array_report)
+  * Updated: 'Desktop Windows Version Market Share Worldwide' sample:
+           - updated data for July 2025;
+           - added random color selection.
+           Contributed by Grigory Filatov
+           (see demo.prg in folder \samples\Basic\GraphPrint)
+  * Updated: Selector library unit tests:
+           - modified to GUI instead of console output.
+           Contributed by Grigory Filatov
+           (see in folder \samples\Basic\TestSelector) [PRO VERSION]
+  * Updated: 'ActiveX PDF Reader' sample.
+           Contributed by Grigory Filatov
+           (see demo4.prg in folder \samples\Basic\ActiveX)
+  * Updated: 'Tsbrowse (TSB) object - a card of one dbf-file record' sample.
+           Contributed by Sergej Kiselev and Verchenko Andrey
+           (see in folder \samples\Advanced\Tsb_EditDbf)
+  * Updated: UnRar sample and HbUnrar library:
+           - updated unrar.dll to the current version 7.13 (from 7.12).
+           Contributed by Grigory Filatov
+           (see in folder \samples\Advanced\UnRar)
+  * Updated: 'dbAnalyser tool' by Phil Ide:
+           - fixed LastUpdated() function to return date correctly;
+           - added comments describing the purpose and parameters of each
+             function.
+           Contributed by Grigory Filatov
+           (see in folder \Utils\dbAnalyser) [PRO VERSION]
+
 2025/07/30: HMG Extended Edition version 25.08.
   * Updated: The following network functions have been refactored to improve
            the readability, performance, and maintainability:

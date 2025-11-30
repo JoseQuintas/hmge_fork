@@ -46,13 +46,13 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  ---------------------------------------------------------------------------*/
 
 #ifdef __XHARBOUR__
-  #define __MINIPRINT__
+#define __MINIPRINT__
 #endif
 
 #include "hmg.ch"
 
 #ifndef HMG_LEGACY_OFF
-  #undef _BT_
+#undef _BT_
 #endif
 
 #include "i_winuser.ch"
@@ -726,10 +726,10 @@ FUNCTION _AddItem ( ControlName , ParentForm , Value , Parent , aImage , Id )
 
          IF ImgDef == 0
             iUnsel := 2  // Pointer to defalut Node Bitmaps, no Bitmap loaded
-            iSel   := 3
+            iSel := 3
          ELSE
             iUnSel := AddTreeViewBitmap ( c, aImage [1], _HMG_aControlMiscData1[ ix, 4 ] ) - 1
-            iSel   := iif( ImgDef == 1, iUnSel, AddTreeViewBitmap ( c, aImage [2], _HMG_aControlMiscData1[ ix, 4 ] ) - 1 )
+            iSel := iif( ImgDef == 1, iUnSel, AddTreeViewBitmap ( c, aImage [2], _HMG_aControlMiscData1[ ix, 4 ] ) - 1 )
             // If only one bitmap in array iSel = iUnsel, only one Bitmap loaded
          ENDIF
 
@@ -810,10 +810,10 @@ FUNCTION _AddItem ( ControlName , ParentForm , Value , Parent , aImage , Id )
 
          IF ImgDef == 0
             iUnsel := 0  // Pointer to defalut Node Bitmaps, no Bitmap loaded
-            iSel   := 1
+            iSel := 1
          ELSE
             iUnSel := AddTreeViewBitmap ( c, aImage [1], _HMG_aControlMiscData1[ ix, 4 ] ) - 1
-            iSel   := iif( ImgDef == 1, iUnSel, AddTreeViewBitmap ( c, aImage [2], _HMG_aControlMiscData1[ ix, 4 ] ) - 1 )
+            iSel := iif( ImgDef == 1, iUnSel, AddTreeViewBitmap ( c, aImage [2], _HMG_aControlMiscData1[ ix, 4 ] ) - 1 )
             // If only one bitmap in array iSel = iUnsel, only one Bitmap loaded
          ENDIF
 
@@ -1927,11 +1927,12 @@ FUNCTION _SetItem ( ControlName , ParentForm , Item , Value , index )
       ENDIF
 
    CASE T == "MESSAGEBAR"  // JP
-
+   
+      Value := cValToChar( Value )
       IF _IsOwnerDrawStatusBarItem ( c , Item , Value , .T. )
          MoveWindow ( c , 0 , 0 , 0 , 0 , .T. )
       ELSE
-         SetItemBar ( c , value , Item - 1 )
+         SetItemBar ( c , Value , Item )
       ENDIF
 
    ENDCASE
@@ -1944,13 +1945,13 @@ FUNCTION _GetItem ( ControlName , ParentForm , Item , index )
    LOCAL ItemHandle
    LOCAL RetVal
    LOCAL AEDITCONTROLS
+   LOCAL AEC
    LOCAL AITEMS, ALABELS
    LOCAL ATEMP
    LOCAL CTYPE, CFORMAT
    LOCAL Pos
    LOCAL CI
    LOCAL XRES
-   LOCAL AEC
    LOCAL ColumnCount
    LOCAL t , c , i
    LOCAL V, Z, X
@@ -2881,7 +2882,6 @@ STATIC PROCEDURE TreeItemChangeImage ( ControlName, ParentForm, nItem, aImage )
    IF ItemHandle > 0 .AND. ISARRAY( aImage ) .AND. ( ImgDef := Len( aImage ) ) > 0
 
       i := GetControlIndex ( ControlName, ParentForm )
-
       iUnSel := AddTreeViewBitmap( TreeHandle, aImage[ 1 ], _HMG_aControlMiscData1[ i, 4 ] ) - 1
       iSel := iif( ImgDef == 1, iUnSel, AddTreeViewBitmap( TreeHandle, aImage[ 2 ], _HMG_aControlMiscData1[ i, 4 ] ) - 1 )
 
@@ -3614,6 +3614,11 @@ FUNCTION InputWindow ( cTitle, aLabels, aValues, aFormats, ;
 
    ControlCol := nLabelWidth + 30
 
+   IF _HMG_IsBcc77OrLater .AND. _HMG_IsThemed
+      nWidth += GetBorderWidth() + 2
+      wHeight += GetBorderHeight() + 2
+   ENDIF
+
    DEFINE WINDOW _InputWindow ;
       AT r, c ;
       WIDTH nWidth ;
@@ -3770,7 +3775,11 @@ FUNCTION _ReleaseControl ( ControlName, ParentForm )
 
       IF ( z := SendMessage( _HMG_aControlHandles [i], SB_GETPARTS, 0, 0 ) ) > 0
          FOR x := 1 TO z
-            SetStatusItemIcon ( _HMG_aControlHandles [i] , x , Nil , Nil )
+            r := SendMessage( _HMG_aControlHandles [i], SB_GETICON, x - 1, 0 )
+            // Removes the current icon from the specified status bar item
+            IF IsHIcon( r )
+               DestroyIcon( r )
+            ENDIF
          NEXT x
       ENDIF
 
@@ -3781,14 +3790,13 @@ FUNCTION _ReleaseControl ( ControlName, ParentForm )
       ReleaseControl ( _HMG_aControlHandles [i] )
 
       IF _HMG_aControlIds [i] != 0
-
          ReleaseControl ( _HMG_aControlIds [i] )
          ReleaseControl ( _HMG_aControlMiscData1 [i] [1] )
-
       ENDIF
 #endif
 
    CASE t == "TAB"
+
       FOR r := 1 TO Len ( _HMG_aControlPageMap [i] )
 
          FOR w := 1 TO Len ( _HMG_aControlPageMap [i] [r] )
@@ -3950,6 +3958,11 @@ FUNCTION _EraseControl ( i, p )
    t := _HMG_aControlType [i]
 
    DO CASE
+
+   CASE t == 'MONTHCAL'
+      IF ! Empty ( _HMG_aControlMiscData1 [i] )
+         FreeDayState ( win_N2P ( _HMG_aControlMiscData1 [i] ) )
+      ENDIF
 
    CASE t == 'HOTKEY'
       ReleaseHotKey ( _HMG_aControlParentHandles [i] , _HMG_aControlIds [i] )
@@ -4130,6 +4143,11 @@ PROCEDURE SetProperty( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #ifdef _USERINIT_
    LOCAL cMacro, cProc
 #endif
+
+   __defaultNIL( @Arg1, _HMG_ThisFormName )
+   IF PCount() > 3
+      __defaultNIL( @Arg2, _HMG_ThisControlName )
+   ENDIF
 
 #ifdef _HMG_COMPAT_
    IF _RichEditBox_SetProperty ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
@@ -5037,13 +5055,18 @@ FUNCTION GetProperty ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 )
 #ifdef _HMG_COMPAT_
    LOCAL cHeader, nAlignHeader, cFooter, nAlingFooter, nState
 
-   IF _RichEditBox_GetProperty ( @xDATA, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
+   IF _RichEditBox_GetProperty ( @xData, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 )
       RETURN xData
    ENDIF
 #endif
 
+   __defaultNIL( @Arg1, _HMG_ThisFormName )
+   IF PCount() > 2
+      __defaultNIL( @Arg2, _HMG_ThisControlName )
+   ENDIF
+
 #ifdef _BT_
-   IF _ProgressWheel_GetProperty ( @xDATA, Arg1, Arg2, Arg3 )
+   IF _ProgressWheel_GetProperty ( @xData, Arg1, Arg2, Arg3 )
       RETURN xData
    ENDIF
 #endif
@@ -5988,6 +6011,11 @@ FUNCTION DoMethod ( Arg1 , Arg2 , Arg3 , Arg4 , Arg5 , Arg6 , Arg7 , Arg8 , Arg9
    LOCAL cMacro, cProc
 #endif
 
+   __defaultNIL( @Arg1, _HMG_ThisFormName )
+   IF PCount() > 2
+      __defaultNIL( @Arg2, _HMG_ThisControlName )
+   ENDIF
+
 #ifdef _HMG_COMPAT_
    IF _RichEditBox_DoMethod ( Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9 )
       RETURN NIL
@@ -6757,7 +6785,7 @@ RETURN RetVal
 STATIC PROCEDURE VerifyControlDefined ( cParentName , cControlName )
 *-----------------------------------------------------------------------------*
 
-   IF ! Empty ( cControlName ) .AND. ! _IsControlDefined ( cControlName , cParentName )
+   IF Set( _SET_DEBUG ) .AND. !Empty ( cControlName ) .AND. !_IsControlDefined ( cControlName , cParentName )
       MsgMiniGuiError ( "Control: " + cControlName + " Of " + cParentName + " Not defined." )
    ENDIF
 
@@ -6776,59 +6804,50 @@ RETURN
 *-----------------------------------------------------------------------------*
 FUNCTION GetControlTabPage ( cControlName , cTabName , cParentWindowName )
 *-----------------------------------------------------------------------------*
-   LOCAL nRetVal As Numeric
-   LOCAL niControl
-   LOCAL niTab
-   LOCAL xControlHandle
-   LOCAL tabpage
-   LOCAL c , r , k
+   LOCAL nRetVal := 0
+   LOCAL nCtrlIndex, nTabIndex
+   LOCAL xControlHandle, aPage, nPageIndex, xCandidate
 
-   IF ( niControl := GetControlIndex ( cControlName , cParentWindowName ) ) > 0
+   IF ( nCtrlIndex := GetControlIndex( cControlName, cParentWindowName ) ) > 0
 
-      xControlHandle := _HMG_aControlHandles [ niControl ]
-      niTab := GetControlIndex ( cTabName , cParentWindowName )
+      xControlHandle := _HMG_aControlHandles[ nCtrlIndex ]
+      nTabIndex := GetControlIndex( cTabName, cParentWindowName )
 
-      FOR EACH tabpage IN _HMG_aControlPageMap [ niTab ]
+      FOR EACH aPage IN _HMG_aControlPageMap[ nTabIndex ]
+         nPageIndex := hb_enumindex( aPage )
 
-         k := hb_enumindex( tabpage )
-
-         FOR EACH c IN tabpage
-
-            IF ISNUMERIC ( c ) .AND. ISNUMERIC ( xControlHandle )
-               IF c == xControlHandle
-                  nRetVal := k
-                  EXIT
-               ENDIF
-
-            ELSEIF ISARRAY ( c ) .AND. ISARRAY ( xControlHandle )
-               FOR EACH r IN xControlHandle
-                  IF AScan ( c , r ) <> 0
-                     nRetVal := k
-                     EXIT
-                  ENDIF
-               NEXT
-               IF nRetVal <> 0
-                  EXIT
-               ENDIF
-
-            ELSEIF ISARRAY ( c ) .AND. ISNUMERIC ( xControlHandle )
-               IF AScan ( c , xControlHandle ) <> 0
-                  nRetVal := k
-                  EXIT
-               ENDIF
+         FOR EACH xCandidate IN aPage
+            IF lIsHandleMatch( xCandidate, xControlHandle )
+               RETURN nPageIndex
             ENDIF
-
          NEXT
-
-         IF nRetVal <> 0
-            EXIT
-         ENDIF
 
       NEXT
 
    ENDIF
 
 RETURN nRetVal
+
+*-----------------------------------------------------------------------------*
+STATIC FUNCTION lIsHandleMatch ( xCandidate, xControlHandle )
+*-----------------------------------------------------------------------------*
+   LOCAL xSubHandle
+
+   IF ISNUMERIC( xCandidate ) .AND. ISNUMERIC( xControlHandle )
+      RETURN ( xCandidate == xControlHandle )
+
+   ELSEIF ISARRAY( xCandidate ) .AND. ISARRAY( xControlHandle )
+      FOR EACH xSubHandle IN xControlHandle
+         IF AScan( xCandidate, xSubHandle ) <> 0
+            RETURN .T.
+         ENDIF
+      NEXT
+
+   ELSEIF ISARRAY( xCandidate ) .AND. ISNUMERIC( xControlHandle )
+      RETURN ( AScan( xCandidate, xControlHandle ) <> 0 )
+   ENDIF
+
+RETURN .F.
 
 *-----------------------------------------------------------------------------*
 STATIC PROCEDURE IsControlInsideSplitBox ( cParentName , cControlName )
@@ -7579,56 +7598,56 @@ STATIC FUNCTION _SetGetGridProperty ( ControlName, ParentForm, nControl, nColInd
    LOCAL xCellValue
    LOCAL RetVal := .T.
 
-   IF i > 0 .AND. 'GRID' $ _HMG_aControlType [i]
+   IF i > 0
 
-      Assign z := nColIndex
+      IF 'GRID' $ _HMG_aControlType [i]
 
-      IF z > 0 .AND. z <= ( nColumnCount := ListView_GetColumnCount ( _HMG_aControlHandles [i] ) )
+         Assign z := nColIndex
 
-         IF PCount() > 4
+         IF z > 0 .AND. z <= ( nColumnCount := ListView_GetColumnCount ( _HMG_aControlHandles [i] ) )
 
-            IF Valtype ( _HMG_aControlMiscData1 [i] [nControl] ) <> "A"
-               _HMG_aControlMiscData1 [i] [nControl] := {}
-            ENDIF
+            IF PCount() > 4
 
-            IF Len ( _HMG_aControlMiscData1 [i] [nControl] ) < nColumnCount
-               ASize ( _HMG_aControlMiscData1 [i] [nControl], nColumnCount )
-            ENDIF
-
-            _HMG_aControlMiscData1 [i] [nControl] [z] := Value
-
-            SWITCH nControl
-            CASE _GRID_COLUMN_CONTROL_
-               nItemCount := ListViewGetItemCount ( _HMG_aControlHandles [i] )
-               FOR nRow := 1 TO nItemCount
-                  xCellValue := _GetGridCellValue ( ControlName, ParentForm, nRow, nColIndex )
-                  _SetGridCellValue ( ControlName, ParentForm, nRow, nColIndex, xCellValue )
-               NEXT
-               EXIT
-            CASE _GRID_COLUMN_JUSTIFY_
-               SetGridColumnJustify ( _HMG_aControlHandles [i], z, Value )
-               EXIT
-            CASE _GRID_COLUMN_HEADERDYNAMICBACKCOLOR_
-               IF _HMG_IsThemed
-                  SetWindowTheme( ListView_GetHeader ( _HMG_aControlHandles [i] ), "", "" )
+               IF Valtype ( _HMG_aControlMiscData1 [i] [nControl] ) <> "A"
+                  _HMG_aControlMiscData1 [i] [nControl] := {}
                ENDIF
-            CASE _GRID_COLUMN_HEADERDYNAMICFORECOLOR_
-            CASE _GRID_COLUMN_HEADERDYNAMICFONT_
-               DoMethod ( ParentForm, ControlName, "SetFocus" )
-            ENDSWITCH
 
-            DoMethod ( ParentForm, ControlName, "Refresh" )
+               IF Len ( _HMG_aControlMiscData1 [i] [nControl] ) < nColumnCount
+                  ASize ( _HMG_aControlMiscData1 [i] [nControl], nColumnCount )
+               ENDIF
 
-         ELSE
+               _HMG_aControlMiscData1 [i] [nControl] [z] := Value
 
-            IF Valtype ( _HMG_aControlMiscData1 [i] [nControl] ) == "A"
-               RetVal := _HMG_aControlMiscData1 [i] [nControl] [z]
+               SWITCH nControl
+               CASE _GRID_COLUMN_CONTROL_
+                  nItemCount := ListViewGetItemCount ( _HMG_aControlHandles [i] )
+                  FOR nRow := 1 TO nItemCount
+                     xCellValue := _GetGridCellValue ( ControlName, ParentForm, nRow, nColIndex )
+                     _SetGridCellValue ( ControlName, ParentForm, nRow, nColIndex, xCellValue )
+                  NEXT
+                  EXIT
+               CASE _GRID_COLUMN_JUSTIFY_
+                  SetGridColumnJustify ( _HMG_aControlHandles [i], z, Value )
+                  EXIT
+               CASE _GRID_COLUMN_HEADERDYNAMICBACKCOLOR_
+                  IF _HMG_IsThemed
+                     SetWindowTheme( ListView_GetHeader ( _HMG_aControlHandles [i] ), "", "" )
+                  ENDIF
+               CASE _GRID_COLUMN_HEADERDYNAMICFORECOLOR_
+               CASE _GRID_COLUMN_HEADERDYNAMICFONT_
+                  DoMethod ( ParentForm, ControlName, "SetFocus" )
+               ENDSWITCH
+
+               DoMethod ( ParentForm, ControlName, "Refresh" )
+            ELSE
+               IF Valtype ( _HMG_aControlMiscData1 [i] [nControl] ) == "A"
+                  RetVal := _HMG_aControlMiscData1 [i] [nControl] [z]
+               ENDIF
             ENDIF
-
          ENDIF
-
+      ELSE
+         MsgMiniGuiError ( "Control: " + _HMG_aControlNames [i] + " Of " + GetParentFormName ( i ) + " : This control should be a GRID only." )
       ENDIF
-
    ENDIF
 
 RETURN RetVal
@@ -7880,6 +7899,10 @@ STATIC FUNCTION _SetFontColor ( ControlName , ParentForm , Value )
       RETURN Nil
    ENDIF
 
+   IF ISNUMERIC ( Value ) .AND. ! IsArrayRGB ( Value )
+      Value := nRGB2Arr ( Value )
+   ENDIF
+
    i := GetControlIndex ( ControlName, ParentForm )
    t := GetControlType ( ControlName, ParentForm )
    c := GetControlHandle ( ControlName, ParentForm )
@@ -7952,6 +7975,10 @@ STATIC FUNCTION _SetBackColor ( ControlName , ParentForm , Value )
 
    IF Value == Nil
       RETURN Nil
+   ENDIF
+
+   IF ISNUMERIC ( Value ) .AND. ! IsArrayRGB ( Value )
+      Value := nRGB2Arr ( Value )
    ENDIF
 
    DO CASE
@@ -8843,61 +8870,57 @@ FUNCTION HMG_GetForms( cTyp, lObj )
 RETURN aNames
 
 *-----------------------------------------------------------------------------*
-FUNCTION HMG_GetFormControls ( cFormName, cUserType )
+FUNCTION HMG_GetFormControls( cFormName, aUserType )
 *-----------------------------------------------------------------------------*
    LOCAL aRetVal := {}
-   LOCAL hWnd
-   LOCAL h
-   LOCAL i
-   LOCAL x
+   LOCAL nFormHandle, nParentHandle, nCtrlIndex
+   LOCAL cUserType
 
-   DEFAULT cUserType := "ALL"
+   DEFAULT aUserType := "ALL"
+   IF ISCHARACTER( aUserType )
+      aUserType := { aUserType }
+   ENDIF
 
-   cUserType := Upper ( cUserType )
+   nFormHandle := GetFormHandle( cFormName )
 
-   hWnd := GetFormHandle ( cFormName )
+   FOR EACH nParentHandle IN _HMG_aControlParentHandles
+      nCtrlIndex := hb_enumindex( nParentHandle )
 
-   FOR EACH h IN _HMG_aControlParentHandles
+      FOR EACH cUserType IN aUserType
+         cUserType := Upper( cUserType )
 
-      i := hb_enumindex( h )
+         IF nParentHandle == nFormHandle .AND. ;
+               ( cUserType == "ALL" .OR. ;
+               GetUserControlType( _HMG_aControlNames[ nCtrlIndex ], ;
+               GetParentFormName( nCtrlIndex ) ) == cUserType )
 
-      IF h == hWnd .AND. iif( cUserType == "ALL", .T., GetUserControlType ( _HMG_aControlNames [i], GetParentFormName( i ) ) == cUserType )
+            IF ISNUMERIC( _HMG_aControlHandles[ nCtrlIndex ] )
+               HMG_AddIfUnique( aRetVal, _HMG_aControlNames[ nCtrlIndex ] )
 
-         IF ISNUMERIC ( _HMG_aControlHandles [i] )
-
-            IF ! Empty ( _HMG_aControlNames [i] )
-
-               IF AScan ( aRetVal, _HMG_aControlNames [i], , , .T. ) == 0
-                  AAdd ( aRetVal, _HMG_aControlNames [i] )
-               ENDIF
-
+            ELSEIF ISARRAY( _HMG_aControlHandles[ nCtrlIndex ] )
+               AEval( _HMG_aControlHandles[ nCtrlIndex ], {|| ;
+                  HMG_AddIfUnique( aRetVal, _HMG_aControlNames[ nCtrlIndex ] ) } )
             ENDIF
 
-         ELSEIF ISARRAY ( _HMG_aControlHandles [i] )
-
-            FOR x := 1 TO Len ( _HMG_aControlHandles [i] )
-
-               IF !Empty ( _HMG_aControlNames [i] )
-
-                  IF AScan ( aRetVal, _HMG_aControlNames [i], , , .T. ) == 0
-                     AAdd ( aRetVal, _HMG_aControlNames [i] )
-                  ENDIF
-
-               ENDIF
-
-            NEXT x
-
          ENDIF
-
-      ENDIF
-
+      NEXT
    NEXT
 
-RETURN ASort ( aRetVal )
+RETURN ASort( aRetVal )
 
-*----------------------------------------------------------------------------*
+*-----------------------------------------------------------------------------*
+FUNCTION HMG_AddIfUnique( aList, cName )
+*-----------------------------------------------------------------------------*
+   IF !Empty( cName ) .AND. AScan( aList, cName, , , .T. ) == 0
+      AAdd( aList, cName )
+      RETURN .T.
+   ENDIF
+
+RETURN .F.
+
+*-----------------------------------------------------------------------------*
 FUNCTION HMG_GetAllFonts( lObj )
-*----------------------------------------------------------------------------*
+*-----------------------------------------------------------------------------*
    LOCAL oFonts := NIL
    LOCAL aFonts := {}, cName
    LOCAL aFont := {}, cFont, hFont
@@ -8928,55 +8951,64 @@ FUNCTION HMG_GetAllFonts( lObj )
       ENDIF
    NEXT
 
-   IF Empty( lObj ) ; RETURN aFont
+   IF Empty( lObj )
+      RETURN aFont
    ENDIF
 
 RETURN oFonts
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION GetUserControlType ( ControlName, ParentForm )
+STATIC FUNCTION GetUserControlType ( cControlName , cParentForm )
 *-----------------------------------------------------------------------------*
-   LOCAL cRetName
-   LOCAL i
+   LOCAL nCtrlIndex, cCtrlType
 
-   IF ( i := GetControlIndex ( ControlName, ParentForm ) ) == 0
+   #define COMBO_STANDARD  0
+   #define COMBO_EXTENDED  1
+
+   nCtrlIndex := GetControlIndex( cControlName, cParentForm )
+   IF nCtrlIndex == 0
       RETURN ''
    ENDIF
 
-   cRetName := _HMG_aControlType [i]
+   cCtrlType := _HMG_aControlType[ nCtrlIndex ]
 
-   IF cRetName == 'CHECKBOX' .AND. ValType ( _HMG_aControlPageMap [i] ) == 'A'
-      cRetName := 'CHECKBUTTON'
+   DO CASE
+   CASE cCtrlType == 'CHECKBOX' .AND. ValType( _HMG_aControlPageMap[nCtrlIndex] ) == 'A'
+      cCtrlType := 'CHECKBUTTON'
 
-   ELSEIF cRetName == 'COMBO'
-      IF _HMG_aControlMiscData1 [i][1] == 0      // standard combo
-         cRetName += 'BOX'
+   CASE cCtrlType == 'COMBO'
+      DO CASE
+      CASE _HMG_aControlMiscData1[nCtrlIndex][1] == COMBO_STANDARD
+         cCtrlType := 'COMBOBOX'
+      CASE _HMG_aControlMiscData1[nCtrlIndex][1] == COMBO_EXTENDED
+         cCtrlType := 'COMBOBOXEX'
+      ENDCASE
 
-      ELSEIF _HMG_aControlMiscData1 [i][1] == 1  // extend combo
-         cRetName += 'BOXEX'
+   CASE "TEXT" $ cCtrlType .OR. ;
+        "EDIT" $ cCtrlType .OR. ;
+        ( "LIST" $ cCtrlType .AND. cCtrlType != 'IMAGELIST' )
+      IF cCtrlType == "NUMTEXT" .OR. cCtrlType == "MASKEDTEXT" .OR. cCtrlType == "CHARMASKTEXT"
+         cCtrlType := Right( cCtrlType, 4 )
+      ENDIF
+      cCtrlType += 'BOX'
+      IF cCtrlType == 'RICHEDITBOX' .AND. _HMG_aControlMiscData1[nCtrlIndex] == 1
+         cCtrlType += 'EX'
       ENDIF
 
-   ELSEIF "TEXT" $ cRetName .OR. "EDIT" $ cRetName .OR. ( "LIST" $ cRetName .AND. cRetName != 'IMAGELIST' )
-      cRetName += 'BOX'
-      IF cRetName == 'RICHEDITBOX' .AND. _HMG_aControlMiscData1 [i] == 1
-         cRetName += 'EX'
-      ENDIF
+   CASE "PICK" $ cCtrlType
+      cCtrlType += 'ER'
 
-   ELSEIF "PICK" $ cRetName
-      cRetName += 'ER'
+   CASE "MONTHCAL" $ cCtrlType
+      cCtrlType += 'ENDAR'
 
-   ELSEIF "MONTHCAL" $ cRetName
-      cRetName += 'ENDAR'
+   CASE cCtrlType == 'MESSAGEBAR'
+      cCtrlType := 'STATUSBAR'
 
-   ELSEIF cRetName == 'MESSAGEBAR'
-      cRetName := 'STATUSBAR'
+   CASE cCtrlType == 'ITEMMESSAGE'
+      cCtrlType := 'STATUSITEM'
+   ENDCASE
 
-   ELSEIF cRetName == 'ITEMMESSAGE'
-      cRetName := 'STATUSITEM'
-
-   ENDIF
-
-RETURN cRetName
+RETURN cCtrlType
 
 *-----------------------------------------------------------------------------*
 FUNCTION _SetAlign ( ControlName , ParentForm , cAlign )
@@ -9323,5 +9355,17 @@ STATIC FUNCTION HasTimePart( tDate )
    ENDIF
 
 RETURN HB_ISDATETIME( tDate )
+
+#pragma BEGINDUMP
+
+#include <windows.h>   // Windows API functions
+#include "hbapi.h"     // Harbour API functions
+
+HB_FUNC( WIN_N2P )
+{
+   hb_retptr( ( void * ) ( HB_PTRUINT ) hb_parnint( 1 ) );
+}
+
+#pragma ENDDUMP
 
 #endif

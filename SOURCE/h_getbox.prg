@@ -365,7 +365,7 @@ FUNCTION _DefineGetBox ( ControlName, ParentFormName, x, y, w, h, Value, ;
    _HMG_aControlFontHandle  [k] :=  FontHandle
    _HMG_aControlBrushHandle  [k] :=  0
    _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1  [k] :=  { 0, readonly, 0, ProcedureName, ProcedureName2, BtnWidth, lBtn2, lNoMinus, .T., lAutoUpdate }
+   _HMG_aControlMiscData1  [k] :=  { 0, readonly, 0, ProcedureName, ProcedureName2, BtnWidth, lBtn2, lNoMinus, .T., lAutoUpdate, _HMG_ActiveControlMaxLength }
    _HMG_aControlMiscData2  [k] :=  ''
 
    IF ISCHARACTER( cPicture ) .AND. ! Empty( cPicture ) .AND. '@K' $ cPicture
@@ -1378,6 +1378,13 @@ PROCEDURE _SetGetBoxValue( nId, hWnd, Value )
    LOCAL oGet       := _HMG_aControlHeadClick [nId]
    LOCAL cPicFunc   := _HMG_aControlInputMask [nId, 1]
    LOCAL lCleanZero := _HMG_aControlInputMask [nId, 3]
+
+   IF Value == NIL
+      Value := Blank( oGet:VarGet() )
+      IF _HMG_aControlMiscData1 [nId, 11] != NIL .AND. ISNUMERIC( _HMG_aControlMiscData1 [nId, 11] )
+         Value := Space( _HMG_aControlMiscData1 [nId, 11] )
+      ENDIF
+   ENDIF
 
    IF ValType( Value ) == ValType( oGet:VarGet() )
 

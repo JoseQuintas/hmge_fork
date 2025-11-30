@@ -164,6 +164,7 @@ rem If build error, show 'error.log' ------------------------------------------
 if exist error.log type error.log
 if exist error.log del build.log
 if exist error.log pause
+if exist nul.map del nul.map
 
 goto endbatch
 
@@ -278,6 +279,7 @@ rem Delete local variables
 rem ***************************************************************************
 
 set PATH=%_PATH%
+set HB_PLATFORM=
 set GT=
 set DEBUG=
 set WARN=
