@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -43,248 +43,570 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 #include "i_winuser.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineMonthCal ( ControlName, ParentFormName, x, y, w, h, value, ;
-      fontname, fontsize, tooltip, notoday, notodaycircle, weeknumbers, change, ;
-      HelpId, invisible, notabstop, bold, italic, underline, strikeout, ;
-      backcolor, fontcolor, titlebkclr, titlefrclr, background, trlfontclr, ;
-      select, gotfocus, lostfocus, nId, bInit )
+FUNCTION _DefineMonthCal( ;
+      ControlName, ParentFormName, ;
+      x, y, w, h, value, ;
+      FontName, FontSize, tooltip, ;
+      notoday, notodaycircle, weeknumbers, ;
+      change, HelpId, invisible, notabstop, ;
+      bold, italic, underline, strikeout, ;
+      backcolor, fontcolor, ;
+      titlebkclr, titlefrclr, ;
+      background, trlfontclr, ;
+      select, gotfocus, lostfocus, ;
+      nId, bInit )
 *-----------------------------------------------------------------------------*
+
    LOCAL ParentFormHandle
    LOCAL aControlHandle := { 0, 0 }
-   LOCAL mVar
-   LOCAL k
-   LOCAL blInit
-   LOCAL Style
+
+   LOCAL cVarName
+   LOCAL nControl
+
+   LOCAL bDialogInit
+   LOCAL nStyle
    LOCAL lDialogInMemory
-   LOCAL oc := NIL, ow := NIL
+
+   LOCAL ow := NIL
+   LOCAL oc := NIL
 
 #ifdef _OBJECT_
    ow := oDlu2Pixel()
 #endif
+
+   /*-----------------------------------------------------------------------*/
+   /* Defaults                                                              */
+   /*-----------------------------------------------------------------------*/
+
    __defaultNIL( @value, Date() )
+
    __defaultNIL( @change, "" )
    __defaultNIL( @lostfocus, "" )
    __defaultNIL( @gotfocus, "" )
+
    hb_default( @bold, .F. )
    hb_default( @italic, .F. )
    hb_default( @underline, .F. )
    hb_default( @strikeout, .F. )
 
+   /*-----------------------------------------------------------------------*/
+   /* Resolve font                                                          */
+   /*-----------------------------------------------------------------------*/
+
    IF ( aControlHandle[ 2 ] := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( aControlHandle[ 2 ], @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+
+      GetFontParamByRef( ;
+         aControlHandle[ 2 ], ;
+         @FontName, ;
+         @FontSize, ;
+         @bold, ;
+         @italic, ;
+         @underline, ;
+         @strikeout )
+
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Active form defaults                                                  */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
-      ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
+
+      ParentFormName := ;
+         iif( ;
+            _HMG_BeginDialogActive, ;
+            _HMG_ActiveDialogName, ;
+            _HMG_ActiveFormName )
+
       __defaultNIL( @FontName, _HMG_ActiveFontName )
       __defaultNIL( @FontSize, _HMG_ActiveFontSize )
+
    ENDIF
 
-   IF _HMG_FrameLevel > 0 .AND. ! _HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
-      y := y + _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
-      ParentFormName := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+   /*-----------------------------------------------------------------------*/
+   /* Frame offset adjustment                                               */
+   /*-----------------------------------------------------------------------*/
+
+   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentFormName := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /*-----------------------------------------------------------------------*/
+   /* Validation                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF .NOT. _IsWindowDefined( ParentFormName ) .AND. ;
+      .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentFormName, "Parent", ParentFormName ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
+
       ControlName := HMG_GetUniqueName()
+
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ;
+      .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentFormName + ;
+         " Already defined." )
+
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   /*-----------------------------------------------------------------------*/
+   /* Control registration setup                                            */
+   /*-----------------------------------------------------------------------*/
+
+   cVarName := "_" + ParentFormName + "_" + ControlName
+   nControl := _GetControlFree()
+
+   /*-----------------------------------------------------------------------*/
+   /* Dialog mode                                                           */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginDialogActive
 
       ParentFormHandle := _HMG_ActiveDialogHandle
 
-      Style := WS_BORDER + WS_CHILD + MCS_DAYSTATE
+      nStyle := ;
+         WS_BORDER + ;
+         WS_CHILD + ;
+         MCS_DAYSTATE
 
       IF ! invisible
-         Style += WS_VISIBLE
+         nStyle += WS_VISIBLE
       ENDIF
 
       IF ! notabstop
-         Style += WS_TABSTOP
+         nStyle += WS_TABSTOP
       ENDIF
 
       IF notoday
-         Style += MCS_NOTODAY
+         nStyle += MCS_NOTODAY
       ENDIF
 
       IF notodaycircle
-         Style += MCS_NOTODAYCIRCLE
+         nStyle += MCS_NOTODAYCIRCLE
       ENDIF
 
       IF weeknumbers
-         Style += MCS_WEEKNUMBERS
+         nStyle += MCS_WEEKNUMBERS
       ENDIF
 
-      IF lDialogInMemory // Dialog Template
+      /*--------------------------------------------------------------------*/
+      /* Dialog template mode                                               */
+      /*--------------------------------------------------------------------*/
+
+      IF lDialogInMemory
+
          InitExCommonControls( 1 )
 
-         // {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
-         blInit := {| x, y, z | InitDialogMonthCalendar( x, y, z ) }
+         bDialogInit := ;
+            {|x, y, z| InitDialogMonthCalendar( x, y, z ) }
 
-         AAdd( _HMG_aDialogItems, { nId, k, "SysMonthCal32", style, 0, x, y, w, h, "", HelpId, tooltip, fontname, fontsize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
+         /*
+            Dialog item structure:
+
+            { ;
+               ID, k/hWnd, class, style, exstyle, ;
+               x, y, w, h, caption, helpid, tooltip, ;
+               font, size, bold, italic, underline, strikeout, ;
+               init, tabactive, deleted, tabpage ;
+            }
+         */
+
+         AAdd( ;
+            _HMG_aDialogItems, ;
+            { ;
+               nId, ;
+               nControl, ;
+               "SysMonthCal32", ;
+               nStyle, ;
+               0, ;
+               x, ;
+               y, ;
+               w, ;
+               h, ;
+               "", ;
+               HelpId, ;
+               tooltip, ;
+               FontName, ;
+               FontSize, ;
+               bold, ;
+               italic, ;
+               underline, ;
+               strikeout, ;
+               bDialogInit, ;
+               _HMG_BeginTabActive, ;
+               .F., ;
+               _HMG_ActiveTabPage ;
+            } )
 
       ELSE
 
-         aControlHandle[ 1 ] := GetDialogItemHandle( ParentFormHandle, nId )
+         aControlHandle[ 1 ] := ;
+            GetDialogItemHandle( ParentFormHandle, nId )
 
-         SetWindowStyle ( aControlHandle[ 1 ], style, .T. )
+         SetWindowStyle( ;
+            aControlHandle[ 1 ], ;
+            nStyle, ;
+            .T. )
 
          IF aControlHandle[ 2 ] != 0
-            _SetFontHandle( aControlHandle[ 1 ], aControlHandle[ 2 ] )
+
+            _SetFontHandle( ;
+               aControlHandle[ 1 ], ;
+               aControlHandle[ 2 ] )
+
          ELSE
+
             __defaultNIL( @FontName, _HMG_DefaultFontName )
             __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-            aControlHandle[ 2 ] := _SetFont ( aControlHandle[ 1 ], fontname, fontsize, bold, italic, underline, strikeout )
+
+            aControlHandle[ 2 ] := ;
+               _SetFont( ;
+                  aControlHandle[ 1 ], ;
+                  FontName, ;
+                  FontSize, ;
+                  bold, ;
+                  italic, ;
+                  underline, ;
+                  strikeout )
+
          ENDIF
 
-         x := GetWindowCol ( aControlHandle[ 1 ] )
-         y := GetWindowRow ( aControlHandle[ 1 ] )
+         x := GetWindowCol( aControlHandle[ 1 ] )
+         y := GetWindowRow( aControlHandle[ 1 ] )
 
       ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* Standard window mode                                                  */
+   /*-----------------------------------------------------------------------*/
+
    ELSE
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
+      ParentFormHandle := ;
+         GetFormHandle( ParentFormName )
 
       __defaultNIL( @FontName, _HMG_DefaultFontName )
       __defaultNIL( @FontSize, _HMG_DefaultFontSize )
 
-      aControlHandle := InitMonthCal ( ParentFormHandle, 0, x, y, w, h, fontname, fontsize, notoday, notodaycircle, weeknumbers, invisible, notabstop, bold, italic, underline, strikeout )
+      aControlHandle := ;
+         InitMonthCal( ;
+            ParentFormHandle, ;
+            0, ;
+            x, ;
+            y, ;
+            w, ;
+            h, ;
+            FontName, ;
+            FontSize, ;
+            notoday, ;
+            notodaycircle, ;
+            weeknumbers, ;
+            invisible, ;
+            notabstop, ;
+            bold, ;
+            italic, ;
+            underline, ;
+            strikeout )
 
    ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* Runtime-only initialization                                           */
+   /*-----------------------------------------------------------------------*/
+
    IF .NOT. lDialogInMemory
 
-      w := GetWindowWidth ( aControlHandle[ 1 ] )
-      h := GetWindowHeight ( aControlHandle[ 1 ] )
+      w := GetWindowWidth( aControlHandle[ 1 ] )
+      h := GetWindowHeight( aControlHandle[ 1 ] )
+
+      /*--------------------------------------------------------------------*/
+      /* Tab integration                                                    */
+      /*--------------------------------------------------------------------*/
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap, aControlhandle[ 1 ] )
+
+         AAdd( ;
+            _HMG_ActiveTabCurrentPageMap, ;
+            aControlHandle[ 1 ] )
+
       ENDIF
 
-      SetMonthCalValue( aControlHandle[ 1 ], Year( value ), Month( value ), Day( value ) )
+      /*--------------------------------------------------------------------*/
+      /* Initial value                                                      */
+      /*--------------------------------------------------------------------*/
+
+      SetMonthCalValue( ;
+         aControlHandle[ 1 ], ;
+         Year( value ), ;
+         Month( value ), ;
+         Day( value ) )
+
+      /*--------------------------------------------------------------------*/
+      /* Tooltip                                                            */
+      /*--------------------------------------------------------------------*/
 
       IF tooltip != NIL
-         SetToolTip ( aControlHandle[ 1 ], tooltip, GetFormToolTipHandle ( ParentFormName ) )
+
+         SetToolTip( ;
+            aControlHandle[ 1 ], ;
+            tooltip, ;
+            GetFormToolTipHandle( ParentFormName ) )
+
       ENDIF
 
    ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* Register control name                                                 */
+   /*-----------------------------------------------------------------------*/
+
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( cVarName, nControl )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &cVarName. := nControl
+
 #endif
 
-   _HMG_aControlType[ k ] := "MONTHCAL"
-   _HMG_aControlNames[ k ] := ControlName
-   _HMG_aControlHandles[ k ] := aControlHandle[ 1 ]
-   _HMG_aControlParentHandles[ k ] := ParentFormHandle
-   _HMG_aControlIds[ k ] := nId
-   _HMG_aControlProcedures[ k ] := ""
-   _HMG_aControlPageMap[ k ] := {}
-   _HMG_aControlValue[ k ] := value
-   _HMG_aControlInputMask[ k ] := ""
-   _HMG_aControllostFocusProcedure[ k ] := lostfocus
-   _HMG_aControlGotFocusProcedure[ k ] := gotfocus
-   _HMG_aControlChangeProcedure[ k ] := change
-   _HMG_aControlDeleted[ k ] := .F.
-   _HMG_aControlBkColor[ k ] := backcolor
-   _HMG_aControlFontColor[ k ] := fontcolor
-   _HMG_aControlDblClick[ k ] := iif ( IsVistaOrLater(), select, "" )
-   _HMG_aControlHeadClick[ k ] := {}
-   _HMG_aControlRow[ k ] := y
-   _HMG_aControlCol[ k ] := x
-   _HMG_aControlWidth[ k ] := w
-   _HMG_aControlHeight[ k ] := h
-   _HMG_aControlSpacing[ k ] := 0
-   _HMG_aControlContainerRow[ k ] := iif ( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
-   _HMG_aControlContainerCol[ k ] := iif ( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
-   _HMG_aControlPicture[ k ] := ""
-   _HMG_aControlContainerHandle[ k ] := 0
-   _HMG_aControlFontName[ k ] := fontname
-   _HMG_aControlFontSize[ k ] := fontsize
-   _HMG_aControlFontAttributes[ k ] := { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip[ k ] := tooltip
-   _HMG_aControlRangeMin[ k ] := 0
-   _HMG_aControlRangeMax[ k ] := 0
-   _HMG_aControlCaption[ k ] := ''
-   _HMG_aControlVisible[ k ] := iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId[ k ] := HelpId
-   _HMG_aControlFontHandle[ k ] := aControlHandle[ 2 ]
-   _HMG_aControlBrushHandle[ k ] := 0
-   _HMG_aControlEnabled[ k ] := .T.
-   _HMG_aControlMiscData1[ k ] := 0
-   _HMG_aControlMiscData2[ k ] := ''
+   /*-----------------------------------------------------------------------*/
+   /* Register control metadata                                             */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlType[ nControl ]               := "MONTHCAL"
+   _HMG_aControlNames[ nControl ]              := ControlName
+
+   _HMG_aControlHandles[ nControl ]            := aControlHandle[ 1 ]
+   _HMG_aControlParentHandles[ nControl ]      := ParentFormHandle
+
+   _HMG_aControlIds[ nControl ]                := nId
+
+   _HMG_aControlProcedures[ nControl ]         := ""
+
+   _HMG_aControlPageMap[ nControl ]            := {}
+
+   _HMG_aControlValue[ nControl ]              := value
+   _HMG_aControlInputMask[ nControl ]          := ""
+
+   _HMG_aControlLostFocusProcedure[ nControl ] := lostfocus
+   _HMG_aControlGotFocusProcedure[ nControl ]  := gotfocus
+   _HMG_aControlChangeProcedure[ nControl ]    := change
+
+   _HMG_aControlDeleted[ nControl ]            := .F.
+
+   _HMG_aControlBkColor[ nControl ]            := backcolor
+   _HMG_aControlFontColor[ nControl ]          := fontcolor
+
+   /* Vista+ select event callback */
+   _HMG_aControlDblClick[ nControl ] := ;
+      iif( IsVistaOrLater(), select, "" )
+
+   _HMG_aControlHeadClick[ nControl ]          := {}
+
+   _HMG_aControlRow[ nControl ]                := y
+   _HMG_aControlCol[ nControl ]                := x
+
+   _HMG_aControlWidth[ nControl ]              := w
+   _HMG_aControlHeight[ nControl ]             := h
+
+   _HMG_aControlSpacing[ nControl ]            := 0
+
+   _HMG_aControlContainerRow[ nControl ] := ;
+      iif( ;
+         _HMG_FrameLevel > 0, ;
+         _HMG_ActiveFrameRow[ _HMG_FrameLevel ], ;
+         -1 )
+
+   _HMG_aControlContainerCol[ nControl ] := ;
+      iif( ;
+         _HMG_FrameLevel > 0, ;
+         _HMG_ActiveFrameCol[ _HMG_FrameLevel ], ;
+         -1 )
+
+   _HMG_aControlPicture[ nControl ]            := ""
+
+   _HMG_aControlContainerHandle[ nControl ]    := 0
+
+   _HMG_aControlFontName[ nControl ]           := FontName
+   _HMG_aControlFontSize[ nControl ]           := FontSize
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { bold, italic, underline, strikeout }
+
+   _HMG_aControlToolTip[ nControl ]            := tooltip
+
+   _HMG_aControlRangeMin[ nControl ]           := 0
+   _HMG_aControlRangeMax[ nControl ]           := 0
+
+   _HMG_aControlCaption[ nControl ]            := ""
+
+   _HMG_aControlVisible[ nControl ] := ;
+      ! invisible
+
+   _HMG_aControlHelpId[ nControl ]             := HelpId
+
+   _HMG_aControlFontHandle[ nControl ]         := ;
+      aControlHandle[ 2 ]
+
+   _HMG_aControlBrushHandle[ nControl ]        := 0
+
+   _HMG_aControlEnabled[ nControl ]            := .T.
+
+   _HMG_aControlMiscData1[ nControl ]          := 0
+   _HMG_aControlMiscData2[ nControl ]          := ""
+
+   /*-----------------------------------------------------------------------*/
+   /* Runtime theme/color setup                                             */
+   /*-----------------------------------------------------------------------*/
 
    IF .NOT. lDialogInMemory
 
-      AddMonthCalBoldDay( ControlName, ParentFormName, Date() )
+      AddMonthCalBoldDay( ;
+         ControlName, ;
+         ParentFormName, ;
+         Date() )
 
-      IF _HMG_IsThemed .AND. ( IsArrayRGB ( backcolor ) .OR. IsArrayRGB ( fontcolor ) .OR. IsArrayRGB ( TitleBkClr ) .OR. IsArrayRGB ( TitleFrClr ) )
+      IF _HMG_IsThemed .AND. ;
+         ( IsArrayRGB( backcolor ) .OR. ;
+           IsArrayRGB( fontcolor ) .OR. ;
+           IsArrayRGB( titlebkclr ) .OR. ;
+           IsArrayRGB( titlefrclr ) )
 
-         SetWindowTheme ( aControlHandle[ 1 ], "", "" )
-         // set the ideal size of the month calendar control
-         SetPosMonthCal ( aControlHandle[ 1 ], x, y )
-         _HMG_aControlWidth[ k ] := GetWindowWidth ( aControlHandle[ 1 ] )
-         _HMG_aControlHeight[ k ] := GetWindowHeight ( aControlHandle[ 1 ] )
+         SetWindowTheme( aControlHandle[ 1 ], "", "" )
+
+         /* Resize to themed ideal size */
+         SetPosMonthCal( ;
+            aControlHandle[ 1 ], ;
+            x, ;
+            y )
+
+         _HMG_aControlWidth[ nControl ] := ;
+            GetWindowWidth( aControlHandle[ 1 ] )
+
+         _HMG_aControlHeight[ nControl ] := ;
+            GetWindowHeight( aControlHandle[ 1 ] )
 
       ENDIF
 
    ENDIF
 
-   IF IsArrayRGB( BackColor )
-      SetMonthCalMonthBkColor( aControlHandle[ 1 ], backcolor[ 1 ], backcolor[ 2 ], backcolor[ 3 ] )
+   /*-----------------------------------------------------------------------*/
+   /* Color configuration                                                   */
+   /*-----------------------------------------------------------------------*/
+
+   IF IsArrayRGB( backcolor )
+
+      SetMonthCalMonthBkColor( ;
+         aControlHandle[ 1 ], ;
+         backcolor[ 1 ], ;
+         backcolor[ 2 ], ;
+         backcolor[ 3 ] )
+
    ENDIF
 
-   IF IsArrayRGB( FontColor )
-      SetMonthCalFontColor( aControlHandle[ 1 ], fontcolor[ 1 ], fontcolor[ 2 ], fontcolor[ 3 ] )
+   IF IsArrayRGB( fontcolor )
+
+      SetMonthCalFontColor( ;
+         aControlHandle[ 1 ], ;
+         fontcolor[ 1 ], ;
+         fontcolor[ 2 ], ;
+         fontcolor[ 3 ] )
+
    ENDIF
 
-   IF IsArrayRGB( TitleBkClr )
-      SetMonthCalTitleBkColor( aControlHandle[ 1 ], TitleBkClr[ 1 ], TitleBkClr[ 2 ], TitleBkClr[ 3 ] )
+   IF IsArrayRGB( titlebkclr )
+
+      SetMonthCalTitleBkColor( ;
+         aControlHandle[ 1 ], ;
+         titlebkclr[ 1 ], ;
+         titlebkclr[ 2 ], ;
+         titlebkclr[ 3 ] )
+
    ENDIF
 
-   IF IsArrayRGB( TitleFrClr )
-      SetMonthCalTitleFontColor( aControlHandle[ 1 ], TitleFrClr[ 1 ], TitleFrClr[ 2 ], TitleFrClr[ 3 ] )
+   IF IsArrayRGB( titlefrclr )
+
+      SetMonthCalTitleFontColor( ;
+         aControlHandle[ 1 ], ;
+         titlefrclr[ 1 ], ;
+         titlefrclr[ 2 ], ;
+         titlefrclr[ 3 ] )
+
    ENDIF
 
-   IF IsArrayRGB( BackGround )
-      SetMonthCalBkColor( aControlHandle[ 1 ], BackGround[ 1 ], BackGround[ 2 ], BackGround[ 3 ] )
+   IF IsArrayRGB( background )
+
+      SetMonthCalBkColor( ;
+         aControlHandle[ 1 ], ;
+         background[ 1 ], ;
+         background[ 2 ], ;
+         background[ 3 ] )
+
    ENDIF
 
-   IF IsArrayRGB( TrlFontClr )
-      SetMonthCalTrlFontColor( aControlHandle[ 1 ], TrlFontClr[ 1 ], TrlFontClr[ 2 ], TrlFontClr[ 3 ] )
+   IF IsArrayRGB( trlfontclr )
+
+      SetMonthCalTrlFontColor( ;
+         aControlHandle[ 1 ], ;
+         trlfontclr[ 1 ], ;
+         trlfontclr[ 2 ], ;
+         trlfontclr[ 3 ] )
+
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* OOP initialization                                                    */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
+
 #ifdef _OBJECT_
-      ow := _WindowObj ( ParentFormHandle )
+      ow := _WindowObj( ParentFormHandle )
       oc := _ControlObj( aControlHandle[ 1 ] )
 #endif
+
    ENDIF
 
-   Do_ControlEventProcedure ( bInit, k, ow, oc )
+   /*-----------------------------------------------------------------------*/
+   /* Init callback                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   Do_ControlEventProcedure( ;
+      bInit, ;
+      nControl, ;
+      ow, ;
+      oc )
 
 RETURN NIL
 

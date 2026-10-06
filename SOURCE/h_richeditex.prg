@@ -43,7 +43,7 @@
   www - https://harbour.github.io/
 
   "Harbour Project"
-  Copyright 1999-2025, https://harbour.github.io/
+  Copyright 1999-2026, https://harbour.github.io/
 
   "WHAT32"
   Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -61,47 +61,37 @@
 #include "fileio.ch"
 
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
-# xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
-# xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
+#xtranslate hb_UAt( <c>, <n> )  => At( <c>, <n> )
+#xtranslate hb_ULeft( <c>, <n> ) => Left( <c>, <n> )
 #endif
 
-*-----------------------------------------------------------------------------*
-FUNCTION _DefineRichEditBoxEx ( ControlName, ;
-      ParentForm, ;
-      x, ;
-      y, ;
-      w, ;
-      h, ;
-      value, ;
-      fontname, ;
-      fontsize, ;
-      tooltip, ;
-      maxlength, ;
-      gotfocus, ;
-      change, ;
-      lostfocus, ;
-      readonly, ;
-      break, ;
-      HelpId, ;
-      invisible, ;
-      notabstop, ;
-      bold, ;
-      italic, ;
-      underline, ;
-      strikeout, ;
-      field, ;
-      backcolor, ;
-      noHscroll, noVscroll, selectionchange, OnLink, OnVScroll )
-*-----------------------------------------------------------------------------*
-   LOCAL i, cParentForm, mVar, ContainerHandle := 0, k
-   LOCAL ControlHandle
-   LOCAL FontHandle
-   LOCAL WorkArea
-   LOCAL aRichEditMenu
+/*---------------------------------------------------------------------------*/
+/* Constants                                                                 */
+/*---------------------------------------------------------------------------*/
 
-   hb_default( @w, 120 )
-   hb_default( @h, 240 )
-   hb_default( @value, '' )
+#define RICHEDIT_DEFAULT_WIDTH      120
+#define RICHEDIT_DEFAULT_HEIGHT     240
+
+/*---------------------------------------------------------------------------*/
+/* Main Function                                                             */
+/*---------------------------------------------------------------------------*/
+
+FUNCTION _DefineRichEditBoxEx( ;
+      ControlName, ParentForm, x, y, w, h, value, ;
+      fontname, fontsize, tooltip, maxlength, ;
+      gotfocus, change, lostfocus, readonly, break, ;
+      HelpId, invisible, notabstop, bold, italic, ;
+      underline, strikeout, field, backcolor, ;
+      noHscroll, noVscroll, selectionchange, OnLink, OnVScroll )
+
+   LOCAL ParentFormHandle, ControlHandle, FontHandle
+   LOCAL cParentForm, mVar, k
+   LOCAL ContainerHandle := 0
+
+   /* Defaults */
+   hb_default( @w, RICHEDIT_DEFAULT_WIDTH )
+   hb_default( @h, RICHEDIT_DEFAULT_HEIGHT )
+   hb_default( @value, "" )
    hb_default( @maxlength, -1 )
    hb_default( @invisible, .F. )
    hb_default( @notabstop, .F. )
@@ -109,168 +99,236 @@ FUNCTION _DefineRichEditBoxEx ( ControlName, ;
    hb_default( @noVscroll, .F. )
 
    IF maxlength == 0
-      maxlength := -1 // for compatibility with TextBox and EditBox
+      maxlength := -1
    ENDIF
 
+   /* Field binding */
    IF Field != NIL
-      IF hb_UAt ( '>', Field ) == 0
-         MsgHMGError ( "Control: " + ControlName + " Of " + ParentForm + " : You must specify a fully qualified field name." )
-      ELSE
-         WorkArea := hb_ULeft ( Field, hb_UAt ( '>', Field ) - 2 )
-         IF SELECT ( WorkArea ) != 0
-            value := &( Field )
-         ENDIF
-      ENDIF
+      _RichEditBindField( @value, Field, ControlName, ParentForm )
    ENDIF
 
-   IF _HMG_BeginWindowActive = .T.
+   /* Active form context */
+   IF _HMG_BeginWindowActive
       ParentForm := _HMG_ActiveFormName
-      IF .NOT. Empty ( _HMG_DefaultFontName ) .AND. FontName == NIL
-         fontname := _HMG_DefaultFontName
-      ENDIF
-      IF .NOT. Empty ( _HMG_DefaultFontSize ) .AND. FontSize == NIL
-         fontsize := _HMG_DefaultFontSize
-      ENDIF
+      __defaultNIL( @fontname, _HMG_DefaultFontName )
+      __defaultNIL( @fontsize, _HMG_DefaultFontSize )
    ENDIF
 
-   IF _HMG_FrameLevel > 0
-      IF ! _HMG_ParentWindowActive
-         x := x + _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
-         y := y + _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
-         ParentForm := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
-      ENDIF
+   /* Frame support */
+   IF _HMG_FrameLevel > 0 .AND. ! _HMG_ParentWindowActive
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+      ParentForm := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
+   /* Validation */
+   IF ! _IsWindowDefined( ParentForm )
       MsgHMGError( "Window: " + ParentForm + " is not defined." )
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentForm )
-      MsgHMGError ( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentForm )
+      MsgHMGError( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
    ENDIF
 
-   mVar := '_' + ParentForm + '_' + ControlName
+   cParentForm      := ParentForm
+   ParentFormHandle := GetFormHandle( ParentForm )
+   mVar             := "_" + ParentForm + "_" + ControlName
+   k                := _GetControlFree()
 
-   cParentForm := ParentForm
+   /* Create control */
+   ControlHandle := _CreateRichEditControl( ;
+      ParentFormHandle, cParentForm, x, y, w, h, ;
+      value, maxlength, readonly, invisible, notabstop, ;
+      noHscroll, noVscroll, fontname, fontsize, bold, italic, ;
+      underline, strikeout, @FontHandle, break, @ContainerHandle )
 
-   ParentForm = GetFormHandle ( ParentForm )
+   /* Additional setup */
+   _SetupRichEditControl( ControlHandle, tooltip, cParentForm, backcolor )
+
+   /* Register control */
+   _RegisterRichEditControl( k, ControlName, cParentForm, ParentFormHandle, ;
+      ControlHandle, ContainerHandle, mVar, fontname, fontsize, ;
+      bold, italic, underline, strikeout, tooltip, HelpId, invisible, ;
+      gotfocus, lostfocus, change, backcolor, selectionchange, OnLink, ;
+      OnVScroll, field, x, y, w, h, FontHandle )
+
+RETURN NIL
+
+/*---------------------------------------------------------------------------*/
+/* Control creation logic                                                    */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _CreateRichEditControl( ParentFormHandle, cParentForm, x, y, w, h, ;
+      value, maxlength, readonly, invisible, notabstop, noHscroll, noVscroll, ;
+      fontname, fontsize, bold, italic, underline, strikeout, FontHandle, break, ContainerHandle )
+
+   LOCAL ControlHandle, i
 
    IF x == NIL .OR. y == NIL
-
+      /* SplitBox / ReBar mode */
       IF _HMG_SplitLastControl == 'TOOLBAR'
-         Break := .T.
+         break := .T.
       ENDIF
-
       _HMG_SplitLastControl := 'RICHEDIT'
 
-      i := GetFormIndex ( cParentForm )
-
+      i := GetFormIndex( cParentForm )
       IF i > 0
+         ControlHandle := InitRichEditBoxEx( _HMG_aFormReBarHandle[ i ], 0, x, y, w, h, "", 0, maxlength, ;
+            readonly, invisible, notabstop, noHscroll, noVscroll )
 
-         ControlHandle := InitRichEditBoxEx ( _HMG_aFormReBarHandle[ i ], 0, x, y, w, h, '', 0, maxlength, readonly, invisible, notabstop, noHscroll, noVscroll )
-         IF ValType( fontname ) != "U" .AND. ValType( fontsize ) != "U"
-            FontHandle := _SetFont ( ControlHandle, fontname, fontsize, bold, italic, underline, strikeout )
-         ELSE
-            FontHandle := _SetFont ( ControlHandle, _HMG_DefaultFontName, _HMG_DefaultFontSize, bold, italic, underline, strikeout )
-         ENDIF
+         _SetRichEditFont( @ControlHandle, @FontHandle, fontname, fontsize, bold, italic, underline, strikeout )
 
-         AddSplitBoxItem ( Controlhandle, _HMG_aFormReBarHandle[ i ], w, break, , , , _HMG_ActiveSplitBoxInverted )
-         Containerhandle := _HMG_aFormReBarHandle[ i ]
-
-         IF LEN( value ) > 0
-            SetWindowText ( ControlHandle, value )
-         ENDIF
-
+         AddSplitBoxItem( ControlHandle, _HMG_aFormReBarHandle[ i ], w, break, , , , _HMG_ActiveSplitBoxInverted )
+         ContainerHandle := _HMG_aFormReBarHandle[ i ]
       ENDIF
-
    ELSE
+      /* Normal placement */
+      ControlHandle := InitRichEditBoxEx( ParentFormHandle, 0, x, y, w, h, "", 0, maxlength, ;
+         readonly, invisible, notabstop, noHscroll, noVscroll )
 
-      ControlHandle := InitRichEditBoxEx ( ParentForm, 0, x, y, w, h, '', 0, maxlength, readonly, invisible, notabstop, noHscroll, noVscroll )
       IF IsWindowHandle( ControlHandle )
-         IF ValType( fontname ) != "U" .AND. ValType( fontsize ) != "U"
-            FontHandle := _SetFont ( ControlHandle, fontname, fontsize, bold, italic, underline, strikeout )
-         ELSE
-            FontHandle := _SetFont ( ControlHandle, _HMG_DefaultFontName, _HMG_DefaultFontSize, bold, italic, underline, strikeout )
-         ENDIF
+         _SetRichEditFont( @ControlHandle, @FontHandle, fontname, fontsize, bold, italic, underline, strikeout )
       ENDIF
-
-      IF LEN( value ) > 0
-         SetWindowText ( ControlHandle, value )
-      ENDIF
-
    ENDIF
 
-   IF _HMG_BeginTabActive = .T.
-      AAdd ( _HMG_ActiveTabCurrentPageMap, Controlhandle )
+   IF LEN( value ) > 0
+      SetWindowText( ControlHandle, value )
+   ENDIF
+
+RETURN ControlHandle
+
+/*---------------------------------------------------------------------------*/
+/* Font helper                                                               */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _SetRichEditFont( ControlHandle, FontHandle, fontname, fontsize, bold, italic, underline, strikeout )
+
+   IF ValType( fontname ) != "U" .AND. ValType( fontsize ) != "U"
+      FontHandle := _SetFont( ControlHandle, fontname, fontsize, bold, italic, underline, strikeout )
+   ELSE
+      FontHandle := _SetFont( ControlHandle, _HMG_DefaultFontName, _HMG_DefaultFontSize, bold, italic, underline, strikeout )
+   ENDIF
+
+RETURN FontHandle
+
+/*---------------------------------------------------------------------------*/
+/* Additional setup                                                          */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _SetupRichEditControl( ControlHandle, tooltip, cParentForm, backcolor )
+
+   IF _HMG_BeginTabActive
+      AAdd( _HMG_ActiveTabCurrentPageMap, ControlHandle )
    ENDIF
 
    IF tooltip != NIL
-      SetToolTip ( ControlHandle, TOOLTIP, GetFormToolTipHandle ( cParentForm ) )
+      SetToolTip( ControlHandle, tooltip, GetFormToolTipHandle( cParentForm ) )
    ENDIF
 
-   RichEditBox_SetRTFTextMode ( ControlHandle, .T. )
-   RichEditBox_SetAutoURLDetect ( ControlHandle, .T. )
+   RichEditBox_SetRTFTextMode( ControlHandle, .T. )
+   RichEditBox_SetAutoURLDetect( ControlHandle, .T. )
 
-   k := _GetControlFree()
+   IF IsArrayRGB( backcolor )
+      SendMessage( ControlHandle, EM_SETBKGNDCOLOR, 0, RGB( backcolor[1], backcolor[2], backcolor[3] ) )
+   ENDIF
+
+RETURN NIL
+
+/*---------------------------------------------------------------------------*/
+/* Register control                                                          */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _RegisterRichEditControl( k, ControlName, cParentForm, ParentFormHandle, ControlHandle, ;
+      ContainerHandle, mVar, fontname, fontsize, bold, italic, underline, strikeout, ;
+      tooltip, HelpId, invisible, gotfocus, lostfocus, change, backcolor, ;
+      selectionchange, OnLink, OnVScroll, field, x, y, w, h, FontHandle )
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( mVar, k )
 #else
-   Public &mVar. := k
+   PUBLIC &mVar. := k
 #endif
 
-   _HMG_aControlType[ k ] := "RICHEDIT"
-   _HMG_aControlNames[ k ] := ControlName
-   _HMG_aControlHandles[ k ] := ControlHandle
-   _HMG_aControlParenthandles[ k ] := ParentForm
-   _HMG_aControlIds[ k ] := 0
-   _HMG_aControlProcedures[ k ] := ""
-   _HMG_aControlPageMap[ k ] := field
-   _HMG_aControlValue[ k ] := NIL
-   _HMG_aControlInputMask[ k ] := ""
+   _HMG_aControlType[ k ]               := "RICHEDIT"
+   _HMG_aControlNames[ k ]              := ControlName
+   _HMG_aControlHandles[ k ]            := ControlHandle
+   _HMG_aControlParenthandles[ k ]      := ParentFormHandle
+   _HMG_aControlIds[ k ]                := 0
+   _HMG_aControlProcedures[ k ]         := ""
+   _HMG_aControlPageMap[ k ]            := field
+   _HMG_aControlValue[ k ]              := NIL
+   _HMG_aControlInputMask[ k ]          := ""
    _HMG_aControllostFocusProcedure[ k ] := lostfocus
-   _HMG_aControlGotFocusProcedure[ k ] := gotfocus
-   _HMG_aControlChangeProcedure[ k ] := change
-   _HMG_aControlDeleted[ k ] := .F.
-   _HMG_aControlBkColor[ k ] := backcolor
-   _HMG_aControlFontColor[ k ] := NIL
-   _HMG_aControlDblClick[ k ] := ""
-   _HMG_aControlHeadClick[ k ] := {}
-   _HMG_aControlRow[ k ] := y
-   _HMG_aControlCol[ k ] := x
-   _HMG_aControlWidth[ k ] := w
-   _HMG_aControlHeight[ k ] := h
-   _HMG_aControlSpacing[ k ] := selectionchange
-   _HMG_aControlContainerRow[ k ] := iif ( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
-   _HMG_aControlContainerCol[ k ] := iif ( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
-   _HMG_aControlPicture[ k ] := ""
-   _HMG_aControlContainerHandle[ k ] := ContainerHandle
-   _HMG_aControlFontName[ k ] := fontname
-   _HMG_aControlFontSize[ k ] := fontsize
-   _HMG_aControlFontAttributes[ k ] := { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip[ k ] := tooltip
-   _HMG_aControlRangeMin[ k ] := OnLink
-   _HMG_aControlRangeMax[ k ] := OnVScroll
-   _HMG_aControlCaption[ k ] := ''
-   _HMG_aControlVisible[ k ] := if( invisible, .F., .T. )
-   _HMG_aControlHelpId[ k ] := HelpId
-   _HMG_aControlFontHandle[ k ] := FontHandle
-   _HMG_aControlBrushHandle[ k ] := 0
-   _HMG_aControlEnabled[ k ] := .T.
-   _HMG_aControlMiscData1[ k ] := 1
-   _HMG_aControlMiscData2[ k ] := ""
+   _HMG_aControlGotFocusProcedure[ k ]  := gotfocus
+   _HMG_aControlChangeProcedure[ k ]    := change
+   _HMG_aControlDeleted[ k ]            := .F.
+   _HMG_aControlBkColor[ k ]            := backcolor
+   _HMG_aControlFontColor[ k ]          := NIL
+   _HMG_aControlDblClick[ k ]           := ""
+   _HMG_aControlHeadClick[ k ]          := {}
+   _HMG_aControlRow[ k ]                := y
+   _HMG_aControlCol[ k ]                := x
+   _HMG_aControlWidth[ k ]              := w
+   _HMG_aControlHeight[ k ]             := h
+   _HMG_aControlSpacing[ k ]            := selectionchange
+   _HMG_aControlContainerRow[ k ]       := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlContainerCol[ k ]       := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlPicture[ k ]            := ""
+   _HMG_aControlContainerHandle[ k ]    := ContainerHandle
+   _HMG_aControlFontName[ k ]           := fontname
+   _HMG_aControlFontSize[ k ]           := fontsize
+   _HMG_aControlFontAttributes[ k ]     := { bold, italic, underline, strikeout }
+   _HMG_aControlToolTip[ k ]            := tooltip
+   _HMG_aControlRangeMin[ k ]           := OnLink
+   _HMG_aControlRangeMax[ k ]           := OnVScroll
+   _HMG_aControlCaption[ k ]            := ""
+   _HMG_aControlVisible[ k ]            := iif( invisible, .F., .T. )
+   _HMG_aControlHelpId[ k ]             := HelpId
+   _HMG_aControlFontHandle[ k ]         := FontHandle
+   _HMG_aControlBrushHandle[ k ]        := 0
+   _HMG_aControlEnabled[ k ]            := .T.
+   _HMG_aControlMiscData1[ k ]          := 1
+   _HMG_aControlMiscData2[ k ]          := ""
 
    IF Field != NIL
-      AAdd ( _HMG_aFormBrowseList [ GetFormIndex ( cParentForm ) ], k )
+      AAdd( _HMG_aFormBrowseList[ GetFormIndex( cParentForm ) ], k )
    ENDIF
 
-   IF IsArrayRGB ( backcolor )
-      SendMessage ( _HMG_aControlHandles[ k ], EM_SETBKGNDCOLOR, 0, RGB ( backcolor[ 1 ], backcolor[ 2 ], backcolor[ 3 ] ) )
+   /* Create context menu */
+   _CreateRichEditContextMenu( ControlName, cParentForm )
+
+RETURN NIL
+
+/*---------------------------------------------------------------------------*/
+/* Field binding helper                                                      */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _RichEditBindField( value, Field, ControlName, ParentForm )
+
+   LOCAL WorkArea
+
+   IF hb_UAt( '>', Field ) == 0
+      MsgHMGError( "Control: " + ControlName + " Of " + ParentForm + " : You must specify a fully qualified field name." )
+   ELSE
+      WorkArea := hb_ULeft( Field, hb_UAt( '>', Field ) - 2 )
+      IF SELECT( WorkArea ) != 0
+         value := &( Field )
+      ENDIF
    ENDIF
+
+RETURN NIL
+
+/*---------------------------------------------------------------------------*/
+/* Context Menu Creation                                                     */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _CreateRichEditContextMenu( ControlName, ParentForm )
+
+   LOCAL aRichEditMenu
 
    IF _SetGetGlobal( "_HMG_aRichEditMenu" ) == NIL
       STATIC _HMG_aRichEditMenu AS GLOBAL VALUE { "&Undo", "Cu&t", "&Copy", "&Paste", "&Delete", "Select &All" }
@@ -278,212 +336,168 @@ FUNCTION _DefineRichEditBoxEx ( ControlName, ;
 
    aRichEditMenu := _SetGetGlobal( "_HMG_aRichEditMenu" )
 
-   _DefineControlContextMenu( ControlName , cParentForm )
-      _DefineMenuItem ( aRichEditMenu[ 1 ] , {|| RichEditBox_mnuEdit_Click( "UNDO" )} , "mnuEditUndo" , , .F. , .F. ,,,, .F., .F. ,, .F. )
-      _DefineSeparator ()
-      _DefineMenuItem ( aRichEditMenu[ 2 ] , {|| RichEditBox_mnuEdit_Click( "CUT" )} , "mnuEditCut" , , .F. , .F. ,,,, .F., .F. ,, .F. )
-      _DefineMenuItem ( aRichEditMenu[ 3 ] , {|| RichEditBox_mnuEdit_Click( "COPY" )} , "mnuEditCopy" , , .F. , .F. ,,,, .F., .F. ,, .F. )
-      _DefineMenuItem ( aRichEditMenu[ 4 ] , {|| RichEditBox_mnuEdit_Click( "PASTE" )} , "mnuEditPaste" , , .F. , .F. ,,,, .F., .F. ,, .F. )
-      _DefineMenuItem ( aRichEditMenu[ 5 ] , {|| RichEditBox_mnuEdit_Click( "DEL" )} , "mnuEditDelete" , , .F. , .F. ,,,, .F., .F. ,, .F. )
-      _DefineSeparator ()
-      _DefineMenuItem ( aRichEditMenu[ 6 ] , {|| RichEditBox_mnuEdit_Click( "SELALL" )} , "mnuEditSelAll" , , .F. , .F. ,,,, .F., .F. ,, .F. )
+   _DefineControlContextMenu( ControlName, ParentForm )
+
+   _DefineMenuItem( aRichEditMenu[1], {|| RichEditBox_mnuEdit_Click( "UNDO" ) }, "mnuEditUndo", , .F., .F. )
+   _DefineSeparator()
+   _DefineMenuItem( aRichEditMenu[2], {|| RichEditBox_mnuEdit_Click( "CUT" ) }, "mnuEditCut", , .F., .F. )
+   _DefineMenuItem( aRichEditMenu[3], {|| RichEditBox_mnuEdit_Click( "COPY" ) }, "mnuEditCopy", , .F., .F. )
+   _DefineMenuItem( aRichEditMenu[4], {|| RichEditBox_mnuEdit_Click( "PASTE" ) }, "mnuEditPaste", , .F., .F. )
+   _DefineMenuItem( aRichEditMenu[5], {|| RichEditBox_mnuEdit_Click( "DEL" ) }, "mnuEditDelete", , .F., .F. )
+   _DefineSeparator()
+   _DefineMenuItem( aRichEditMenu[6], {|| RichEditBox_mnuEdit_Click( "SELALL" ) }, "mnuEditSelAll", , .F., .F. )
+
    _EndMenu()
 
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_mnuEdit_Click( cAction )
-*-----------------------------------------------------------------------------*
-   LOCAL hEdit
+/*---------------------------------------------------------------------------*/
+/* Context Menu Action Handler                                               */
+/*---------------------------------------------------------------------------*/
 
-   hEdit := GetControlHandleByIndex( _HMG_xControlsContextMenuID )
+FUNCTION RichEditBox_mnuEdit_Click( cAction )
+
+   LOCAL hEdit := GetControlHandleByIndex( _HMG_xControlsContextMenuID )
 
    DO CASE
-   CASE cAction == "UNDO"
-      RichEditBox_ChangeUndo( hEdit ) // Ctrl+Z
-   CASE cAction == "CUT"
-      RichEditBox_SelCut( hEdit )     // Ctrl+X
-   CASE cAction == "COPY"
-      RichEditBox_SelCopy( hEdit )    // Ctrl+C
-   CASE cAction == "PASTE"
-      RichEditBox_SelPaste( hEdit )   // Ctrl+V
-   CASE cAction == "DEL"
-      RichEditBox_SelClear( hEdit )   // Del
-   CASE cAction == "SELALL"
-      RichEditBox_SelectAll( hEdit )  // Ctrl+A
-   END CASE
+   CASE cAction == "UNDO"  ; RichEditBox_ChangeUndo( hEdit )
+   CASE cAction == "CUT"   ; RichEditBox_SelCut( hEdit )
+   CASE cAction == "COPY"  ; RichEditBox_SelCopy( hEdit )
+   CASE cAction == "PASTE" ; RichEditBox_SelPaste( hEdit )
+   CASE cAction == "DEL"   ; RichEditBox_SelClear( hEdit )
+   CASE cAction == "SELALL"; RichEditBox_SelectAll( hEdit )
+   ENDCASE
 
 RETURN NIL
 
-*******************************************************************************
-* by Dr. Claudio Soto, January 2014
-*******************************************************************************
+/*---------------------------------------------------------------------------*/
+/* Utility Functions                                                         */
+/*---------------------------------------------------------------------------*/
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_SetCaretPos ( hWndControl, nPos )
-*-----------------------------------------------------------------------------*
-   LOCAL aSelRange := { nPos, nPos }
-
-   RichEditBox_SetSelRange ( hWndControl, aSelRange )
-
+FUNCTION RichEditBox_SetCaretPos( hWndControl, nPos )
+   RichEditBox_SetSelRange( hWndControl, { nPos, nPos } )
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_GetCaretPos ( hWndControl )
-*-----------------------------------------------------------------------------*
-   LOCAL aSelRange := RichEditBox_GetSelRange ( hWndControl )
+FUNCTION RichEditBox_GetCaretPos( hWndControl )
+   LOCAL aSelRange := RichEditBox_GetSelRange( hWndControl )
+RETURN aSelRange[2]
 
-RETURN aSelRange[ 2 ]
-
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_SelectAll ( hWndControl )
-*-----------------------------------------------------------------------------*
-   LOCAL aSelRange := { 0, -1 }
-
-   RichEditBox_SetSelRange ( hWndControl, aSelRange )
-
+FUNCTION RichEditBox_SelectAll( hWndControl )
+   RichEditBox_SetSelRange( hWndControl, { 0, -1 } )
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_UnSelectAll ( hWndControl )
-*-----------------------------------------------------------------------------*
-   LOCAL nPos := RichEditBox_GetCaretPos ( hWndControl )
-
-   RichEditBox_SetCaretPos ( hWndControl, nPos )
-
+FUNCTION RichEditBox_UnSelectAll( hWndControl )
+   LOCAL nPos := RichEditBox_GetCaretPos( hWndControl )
+   RichEditBox_SetCaretPos( hWndControl, nPos )
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_ReplaceText ( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
-*-----------------------------------------------------------------------------*
-   LOCAL lDown := .T.
-   LOCAL aPos
+FUNCTION RichEditBox_ReplaceText( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
+   LOCAL aPos, lDown := .T.
 
-   aPos := RichEditBox_GetSelRange ( hWndControl )
-   RichEditBox_SetSelRange ( hWndControl, { aPos[ 1 ], aPos[ 1 ] } )
-   aPos := RichEditBox_FindText ( hWndControl, cFind, lDown, lMatchCase, lWholeWord, lSelectFindText )
-   IF aPos[ 1 ] <> -1
-      RichEditBox_SetSelRange ( hWndControl, aPos )
-      RichEditBox_SetText ( hWndControl, .T., cReplace )
-      aPos := RichEditBox_FindText ( hWndControl, cFind, lDown, lMatchCase, lWholeWord, lSelectFindText )
+   aPos := RichEditBox_GetSelRange( hWndControl )
+   RichEditBox_SetSelRange( hWndControl, { aPos[1], aPos[1] } )
+   aPos := RichEditBox_FindText( hWndControl, cFind, lDown, lMatchCase, lWholeWord, lSelectFindText )
+
+   IF aPos[1] <> -1
+      RichEditBox_SetSelRange( hWndControl, aPos )
+      RichEditBox_SetText( hWndControl, .T., cReplace )
+      aPos := RichEditBox_FindText( hWndControl, cFind, lDown, lMatchCase, lWholeWord, lSelectFindText )
    ENDIF
 
 RETURN aPos
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_ReplaceAllText ( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
-*-----------------------------------------------------------------------------*
+FUNCTION RichEditBox_ReplaceAllText( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
    LOCAL aPos := { 0, 0 }
 
-   WHILE aPos[ 1 ] <> -1
-      aPos := RichEditBox_ReplaceText ( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
+   WHILE aPos[1] <> -1
+      aPos := RichEditBox_ReplaceText( hWndControl, cFind, cReplace, lMatchCase, lWholeWord, lSelectFindText )
       DO EVENTS
    ENDDO
 
 RETURN aPos
 
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_AddTextAndSelect ( hWndControl, nPos, cText )
-*-----------------------------------------------------------------------------*
+FUNCTION RichEditBox_AddTextAndSelect( hWndControl, nPos, cText )
    LOCAL StartCaretPos, EndCaretPos, DeltaCaretPos
 
-   RichEditBox_SetCaretPos ( hWndControl, -1 )
-   StartCaretPos := RichEditBox_GetCaretPos ( hWndControl )
+   RichEditBox_SetCaretPos( hWndControl, -1 )
+   StartCaretPos := RichEditBox_GetCaretPos( hWndControl )
+   RichEditBox_SetText( hWndControl, .T., cText )
+   RichEditBox_SetCaretPos( hWndControl, -1 )
+   EndCaretPos := RichEditBox_GetCaretPos( hWndControl )
 
-   RichEditBox_SetText ( hWndControl, .T., cText )
-   RichEditBox_SetCaretPos ( hWndControl, -1 )
-   EndCaretPos := RichEditBox_GetCaretPos ( hWndControl )
-
-   RichEditBox_SetSelRange ( hWndControl, { StartCaretPos, EndCaretPos } )
+   RichEditBox_SetSelRange( hWndControl, { StartCaretPos, EndCaretPos } )
 
    IF nPos <= -1 .OR. nPos > EndCaretPos
-      RichEditBox_SetSelRange ( hWndControl, { StartCaretPos, -1 } )
+      RichEditBox_SetSelRange( hWndControl, { StartCaretPos, -1 } )
    ELSE
       DeltaCaretPos := EndCaretPos - StartCaretPos
-
-      RichEditBox_SelClear ( hWndControl )
-
-      RichEditBox_SetCaretPos ( hWndControl, nPos )
-      RichEditBox_SetText ( hWndControl, .T., cText )
-      RichEditBox_SetSelRange ( hWndControl, { nPos, nPos + DeltaCaretPos } )
+      RichEditBox_SelClear( hWndControl )
+      RichEditBox_SetCaretPos( hWndControl, nPos )
+      RichEditBox_SetText( hWndControl, .T., cText )
+      RichEditBox_SetSelRange( hWndControl, { nPos, nPos + DeltaCaretPos } )
    ENDIF
 
 RETURN NIL
 
-#define TWIPS     1440 / 25.4
-*-----------------------------------------------------------------------------*
-FUNCTION RichEditBox_RTFPrint ( hWndControl, aSelRange, nLeft, nTop, nRight, nBottom, PrintPageCodeBlock )
-*-----------------------------------------------------------------------------*
-   LOCAL nPageWidth, nPageHeight
-   LOCAL nNextChar := 0
-   LOCAL nTextLength := RichEditBox_GetTextLength ( hWndControl )
+#define TWIPS 1440 / 25.4
 
-   DEFAULT aSelRange TO { 0, -1 } // select all text
-   DEFAULT nLeft TO 20            // Left   page margin in millimeters
-   DEFAULT nTop TO 20             // Top    page margin in millimeters
-   DEFAULT nRight TO 20           // Right  page margin in millimeters
-   DEFAULT nBottom TO 20          // Bottom page margin in millimeters
-   DEFAULT PrintPageCodeBlock TO {|| NIL }
+FUNCTION RichEditBox_RTFPrint( hWndControl, aSelRange, nLeft, nTop, nRight, nBottom, PrintPageCodeBlock )
+   LOCAL nPageWidth, nPageHeight, nNextChar := 0
+   LOCAL nTextLength := RichEditBox_GetTextLength( hWndControl )
 
-   nPageWidth := OpenPrinterGetPageWidth() // in millimeters
+   DEFAULT aSelRange          TO { 0, -1 }   // select all text
+   DEFAULT nLeft              TO 20          // Left   page margin in millimeters
+   DEFAULT nTop               TO 20          // Top    page margin in millimeters
+   DEFAULT nRight             TO 20          // Right  page margin in millimeters
+   DEFAULT nBottom            TO 20          // Bottom page margin in millimeters
+   DEFAULT PrintPageCodeBlock TO {|| NIL}
+
+   nPageWidth  := OpenPrinterGetPageWidth()  // in millimeters
    nPageHeight := OpenPrinterGetPageHeight() // in millimeters
 
-   nRight := nPageWidth - nRight
+   nRight  := nPageWidth  - nRight
    nBottom := nPageHeight - nBottom
 
    // Convert millimeters in twips ( 1 inch = 25.4 mm = 1440 twips )
-   nLeft *= TWIPS
-   nTop *= TWIPS
-   nRight *= TWIPS
+   nLeft   *= TWIPS
+   nTop    *= TWIPS
+   nRight  *= TWIPS
    nBottom *= TWIPS
 
-   IF aSelRange[ 2 ] == -1 .OR. aSelRange[ 2 ] > nTextLength
-      aSelRange[ 2 ] := nTextLength
+   IF aSelRange[2] == -1 .OR. aSelRange[2] > nTextLength
+      aSelRange[2] := nTextLength
    ENDIF
 
    START PRINTDOC
-
-   DO WHILE nNextChar < nTextLength
-
-      START PRINTPAGE
-
-      Eval ( PrintPageCodeBlock )
-      nNextChar := RichEditBox_FormatRange ( hWndControl, OpenPrinterGetPageDC(), nLeft, nTop, nRight, nBottom, aSelRange )
-      aSelRange[ 1 ] := nNextChar
-      DO EVENTS
-
-      END PRINTPAGE
-
-   ENDDO
-
+      DO WHILE nNextChar < nTextLength
+         START PRINTPAGE
+            Eval( PrintPageCodeBlock )
+            nNextChar := RichEditBox_FormatRange( hWndControl, OpenPrinterGetPageDC(), nLeft, nTop, nRight, nBottom, aSelRange )
+            aSelRange[1] := nNextChar
+            DO EVENTS
+         END PRINTPAGE
+      ENDDO
    END PRINTDOC
 
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
 FUNCTION RichEditBox_LoadFile( hWndControl, cFile, lSelection, nType )
-*-----------------------------------------------------------------------------*
    LOCAL lSuccess
 
    hb_default( @lSelection, .F. )
    hb_default( @nType, RICHEDITFILE_RTF )
 
    lSuccess := RichEditBox_RTFLoadResourceFile( hWndControl, cFile, lSelection )
-
    IF ! lSuccess
       lSuccess := RichEditBox_StreamIn( hWndControl, cFile, lSelection, nType )
    ENDIF
 
 RETURN lSuccess
 
-*-----------------------------------------------------------------------------*
 FUNCTION RichEditBox_SaveFile( hWndControl, cFile, lSelection, nType )
-*-----------------------------------------------------------------------------*
    hb_default( @lSelection, .F. )
    hb_default( @nType, RICHEDITFILE_RTF )
-
    RichEditBox_StreamOut( hWndControl, cFile, lSelection, nType )
-
 RETURN NIL
 
 #endif

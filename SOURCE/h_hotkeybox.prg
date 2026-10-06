@@ -38,7 +38,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -48,135 +48,319 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 ---------------------------------------------------------------------------*/
 
-#include 'minigui.ch'
+#include "minigui.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineHotKeyBox ( ControlName, ParentForm, x, y, w, h, value, fontname, fontsize, tooltip, ;
-      change, HelpId, invisible, notabstop , bold, italic, underline, strikeout )
+FUNCTION _DefineHotKeyBox( ControlName, ParentForm, ;
+      x, y, w, h, value, FontName, FontSize, tooltip, ;
+      change, HelpId, invisible, notabstop, ;
+      bold, italic, underline, strikeout )
 *-----------------------------------------------------------------------------*
-   LOCAL ControlHandle, FontHandle
+
+   LOCAL hControl
+   LOCAL hFont
+   LOCAL hParent
+
    LOCAL cParentForm
-   LOCAL mVar
-   LOCAL k
+   LOCAL cVarName
+
+   LOCAL nControl
+
+   /*-----------------------------------------------------------------------*/
+   /* Defaults                                                              */
+   /*-----------------------------------------------------------------------*/
 
    hb_default( @w, 120 )
    hb_default( @h, 24 )
-   __defaultNIL( @change, "" )
+
    hb_default( @value, 0 )
    hb_default( @invisible, .F. )
    hb_default( @notabstop, .F. )
 
-   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+   __defaultNIL( @change, "" )
+
+   /*-----------------------------------------------------------------------*/
+   /* Resolve predefined font                                               */
+   /*-----------------------------------------------------------------------*/
+
+   IF ( hFont := GetFontHandle( FontName ) ) != 0
+
+      GetFontParamByRef( ;
+         hFont, ;
+         @FontName, ;
+         @FontSize, ;
+         @bold, ;
+         @italic, ;
+         @underline, ;
+         @strikeout )
+
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Resolve active form                                                   */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginWindowActive
+
       ParentForm := _HMG_ActiveFormName
+
       __defaultNIL( @FontName, _HMG_ActiveFontName )
       __defaultNIL( @FontSize, _HMG_ActiveFontSize )
-   ENDIF
-   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentForm := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
-      MsgMiniGuiError( "Window: " + ParentForm + " is not defined." )
+   /*-----------------------------------------------------------------------*/
+   /* Frame offset adjustment                                               */
+   /*-----------------------------------------------------------------------*/
+
+   IF _HMG_FrameLevel > 0 .AND. ;
+         ! _HMG_ParentWindowActive
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentForm := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   /*-----------------------------------------------------------------------*/
+   /* Validation                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF .NOT. _IsWindowDefined( ParentForm )
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentForm, "Parent", ParentForm ) + ;
+         " is not defined." )
+
+   ENDIF
+
+   IF ISCHAR( ControlName ) .AND. ;
+         ControlName == "0"
+
       ControlName := HMG_GetUniqueName()
+
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentForm )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentForm )
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentForm + ;
+         " Already defined." )
+
    ENDIF
 
-   mVar := '_' + ParentForm + '_' + ControlName
+   /*-----------------------------------------------------------------------*/
+   /* Create control                                                        */
+   /*-----------------------------------------------------------------------*/
 
+   cVarName    := "_" + ParentForm + "_" + ControlName
    cParentForm := ParentForm
 
-   ParentForm := GetFormHandle ( ParentForm )
+   hParent := GetFormHandle( ParentForm )
 
-   ControlHandle := InitHotKeyBox ( ParentForm, x, y, w, h , '' , 0, invisible, notabstop )
+   hControl := ;
+      InitHotKeyBox( ;
+         hParent, ;
+         x, ;
+         y, ;
+         w, ;
+         h, ;
+         "", ;
+         0, ;
+         invisible, ;
+         notabstop )
 
-   IF FontHandle != 0
-      _SetFontHandle( ControlHandle, FontHandle )
+   /*-----------------------------------------------------------------------*/
+   /* Font setup                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF hFont != 0
+
+      _SetFontHandle( hControl, hFont )
+
    ELSE
+
       __defaultNIL( @FontName, _HMG_DefaultFontName )
       __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-      FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+
+      hFont := ;
+         _SetFont( ;
+            hControl, ;
+            FontName, ;
+            FontSize, ;
+            bold, ;
+            italic, ;
+            underline, ;
+            strikeout )
+
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Tab integration                                                       */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginTabActive
-      AAdd ( _HMG_ActiveTabCurrentPageMap , Controlhandle )
+      AAdd( _HMG_ActiveTabCurrentPageMap, hControl )
    ENDIF
 
-   SetHotKeyValue( ControlHandle, value )
+   /*-----------------------------------------------------------------------*/
+   /* Initial value                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   SetHotKeyValue( hControl, value )
+
+   /*-----------------------------------------------------------------------*/
+   /* Tooltip                                                               */
+   /*-----------------------------------------------------------------------*/
 
    IF tooltip != NIL
-      SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( cParentForm ) )
+
+      SetToolTip( ;
+         hControl, ;
+         tooltip, ;
+         GetFormToolTipHandle( cParentForm ) )
+
    ENDIF
 
-   k := _GetControlFree()
+   /*-----------------------------------------------------------------------*/
+   /* Register control                                                      */
+   /*-----------------------------------------------------------------------*/
+
+   nControl := _GetControlFree()
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( cVarName, nControl )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &cVarName. := nControl
+
 #endif
 
-   _HMG_aControlType [k] := "HOTKEYBOX"
-   _HMG_aControlNames  [k] :=  ControlName
-   _HMG_aControlHandles  [k] :=  ControlHandle
-   _HMG_aControlParentHandles  [k] :=  ParentForm
-   _HMG_aControlIds  [k] :=  0
-   _HMG_aControlProcedures  [k] :=  ""
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue  [k] :=  value
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControllostFocusProcedure  [k] :=  ""
-   _HMG_aControlGotFocusProcedure  [k] :=  ""
-   _HMG_aControlChangeProcedure  [k] :=  change
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor  [k] :=  Nil
-   _HMG_aControlFontColor  [k] :=  Nil
-   _HMG_aControlDblClick  [k] :=  ""
-   _HMG_aControlHeadClick  [k] :=  {}
-   _HMG_aControlRow  [k] :=  y
-   _HMG_aControlCol  [k] :=  x
-   _HMG_aControlWidth   [k] := w
-   _HMG_aControlHeight   [k] := h
-   _HMG_aControlSpacing  [k] :=  0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  ""
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  fontname
-   _HMG_aControlFontSize [k] :=   fontsize
-   _HMG_aControlFontAttributes  [k] :=  { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip  [k] :=   tooltip
-   _HMG_aControlRangeMin  [k] :=   0
-   _HMG_aControlRangeMax  [k] :=   0
-   _HMG_aControlCaption  [k] :=   ''
-   _HMG_aControlVisible  [k] :=  iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId   [k] :=  HelpId
-   _HMG_aControlFontHandle  [k] :=   FontHandle
-   _HMG_aControlBrushHandle  [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] := 0
-   _HMG_aControlMiscData2 [k] := ''
+   /*-----------------------------------------------------------------------*/
+   /* Identity                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlType[ nControl ]          := "HOTKEYBOX"
+   _HMG_aControlNames[ nControl ]         := ControlName
+
+   _HMG_aControlHandles[ nControl ]       := hControl
+   _HMG_aControlParentHandles[ nControl ] := hParent
+
+   _HMG_aControlIds[ nControl ]           := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Event procedures                                                      */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlProcedures[ nControl ]         := ""
+   _HMG_aControllostFocusProcedure[ nControl ] := ""
+   _HMG_aControlGotFocusProcedure[ nControl ]  := ""
+   _HMG_aControlChangeProcedure[ nControl ]    := change
+
+   /*-----------------------------------------------------------------------*/
+   /* Runtime state                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlPageMap[ nControl ]   := {}
+   _HMG_aControlValue[ nControl ]     := value
+   _HMG_aControlInputMask[ nControl ] := ""
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := ! invisible
+
+   /*-----------------------------------------------------------------------*/
+   /* Geometry                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRow[ nControl ]    := y
+   _HMG_aControlCol[ nControl ]    := x
+
+   _HMG_aControlWidth[ nControl ]  := w
+   _HMG_aControlHeight[ nControl ] := h
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveFrameRow[ _HMG_FrameLevel ], ;
+           -1 )
+
+   _HMG_aControlContainerCol[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveFrameCol[ _HMG_FrameLevel ], ;
+           -1 )
+
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Appearance                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlBkColor[ nControl ]   := NIL
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   _HMG_aControlPicture[ nControl ] := ""
+
+   _HMG_aControlFontName[ nControl ] := FontName
+   _HMG_aControlFontSize[ nControl ] := FontSize
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { bold, italic, underline, strikeout }
+
+   _HMG_aControlToolTip[ nControl ] := tooltip
+
+   _HMG_aControlCaption[ nControl ] := ""
+
+   _HMG_aControlFontHandle[ nControl ]  := hFont
+   _HMG_aControlBrushHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Miscellaneous                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRangeMin[ nControl ] := 0
+   _HMG_aControlRangeMax[ nControl ] := 0
+
+   _HMG_aControlHelpId[ nControl ] := HelpId
+
+   _HMG_aControlDblClick[ nControl ] := ""
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   _HMG_aControlMiscData1[ nControl ] := 0
+   _HMG_aControlMiscData2[ nControl ] := ""
+
+   /*-----------------------------------------------------------------------*/
+   /* OOP integration                                                       */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
    ENDIF
 
-RETURN Nil
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
 FUNCTION _GetHotKeyName( cControlName, cFormName )
 *-----------------------------------------------------------------------------*
-   LOCAL cKeyName := C_GETHOTKEYNAME( GetControlHandle( cControlName, cFormName ) )
 
-RETURN SubStr( cKeyName, 1, At( Chr( 0 ), cKeyName ) - 1 )
+   LOCAL cKeyName
+
+   cKeyName := ;
+      C_GETHOTKEYNAME( ;
+         GetControlHandle( cControlName, cFormName ) )
+
+RETURN ;
+   SubStr( ;
+      cKeyName, ;
+      1, ;
+      At( Chr( 0 ), cKeyName ) - 1 )

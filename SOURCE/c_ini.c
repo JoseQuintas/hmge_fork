@@ -35,637 +35,421 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2025, https://harbour.github.io/
+    Copyright 1999-2026, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
 
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
  ---------------------------------------------------------------------------*/
+
 #include <mgdefs.h>
 
+/* 
+ * String Conversion Utilities
+ * These prototypes handle the transformation between ANSI (8-bit) and 
+ * Wide (16-bit Unicode) characters, essential for HMG Extended's 
+ * compatibility with different Windows character sets.
+ */
 #ifdef UNICODE
-
-// Functions to convert ANSI strings to wide character strings and vice versa
 LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
 
+/* 
+ * Macro Definitions for Harbour/C String Interoperability
+ * HB_PARSTR: Safely retrieves a string parameter from Harbour, converting to Wide if necessary.
+ * HB_RETSTR: Returns a string to Harbour, handling Unicode-to-ANSI conversion and memory cleanup.
+ */
+#ifdef UNICODE
+#define HB_PARSTR( n )  AnsiToWide( hb_parc( n ) )
+#define HB_RETSTR( s ) \
+   do \
+   { \
+      LPSTR p = WideToAnsi( s ); \
+      hb_retc( p ); \
+      hb_xfree( p ); \
+   } \
+   while( 0 )
+#else
+#define HB_PARSTR( n )  ( TCHAR * ) hb_parc( n )
+#define HB_RETSTR( s )  hb_retc( s )
+#endif
+
 /*
- * FUNCTION GETPRIVATEPROFILESTRING( cSection, cKey, cDefault, cFile )
- *
- * Retrieves a string value from a specified key within a given section of an INI file.
- *
+ * PROCEDURE hb_freeW( p )
+ * Purpose: Internal helper to release memory allocated for Wide strings.
+ * Logic: Only performs an action in UNICODE mode to prevent memory leaks 
+ *        from temporary buffers created during parameter parsing.
+ */
+   static void hb_freeW( void *p )
+{
+#ifdef UNICODE
+   if( p )
+   {
+      hb_xfree( p );
+   }
+#else
+   HB_SYMBOL_UNUSED( p );
+#endif
+}
+
+/*
+ * HB_FUNC( GETPRIVATEPROFILESTRING )
+ * Purpose: Retrieves a string from a specified section in an INI file.
  * Parameters:
- *   cSection   : [Character] The name of the section in the INI file.
- *   cKey       : [Character] The name of the key whose value is to be retrieved.
- *   cDefault   : [Character] The default string to return if the specified key is not found.
- *   cFile      : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Character] The string value associated with the key, or the default value if the key is not found.
- *
- * Purpose:
- *   This function provides a way to read configuration settings from an INI file.  It's used to
- *   retrieve application-specific settings such as user preferences, database connection strings,
- *   or other configurable parameters. The function handles the case where the requested key
- *   doesn't exist by returning a default value, ensuring that the application can continue to
- *   function even if the INI file is incomplete or missing.
- *
- * Notes:
- *   - The function dynamically allocates memory to store the retrieved string, ensuring that it can
- *     handle values of varying lengths.
- *   - It handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - If an error occurs during the retrieval process (e.g., the file is not found), the function
- *     returns an empty string.
+ *    1. cSection  (String): The section containing the key.
+ *    2. cEntry    (String): The key name whose value is to be retrieved.
+ *    3. cDefault  (String): The default value if the key is not found.
+ *    4. cFileName (String): The path to the INI file.
+ * Returns: The string value associated with the key, or the default value.
+ * Side Effects: Allocates temporary memory for buffer management.
  */
 HB_FUNC( GETPRIVATEPROFILESTRING )
 {
-   DWORD    nSize = 256;
-   TCHAR    *bBuffer = NULL;
-   DWORD    dwLen;
-   DWORD    lastError;
-   BOOL     success;
+   DWORD nSize = 256, dwLen;
+   TCHAR *buffer = NULL;
+   BOOL  ok = FALSE;
 
-#ifndef UNICODE
-   LPCSTR   lpSection = HB_ISCHAR( 1 ) ? hb_parc( 1 ) : NULL;
-   LPCSTR   lpEntry = HB_ISCHAR( 2 ) ? hb_parc( 2 ) : NULL;
-   LPCSTR   lpDefault = hb_parc( 3 );
-   LPCSTR   lpFileName = hb_parc( 4 );
-#else
-   LPWSTR   lpSection = HB_ISCHAR( 1 ) ? AnsiToWide( ( char * ) hb_parc( 1 ) ) : NULL;
-   LPWSTR   lpEntry = HB_ISCHAR( 2 ) ? AnsiToWide( ( char * ) hb_parc( 2 ) ) : NULL;
-   LPWSTR   lpDefault = AnsiToWide( ( char * ) hb_parc( 3 ) );
-   LPWSTR   lpFileName = AnsiToWide( ( char * ) hb_parc( 4 ) );
-   LPSTR    pStr;
-#endif
+   // Extract parameters from Harbour stack
+   TCHAR *section = HB_ISCHAR( 1 ) ? HB_PARSTR( 1 ) : NULL;
+   TCHAR *entry = HB_ISCHAR( 2 ) ? HB_PARSTR( 2 ) : NULL;
+   TCHAR *def = HB_PARSTR( 3 );
+   TCHAR *filename = HB_PARSTR( 4 );
+
+   /* 
+    * Dynamic Buffer Allocation Logic:
+    * We don't know the length of the INI value beforehand. We start with 256 bytes
+    * and double the size if GetPrivateProfileString indicates the buffer was too small
+    * (return value equals nSize - 1).
+    */
    do
    {
-      if( bBuffer != NULL )
+      if( buffer )
       {
-         hb_xfree( bBuffer );
+         hb_xfree( buffer );
       }
 
       nSize *= 2;
-      bBuffer = ( TCHAR * ) hb_xgrab( sizeof( TCHAR ) * nSize );
-      dwLen = GetPrivateProfileString( lpSection, lpEntry, lpDefault, bBuffer, nSize, lpFileName );
-      lastError = GetLastError();   // Capture the error code
-      if( dwLen == 0 && lastError != ERROR_SUCCESS )
+      buffer = ( TCHAR * ) hb_xgrab( nSize * sizeof( TCHAR ) );
+
+      dwLen = GetPrivateProfileString( section, entry, def, buffer, nSize, filename );
+
+      // Check for API failure
+      if( dwLen == 0 && GetLastError() != ERROR_SUCCESS )
       {
-         // Handle the error (e.g., log it, return an error code)
-         hb_retc( "" );             // Return an empty string on error
-         success = FALSE;
-         break;                     // Exit the loop
+         break;
       }
-      else
-      {
-         success = TRUE;
-      }
+
+      ok = TRUE;
    }
    while( dwLen >= nSize - 1 );
 
-   if( success )
+   // Return the result to Harbour
+   if( ok )
    {
-      if( dwLen )
+      if( dwLen > 0 )
       {
-#ifndef UNICODE
-         hb_retclen( ( TCHAR * ) bBuffer, dwLen );
-#else
-         pStr = WideToAnsi( bBuffer );
-         hb_retc( pStr );
-         hb_xfree( pStr );
-#endif
+         HB_RETSTR( buffer );
       }
       else
       {
-#ifndef UNICODE
-         hb_retc( lpDefault );
-#else
-         pStr = WideToAnsi( ( LPWSTR ) lpDefault );
-         hb_retc( pStr );
-         hb_xfree( pStr );
-#endif
+         HB_RETSTR( def );
       }
    }
-
-   if( bBuffer != NULL )
+   else
    {
-      hb_xfree( bBuffer );
+      hb_retc( "" );
    }
 
-#ifdef UNICODE
-   hb_xfree( lpFileName );
-   hb_xfree( lpDefault );
-   if( lpSection )
+   // Cleanup allocated resources
+   if( buffer )
    {
-      hb_xfree( lpSection );
+      hb_xfree( buffer );
    }
 
-   if( lpEntry )
-   {
-      hb_xfree( lpEntry );
-   }
-#endif
+   hb_freeW( section );
+   hb_freeW( entry );
+   hb_freeW( def );
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION WRITEPRIVATEPROFILESTRING( cSection, cKey, cValue, cFile )
- *
- * Writes a string value to a specified key within a given section of an INI file.
- *
+ * HB_FUNC( WRITEPRIVATEPROFILESTRING )
+ * Purpose: Copies a string into the specified section of an INI file.
  * Parameters:
- *   cSection : [Character] The name of the section in the INI file. If the section does not exist, it will be created.
- *   cKey     : [Character] The name of the key to write to. If NULL and cValue is NULL, the section is deleted.
- *   cValue   : [Character] The string value to write to the key. If NULL, the key is deleted.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Logical] .T. if the write operation was successful, .F. otherwise.
- *
- * Purpose:
- *   This function allows the application to persistently store configuration settings in an INI file.
- *   It's used to save user preferences, application state, or other configurable parameters that
- *   need to be preserved between application sessions. The function handles the creation of new
- *   sections and keys, as well as the deletion of existing ones.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - If an error occurs during the write operation, the function returns .F.
+ *    1. cSection  (String): The section name.
+ *    2. cEntry    (String): The key name.
+ *    3. cData     (String): The string to be written.
+ *    4. cFileName (String): The path to the INI file.
+ * Returns: Logical (.T. if successful, .F. otherwise).
  */
 HB_FUNC( WRITEPRIVATEPROFILESTRING )
 {
-#ifndef UNICODE
-   LPCSTR   lpSection = hb_parc( 1 );
-   LPCSTR   lpEntry = HB_ISCHAR( 2 ) ? hb_parc( 2 ) : NULL;
-   LPCSTR   lpData = HB_ISCHAR( 3 ) ? hb_parc( 3 ) : NULL;
-   LPCSTR   lpFileName = hb_parc( 4 );
-#else
-   LPWSTR   lpSection = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPWSTR   lpEntry = HB_ISCHAR( 2 ) ? AnsiToWide( ( char * ) hb_parc( 2 ) ) : NULL;
-   LPWSTR   lpData = HB_ISCHAR( 3 ) ? AnsiToWide( ( char * ) hb_parc( 3 ) ) : NULL;
-   LPWSTR   lpFileName = AnsiToWide( ( char * ) hb_parc( 4 ) );
-#endif
-   BOOL     result = WritePrivateProfileString( lpSection, lpEntry, lpData, lpFileName );
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *entry = HB_ISCHAR( 2 ) ? HB_PARSTR( 2 ) : NULL;
+   TCHAR *data = HB_ISCHAR( 3 ) ? HB_PARSTR( 3 ) : NULL;
+   TCHAR *filename = HB_PARSTR( 4 );
 
-   if( !result )
-   {
-      // DWORD lastError = GetLastError();
-      // Log the error or return a specific error code to Harbour
-      // Example: hb_errrt_raise(HB_ERR_GENERAL, 1234, "WritePrivateProfileString failed", lastError);
-      hb_retl( FALSE );
-   }
-   else
-   {
-      hb_retl( TRUE );
-   }
+   // Call Win32 API and return success status
+   hb_retl( WritePrivateProfileString( section, entry, data, filename ) );
 
-#ifdef UNICODE
-   hb_xfree( lpSection );
-   hb_xfree( lpFileName );
-   if( lpEntry )
-   {
-      hb_xfree( lpEntry );
-   }
-
-   if( lpData )
-   {
-      hb_xfree( lpData );
-   }
-#endif
+   hb_freeW( section );
+   hb_freeW( entry );
+   hb_freeW( data );
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION DELINIENTRY( cSection, cKey, cFile )
- *
- * Deletes a specified key from a given section in an INI file.
- *
+ * HB_FUNC( DELINIENTRY )
+ * Purpose: Deletes a specific key (entry) from an INI file.
  * Parameters:
- *   cSection : [Character] The name of the section in the INI file.
- *   cKey     : [Character] The name of the key to delete.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Logical] .T. if the deletion was successful, .F. otherwise.
- *
- * Purpose:
- *   This function allows the application to remove specific configuration settings from an INI file.
- *   It's used to delete obsolete or no-longer-needed settings.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - The function internally calls WritePrivateProfileString with a NULL value to delete the key.
+ *    1. cSection  (String): The section containing the key.
+ *    2. cEntry    (String): The key to delete.
+ *    3. cFileName (String): The path to the INI file.
+ * Returns: Logical (.T. if successful).
+ * Logic: Per Win32 API documentation, passing NULL as the data parameter 
+ *        to WritePrivateProfileString deletes the key.
  */
 HB_FUNC( DELINIENTRY )
 {
-#ifndef UNICODE
-   LPCSTR   lpSection = hb_parc( 1 );
-   LPCSTR   lpEntry = hb_parc( 2 );
-   LPCSTR   lpFileName = hb_parc( 3 );
-#else
-   LPCWSTR  lpSection = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPCWSTR  lpEntry = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 3 ) );
-#endif
-   hb_retl( WritePrivateProfileString( lpSection, lpEntry, NULL, lpFileName ) );
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *entry = HB_PARSTR( 2 );
+   TCHAR *filename = HB_PARSTR( 3 );
 
-#ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpSection );
-   hb_xfree( ( TCHAR * ) lpEntry );
-   hb_xfree( ( TCHAR * ) lpFileName );
-#endif
+   hb_retl( WritePrivateProfileString( section, entry, NULL, filename ) );
+
+   hb_freeW( section );
+   hb_freeW( entry );
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION DELINISECTION( cSection, cFile )
- *
- * Deletes a specified section from an INI file.
- *
+ * HB_FUNC( DELINISECTION )
+ * Purpose: Deletes an entire section from an INI file.
  * Parameters:
- *   cSection : [Character] The name of the section to delete.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Logical] .T. if the deletion was successful, .F. otherwise.
- *
- * Purpose:
- *   This function allows the application to remove an entire section and all its associated keys
- *   from an INI file. It's used to remove obsolete or no-longer-needed sections.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - The function internally calls WritePrivateProfileString with a NULL key and an empty string value
- *     to delete the section.
+ *    1. cSection  (String): The section to delete.
+ *    2. cFileName (String): The path to the INI file.
+ * Returns: Logical (.T. if successful).
+ * Logic: Passing NULL as the entry parameter to WritePrivateProfileString 
+ *        deletes the entire section.
  */
 HB_FUNC( DELINISECTION )
 {
-#ifndef UNICODE
-   LPCSTR   lpSection = hb_parc( 1 );
-   LPCSTR   lpFileName = hb_parc( 2 );
-#else
-   LPCWSTR  lpSection = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
-#endif
-   hb_retl( WritePrivateProfileString( lpSection, NULL, TEXT( "" ), lpFileName ) );
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *filename = HB_PARSTR( 2 );
 
-#ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpSection );
-   hb_xfree( ( TCHAR * ) lpFileName );
-#endif
+   hb_retl( WritePrivateProfileString( section, NULL, TEXT( "" ), filename ) );
+
+   hb_freeW( section );
+   hb_freeW( filename );
 }
 
-/*
- * Helper FUNCTION FindFirstSubString( pStrings )
- *
- * Finds the first substring from a double-null-terminated string block.
- *
- * Parameters:
- *   pStrings : [TCHAR*] Pointer to a block of null-separated strings.
- *
- * Returns:
- *   [TCHAR*] Pointer to the first substring, or NULL if empty.
- *
- * Purpose:
- *   Used to traverse Windows-style INI string lists.
+/* 
+ * Internal Helper: FindFirstSubString
+ * Purpose: Returns the start of the first string in a null-separated buffer.
  */
-static TCHAR *FindFirstSubString( TCHAR *Strings )
+static TCHAR *FindFirstSubString( TCHAR *s )
 {
-   return( *Strings == 0 ) ? NULL : Strings;
+   return( *s == 0 ) ? NULL : s;
 }
 
-/*
- * Helper FUNCTION FindNextSubString( pStrings )
- *
- * Finds the next string in a list of null-terminated strings.
- *
- * Parameters:
- *   pStrings : [TCHAR*] Current string pointer.
- *
- * Returns:
- *   [TCHAR*] Pointer to the next string, or NULL if end of list.
+/* 
+ * Internal Helper: FindNextSubString
+ * Purpose: Navigates to the next string in a null-separated buffer.
+ * Logic: Moves the pointer past the current null terminator. If the next 
+ *        character is also null, we have reached the end of the list.
  */
-static TCHAR *FindNextSubString( TCHAR *Strings )
+static TCHAR *FindNextSubString( TCHAR *s )
 {
-   TCHAR *p = Strings + lstrlen( Strings ) + 1;
+   TCHAR *p = s + lstrlen( s ) + 1;
    return( *p == 0 ) ? NULL : p;
 }
 
-/*
- * Helper FUNCTION FindLenSubString( pStrings )
- *
- * Counts the number of substrings in a null-separated string block.
- *
- * Parameters:
- *   pStrings : [TCHAR*] Pointer to the string block.
- *
- * Returns:
- *   [INT] Number of substrings.
+/* 
+ * Internal Helper: CountSubStrings
+ * Purpose: Counts how many null-terminated strings exist in a double-null terminated block.
  */
-static INT FindLenSubString( TCHAR *Strings )
+static INT CountSubStrings( TCHAR *s )
 {
-   INT   i = 0;
-   TCHAR *p = FindFirstSubString( Strings );
-   while( p && ( p = FindNextSubString( p ) ) != NULL )
+   INT   count = 0;
+   TCHAR *p = FindFirstSubString( s );
+
+   while( p )
    {
-      ++i;
+      count++;
+      p = FindNextSubString( p );
    }
 
-   return i + ( FindFirstSubString( Strings ) ? 1 : 0 ); // Adjust count to include the first string
+   return count;
 }
 
 /*
- * FUNCTION _GETPRIVATEPROFILESECTIONNAMES( cFile )
- *
- * Retrieves an array containing the names of all sections in an INI file.
- *
+ * HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
+ * Purpose: Retrieves all section names in an INI file.
  * Parameters:
- *   cFile : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Array of Character] An array where each element is the name of a section in the INI file.
- *                        Returns an empty array if no sections are found.
- *
- * Purpose:
- *   This function allows the application to enumerate all the sections in an INI file.  It's useful
- *   for tasks such as displaying a list of available configuration options to the user or validating
- *   the structure of the INI file.
- *
- * Notes:
- *   - The function dynamically allocates memory to store the section names, ensuring that it can
- *     handle INI files with a large number of sections.
- *   - It handles both ANSI and Unicode INI files, depending on the compilation settings.
+ *    1. cFileName (String): The path to the INI file.
+ * Returns: An Array of strings containing all section names.
+ * Logic: Uses a large buffer to capture the null-separated list of names 
+ *        returned by the Windows API, then parses them into a Harbour array.
  */
 HB_FUNC( _GETPRIVATEPROFILESECTIONNAMES )
 {
-   DWORD    nSize = 32767; // Start with a reasonable size
-   TCHAR    *bBuffer = NULL;
-   TCHAR    *p;
-   INT      i, nLen;
-   BOOL     success;
+   DWORD nSize = 32767; // Initial large buffer size for section names
+   TCHAR *buffer = NULL;
+   TCHAR *p;
+   INT   i, count;
 
-#ifndef UNICODE
-   LPCSTR   lpFileName = hb_parc( 1 );
-#else
-   LPWSTR   lpFileName = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPSTR    pStr;
-#endif
-   DWORD    result;
+   TCHAR *filename = HB_PARSTR( 1 );
 
    do
    {
-      if( bBuffer != NULL )
+      if( buffer )
       {
-         hb_xfree( bBuffer );
+         hb_xfree( buffer );
       }
 
-      bBuffer = ( TCHAR * ) hb_xgrab( nSize * sizeof( TCHAR ) );
-      ZeroMemory( bBuffer, nSize * sizeof( TCHAR ) );
+      buffer = ( TCHAR * ) hb_xgrab( nSize * sizeof( TCHAR ) );
+      ZeroMemory( buffer, nSize * sizeof( TCHAR ) );
 
-      result = GetPrivateProfileSectionNames( bBuffer, nSize, lpFileName );
-
-      if( result == nSize - 2 )
-      {                    // Buffer too small
-         nSize *= 2;       // Double the buffer size
-      }
-      else if( result == 0 )
+      // If the buffer is too small, the API returns nSize - 2.
+      if( GetPrivateProfileSectionNames( buffer, nSize, filename ) != nSize - 2 )
       {
-         success = TRUE;
          break;
       }
-      else
-      {
-         success = TRUE;
-         break;
-      }
+
+      nSize *= 2;
    }
    while( TRUE );
 
-   if( success )
+   // Determine array size and initialize Harbour array
+   count = CountSubStrings( buffer );
+   hb_reta( count );
+
+   p = FindFirstSubString( buffer );
+
+   // Iterate through the buffer and store each section name in the array
+   for( i = 1; p; ++i, p = FindNextSubString( p ) )
    {
-      p = bBuffer;
-      nLen = FindLenSubString( p );
-      hb_reta( nLen );
-
-      if( nLen > 0 )
-      {
-#ifndef UNICODE
-         HB_STORC( ( p = FindFirstSubString( p ) ), -1, 1 );
-         for( i = 2; ( p = FindNextSubString( p ) ) != NULL; i++ )
-         {
-            HB_STORC( p, -1, i );
-         }
-
+#ifdef UNICODE
+      LPSTR tmp = WideToAnsi( p );
+      HB_STORC( tmp, -1, i );
+      hb_xfree( tmp );
 #else
-         p = FindFirstSubString( p );
-         for( i = 1; p != NULL; i++, p = FindNextSubString( p ) )
-         {
-            pStr = WideToAnsi( p );
-            HB_STORC( pStr, -1, i );
-            hb_xfree( pStr );
-         }
-
-         hb_xfree( lpFileName );
+      HB_STORC( p, -1, i );
 #endif
-      }
-   }
-   else
-   {
-      hb_reta( 0 );        // Return an empty array on error
    }
 
-   if( bBuffer != NULL )
+   if( buffer )
    {
-      hb_xfree( bBuffer );
+      hb_xfree( buffer );
    }
+
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION _GETPRIVATEPROFILESECTION( cSection, cFile )
- *
- * Retrieves an array containing all key-value pairs from a specified section in an INI file.
- *
+ * HB_FUNC( _GETPRIVATEPROFILESECTION )
+ * Purpose: Retrieves all keys and values for a specific section.
  * Parameters:
- *   cSection : [Character] The name of the section to retrieve.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Array of Character] An array where each element is a string in the format "key=value".
- *                        Returns an empty array if the section is not found or is empty.
- *
- * Purpose:
- *   This function allows the application to retrieve all the key-value pairs within a specific
- *   section of an INI file. It's useful for tasks such as loading all the settings for a particular
- *   module or component of the application.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - The function uses a fixed-size buffer to store the key-value pairs. If the section contains
- *     more data than the buffer can hold, the function may not retrieve all the data.
+ *    1. cSection  (String): The section name.
+ *    2. cFileName (String): The path to the INI file.
+ * Returns: An Array of strings, where each element is "Key=Value".
  */
 HB_FUNC( _GETPRIVATEPROFILESECTION )
 {
-   TCHAR    bBuffer[32767];
-   TCHAR    *p;
-   INT      i, nLen;
+   TCHAR buffer[32767]; // Fixed buffer size for section content
+   TCHAR *p;
+   INT   i, count;
 
-#ifndef UNICODE
-   LPCSTR   lpSectionName = hb_parc( 1 );
-   LPCSTR   lpFileName = hb_parc( 2 );
-#else
-   LPCWSTR  lpSectionName = AnsiToWide( ( char * ) hb_parc( 1 ) );
-   LPCWSTR  lpFileName = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPSTR    pStr;
-#endif
-   ZeroMemory( bBuffer, sizeof( bBuffer ) );
-   GetPrivateProfileSection( lpSectionName, bBuffer, sizeof( bBuffer ) / sizeof( TCHAR ), lpFileName );
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *filename = HB_PARSTR( 2 );
 
-   p = bBuffer;
-   nLen = FindLenSubString( p );
-   hb_reta( nLen );
+   ZeroMemory( buffer, sizeof( buffer ) );
 
-   if( nLen > 0 )
+   GetPrivateProfileSection( section, buffer, sizeof( buffer ) / sizeof( TCHAR ), filename );
+
+   count = CountSubStrings( buffer );
+   hb_reta( count );
+
+   p = FindFirstSubString( buffer );
+
+   // Populate the Harbour array with "Key=Value" strings
+   for( i = 1; p; ++i, p = FindNextSubString( p ) )
    {
-#ifndef UNICODE
-      HB_STORC( ( p = FindFirstSubString( p ) ), -1, 1 );
-      for( i = 2; ( p = FindNextSubString( p ) ) != NULL; i++ )
-      {
-         HB_STORC( p, -1, i );
-      }
-
+#ifdef UNICODE
+      LPSTR tmp = WideToAnsi( p );
+      HB_STORC( tmp, -1, i );
+      hb_xfree( tmp );
 #else
-      p = FindFirstSubString( p );
-      for( i = 1; p != NULL; i++, p = FindNextSubString( p ) )
-      {
-         pStr = WideToAnsi( p );
-         HB_STORC( pStr, -1, i );
-         hb_xfree( pStr );
-      }
-
-      hb_xfree( ( TCHAR * ) lpSectionName );
-      hb_xfree( ( TCHAR * ) lpFileName );
+      HB_STORC( p, -1, i );
 #endif
    }
+
+   hb_freeW( section );
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION ISINIKEYEXISTS( cSection, cKey, cFile )
- *
- * Checks if a specified key exists within a given section of an INI file.
- *
+ * HB_FUNC( ISINIKEYEXISTS )
+ * Purpose: Checks if a specific key exists within a section.
  * Parameters:
- *   cSection : [Character] The name of the section to check.
- *   cKey     : [Character] The name of the key to check for.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Logical] .T. if the key exists in the section, .F. otherwise.
- *
- * Purpose:
- *   This function allows the application to determine whether a specific configuration setting
- *   is present in an INI file before attempting to read its value. This can be useful for
- *   handling optional settings or for validating the structure of the INI file.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - The function checks for the existence of the key by attempting to read its value into a small buffer.
- *     If the key exists, the read operation will succeed, and the function will return .T.
+ *    1. cSection  (String): The section name.
+ *    2. cKey      (String): The key name.
+ *    3. cFileName (String): The path to the INI file.
+ * Returns: Logical (.T. if the key exists).
+ * Logic: Attempts to read the key. If the returned length is greater than 0, 
+ *        the key is considered present.
  */
 HB_FUNC( ISINIKEYEXISTS )
 {
-#ifndef UNICODE
-   LPCSTR   lpSection = hb_parc( 1 );
-   LPCSTR   lpKey = hb_parc( 2 );
-   LPCSTR   lpFileName = hb_parc( 3 );
-   char     buffer[2] = { 0 };
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *key = HB_PARSTR( 2 );
+   TCHAR *filename = HB_PARSTR( 3 );
 
-   if( lpSection && lpKey && lpFileName )
+   TCHAR buffer[2] = { 0 };
+
+   if( section && key && filename )
    {
-      DWORD len = GetPrivateProfileStringA( lpSection, lpKey, "", buffer, sizeof( buffer ), lpFileName );
-      hb_retl( len > 0 );
+      hb_retl( GetPrivateProfileString( section, key, TEXT( "" ), buffer, 2, filename ) > 0 );
    }
    else
    {
       hb_retl( HB_FALSE );
    }
 
-#else
-   LPWSTR   lpSection = AnsiToWide( hb_parc( 1 ) );
-   LPWSTR   lpKey = AnsiToWide( hb_parc( 2 ) );
-   LPWSTR   lpFileName = AnsiToWide( hb_parc( 3 ) );
-   WCHAR    buffer[2] = { 0 };
-
-   if( lpSection && lpKey && lpFileName )
-   {
-      DWORD len = GetPrivateProfileStringW( lpSection, lpKey, L"", buffer, sizeof( buffer ) / sizeof( WCHAR ), lpFileName );
-      hb_retl( len > 0 );
-   }
-   else
-   {
-      hb_retl( HB_FALSE );
-   }
-
-   hb_xfree( lpSection );
-   hb_xfree( lpKey );
-   hb_xfree( lpFileName );
-#endif
+   hb_freeW( section );
+   hb_freeW( key );
+   hb_freeW( filename );
 }
 
 /*
- * FUNCTION ISINISECTIONEXISTS( cSection, cFile )
- *
- * Checks if a specified section exists in an INI file.
- *
+ * HB_FUNC( ISINISECTIONEXISTS )
+ * Purpose: Checks if a specific section exists in the INI file.
  * Parameters:
- *   cSection : [Character] The name of the section to check for.
- *   cFile    : [Character] The full path to the INI file.
- *
- * Returns:
- *   [Logical] .T. if the section exists, .F. otherwise.
- *
- * Purpose:
- *   This function allows the application to determine whether a specific section is present in an
- *   INI file before attempting to read its contents. This can be useful for handling optional
- *   sections or for validating the structure of the INI file.
- *
- * Notes:
- *   - The function handles both ANSI and Unicode INI files, depending on the compilation settings.
- *   - The function checks for the existence of the section by attempting to read its contents into a buffer.
- *     If the section exists, the read operation will succeed, and the function will return .T.
+ *    1. cSection  (String): The section name.
+ *    2. cFileName (String): The path to the INI file.
+ * Returns: Logical (.T. if the section exists).
+ * Logic: Attempts to retrieve the section content. If the API returns 
+ *        data, the section exists.
  */
 HB_FUNC( ISINISECTIONEXISTS )
 {
-#ifndef UNICODE
-   LPCSTR   lpSection = hb_parc( 1 );
-   LPCSTR   lpFileName = hb_parc( 2 );
-   char     buffer[128] = { 0 };
+   TCHAR *section = HB_PARSTR( 1 );
+   TCHAR *filename = HB_PARSTR( 2 );
 
-   if( lpSection && lpFileName )
+   TCHAR buffer[256] = { 0 };
+
+   if( section && filename )
    {
-      DWORD len = GetPrivateProfileSectionA( lpSection, buffer, sizeof( buffer ), lpFileName );
-      hb_retl( len > 0 );
+      hb_retl( GetPrivateProfileSection( section, buffer, 256, filename ) > 0 );
    }
    else
    {
       hb_retl( HB_FALSE );
    }
 
-#else
-   LPWSTR   lpSection = AnsiToWide( hb_parc( 1 ) );
-   LPWSTR   lpFileName = AnsiToWide( hb_parc( 2 ) );
-   WCHAR    buffer[256] = { 0 };
-
-   if( lpSection && lpFileName )
-   {
-      DWORD len = GetPrivateProfileSectionW( lpSection, buffer, sizeof( buffer ) / sizeof( WCHAR ), lpFileName );
-      hb_retl( len > 0 );
-   }
-   else
-   {
-      hb_retl( HB_FALSE );
-   }
-
-   hb_xfree( lpSection );
-   hb_xfree( lpFileName );
-#endif
+   hb_freeW( section );
+   hb_freeW( filename );
 }

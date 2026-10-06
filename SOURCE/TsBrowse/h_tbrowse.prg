@@ -1,75 +1,149 @@
 /*---------------------------------------------------------------------------
  MINIGUI - Harbour Win32 GUI library source code
- Adaptation FiveWin Class TSBrowse 9.0
+ Adaptation of FiveWin Class TSBrowse 9.0 for HMG Extended Edition.
 ---------------------------------------------------------------------------*/
 
-#include "minigui.ch"
-#include "hbclass.ch"
-#include "dbinfo.ch"
-#include "TSBrowse.ch"
+#include "minigui.ch"      // Main MiniGUI header file
+#include "hbclass.ch"      // Harbour class definitions
+#include "dbinfo.ch"       // Database information utilities
+#include "TSBrowse.ch"     // TSBrowse class definitions
 
-// 03.10.2012
-// If it's uncommented:
-// - select a row by Shift+DblClick
-// - evaluate the block bPreSelect before selection (check of condition for selection)
+// Uncomment to enable Shift+DblClick row selection and pre-selection validation via bPreSelect block
 // #define __EXT_SELECTION__
 
-// 26.05.2017
-// If it's uncommented:
-// - extended user keys handling
-// - evaluate the code block by a key from a hash
+// Uncomment to enable extended user key handling via a hash-based code block evaluation
 #define __EXT_USERKEYS__
 
+// External functions for scope support
 EXTERN OrdKeyNo, OrdKeyCount, OrdKeyGoto
 
-#define SB_VERT             1
-#define PBM_SETPOS       1026
-#define EM_SETSEL         177
-#define EM_SETREADONLY    207
+// Constants for Windows GUI elements and messages
+#define SB_VERT             1      // Vertical scrollbar
+#define PBM_SETPOS       1026      // Progress bar set position message
+#define EM_SETSEL         177      // Edit control set selection message
+#define EM_SETREADONLY    207      // Edit control set readonly message
 
-#define VK_CONTEXT         93
-#define WS_3DLOOK           4  // 0x4L
-#define WM_SETFONT         48  // 0x0030
-#define WM_LBUTTONDBLCLK  515  // 0x203
+#define VK_CONTEXT         93      // Context menu virtual key code
+#define WS_3DLOOK           4      // 3D look window style
+#define WM_SETFONT         48      // Window message for setting font
+#define WM_LBUTTONDBLCLK  515      // Left button double-click message
 
-// mouse wheel Windows message
+// Mouse wheel Windows message
 #define WM_MOUSEWHEEL     522
 
-// let's save DGroup space
-// ahorremos espacio para DGroup
-#define nsCol        asTSB[1]
-#define nsWidth      asTSB[2]
-#define nsOldPixPos  asTSB[3]
-#define bCxKeyNo     asTSB[4]
-#define bCmKeyNo     asTSB[5]
-#define nGap         asTSB[6]
-#define nNewEle      asTSB[7]
-#define nKeyPressed  asTSB[8]
-#define lNoAppend    asTSB[9]
-#define nInstance    asTSB[10]
-
-// api maximal vertical scrollbar position
+// Maximum vertical scrollbar position (API limitation)
 #define MAX_POS                         65535
 
+// Excel-related constants
 #define xlWorkbookNormal                -4143
 #define xlContinuous                    1
 #define xlHAlignCenterAcrossSelection   7
 
+// Optimize memory usage by aliasing array elements to shorter names
+#define nsCol        asTSB[1]      // Column count
+#define nsWidth      asTSB[2]      // Width
+#define nsOldPixPos  asTSB[3]      // Old pixel position
+#define bCxKeyNo     asTSB[4]      // Horizontal key navigation block
+#define bCmKeyNo     asTSB[5]      // Command key navigation block
+#define nGap         asTSB[6]      // Gap between columns
+#define nNewEle      asTSB[7]      // New element flag
+#define nKeyPressed  asTSB[8]      // Key pressed flag
+#define lNoAppend    asTSB[9]      // No-append flag
+#define nInstance    asTSB[10]     // Instance handle
+
 #ifdef __XHARBOUR__
-#include "hbcompat.ch"
-#xtranslate hb_Sec( [<x>] ) => Secs( <x> )
+#include "hbcompat.ch"               // XHarbour compatibility header
+#xtranslate hb_Sec( [<x>] ) => Secs( <x> )  // Translate hb_Sec to Secs for compatibility
 #endif
 
-#xtranslate _DbSkipper => DbSkipper
+#xtranslate _DbSkipper => DbSkipper      // Translate _DbSkipper to DbSkipper
 
+// Global arrays to track control handles, objects, and MDI client windows
 MEMVAR _TSB_aControlhWnd
 MEMVAR _TSB_aControlObjects
 MEMVAR _TSB_aClientMDIhWnd
 
+// Static array for TSBrowse internal state management
 STATIC asTSB := { NIL, NIL, 0, NIL, NIL, 0, 0, NIL, NIL, NIL }
-STATIC hToolTip := 0
+STATIC hToolTip := 0                // Tooltip handle
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * FUNCTION: _DefineTBrowse
+ *
+ * Purpose: Creates and initializes a TSBrowse control in HMG Extended.
+ *
+ * Parameters:
+ *   ControlName    - Name of the control (string)
+ *   ParentFormName - Name of the parent form/window (string)
+ *   nCol, nRow     - Position coordinates (numeric)
+ *   nWidth, nHeight- Dimensions (numeric)
+ *   aHeaders       - Array of column headers (array)
+ *   aWidths        - Array of column widths (array)
+ *   bFields        - Code block for field retrieval (block)
+ *   value          - Initial value (any)
+ *   fontname       - Font name (string)
+ *   fontsize       - Font size (numeric)
+ *   tooltip        - Tooltip text (string)
+ *   change         - Code block for change events (block)
+ *   bDblclick      - Code block for double-click events (block)
+ *   aHeadClick     - Code block for header click events (block)
+ *   gotfocus       - Code block for got focus events (block)
+ *   lostfocus      - Code block for lost focus events (block)
+ *   uAlias         - Database alias or array (string/array/object)
+ *   delete         - Code block for delete events (block)
+ *   lNogrid        - Flag to disable grid lines (logical)
+ *   aImages        - Array of images for columns (array)
+ *   aJust          - Array of justification settings (array)
+ *   HelpId         - Help context ID (numeric)
+ *   bold, italic, underline, strikeout - Font styles (logical)
+ *   break          - Line break flag (logical)
+ *   backcolor      - Background color (array)
+ *   fontcolor      - Font color (array)
+ *   lock           - Lock flag (logical)
+ *   cell           - Cell-specific settings (logical)
+ *   nStyle         - Window style (numeric)
+ *   appendable     - Appendable flag (logical)
+ *   readonly       - Read-only flag (logical/array)
+ *   valid          - Validation block or array (block/array)
+ *   validmessages  - Validation messages (unused)
+ *   aColors        - Array of color settings (array)
+ *   uWhen          - Conditional block for dynamic properties (block)
+ *   nId            - Control ID (numeric)
+ *   aFlds          - Array of fields (array)
+ *   cMsg           - Custom message (string)
+ *   lRePaint       - Flag to control repainting (logical)
+ *   lEnum          - Enumeration flag (logical)
+ *   lAutoSearch    - Auto-search flag (logical)
+ *   uUserSearch    - User-defined search block (block)
+ *   lAutoFilter    - Auto-filter flag (logical)
+ *   uUserFilter    - User-defined filter block (block)
+ *   aPicture       - Array of picture formats (array)
+ *   lTransparent   - Transparency flag (logical)
+ *   uSelector      - Selector block (block)
+ *   lEditable      - Editable flag (logical)
+ *   lAutoCol       - Auto-column flag (logical)
+ *   aColSel        - Array of selected columns (array)
+ *   bInit          - Initialization block (block)
+ *   lLoad          - Load flag (logical)
+ *   lDblCursor     - Double cursor flag (logical)
+ *   aNames         - Array of column names (array)
+ *   aFooters       - Array of column footers (array)
+ *   nColNumber     - Column number settings (numeric/array)
+ *   aBrush         - Array of brush settings (array)
+ *   aEdit          - Array of edit flags (array)
+ *   Adjust         - Column adjustment flag (logical)
+ *   lAdjust        - Logical adjustment flag (logical)
+ *   lEmptyValToChar- Flag to convert empty values to characters (logical)
+ *   lOnGotFocusSelect - Flag to select on got focus (logical)
+ *
+ * Returns:
+ *   oBrw - TSBrowse object instance or NIL on failure
+ *
+ * Side Effects:
+ *   - Creates a new TSBrowse control
+ *   - Registers the control in HMG's internal arrays
+ *   - May modify global state (e.g., _HMG_ActiveTBrowseName)
+ *-----------------------------------------------------------------------------*/
 FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeight, ;
       aHeaders, aWidths, bFields, value, fontname, fontsize, tooltip, change, ;
       bDblclick, aHeadClick, gotfocus, lostfocus, uAlias, delete, lNogrid, ;
@@ -80,13 +154,13 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       lTransparent, uSelector, lEditable, lAutoCol, aColSel, bInit, ;
       lLoad, lDblCursor, aNames, aFooters, nColNumber, aBrush, aEdit, Adjust, ;
       lAdjust, lEmptyValToChar, lOnGotFocusSelect )
-*-----------------------------------------------------------------------------*
+
    LOCAL oBrw, ParentFormHandle, mVar, k
    LOCAL ControlHandle, FontHandle, blInit, aBmp := {}
    LOCAL bRClick, bLClick, hCursor, update, nLineStyle := 1
    LOCAL aTmpColor := Array( 20 ), aClr
    LOCAL i, nColums, nLen, aColNumber := Array( 5 )
-   // BK
+   // BK - Additional variables for font handling
    LOCAL j, n, t, aFont, aFonts := {}, aArray
    LOCAL cFontHead, cFontFoot
    LOCAL hFontHead, hFontFoot
@@ -94,9 +168,10 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
    LOCAL oc := NIL, ow := NIL
 
 #ifdef _OBJECT_
-   ow := oDlu2Pixel()
+   ow := oDlu2Pixel()  // Convert dialog units to pixels if in object mode
 #endif
 
+   // Set default values for optional parameters
    DEFAULT nRow := 0, ;
       nCol := 0, ;
       nHeight := 120, ;
@@ -120,45 +195,54 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       lAutoFilter := .F., ;
       lAutoCol := .F.
 
-   HB_SYMBOL_UNUSED( break )
+   HB_SYMBOL_UNUSED( break )      // Mark unused parameters to avoid compiler warnings
    HB_SYMBOL_UNUSED( validmessages )
 
+   // Disable grid lines if lNogrid is .T.
    IF lNogrid
       nLineStyle := 0
    ENDIF
 
+   // Normalize header arrays (flatten nested arrays)
    IF Len( aHeaders ) > 0 .AND. ValType( aHeaders[ 1 ] ) == 'A'
       aHeaders := aHeaders[ 1 ]
    ENDIF
 
+   // Normalize width arrays
    IF Len( aWidths ) > 0 .AND. ValType( aWidths[ 1 ] ) == 'A'
       aWidths := aWidths[ 1 ]
    ENDIF
 
+   // Normalize picture arrays
    IF Len( aPicture ) > 0 .AND. ValType( aPicture[ 1 ] ) == 'A'
       aPicture := aPicture[ 1 ]
    ENDIF
 
+   // Normalize field arrays
    IF Len( aFlds ) > 0 .AND. ValType( aFlds[ 1 ] ) == 'A'
       aFlds := aFlds[ 1 ]
    ENDIF
 
+   // Normalize column selection arrays
    IF ValType( aColSel ) != 'U' .AND. ValType( aColSel ) == 'A'
       IF ValType( aColSel[ 1 ] ) == 'A'
          aColSel := aColSel[ 1 ]
       ENDIF
    ENDIF
 
+   // Normalize color arrays
    IF HB_ISARRAY( aColors ) .AND. Len( aColors ) > 0 .AND. ValType( aColors[ 1 ] ) == 'A'
       aColors := aColors[ 1 ]
    ENDIF
 
+   // Auto-populate headers, names, and column selection from alias if provided
    IF ISCHAR( uAlias ) .AND. ! Empty( lLoad ) .AND. Empty( aColSel )
       aHeaders := {}
       aNames := {}
       aColSel := {}
       ( uAlias )->( AEval( Array( FCount() ), {| cn, nn | cn := FieldName( nn ), ;
          AAdd( aHeaders, cn ), AAdd( aNames, cn ), AAdd( aColSel, cn ) } ) )
+      // Set default colors for cell highlighting if cell mode is enabled
       IF cell .AND. Empty( aColors )
          aColors := {}
          AAdd( aColors, { CLR_FOCUSF, {| c, n, b | c := n, iif( b:nCell == n, GetSysColor( COLOR_WINDOWTEXT ), GetSysColor( COLOR_CAPTIONTEXT ) ) } } )
@@ -166,64 +250,74 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       ENDIF
    ENDIF
 
-   /* BK  18.05.2015 */
+   /* BK  18.05.2015 - Handle uWhen block for dynamic readonly properties */
    IF ValType( uWhen ) == 'B'
       IF ValType( readonly ) != 'A'
-         readonly := ! Eval( uWhen )
+         readonly := ! Eval( uWhen )  // Evaluate uWhen to determine readonly state
       ENDIF
-      uWhen := NIL
+      uWhen := NIL  // Clear uWhen after use
    ENDIF
 
+   // Evaluate validation block if provided
    IF ValType( valid ) == 'B'
       valid := Eval( valid )
    ENDIF
 
-   // BK
+   // BK - Handle font arrays for headers and footers
    IF ! Empty( FontName ) .AND. HB_ISARRAY( FontName )
-      AEval( FontName, {| cf | AAdd( aFonts, cf ) } )
-      aFont := ASize( aFonts, 6 )
-      FontName := aFont[ 1 ]
-      cFontHead := aFont[ 2 ]
-      cFontFoot := aFont[ 3 ]
+      AEval( FontName, {| cf | AAdd( aFonts, cf ) } )  // Collect all fonts into aFonts array
+      aFont := ASize( aFonts, 6 )  // Ensure aFonts has at least 6 elements
+      FontName := aFont[ 1 ]      // Main font
+      cFontHead := aFont[ 2 ]     // Header font
+      cFontFoot := aFont[ 3 ]     // Footer font
+      // Load header and footer fonts if specified
       IF ! Empty( cFontHead )
          hFontHead := GetFontHandle( cFontHead )
       ENDIF
       IF ! Empty( cFontFoot )
          hFontFoot := GetFontHandle( cFontFoot )
       ENDIF
+      // Fallback: use header font for footer if footer font is not specified
       IF Empty( cFontFoot ) .AND. ! Empty( cFontHead )
          hFontFoot := hFontHead
       ENDIF
    ENDIF
    /* BK end */
+
+   // Get font parameters if a valid font handle is provided
    IF ( FontHandle := GetFontHandle( FontName ) ) != 0
       GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
    ENDIF
 
+   // Initialize global control tracking arrays if they don't exist
    IF Type( '_TSB_aControlhWnd' ) != 'A'
       PUBLIC _TSB_aControlhWnd := {}, _TSB_aControlObjects := {}, _TSB_aClientMDIhWnd := {}
    ENDIF
 
+   // Process color array into temporary color storage
    IF HB_ISARRAY( aColors ) .AND. Len( aColors ) > 0
-      IF HB_ISARRAY( aColors[ 1 ] )
+      IF HB_ISARRAY( aColors[ 1 ] )  // If colors are in [index, block] format
          FOR EACH aClr IN aColors
             IF HB_ISNUMERIC( aClr[ 1 ] ) .AND. aClr[ 1 ] > 0 .AND. aClr[ 1 ] <= Len( aTmpColor )
-               aTmpColor[ aClr[ 1 ] ] := aClr[ 2 ]
+               aTmpColor[ aClr[ 1 ] ] := aClr[ 2 ]  // Store color block at specified index
             ENDIF
          NEXT
-      ELSE
+      ELSE  // If colors are in direct index-value format
          AEval( aColors, {| bColor, nEle | aTmpColor[ nEle ] := bColor } )
       ENDIF
    ENDIF
 
+   // Set font color if provided
    IF ValType( fontcolor ) != "U"
       aTmpColor[ 1 ] := RGB( fontcolor[ 1 ], fontcolor[ 2 ], fontcolor[ 3 ] )
    ENDIF
 
+   // Set background color if provided
    IF ValType( backcolor ) != "U"
       aTmpColor[ 2 ] := RGB( backcolor[ 1 ], backcolor[ 2 ], backcolor[ 3 ] )
    ENDIF
 
+   // Adjust parameters based on active window/dialog context
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
       IF _HMG_BeginWindowMDIActive
          ParentFormHandle := GetActiveMdiHandle()
@@ -231,6 +325,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       ELSE
          ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
       ENDIF
+      // Use active font settings if font parameters are undefined
       IF .NOT. Empty( _HMG_ActiveFontName ) .AND. ValType( FontName ) == "U"
          FontName := _HMG_ActiveFontName
       ENDIF
@@ -239,55 +334,66 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       ENDIF
    ENDIF
 
+   // Adjust position based on frame nesting
    IF _HMG_FrameLevel > 0
       nCol += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
       nRow += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
       ParentFormName := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
    ENDIF
 
+   // Validate parent form existence
    IF .NOT. _IsWindowDefined( ParentFormName ) .AND. .NOT. _HMG_DialogInMemory
       MsgMiniGuiError( "Window: " + ParentFormName + " is not defined." )
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   // Auto-generate control name if "0" is provided
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
+   // Check for duplicate control names
    IF _IsControlDefined( ControlName, ParentFormName ) .AND. .NOT. _HMG_DialogInMemory
       MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentFormName + " already defined." )
    ENDIF
 
+   // Load images if provided
    IF aImages != NIL .AND. ValType( aImages ) == 'A'
       aBmp := Array( Len( aImages ) )
       AEval( aImages, {| cImage, nEle | aBmp[ nEle ] := LoadImage( cImage ) } )
    ENDIF
 
+   // Generate unique variable name for the control
    mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   k := _GetControlFree()  // Get next available control index
 
+   // Handle dialog-specific creation
    IF _HMG_BeginDialogActive
 
       ParentFormHandle := _HMG_ActiveDialogHandle
 
+      // Set window style for dialog controls
       nStyle := WS_CHILD + WS_TABSTOP + WS_VISIBLE + WS_CAPTION + WS_BORDER + WS_SYSMENU + WS_THICKFRAME
 
-      IF _HMG_DialogInMemory // Dialog Template
+      IF _HMG_DialogInMemory // Dialog Template mode
+         // Register custom class if not already registered
          IF GetClassInfo( GetInstance(), ControlName ) == NIL
             IF ! Register_Class( ControlName, CreateSolidBrush( GetRed( GetSysColor( COLOR_BTNFACE ) ), GetGreen( GetSysColor( COLOR_BTNFACE ) ), GetBlue( GetSysColor( COLOR_BTNFACE ) ) ) )
                RETURN NIL
             ENDIF
          ENDIF
+         // Set up initialization block for dialog template
          blInit := {| x, y, z | InitDialogBrowse( x, y, z ) }
          AAdd( _HMG_aDialogItems, { nId, k, ControlName, nStyle, 0, nCol, nRow, nWidth, nHeight, "", HelpId, tooltip, fontname, fontsize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
-         IF _HMG_aDialogTemplate[ 3 ] // Modal
+         IF _HMG_aDialogTemplate[ 3 ] // Modal dialog
             RETURN NIL
          ENDIF
 
       ELSE
-
+         // For non-template dialogs, get existing control handle
          ControlHandle := GetDialogItemHandle( ParentFormHandle, nId )
          SetWindowStyle( ControlHandle, nStyle, .T. )
 
+         // Override dimensions with actual window dimensions
          nCol := GetWindowCol( Controlhandle )
          nRow := GetWindowRow( Controlhandle )
          nWidth := GetWindowWidth( Controlhandle )
@@ -295,22 +401,25 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       ENDIF
 
    ELSE
-      // BK
+      // BK - Handle special cases for uAlias (object or array)
       IF HB_ISOBJECT( uAlias )
-         lAutoCol  := .T.
-         lEditable := .T.
+         lAutoCol  := .T.  // Auto-create columns for objects
+         lEditable := .T.  // Enable editing for objects
       ELSEIF HB_ISARRAY( uAlias ) .AND. Len( uAlias ) > 0 .AND. ValType( uAlias[ 1 ] ) == 'A'
-         aArray := uAlias
-         uAlias := NIL
+         aArray := uAlias  // Store array reference for later use
+         uAlias := NIL      // Clear uAlias to prevent conflicts
       ENDIF
+      // Handle logical aEdit parameter
       IF HB_ISLOGICAL( aEdit )
          lEditable := aEdit
          aEdit := NIL
       ENDIF
       /* BK end */
+
       ParentFormHandle := GetFormHandle( ParentFormName )
       hToolTip := GetFormToolTipHandle( ParentFormName )
 
+      // Create new TSBrowse object with all parameters
       oBrw := TSBrowse():New( ControlName, nRow, nCol, nWidth, nHeight, ;
          bFields, aHeaders, aWidths, ParentFormName, ;
          change, bDblClick, bRClick, fontname, fontsize, ;
@@ -318,20 +427,21 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
          nStyle, bLClick, aFlds, aHeadClick, nLineStyle, lRePaint, ;
          delete, aJust, lock, appendable, lEnum, ;
          lAutoSearch, uUserSearch, lAutoFilter, uUserFilter, aPicture, ;
-         lTransparent, uSelector, lEditable, lAutoCol, aColSel, tooltip, aBrush )
+         lTransparent, uSelector, lEditable, lAutoCol, aColSel, tooltip, aBrush, lAdjust )
 
+      // Set specialized fonts if provided in aFont array
       IF HB_ISARRAY( aFont ) .AND. Len( aFont ) > 3
          IF HB_ISCHAR( aFont[ 4 ] )
-            oBrw:hFontSpcHd := GetFontHandle( aFont[ 4 ] )
+            oBrw:hFontSpcHd := GetFontHandle( aFont[ 4 ] )  // Special header font
          ENDIF
          IF HB_ISCHAR( aFont[ 5 ] )
-            oBrw:hFontSupHd := GetFontHandle( aFont[ 5 ] )
+            oBrw:hFontSupHd := GetFontHandle( aFont[ 5 ] )  // Supplementary header font
          ENDIF
          IF HB_ISCHAR( aFont[ 6 ] )
-            oBrw:hFontEdit := GetFontHandle( aFont[ 6 ] )
+            oBrw:hFontEdit := GetFontHandle( aFont[ 6 ] )    // Edit font
          ENDIF
       ENDIF
-      // BK
+      // BK - Set header and footer fonts if using array data source
       IF HB_ISARRAY( aArray )
          oBrw:SetArrayTo( aArray, { hFontHead, hFontFoot }, aHeaders, aWidths, aFooters, aPicture, aJust, aNames )
       ELSE
@@ -344,29 +454,33 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
       ENDIF
       /* BK end */
 
-      ControlHandle := oBrw:hWnd
+      ControlHandle := oBrw:hWnd  // Get window handle from TSBrowse object
 
+      // Set event handlers
       IF ValType( gotfocus ) != "U"
          oBrw:bGotFocus := gotfocus
       ENDIF
       IF ValType( lostfocus ) != "U"
          oBrw:bLostFocus := lostfocus
       ENDIF
+      // Track active browse control for repainting
       IF ! lRePaint
          _HMG_ActiveTBrowseName := ControlName
          _HMG_ActiveTBrowseHandle := ControlHandle
          _HMG_BeginTBrowseActive := .T.
       ENDIF
-      // BK
+      // BK - Handle database field loading
       IF ! Empty( lLoad ) .AND. oBrw:nDataType == DATATYPE_RDD
 
-         oBrw:LoadFields( ! Empty( lEditable ) )
+         oBrw:LoadFields( ! Empty( lEditable ) )  // Load fields from database
 
+         // Apply headers to columns if provided
          IF ( n := Len( oBrw:aColumns ) ) > 0
             IF HB_ISARRAY( aHeaders )
                j := Min( Len( aHeaders ), n )
                FOR t := 1 TO j
                   IF aHeaders[ t ] != NIL
+                     // Replace semicolons with carriage returns for multi-line headers
                      IF HB_ISCHAR( aHeaders[ t ] ) .AND. ";" $ aHeaders[ t ]
                         aHeaders[ t ] := StrTran( aHeaders[ t ], ";", Chr( 13 ) )
                      ENDIF
@@ -374,6 +488,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
                   ENDIF
                NEXT
             ENDIF
+            // Apply column widths if provided
             IF HB_ISARRAY( aWidths )
                j := Min( Len( aWidths ), n )
                FOR t := 1 TO j
@@ -382,6 +497,7 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
                   ENDIF
                NEXT
             ENDIF
+            // Apply justification settings if provided
             IF HB_ISARRAY( aJust )
                j := Min( Len( aJust ), n )
                FOR t := 1 TO j
@@ -390,8 +506,9 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
                      oBrw:aColumns[ t ]:nFAlign := aJust[ t ]
                   ENDIF
                NEXT
-               aJust := NIL
+               aJust := NIL  // Clear after use
             ENDIF
+            // Apply picture formats if provided
             IF HB_ISARRAY( aPicture )
                j := Min( Len( aPicture ), n )
                FOR t := 1 TO j
@@ -402,26 +519,29 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
             ENDIF
          ENDIF
 
-         oBrw:nHeightCell += 4
+         oBrw:nHeightCell += 4  // Adjust cell height for database mode
       ENDIF
 
+      // BK - Apply column-specific properties
       IF ( nColums := Len( oBrw:aColumns ) ) > 0 /* BK  18.05.2015 */
-         IF ValType( readonly ) == 'A' // sets oCol:bWhen
+         // Set column readonly conditions (bWhen)
+         IF ValType( readonly ) == 'A'
             nLen := Min( Len( readonly ), nColums )
             FOR i := 1 TO nLen
                IF ValType( readonly[ i ] ) == 'B'
                   oBrw:aColumns[ i ]:bWhen := readonly[ i ]
                ELSEIF readonly[ i ] == NIL .OR. Empty( readonly[ i ] )
-                  oBrw:aColumns[ i ]:bWhen := {|| .T. }
+                  oBrw:aColumns[ i ]:bWhen := {|| .T. }  // Default to always editable
                   oBrw:aColumns[ i ]:cWhen := '{||.T.}'
                ELSE
-                  oBrw:aColumns[ i ]:bWhen := {|| .F. }
+                  oBrw:aColumns[ i ]:bWhen := {|| .F. }  // Default to always readonly
                   oBrw:aColumns[ i ]:cWhen := '{||.F.}'
                ENDIF
             NEXT
          ENDIF
 
-         IF ValType( valid ) == 'A' // sets oCol:bValid
+         // Set column validation blocks (bValid)
+         IF ValType( valid ) == 'A'
             nLen := Min( Len( valid ), nColums )
             FOR i := 1 TO nLen
                IF ValType( valid[ i ] ) == 'B'
@@ -430,9 +550,11 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
             NEXT
          ENDIF
          // BK
-         n := nColums
+         n := nColums  // Store column count for later use
 
+         // For non-array data sources, apply additional properties
          IF ! HB_ISARRAY( aArray )
+            // Set column names if provided
             IF HB_ISARRAY( aNames )
                j := Min( Len( aNames ), n )
                FOR t := 1 TO j
@@ -442,29 +564,33 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
                NEXT
             ENDIF
 
+            // Handle footer array (convert logical to array if needed)
             IF HB_ISLOGICAL( aFooters ) .AND. aFooters
                aFooters := Array( n )
                AFill( aFooters, " " )
             ENDIF
 
+            // Apply footers to columns if provided
             IF HB_ISARRAY( aFooters )
                j := Min( Len( aFooters ), n )
                FOR t := 1 TO j
                   IF aFooters[ t ] != NIL
+                     // Replace semicolons with carriage returns for multi-line footers
                      IF HB_ISCHAR( aFooters[ t ] ) .AND. ";" $ aFooters[ t ]
                         aFooters[ t ] := StrTran( aFooters[ t ], ";", Chr( 13 ) )
                      ENDIF
                      oBrw:aColumns[ t ]:cFooting := aFooters[ t ]
                   ELSE
-                     oBrw:aColumns[ t ]:cFooting := " "
+                     oBrw:aColumns[ t ]:cFooting := " "  // Default empty footer
                   ENDIF
                NEXT
-               oBrw:lDrawFooters := .T.
+               oBrw:lDrawFooters := .T.  // Enable footer drawing
                oBrw:lFooting := .T.
-               oBrw:nHeightFoot := oBrw:nHeightCell
+               oBrw:nHeightFoot := oBrw:nHeightCell  // Match footer height to cell height
             ENDIF
          ENDIF
 
+         // Set column edit flags
          IF HB_ISARRAY( aEdit )
             j := Min( Len( aEdit ), n )
             FOR t := 1 TO j
@@ -474,85 +600,91 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
             NEXT
          ENDIF
 
+         // Apply global column properties
          IF ! Empty( lDblCursor )
-            AEval( oBrw:aColumns, {| oCol | oCol:lFixLite := .T. } )
+            AEval( oBrw:aColumns, {| oCol | oCol:lFixLite := .T. } )  // Enable fixed light mode for all columns
          ENDIF
          IF ! Empty( lEmptyValToChar )
-            AEval( oBrw:aColumns, {| oCol | oCol:lEmptyValToChar := .T. } )
+            AEval( oBrw:aColumns, {| oCol | oCol:lEmptyValToChar := .T. } )  // Convert empty values to characters
          ENDIF
          IF ! Empty( lOnGotFocusSelect )
-            AEval( oBrw:aColumns, {| oCol | oCol:lOnGotFocusSelect := .T. } )
+            AEval( oBrw:aColumns, {| oCol | oCol:lOnGotFocusSelect := .T. } )  // Select on got focus
          ENDIF
 
+         // Handle row number column
          IF nColNumber != NIL
             IF HB_ISLOGICAL( nColNumber )
-               nColNumber := iif( nColNumber, 1, NIL )
+               nColNumber := iif( nColNumber, 1, NIL )  // Convert logical to 1 or NIL
             ELSEIF HB_ISARRAY( nColNumber )
                IF Len( nColNumber ) > 1
-                  ASize( nColNumber, 5 )
+                  ASize( nColNumber, 5 )  // Ensure array has 5 elements
                   aColNumber[ 2 ] := nColNumber[ 2 ]  // nWidth
                   aColNumber[ 3 ] := nColNumber[ 3 ]  // nAlign
                   aColNumber[ 4 ] := nColNumber[ 4 ]  // Bitmap
                   aColNumber[ 5 ] := nColNumber[ 5 ]  // cName
-                  nColNumber := nColNumber[ 1 ]
+                  nColNumber := nColNumber[ 1 ]  // Position
                ELSE
-                  nColNumber := 1
+                  nColNumber := 1  // Default to first column
                ENDIF
                aColNumber[ 1 ] := nColNumber
-               DEFAULT aColNumber[ 2 ] := 80
+               DEFAULT aColNumber[ 2 ] := 80  // Default width
             ENDIF
          ENDIF
 
+         // Insert row number column if enabled
          IF HB_ISNUMERIC( nColNumber )
-            nColNumber := iif( nColNumber > 0 .AND. nColNumber <= n, nColNumber, 1 )
+            nColNumber := iif( nColNumber > 0 .AND. nColNumber <= n, nColNumber, 1 )  // Validate column number
 
             oBrw:InsColNumber( aColNumber[ 2 ], nColNumber, aColNumber[ 5 ], aColNumber[ 3 ], aColNumber[ 4 ] )
 
-            oBrw:nCell := nColNumber + 1
-            oBrw:nFreeze := nColNumber
-            oBrw:lLockFreeze := .T.
+            oBrw:nCell := nColNumber + 1  // Set current cell to row number column
+            oBrw:nFreeze := nColNumber     // Freeze row number column
+            oBrw:lLockFreeze := .T.        // Lock freeze state
          ENDIF
 
+         // Adjust columns if requested
          IF !( Adjust == NIL .AND. lAdjust == NIL )
-
             IF HB_ISLOGICAL( lAdjust ) .AND. lAdjust
-               Adjust := lAdjust
+               Adjust := lAdjust  // Use lAdjust if Adjust is NIL
             ENDIF
             IF Adjust != NIL
-               oBrw:AdjColumns( Adjust )
+               oBrw:AdjColumns( Adjust )  // Adjust column widths
             ENDIF
          ENDIF
       ENDIF
       /* BK end */
    ENDIF
 
+   // Finalize control creation
    IF .NOT. _HMG_DialogInMemory
-
+      // Add to tab page map if in tab context
       IF _HMG_BeginTabActive
          AAdd( _HMG_ActiveTabCurrentPageMap, Controlhandle )
       ENDIF
 
+      // Set font for the control
       IF FontHandle != 0
          _SetFontHandle( ControlHandle, FontHandle )
          oBrw:hFont := FontHandle
       ELSE
          IF ValType( fontname ) == "U"
-            fontname := _HMG_DefaultFontName
+            fontname := _HMG_DefaultFontName  // Use default font if not specified
          ENDIF
          IF ValType( fontsize ) == "U"
-            fontsize := _HMG_DefaultFontSize
+            fontsize := _HMG_DefaultFontSize  // Use default size if not specified
          ENDIF
          oBrw:hFont := _SetFont( ControlHandle, fontname, fontsize, bold, italic, underline, strikeout )
       ENDIF
-
    ENDIF
 
+// Register control in HMG's global arrays
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( mVar , k )  // Use name list if enabled
 #else
-   PUBLIC &mVar. := k
+   PUBLIC &mVar. := k        // Otherwise create public variable
 #endif
 
+   // Store control information in HMG's global arrays
    _HMG_aControlType[ k ] := "TBROWSE"
    _HMG_aControlNames[ k ] := ControlName
    _HMG_aControlHandles[ k ] := ControlHandle
@@ -594,103 +726,182 @@ FUNCTION _DefineTBrowse( ControlName, ParentFormName, nCol, nRow, nWidth, nHeigh
    _HMG_aControlMiscData1[ k ] := 0
    _HMG_aControlMiscData2[ k ] := ''
 
+   // Execute initialization callback if loop is enabled
    IF _HMG_lOOPEnabled
       Eval( _HMG_bOnControlInit, k, mVar )
 #ifdef _OBJECT_
-      ow := _WindowObj( ParentFormHandle )
-      oc := _ControlObj( ControlHandle )
+      ow := _WindowObj( ParentFormHandle )  // Get window object
+      oc := _ControlObj( ControlHandle )    // Get control object
 #endif
    ENDIF
 
+   // Execute user-provided initialization block
    Do_ControlEventProcedure( bInit, k, oBrw, ow, oc )
 
-RETURN oBrw
+RETURN oBrw  // Return the TSBrowse object
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * FUNCTION: _EndTBrowse
+ *
+ * Purpose: Finalizes the creation of a TSBrowse control and handles cleanup.
+ *
+ * Parameters:
+ *   bEnd - Code block to execute at the end of browse definition (block)
+ *
+ * Returns: NIL
+ *
+ * Side Effects:
+ *   - Refreshes the browse display
+ *   - Clears active browse tracking variables
+ *   - Executes the end callback if provided
+ *-----------------------------------------------------------------------------*/
 FUNCTION _EndTBrowse( bEnd )
-*-----------------------------------------------------------------------------*
    LOCAL i, nLastCol, oBrw
    LOCAL oc := NIL, ow := NIL
 
 #ifdef _OBJECT_
-   ow := oDlu2Pixel()
+   ow := oDlu2Pixel()  // Convert dialog units to pixels if in object mode
 #endif
 
+   // Check if we're in an active browse definition
    IF _HMG_BeginTBrowseActive
-      i := AScan( _HMG_aControlHandles, _HMG_ActiveTBrowseHandle )
+      i := AScan( _HMG_aControlHandles, _HMG_ActiveTBrowseHandle )  // Find control index
       IF i > 0
-         oBrw := _HMG_aControlIds[ i ]
-         oBrw:lRePaint := .T.
-         oBrw:Display()
-         // Addition by SergKis
+         oBrw := _HMG_aControlIds[ i ]  // Get TSBrowse object
+
+         oBrw:lRePaint := .T.  // Enable repainting
+         oBrw:Display()        // Refresh display
+
+         // Addition by SergKis: Handle phantom column colors
          IF ( nLastCol := oBrw:nColCount() ) > 0 .AND. ! Empty( oBrw:oPhant )
-            oc := ATail( oBrw:aColumns )
+            oc := ATail( oBrw:aColumns )  // Get last column
+            // Set phantom column header and footer background colors
             oBrw:oPhant:nClrHeadBack := iif( ValType( oc:nClrHeadBack ) == "B", Eval( oc:nClrHeadBack, nLastCol, oBrw ), oc:nClrHeadBack )
             oBrw:oPhant:nClrFootBack := iif( ValType( oc:nClrFootBack ) == "B", Eval( oc:nClrFootBack, nLastCol, oBrw ), oc:nClrFootBack )
-            oBrw:Refresh()
+            oBrw:Refresh()  // Refresh with new colors
             oc := NIL
          ENDIF
          // End of addition
+
+         // Clear active browse tracking
          _HMG_ActiveTBrowseName := ""
          _HMG_ActiveTBrowseHandle := 0
          _HMG_BeginTBrowseActive := .F.
 
 #ifdef _OBJECT_
+         // Get window and control objects if loop is enabled
          IF _HMG_lOOPEnabled
             ow := _WindowObj( _HMG_aControlParenthandles[ i ] )
             oc := _ControlObj( _HMG_aControlHandles[ i ] )
          ENDIF
 #endif
+         // Execute user-provided end callback
          Do_ControlEventProcedure( bEnd, i, oBrw, ow, oc )
       ENDIF
    ENDIF
 
 RETURN NIL
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * FUNCTION: LoadFields
+ *
+ * Purpose: Loads fields from a database into a TSBrowse control.
+ *
+ * Parameters:
+ *   ControlName - Name of the TSBrowse control (string)
+ *   ParentForm  - Name of the parent form (string)
+ *   lEdit       - Flag to enable editing (logical, default .F.)
+ *   aFieldNames - Array of field names to load (array)
+ *
+ * Returns:
+ *   oBrw - TSBrowse object or NIL if control not found
+ *
+ * Side Effects:
+ *   - Sets the column selection array in the TSBrowse object
+ *   - Calls LoadFields method on the TSBrowse object
+ *-----------------------------------------------------------------------------*/
 FUNCTION LoadFields( ControlName, ParentForm, lEdit, aFieldNames )
-*-----------------------------------------------------------------------------*
    LOCAL ix, oBrw
 
-   DEFAULT lEdit := .F.
+   DEFAULT lEdit := .F.  // Default to non-editable
 
-   ix := GetControlIndex( ControlName, ParentForm )
+   ix := GetControlIndex( ControlName, ParentForm )  // Find control index
    IF ix > 0
-      oBrw := _HMG_aControlIds[ ix ]
+      oBrw := _HMG_aControlIds[ ix ]  // Get TSBrowse object
       IF ISARRAY( aFieldNames )
-         oBrw:aColSel := aFieldNames
+         oBrw:aColSel := aFieldNames  // Set column selection
       ENDIF
-      oBrw:LoadFields( lEdit )
+      oBrw:LoadFields( lEdit )  // Load fields from database
    ELSE
       MsgMiniGuiError( "Can not found the control: " + ControlName + " of " + ParentForm )
    ENDIF
 
 RETURN oBrw
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * FUNCTION: SetArray
+ *
+ * Purpose: Sets an array as the data source for a TSBrowse control.
+ *
+ * Parameters:
+ *   ControlName - Name of the TSBrowse control (string)
+ *   ParentForm  - Name of the parent form (string)
+ *   Arr         - Array to use as data source (array)
+ *   lAutoCols   - Flag to auto-create columns (logical)
+ *   aHead       - Array of headers (array)
+ *   aSizes      - Array of column sizes (array)
+ *
+ * Returns:
+ *   oBrw - TSBrowse object or NIL if control not found
+ *
+ * Side Effects:
+ *   - Sets the data array in the TSBrowse object
+ *   - May auto-create columns based on array structure
+ *-----------------------------------------------------------------------------*/
 FUNCTION SetArray( ControlName, ParentForm, Arr, lAutoCols, aHead, aSizes )
-*-----------------------------------------------------------------------------*
    LOCAL ix, oBrw
 
-   ix := GetControlIndex( ControlName, ParentForm )
+   ix := GetControlIndex( ControlName, ParentForm )  // Find control index
    IF ix > 0
-      oBrw := _HMG_aControlIds[ ix ]
-      oBrw:SetArray( Arr, lAutoCols, aHead, aSizes )
+      oBrw := _HMG_aControlIds[ ix ]  // Get TSBrowse object
+      oBrw:SetArray( Arr, lAutoCols, aHead, aSizes )  // Set array data source
    ELSE
       MsgMiniGuiError( "Can not found the control: " + ControlName + " of " + ParentForm )
    ENDIF
 
 RETURN oBrw
 
-*-----------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * FUNCTION: SetArrayTo
+ *
+ * Purpose: Sets an array as the data source for a TSBrowse control with
+ *          additional formatting options.
+ *
+ * Parameters:
+ *   ControlName - Name of the TSBrowse control (string)
+ *   ParentForm  - Name of the parent form (string)
+ *   Arr         - Array to use as data source (array)
+ *   uFontHF     - Array of fonts for headers and footers (array)
+ *   aHead       - Array of headers (array)
+ *   aSizes      - Array of column sizes (array)
+ *   uFooter     - Array of footers (array)
+ *   aPicture    - Array of picture formats (array)
+ *   aAlign      - Array of alignment settings (array)
+ *   aName       - Array of column names (array)
+ *
+ * Returns:
+ *   oBrw - TSBrowse object or NIL if control not found
+ *
+ * Side Effects:
+ *   - Sets the data array with full formatting in the TSBrowse object
+ *-----------------------------------------------------------------------------*/
 FUNCTION SetArrayTo( ControlName, ParentForm, Arr, uFontHF, aHead, aSizes, uFooter, aPicture, aAlign, aName )
-*-----------------------------------------------------------------------------*
    LOCAL ix, oBrw
 
-   ix := GetControlIndex( ControlName, ParentForm )
+   ix := GetControlIndex( ControlName, ParentForm )  // Find control index
    IF ix > 0
-      oBrw := _HMG_aControlIds[ ix ]
-      oBrw:SetArrayTo( Arr, uFontHF, aHead, aSizes, uFooter, aPicture, aAlign, aName )
+      oBrw := _HMG_aControlIds[ ix ]  // Get TSBrowse object
+      oBrw:SetArrayTo( Arr, uFontHF, aHead, aSizes, uFooter, aPicture, aAlign, aName )  // Set array with formatting
    ELSE
       MsgMiniGuiError( "Can not found the control: " + ControlName + " of " + ParentForm )
    ENDIF
@@ -1059,7 +1270,7 @@ CLASS TSBrowse FROM TControl
       lUpdate, uAlias, bWhen, nValue, lCellBrw, nStyle, bLClick, aLine, ;
       aActions, nLineStyle, lRePaint, lDelete, aJust, lLock, lAppend, lEnum, ;
       lAutoSearch, uUserSearch, lAutoFilter, uUserFilter, aPicture, ;
-      lTransparent, uSelector, lEditable, lAutoCol, aColSel, cTooltip, aBrush ) CONSTRUCTOR
+      lTransparent, uSelector, lEditable, lAutoCol, aColSel, cTooltip, aBrush, lAdjust ) CONSTRUCTOR
 
    METHOD AddColumn( oColumn )
 
@@ -1452,13 +1663,13 @@ METHOD New( cControlName, nRow, nCol, nWidth, nHeight, bLine, aHeaders, aColSize
       bWhen, nValue, lCellBrw, nStyle, bLClick, aLine, ;
       aActions, nLineStyle, lRePaint, lDelete, aJust, ;
       lLock, lAppend, lEnum, lAutoSearch, uUserSearch, lAutoFilter, uUserFilter, aPicture, ;
-      lTransparent, uSelector, lEditable, lAutoCol, aColSel, cTooltip, aBrush ) CLASS TSBrowse
+      lTransparent, uSelector, lEditable, lAutoCol, aColSel, cTooltip, aBrush, lAdjust ) CLASS TSBrowse
 
    LOCAL aSuperHeaders, ParentHandle, ;
       aTmpColor := Array( 20 ), ;
       cAlias := "", ;
       lSuperHeader := .F., ;
-      hFont, aClr
+      hFont, aClr, hBitMap
 
    IF HB_ISARRAY( aHeaders ) .AND. Len( aHeaders ) > 0 .AND. aHeaders[ 1 ] == NIL
       aHeaders := NIL
@@ -1551,6 +1762,7 @@ METHOD New( cControlName, nRow, nCol, nWidth, nHeight, bLine, aHeaders, aColSize
          cAlias := "ADO_"
          ::oRSet := uAlias
       ENDIF
+
 #ifdef __XHARBOUR__
    ELSEIF ValType( uAlias ) == "H"
       ::nDataType := DATATYPE_ARRAY
@@ -1579,8 +1791,11 @@ METHOD New( cControlName, nRow, nCol, nWidth, nHeight, bLine, aHeaders, aColSize
       ::hBmpCursor := StockBmp( 3 )
       ::nSelWidth := uSelector
    CASE ValType( uSelector ) == "L" .AND. uSelector
-      ::lSelector := .T.
-      ::hBmpCursor := StockBmp( 3 )
+      hBitMap := StockBmp( 3 )
+      IF ! Empty ( BmpSize( hBitMap ) [1] )
+         ::lSelector := .T.
+         ::hBmpCursor := hBitMap
+      ENDIF
    CASE uSelector != NIL
       ::lSelector := .T.
    ENDCASE
@@ -1716,6 +1931,10 @@ METHOD New( cControlName, nRow, nCol, nWidth, nHeight, bLine, aHeaders, aColSize
          IF lSuperHeader
             aSuperHeaders := IdentSuper( aHeaders, Self )
          ENDIF
+      ENDIF
+
+      IF HB_ISLOGICAL( lAdjust )
+         ::lAdjColumn := lAdjust
       ENDIF
 
       ::Default()
@@ -3061,7 +3280,7 @@ METHOD Default() CLASS TSBrowse
          nMin := 1
          nMax := ::oTxtFile:nMaxLineLength - Int( nMaxWidth / nTxtWid )
          ::oHScroll := TSBScrlBar():WinNew( nMin, nMax,, .F., Self )
-      ELSEIF ::lCellBrw
+      ELSEIF ! ::lAdjColumn
          nMin := Min( 1, Len( ::aColumns ) )
          nMax := Len( ::aColumns )
          ::oHScroll := TSBScrlBar():WinNew( nMin, nMax,, .F., Self )
@@ -13916,7 +14135,7 @@ METHOD SetDbf( cAlias ) CLASS TSBrowse
          ::bKeyCount := &cAdsKeyCount, ;
          ::bLogicLen := &cAdsKeyCount, ;
          ::bTagOrder := {| uTag | ( cAlias )->( ordSetFocus( uTag ) ) }, ;
-         ::bGoToPos := {| n | Eval( ::bKeyNo, n, Self ) }
+         ::bGoToPos := {| n | Eval( ::bKeyNo, n ) }
    ELSE
       DEFAULT ::bKeyNo := {| n | ( cAlias )->( iif( n == NIL, iif( IndexOrd() > 0, ordKeyNo(), RecNo() ), ;
          iif( IndexOrd() > 0, ordKeyGoto( n ), dbGoto( n ) ) ) ) }, ;
@@ -14079,16 +14298,14 @@ METHOD FilterFTS( cFind, lUpper, lBottom, lFocus, lAll ) CLASS TSBrowse
    LOCAL nAtPos, nLastPos, aFind, nFind := 0
    DEFAULT lUpper := .T., lAll := .F.
 
-   IF !HB_ISCHAR( cFind ) .or. Len( cFind ) == 0
-      RETURN nFind
-   ENDIF
-
-   IF lUpper
+   IF ! HB_ISCHAR( cFind )
+      cFind := ""
+   ELSEIF lUpper
       cFind := Upper( cFind )
    ENDIF
 
-   IF Left( cFind, 1 ) == " " 
-      aFind := hb_ATokens( substr( cFind, 2 ) )
+   IF Left( cFind, 1 ) == " " .AND. Len( cFind ) > 1
+      aFind := hb_ATokens( SubStr( cFind, 2 ) )
    ELSE
       aFind := { cFind }
    ENDIF
@@ -14356,6 +14573,9 @@ METHOD CalcTotal( cTotal, cNoTotal, lDraw, lPicture ) CLASS TSBrowse
                 xVal := ""
              ELSEIF lPicture .AND. !Empty( oCol:cPicture )
                 xVal := AllTrim( Transform( aSum[nK], oCol:cPicture ) )
+                IF "*" $ xVal
+                   xVal := hb_ntos( aSum[nK] )
+                ENDIF
              ELSE
                 xVal := hb_ntos( aSum[nK] )
              ENDIF

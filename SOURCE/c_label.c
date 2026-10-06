@@ -35,273 +35,271 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2025, https://harbour.github.io/
+    Copyright 1999-2026, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
 
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
  ---------------------------------------------------------------------------*/
-#include <mgdefs.h>                       // MiniGUI definitions for window elements and styles
-#include <commctrl.h>                     // Common Windows controls, necessary for GUI elements
+#include <mgdefs.h>
+#include <commctrl.h>
 
-// Define static class name for older Borland compilers
+/* 
+   Compatibility fix for older Borland C++ compilers that might not 
+   have the WC_STATIC constant defined for the Static control class.
+*/
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
-   #define WC_STATIC "Static"
+#define WC_STATIC "Static"
 #endif
-#include "hbvm.h"                         // Harbour Virtual Machine (VM) definitions for handling VM functions
+#include "hbvm.h"
 
-static WNDPROC    LabelOldWndProc;        // Stores the original window procedure for subclassing
+// Stores the original Window Procedure of the Label control when subclassing is active.
+// This is required to pass unprocessed messages back to the default Windows handler.
+static WNDPROC    LabelOldWndProc;
 
-// Function prototypes
-LRESULT APIENTRY  LabelSubClassFunc( HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam );
+/* Forward declarations for internal functions and subclassing logic */
+LRESULT APIENTRY  LabelSubClassFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam );
 #ifdef UNICODE
-LPWSTR            AnsiToWide( LPCSTR );   // Converts ANSI strings to Wide strings for Unicode
+LPWSTR            AnsiToWide( LPCSTR );
 #endif
-
-// Retrieves the application instance handle
 HINSTANCE         GetInstance( void );
 
 /*
- * FUNCTION INITLABEL( hWndParent, cCaption, nX, nY, nWidth, nHeight, cFontName, nFontSize, lNotify, lSubClass, lBorder, lClientEdge, lHScroll, lVScroll, lTransparent, lVisible, lRight, lCenter, lCenterImage, lNoPrefix )
- *
- * Creates a static label control with specified properties and styles.
- *
- * Parameters:
- *   hWndParent  : HWND - Handle of the parent window.
- *   cCaption    : STRING - Text to be displayed in the label.
- *   nX          : INT - X coordinate of the label's top-left corner relative to the parent window.
- *   nY          : INT - Y coordinate of the label's top-left corner relative to the parent window.
- *   nWidth      : INT - Width of the label control.
- *   nHeight     : INT - Height of the label control.
- *   cFontName   : STRING - Name of the font to use for the label text (optional).
- *   nFontSize   : INT - Size of the font to use for the label text (optional).
- *   lNotify     : LOGICAL - .T. to enable mouse notifications (WM_LBUTTONDOWN, WM_RBUTTONDOWN, etc.), .F. otherwise.
- *   lSubClass   : LOGICAL - .T. to subclass the label for custom event handling, .F. otherwise.
- *   lBorder     : LOGICAL - .T. to add a border to the label, .F. otherwise.
- *   lClientEdge : LOGICAL - .T. to add a client edge style to the label, .F. otherwise.
- *   lHScroll    : LOGICAL - .T. to enable horizontal scrolling, .F. otherwise.
- *   lVScroll    : LOGICAL - .T. to enable vertical scrolling, .F. otherwise.
- *   lTransparent: LOGICAL - .T. to make the label transparent, .F. otherwise.
- *   lVisible    : LOGICAL - .T. to make the label visible, .F. otherwise.
- *   lRight      : LOGICAL - .T. to right-align the text, .F. otherwise.
- *   lCenter     : LOGICAL - .T. to center-align the text, .F. otherwise.
- *   lCenterImage: LOGICAL - .T. to center the image vertically, .F. otherwise.
- *   lNoPrefix   : LOGICAL - .T. to suppress the interpretation of '&' as a mnemonic prefix, .F. otherwise.
+ * HB_FUNC( INITLABEL )
+ * --------------------
+ * Purpose: 
+ *    Initializes and creates a Win32 Static control (Label) within the HMG framework.
+ * 
+ * Parameters (from Harbour stack):
+ *    1: hParent (HWND)      - Handle to the parent window.
+ *    2: lpText (String)     - The initial text/caption of the label.
+ *    3: hMenu (HMENU/ID)    - The control identifier.
+ *    4-7: nX, nY, nW, nH    - Position and dimensions.
+ *    9: lNotify (BOOL)      - Enable SS_NOTIFY (allows parent to receive click events).
+ *    10: lSubClass (BOOL)   - Enable custom subclassing for mouse tracking.
+ *    11: lBorder (BOOL)     - Draw a simple border.
+ *    12: lClientEdge (BOOL) - Draw a sunken 3D border.
+ *    13: lHScroll (BOOL)    - Enable horizontal scrollbar.
+ *    14: lVScroll (BOOL)    - Enable vertical scrollbar.
+ *    15: lTransparent (BOOL)- Enable WS_EX_TRANSPARENT for background blending.
+ *    16: lVisible (BOOL)    - Initial visibility state.
+ *    17: lRight (BOOL)      - Right-align text.
+ *    18: lCenter (BOOL)     - Center-align text.
+ *    19: lCenterImage (BOOL)- Vertically center text/image.
+ *    20: lNoPrefix (BOOL)   - Disable '&' character shortcut processing.
  *
  * Returns:
- *   HWND - Handle of the created static label control.
- *
- * Purpose:
- *   This function creates a static label control, allowing developers to display text
- *   on a window. It provides extensive customization options for appearance and behavior,
- *   including font, alignment, borders, scrolling, and event handling.  It is used to
- *   display static information to the user, such as titles, instructions, or status messages.
+ *    HWND of the created Label control.
  */
 HB_FUNC( INITLABEL )
 {
    HWND     hWnd;
-   DWORD    Style = WS_CHILD;             // Base style for a child window
-   DWORD    ExStyle = hb_parl( 15 ) ? WS_EX_TRANSPARENT : 0;   // Optional transparency
+
+   /* 
+      Extract raw handles and primitive types from the Harbour Virtual Machine.
+   */
+   HWND     hParent = hmg_par_raw_HWND( 1 );
+   HMENU    hMenu = hmg_par_raw_HMENU( 3 );
+   int      nX = hb_parni( 4 );
+   int      nY = hb_parni( 5 );
+   int      nW = hb_parni( 6 );
+   int      nH = hb_parni( 7 );
+
+   BOOL     lNotify = hb_parl( 9 );
+   BOOL     lSubClass = hb_parl( 10 );
+   BOOL     lBorder = hb_parl( 11 );
+   BOOL     lClientEdge = hb_parl( 12 );
+   BOOL     lHScroll = hb_parl( 13 );
+   BOOL     lVScroll = hb_parl( 14 );
+   BOOL     lTransparent = hb_parl( 15 );
+   BOOL     lVisible = hb_parl( 16 );
+   BOOL     lRight = hb_parl( 17 );
+   BOOL     lCenter = hb_parl( 18 );
+   BOOL     lCenterImage = hb_parl( 19 );
+   BOOL     lNoPrefix = hb_parl( 20 );
+
+   /* Handle string conversion for Unicode builds to ensure correct Win32 API mapping */
 #ifndef UNICODE
-   LPCSTR   lpWindowName = hb_parc( 2 );  // Label text in ANSI mode
+   LPCSTR   lpText = hb_parc( 2 );
 #else
-   LPCWSTR  lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Label text in Unicode mode
+   LPCWSTR  lpText = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
 
-   // Apply styles based on parameters passed to the function
-   if( hb_parl( 9 ) || hb_parl( 10 ) )
+   /* 
+      Initialize Window Styles. 
+      WS_CHILD is mandatory as labels are always contained within a window.
+      WS_EX_TRANSPARENT is used to allow the parent's background to show through.
+   */
+   DWORD    Style = WS_CHILD;
+   DWORD    ExStyle = lTransparent ? WS_EX_TRANSPARENT : 0;
+
+   /* 
+      SS_NOTIFY is critical: without it, Static controls are 'transparent' to mouse 
+      clicks, meaning the parent won't receive STN_CLICKED notifications.
+   */
+   if( lNotify || lSubClass )
    {
-      Style |= SS_NOTIFY;           // Enable mouse notifications if needed
+      Style |= SS_NOTIFY;
    }
 
-   if( hb_parl( 11 ) )
+   if( lBorder )
    {
-      Style |= WS_BORDER;           // Add a border if specified
+      Style |= WS_BORDER;
    }
 
-   if( hb_parl( 13 ) )
+   if( lHScroll )
    {
-      Style |= WS_HSCROLL;          // Enable horizontal scroll if specified
+      Style |= WS_HSCROLL;
    }
 
-   if( hb_parl( 14 ) )
+   if( lVScroll )
    {
-      Style |= WS_VSCROLL;          // Enable vertical scroll if specified
+      Style |= WS_VSCROLL;
    }
 
-   if( !hb_parl( 16 ) )
+   /* Note: Logic inversion check - if NOT visible flag is set, we apply WS_VISIBLE */
+   if( !lVisible )
    {
-      Style |= WS_VISIBLE;          // Set the label as visible by default
+      Style |= WS_VISIBLE;
    }
 
-   if( hb_parl( 17 ) )
+   /* Text alignment styles */
+   if( lRight )
    {
-      Style |= ES_RIGHT;            // Align text to the right if specified
+      Style |= ES_RIGHT;
+   }
+   else if( lCenter )
+   {
+      Style |= ES_CENTER;
    }
 
-   if( hb_parl( 18 ) )
+   if( lCenterImage )
    {
-      Style |= ES_CENTER;           // Center-align the text if specified
+      Style |= SS_CENTERIMAGE;
    }
 
-   if( hb_parl( 19 ) )
+   /* SS_NOPREFIX prevents the control from interpreting '&' as an accelerator key */
+   if( lNoPrefix )
    {
-      Style |= SS_CENTERIMAGE;      // Center image vertically if specified
+      Style |= SS_NOPREFIX;
    }
 
-   if( hb_parl( 20 ) )
+   if( lClientEdge )
    {
-      Style |= SS_NOPREFIX;         // Suppress & for mnemonic if specified
+      ExStyle |= WS_EX_CLIENTEDGE;
    }
 
-   if( hb_parl( 12 ) )
-   {
-      ExStyle |= WS_EX_CLIENTEDGE;  // Add client edge style if specified
-   }
+   /* Create the actual Win32 window using the 'Static' class */
+   hWnd = CreateWindowEx( ExStyle, WC_STATIC, lpText, Style, nX, nY, nW, nH, hParent, hMenu, GetInstance(), NULL );
 
-   // Create the static label window with the specified styles
-   hWnd = CreateWindowEx
-      (
-         ExStyle,                   // Extended window style
-         WC_STATIC,                 // Class name for static control
-         lpWindowName,              // Text displayed by the static control
-         Style,                     // Style for the static control
-         hb_parni( 4 ),             // X position
-         hb_parni( 5 ),             // Y position
-         hb_parni( 6 ),             // Width
-         hb_parni( 7 ),             // Height
-         hmg_par_raw_HWND( 1 ),     // Parent window handle
-         hmg_par_raw_HMENU( 3 ),    // Menu or child-window identifier
-         GetInstance(),             // Instance handle
-         NULL                       // Additional application data
-      );
-
-   // Subclass the label for custom event handling if required
-   if( hb_parl( 10 ) )
+   /* 
+      If subclassing is requested, we swap the window procedure.
+      This allows to intercept mouse movement and other low-level events 
+      that the standard Static control doesn't expose via standard notifications.
+   */
+   if( lSubClass )
    {
       LabelOldWndProc = SubclassWindow1( hWnd, LabelSubClassFunc );
    }
 
-   hmg_ret_raw_HWND( hWnd );  // Return the handle of the created label
+   /* Return the window handle back to the Harbour application */
+   hmg_ret_raw_HWND( hWnd );
+
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpWindowName );              // Free converted string in Unicode
+   /* Clean up the temporary wide-string buffer allocated for Unicode conversion */
+   hb_xfree( ( TCHAR * ) lpText );
 #endif
 }
 
-// Define _OLD_STYLE if old event calling style is required
-#define _OLD_STYLE   0
-
 /*
- * FUNCTION LabelSubClassFunc( hWnd, Msg, wParam, lParam )
- *
- * Subclass procedure for handling specific messages, primarily mouse events, for a label control.
- *
- * Parameters:
- *   hWnd   : HWND - Handle of the label window.
- *   Msg    : UINT - The message being processed.
- *   wParam : WPARAM - Additional message-specific information.
- *   lParam : LPARAM - Additional message-specific information.
- *
- * Returns:
- *   LRESULT - The result of the message processing.  This is either the result of the user-defined
- *             function (UDF) if called, or the result of the original window procedure.
- *
- * Purpose:
- *   This function intercepts Windows messages sent to the label control, allowing custom handling
- *   of events such as mouse movements and mouse leaving the control's area.  It's used to trigger
- *   user-defined functions (UDFs) in response to these events, enabling interactive label behavior.
- *   The function uses TrackMouseEvent to detect when the mouse leaves the label, even if the mouse
- *   is moving quickly.
- *
- * Notes:
- *   - The function checks for WM_MOUSEMOVE and WM_MOUSELEAVE messages.
- *   - It uses TrackMouseEvent to track when the mouse leaves the label area.
- *   - It calls a user-defined function (UDF) named "OLABELEVENTS" if it exists.
- *   - The _OLD_STYLE macro controls whether the UDF is called on both WM_MOUSEMOVE and WM_MOUSELEAVE, or only on WM_MOUSELEAVE.
- *   - The function ensures that the Harbour Virtual Machine (VM) is properly re-entered and restored when calling the UDF.
+ * LabelSubClassFunc
+ * ----------------
+ * Purpose: 
+ *    A custom Window Procedure used to intercept messages for Label controls.
+ *    Primarily used to implement 'On Mouse Over' and 'On Mouse Leave' events.
+ * 
+ * Reasoning:
+ *    Standard Win32 Static controls do not natively provide a 'Mouse Leave' event.
+ *    By subclassing, we can use TrackMouseEvent to detect when the cursor leaves 
+ *    the control's area and notify the Harbour-level event handler.
  */
 LRESULT APIENTRY LabelSubClassFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
-   TRACKMOUSEEVENT   tme;                             // Struct for tracking mouse events
-   static PHB_SYMB   pSymbol = NULL;                  // Pointer to user-defined function (UDF) symbol
-   static BOOL       bMouseTracking = FALSE;          // Flag for tracking mouse state
-   LRESULT           r = 0;                           // Result to return
-#if _OLD_STYLE
-   BOOL              bCallUDF = FALSE;                // Flag to check if UDF should be called
-#endif
+   TRACKMOUSEEVENT   tme;
+   static PHB_SYMB   pSymbol = NULL;
+   static BOOL       bTracking = FALSE;
 
-   // Handle mouse movement and leave messages
-   if( Msg == WM_MOUSEMOVE || Msg == WM_MOUSELEAVE )
+   LRESULT           r = 0;
+
+   /* 
+      When the mouse moves over the control, we start tracking the mouse 
+      to catch the moment it leaves (WM_MOUSELEAVE).
+   */
+   if( Msg == WM_MOUSEMOVE )
    {
-      if( Msg == WM_MOUSEMOVE )
+      if( !bTracking )
       {
-         // Begin tracking mouse leave event if mouse has entered
-         if( !bMouseTracking )
-         {
-            tme.cbSize = sizeof( TRACKMOUSEEVENT );   // Set size of TRACKMOUSEEVENT
-            tme.dwFlags = TME_LEAVE;                  // Track mouse leaving event
-            tme.hwndTrack = hWnd;                     // Track this window
-            tme.dwHoverTime = HOVER_DEFAULT;
+         tme.cbSize = sizeof( TRACKMOUSEEVENT );
+         tme.dwFlags = TME_LEAVE;
+         tme.hwndTrack = hWnd;
+         tme.dwHoverTime = HOVER_DEFAULT;
 
-            if( _TrackMouseEvent( &tme ) )            // Start tracking
-            {
-#if _OLD_STYLE
-               bCallUDF = TRUE;        // Set to call UDF if _OLD_STYLE is enabled
-#endif
-               bMouseTracking = TRUE;  // Mark as tracking
-            }
-#if _OLD_STYLE
-         }
-         else
+         if( _TrackMouseEvent( &tme ) )
          {
-            bCallUDF = FALSE;
-#endif
+            bTracking = TRUE;
          }
       }
-      else
-      {
-#if _OLD_STYLE
-         bCallUDF = TRUE;                 // Enable UDF call if _OLD_STYLE
-#endif
-         bMouseTracking = FALSE;          // Stop tracking on mouse leave
-      }
-
-      // Call user-defined function (UDF) if specified
-#if _OLD_STYLE
-      if( bCallUDF )
-      {
-#endif
-         if( !pSymbol )
-         {
-            pSymbol = hb_dynsymSymbol( hb_dynsymGet( "OLABELEVENTS" ) );   // Get UDF symbol
-         }
-
-         if( pSymbol && hb_vmRequestReenter() )
-         {
-            hb_vmPushSymbol( pSymbol );               // Push UDF symbol onto VM stack
-            hb_vmPushNil();                           // Push nil for SELF
-            hb_vmPushNumInt( ( HB_PTRUINT ) hWnd );   // Push window handle
-            hb_vmPushLong( Msg );                     // Push message
-            hb_vmPushNumInt( wParam );                // Push WPARAM (event-specific data)
-            hb_vmPushNumInt( lParam );                // Push LPARAM (event-specific data)
-            hb_vmDo( 4 );                             // Call UDF with 4 parameters
-
-            r = hmg_par_LRESULT( -1 );                // Get the result from the UDF
-            hb_vmRequestRestore();                    // Restore VM state
-         }
-
-#if _OLD_STYLE
-      }
-#endif
-      return( r != 0 ) ? r : CallWindowProc( LabelOldWndProc, hWnd, 0, 0, 0 );  // Return UDF result or pass to original proc
+   }
+   else if( Msg == WM_MOUSELEAVE )
+   {
+      /* Reset tracking state so it can be re-armed on the next move */
+      bTracking = FALSE;
    }
 
-   // Reset tracking if not a mouse message
-   bMouseTracking = FALSE;
-   return CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );   // Pass other messages to original proc
-}
+   /* 
+      Bridge the C-level Windows message to the Harbour-level event system.
+      We look for a Harbour function named 'OLABELEVENTS' which acts as a 
+      dispatcher for label-specific events in the HMG library.
+   */
+   if( Msg == WM_MOUSEMOVE || Msg == WM_MOUSELEAVE )
+   {
+      if( !pSymbol )
+      {
+         pSymbol = hb_dynsymSymbol( hb_dynsymGet( "OLABELEVENTS" ) );
+      }
 
-#undef _OLD_STYLE   // Undefine _OLD_STYLE to prevent accidental use elsewhere
+      /* 
+         Execute the Harbour callback. 
+         We pass the Window Handle, Message ID, and parameters.
+      */
+      if( pSymbol && hb_vmRequestReenter() )
+      {
+         hb_vmPushSymbol( pSymbol );
+         hb_vmPushNil();
+         hb_vmPushNumInt( ( HB_PTRUINT ) hWnd );
+         hb_vmPushLong( Msg );
+         hb_vmPushNumInt( wParam );
+         hb_vmPushNumInt( lParam );
+         hb_vmDo( 4 );
+
+         /* Check if the Harbour code returned a specific result to override default behavior */
+         r = hmg_par_LRESULT( -1 );
+         hb_vmRequestRestore();
+      }
+
+      /* If the event handler returned a non-zero value, we stop further processing */
+      if( r != 0 )
+      {
+         return r;
+      }
+
+      /* Otherwise, continue with the original window procedure */
+      return CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );
+   }
+
+   /* Default behavior: pass all other messages to the original procedure */
+   bTracking = FALSE;
+   return CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );
+}

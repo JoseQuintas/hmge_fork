@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -48,16 +48,21 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
+
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineListbox ( ControlName, ParentFormName, x, y, w, h, arows, value, ;
-      fontname, fontsize, tooltip, changeprocedure, dblclick, gotfocus, lostfocus, ;
-      break, HelpId, invisible, notabstop, sort, bold, italic, underline, strikeout, ;
-      backcolor, fontcolor, multiselect, dragitems, multicolumn, multitabs, aWidth, nId )
+FUNCTION _DefineListbox( ControlName, ParentFormName, x, y, w, h, aRows, value, ;
+      fontName, fontSize, tooltip, changeProcedure, dblClick, gotFocus, ;
+      lostFocus, lBreak, HelpId, invisible, noTabStop, lSort, ;
+      bold, italic, underline, strikeout, backColor, fontColor, ;
+      multiSelect, dragItems, multiColumn, multiTabs, aWidth, nId )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle , ControlHandle , FontHandle
+
+   LOCAL ParentFormHandle
+   LOCAL ControlHandle := 0
+   LOCAL FontHandle
    LOCAL mVar
    LOCAL k
-   LOCAL Style
+   LOCAL nStyle
    LOCAL blInit
    LOCAL rows
    LOCAL i
@@ -66,138 +71,252 @@ FUNCTION _DefineListbox ( ControlName, ParentFormName, x, y, w, h, arows, value,
    hb_default( @w, 120 )
    hb_default( @h, 120 )
    hb_default( @value, 0 )
-   __defaultNIL( @gotfocus, "" )
-   __defaultNIL( @lostfocus, "" )
-   __defaultNIL( @changeprocedure, "" )
-   __defaultNIL( @dblclick, "" )
+
+   __defaultNIL( @gotFocus, "" )
+   __defaultNIL( @lostFocus, "" )
+   __defaultNIL( @changeProcedure, "" )
+   __defaultNIL( @dblClick, "" )
+
    hb_default( @invisible, .F. )
-   hb_default( @notabstop, .F. )
-   hb_default( @sort, .F. )
-   hb_default( @multicolumn, .F. )
-   hb_default( @multitabs, .F. )
+   hb_default( @noTabStop, .F. )
+   hb_default( @lSort, .F. )
+   hb_default( @multiColumn, .F. )
+   hb_default( @multiTabs, .F. )
    hb_default( @aWidth, {} )
 
-   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+   /*
+    * Font normalization
+    */
+   IF ( FontHandle := GetFontHandle( fontName ) ) != 0
+      GetFontParamByRef( FontHandle, ;
+         @fontName, @fontSize, ;
+         @bold, @italic, @underline, @strikeout )
    ENDIF
 
-   rows := iif( ISARRAY( arows ), AClone( arows ), {} )
+   /*
+    * Clone rows to avoid side effects
+    */
+   rows := iif( ISARRAY( aRows ), AClone( aRows ), {} )
 
-   IF multitabs
-      IF Len( rows ) > 0
-         IF Len( aWidth ) == 0
-            IF ISARRAY( rows [1] )
-               FOR i := 1 TO Len( rows [1] )
-                  AAdd( aWidth, Int( w / Len( rows [1] ) ) )
-               NEXT
-            ENDIF
-         ENDIF
-         FOR i := 1 TO Len( rows )
-            IF ISARRAY( rows [i] )
-               rows [i] := LB_Array2String( rows [i] )
-            ENDIF
+   /*
+    * Multi-tab preprocessing
+    */
+   IF multiTabs .AND. Len( rows ) > 0
+
+      IF Len( aWidth ) == 0 .AND. ISARRAY( rows[ 1 ] )
+
+         FOR i := 1 TO Len( rows[ 1 ] )
+            AAdd( aWidth, Int( w / Len( rows[ 1 ] ) ) )
          NEXT
+
       ENDIF
+
+      FOR i := 1 TO Len( rows )
+
+         IF ISARRAY( rows[ i ] )
+            rows[ i ] := LB_Array2String( rows[ i ] )
+         ENDIF
+
+      NEXT
+
    ENDIF
 
+   /*
+    * Active window/dialog defaults
+    */
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
-      ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
-      __defaultNIL( @FontName, _HMG_ActiveFontName )
-      __defaultNIL( @FontSize, _HMG_ActiveFontSize )
+
+      ParentFormName := iif( ;
+         _HMG_BeginDialogActive, ;
+         _HMG_ActiveDialogName, ;
+         _HMG_ActiveFormName )
+
+      __defaultNIL( @fontName, _HMG_ActiveFontName )
+      __defaultNIL( @fontSize, _HMG_ActiveFontSize )
+
    ENDIF
 
+   /*
+    * Frame offset adjustment
+    */
    IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentFormName := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /*
+    * Validation
+    */
+   IF .NOT. _IsWindowDefined( ParentFormName ) .AND. ;
+      .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentFormName, "Parent", ParentFormName ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ;
+      .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Control: " + ControlName + ;
+         " Of " + ParentFormName + ;
+         " Already defined." )
+
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   /*
+    * Internal registration index
+    */
+   mVar := "_" + ParentFormName + "_" + ControlName
+   k    := _GetControlFree()
 
+   /*
+    * Dialog mode
+    */
    IF _HMG_BeginDialogActive
 
       ParentFormHandle := _HMG_ActiveDialogHandle
 
-      Style := WS_BORDER + WS_CHILD + WS_VSCROLL + LBS_DISABLENOSCROLL + LBS_NOTIFY + LBS_NOINTEGRALHEIGHT
+      nStyle := WS_BORDER + ;
+                WS_CHILD + ;
+                WS_VSCROLL + ;
+                LBS_DISABLENOSCROLL + ;
+                LBS_NOTIFY + ;
+                LBS_NOINTEGRALHEIGHT
 
-      IF multiselect
-         Style += LBS_MULTIPLESEL
+      IF multiSelect
+         nStyle += LBS_MULTIPLESEL
       ENDIF
 
-      IF !notabstop
-         Style += WS_TABSTOP
+      IF ! noTabStop
+         nStyle += WS_TABSTOP
       ENDIF
 
-      IF !invisible
-         Style += WS_VISIBLE
+      IF ! invisible
+         nStyle += WS_VISIBLE
       ENDIF
 
-      IF sort
-         Style += LBS_SORT
+      IF lSort
+         nStyle += LBS_SORT
       ENDIF
 
-      IF multicolumn
-         Style += LBS_MULTICOLUMN
+      IF multiColumn
+         nStyle += LBS_MULTICOLUMN
       ENDIF
 
-      IF multitabs
-         Style += LBS_USETABSTOPS
+      IF multiTabs
+         nStyle += LBS_USETABSTOPS
       ENDIF
 
-      IF lDialogInMemory         //Dialog Template
+      IF lDialogInMemory
 
-         //          {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
+         /*
+          * Dialog template
+          */
          blInit := {|x, y, z| InitDialogListBox( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, "LISTBOX", style, 0, x, y, w, h, "", HelpId, tooltip, FontName, FontSize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
+
+         AAdd( _HMG_aDialogItems, ;
+            { ;
+               nId, ;
+               k, ;
+               "LISTBOX", ;
+               nStyle, ;
+               0, ;
+               x, y, w, h, ;
+               "", ;
+               HelpId, ;
+               tooltip, ;
+               fontName, ;
+               fontSize, ;
+               bold, italic, underline, strikeout, ;
+               blInit, ;
+               _HMG_BeginTabActive, ;
+               .F., ;
+               _HMG_ActiveTabPage ;
+            } )
 
       ELSE
 
-         ControlHandle := GetDialogItemHandle( ParentFormHandle, nId )
+         /*
+          * Existing dialog control
+          */
+         ControlHandle := ;
+            GetDialogItemHandle( ParentFormHandle, nId )
 
-         x := GetWindowCol ( Controlhandle )
-         y := GetWindowRow ( Controlhandle )
-         w := GetWindowWidth  ( Controlhandle )
-         h := GetWindowHeight ( Controlhandle )
+         x := GetWindowCol( ControlHandle )
+         y := GetWindowRow( ControlHandle )
 
-         SetWindowStyle ( ControlHandle, Style, .T. )
+         w := GetWindowWidth( ControlHandle )
+         h := GetWindowHeight( ControlHandle )
+
+         SetWindowStyle( ControlHandle, nStyle, .T. )
 
       ENDIF
 
    ELSE
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
+      /*
+       * Standard window mode
+       */
+      ParentFormHandle := GetFormHandle( ParentFormName )
 
       IF x == NIL .OR. y == NIL
 
+         /*
+          * Splitbox mode
+          */
          IF _HMG_SplitLastControl == "TOOLBAR"
-            Break := .T.
+            lBreak := .T.
          ENDIF
 
-         i := GetFormIndex ( ParentFormName )
+         i := GetFormIndex( ParentFormName )
 
          IF i > 0
 
-            IF multiselect
-               ControlHandle := InitMultiListBox ( _HMG_aFormReBarHandle [i], 0, x, y, w, h, fontname, fontsize, invisible, notabstop, sort, dragitems, multitabs, multicolumn )
+            IF multiSelect
+
+               ControlHandle := InitMultiListBox( ;
+                  _HMG_aFormReBarHandle[ i ], ;
+                  0, x, y, w, h, ;
+                  fontName, fontSize, ;
+                  invisible, noTabStop, ;
+                  lSort, dragItems, ;
+                  multiTabs, multiColumn )
+
             ELSE
-               ControlHandle := InitListBox ( _HMG_aFormReBarHandle [i] , 0 , 0 , 0 , w , h , '' , 0 , invisible , notabstop, sort, dragitems, multitabs, multicolumn )
+
+               ControlHandle := InitListBox( ;
+                  _HMG_aFormReBarHandle[ i ], ;
+                  0, 0, 0, ;
+                  w, h, ;
+                  "", 0, ;
+                  invisible, noTabStop, ;
+                  lSort, dragItems, ;
+                  multiTabs, multiColumn )
+
             ENDIF
 
-            AddSplitBoxItem ( Controlhandle , _HMG_aFormReBarHandle [i] , w , break , , , , _HMG_ActiveSplitBoxInverted )
+            AddSplitBoxItem( ;
+               ControlHandle, ;
+               _HMG_aFormReBarHandle[ i ], ;
+               w, ;
+               lBreak, ;
+               , , , ;
+               _HMG_ActiveSplitBoxInverted )
 
             _HMG_SplitLastControl := "LISTBOX"
 
@@ -205,152 +324,238 @@ FUNCTION _DefineListbox ( ControlName, ParentFormName, x, y, w, h, arows, value,
 
       ELSE
 
-         IF multiselect
-            ControlHandle := InitMultiListBox ( ParentFormHandle, 0, x, y, w, h, fontname, fontsize, invisible, notabstop, sort, dragitems, multitabs, multicolumn )
+         /*
+          * Standard positioned control
+          */
+         IF multiSelect
+
+            ControlHandle := InitMultiListBox( ;
+               ParentFormHandle, ;
+               0, x, y, w, h, ;
+               fontName, fontSize, ;
+               invisible, noTabStop, ;
+               lSort, dragItems, ;
+               multiTabs, multiColumn )
+
          ELSE
-            ControlHandle := InitListBox ( ParentFormHandle , 0 , x , y , w , h , '' , 0 , invisible, notabstop, sort, dragitems, multitabs, multicolumn )
+
+            ControlHandle := InitListBox( ;
+               ParentFormHandle, ;
+               0, x, y, w, h, ;
+               "", 0, ;
+               invisible, noTabStop, ;
+               lSort, dragItems, ;
+               multiTabs, multiColumn )
+
          ENDIF
 
       ENDIF
 
    ENDIF
 
+   /*
+    * Runtime-only initialization
+    */
    IF .NOT. lDialogInMemory
 
       IF FontHandle != 0
+
          _SetFontHandle( ControlHandle, FontHandle )
+
       ELSE
-         __defaultNIL( @FontName, _HMG_DefaultFontName )
-         __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-         FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+
+         __defaultNIL( @fontName, _HMG_DefaultFontName )
+         __defaultNIL( @fontSize, _HMG_DefaultFontSize )
+
+         FontHandle := _SetFont( ;
+            ControlHandle, ;
+            fontName, ;
+            fontSize, ;
+            bold, italic, underline, strikeout )
+
       ENDIF
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap , ControlHandle )
+         AAdd( _HMG_ActiveTabCurrentPageMap, ControlHandle )
       ENDIF
 
       IF tooltip != NIL
-         SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( ParentFormName ) )
+
+         SetToolTip( ;
+            ControlHandle, ;
+            tooltip, ;
+            GetFormToolTipHandle( ParentFormName ) )
+
       ENDIF
 
    ENDIF
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( mVar, k )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &mVar. := k
+
 #endif
 
-   _HMG_aControlType [k] := iif ( multiselect , "MULTILIST" , "LIST" )
-   _HMG_aControlNames  [k] :=  ControlName
-   _HMG_aControlHandles  [k] :=  ControlHandle
-   _HMG_aControlParenthandles  [k] :=  ParentFormHandle
-   _HMG_aControlIds  [k] :=  nId
-   _HMG_aControlProcedures  [k] :=  ""
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue  [k] :=  Value
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControllostFocusProcedure  [k] :=  lostfocus
-   _HMG_aControlGotFocusProcedure  [k] :=  gotfocus
-   _HMG_aControlChangeProcedure  [k] :=  ChangeProcedure
-   _HMG_aControlDeleted  [k] :=  FALSE
-   _HMG_aControlBkColor  [k] :=  backcolor
-   _HMG_aControlFontColor  [k] :=  fontcolor
-   _HMG_aControlDblClick  [k] :=  dblclick
-   _HMG_aControlHeadClick  [k] :=  {}
-   _HMG_aControlRow  [k] :=  y
-   _HMG_aControlCol   [k] := x
-   _HMG_aControlWidth   [k] := w
-   _HMG_aControlHeight   [k] := h
-   _HMG_aControlSpacing   [k] := 0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture   [k] := ""
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  fontname
-   _HMG_aControlFontSize  [k] :=  fontsize
-   _HMG_aControlFontAttributes  [k] :=  { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip   [k] :=  tooltip
-   _HMG_aControlRangeMin   [k] :=  rows
-   _HMG_aControlRangeMax  [k] :=   aWidth
-   _HMG_aControlCaption   [k] :=  ""
-   _HMG_aControlVisible  [k] :=   iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId   [k] :=  HelpId
-   _HMG_aControlFontHandle  [k] :=   FontHandle
-   _HMG_aControlBrushHandle  [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] := { multicolumn, multitabs }
-   _HMG_aControlMiscData2 [k] := ''
+   /*
+    * Control metadata registration
+    */
+   _HMG_aControlType[ k ]               := iif( multiSelect, "MULTILIST", "LIST" )
+   _HMG_aControlNames[ k ]              := ControlName
+   _HMG_aControlHandles[ k ]            := ControlHandle
+   _HMG_aControlParentHandles[ k ]      := ParentFormHandle
+   _HMG_aControlIds[ k ]                := nId
+   _HMG_aControlProcedures[ k ]         := ""
+   _HMG_aControlPageMap[ k ]            := {}
+   _HMG_aControlValue[ k ]              := value
+   _HMG_aControlInputMask[ k ]          := ""
+   _HMG_aControlLostFocusProcedure[ k ] := lostFocus
+   _HMG_aControlGotFocusProcedure[ k ]  := gotFocus
+   _HMG_aControlChangeProcedure[ k ]    := changeProcedure
+   _HMG_aControlDeleted[ k ]            := .F.
+   _HMG_aControlBkColor[ k ]            := backColor
+   _HMG_aControlFontColor[ k ]          := fontColor
+   _HMG_aControlDblClick[ k ]           := dblClick
+   _HMG_aControlHeadClick[ k ]          := {}
+
+   _HMG_aControlRow[ k ]                := y
+   _HMG_aControlCol[ k ]                := x
+   _HMG_aControlWidth[ k ]              := w
+   _HMG_aControlHeight[ k ]             := h
+   _HMG_aControlSpacing[ k ]            := 0
+
+   _HMG_aControlContainerRow[ k ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+         _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
+
+   _HMG_aControlContainerCol[ k ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+         _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
+
+   _HMG_aControlPicture[ k ]         := ""
+   _HMG_aControlContainerHandle[ k ] := 0
+
+   _HMG_aControlFontName[ k ]       := fontName
+   _HMG_aControlFontSize[ k ]       := fontSize
+
+   _HMG_aControlFontAttributes[ k ] := ;
+      { bold, italic, underline, strikeout }
+
+   _HMG_aControlToolTip[ k ]      := tooltip
+   _HMG_aControlRangeMin[ k ]     := rows
+   _HMG_aControlRangeMax[ k ]     := aWidth
+   _HMG_aControlCaption[ k ]      := ""
+   _HMG_aControlVisible[ k ]      := ! invisible
+   _HMG_aControlHelpId[ k ]       := HelpId
+   _HMG_aControlFontHandle[ k ]   := FontHandle
+   _HMG_aControlBrushHandle[ k ]  := 0
+   _HMG_aControlEnabled[ k ]      := .T.
+
+   _HMG_aControlMiscData1[ k ] := ;
+      { multiColumn, multiTabs }
+
+   _HMG_aControlMiscData2[ k ] := ""
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, k, mVar )
    ENDIF
 
-   IF Len( _HMG_aDialogTemplate ) == 0      // Dialog Template
+   /*
+    * Populate items
+    */
+   IF Len( _HMG_aDialogTemplate ) == 0
 
-      AEval ( Rows , { | r | ListboxAddString ( ControlHandle , r ) } )
-      IF multiselect
-         IF ISARRAY ( value )
-            LISTBOXSETMULTISEL ( ControlHandle , Value )
+      AEval( rows, ;
+         {|r| ListboxAddString( ControlHandle, r ) } )
+
+      IF multiSelect
+
+         IF ISARRAY( value )
+            LISTBOXSETMULTISEL( ControlHandle, value )
          ENDIF
+
       ELSE
-         IF ISNUMBER ( value ) .AND. value <> 0
-            ListboxSetCurSel ( ControlHandle , Value )
+
+         IF ISNUMBER( value ) .AND. value <> 0
+            ListboxSetCurSel( ControlHandle, value )
          ENDIF
+
       ENDIF
-      IF multitabs
-         LISTBOXSETMULTITAB ( ControlHandle , aWidth )
+
+      IF multiTabs
+         LISTBOXSETMULTITAB( ControlHandle, aWidth )
       ENDIF
+
    ENDIF
 
-RETURN Nil
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
 FUNCTION InitDialogListBox( ParentName, ControlHandle, k )
 *-----------------------------------------------------------------------------*
-   LOCAL Rows
-   LOCAL Value
+
+   LOCAL rows
+   LOCAL value
    LOCAL aWidth
-   LOCAL multitabs
+   LOCAL multiTabs
 
    HB_SYMBOL_UNUSED( ParentName )
 
-   Rows   := _HMG_aControlRangeMin [k]
-   Value  := _HMG_aControlValue [k]
-   aWidth := _HMG_aControlRangeMax [k]
-   multitabs := _HMG_aControlMiscData1 [k] [2]
+   rows       := _HMG_aControlRangeMin[ k ]
+   value      := _HMG_aControlValue[ k ]
+   aWidth     := _HMG_aControlRangeMax[ k ]
+   multiTabs  := _HMG_aControlMiscData1[ k ][ 2 ]
 
-   AEval ( Rows , { | r | ListboxAddString ( ControlHandle , r ) } )
+   AEval( rows, ;
+      {|r| ListboxAddString( ControlHandle, r ) } )
 
-   IF _HMG_aControlType [k] == "MULTILIST"
-      IF ISARRAY ( value )
-         LISTBOXSETMULTISEL ( ControlHandle , Value )
+   IF _HMG_aControlType[ k ] == "MULTILIST"
+
+      IF ISARRAY( value )
+         LISTBOXSETMULTISEL( ControlHandle, value )
       ENDIF
+
    ELSE
-      IF ISNUMBER ( value ) .AND. value <> 0
-         ListboxSetCurSel ( ControlHandle , Value )
+
+      IF ISNUMBER( value ) .AND. value <> 0
+         ListboxSetCurSel( ControlHandle, value )
       ENDIF
-   ENDIF
-   IF multitabs
-      LISTBOXSETMULTITAB ( ControlHandle , aWidth )
-   ENDIF
-// JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]  // Modal
-      _HMG_aControlDeleted [k] := .T.
+
    ENDIF
 
-   RETURN Nil
+   IF multiTabs
+      LISTBOXSETMULTITAB( ControlHandle, aWidth )
+   ENDIF
+
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. ;
+      _HMG_aDialogTemplate[ 3 ]
+
+      _HMG_aControlDeleted[ k ] := .T.
+
+   ENDIF
+
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
-FUNCTION LB_Array2String( aData, Sep )
+FUNCTION LB_Array2String( aData, cSep )
 *-----------------------------------------------------------------------------*
+
    LOCAL cData := ""
 
-   hb_default( @Sep, Chr( 9 ) )
+   hb_default( @cSep, Chr( 9 ) )
 
    IF ! Empty( aData )
+
       cData := aData[ 1 ]
-      AEval( aData, { | x | cData += ( Sep + x ) }, 2 )
+
+      AEval( aData, ;
+         {|x| cData += ( cSep + x ) }, 2 )
+
    ENDIF
 
 RETURN cData

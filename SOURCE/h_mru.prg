@@ -35,7 +35,7 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2025, https://harbour.github.io/
+    Copyright 1999-2026, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -49,127 +49,241 @@
 
 #include "minigui.ch"
 
-#define NOFOUND  -1  //Indicates a duplicate entry was not found
-#define NOMRUS    0  //Indicates no MRUs are currently defined
+#define NOFOUND        -1
+#define NOMRUS          0
 
-#define cFileIni      asMRU[1]
-#define cSectionIni   asMRU[2]
-#define MRUParentForm asMRU[3]
-#define MRUCount      asMRU[4]
-#define cMRU_Id       asMRU[5]
-#define maxMRU_Files  asMRU[6]
+/* asMRU indexes */
+#define cFileIni        asMRU[1]
+#define cSectionIni     asMRU[2]
+#define MRUParentForm   asMRU[3]
+#define MRUCount        asMRU[4]
+#define cMRU_Id         asMRU[5]
+#define maxMRU_Files    asMRU[6]
+
+/* aMRU_File indexes */
+#define MRU_CAPTION     1
+#define MRU_FILENAME    2
+#define MRU_MENU_ID     3
+#define MRU_ACTION      4
+#define MRU_INDEX       5
 
 STATIC asMRU := { Nil, Nil, Nil, Nil, Nil, Nil }
 STATIC aMRU_File
 
 *-----------------------------------------------------------------------------*
-FUNCTION AddMRUItem( NewItem , action )
+FUNCTION AddMRUItem( cNewItem, cAction )
 *-----------------------------------------------------------------------------*
-   LOCAL result
+   LOCAL nDuplicate
 
-   result := CheckForDuplicateMRU( NewItem )
-   IF result <> NOFOUND
-      ReorderMRUList( result )
+   nDuplicate := CheckForDuplicateMRU( cNewItem )
+
+   IF nDuplicate <> NOFOUND
+      ReorderMRUList( nDuplicate )
    ENDIF
-   IF result != 1 .OR. MRUCount == 0
-      AddMenuElement( NewItem , action )
+
+   IF nDuplicate <> 1 .OR. MRUCount == 0
+      AddMenuElement( cNewItem, cAction )
    ENDIF
 
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION CheckForDuplicateMRU( NewItem )
+STATIC FUNCTION CheckForDuplicateMRU( cNewItem )
 *-----------------------------------------------------------------------------*
-   LOCAL DuplicateMRU := NOFOUND
-   LOCAL i
-    
-   IF !Empty( NewItem )
-      // Uppercase newitem for string comparisons
-      NewItem := Upper( NewItem )
-      // Check all existing MRUs for duplicate
-      IF ( i := AScan( aMRU_File , {|y| Upper( y[2] ) == NewItem } ) ) != 0
-         DuplicateMRU := i
-      ENDIF
+   LOCAL nDuplicate := NOFOUND
+   LOCAL cCompare
+
+   IF Empty( cNewItem )
+      RETURN nDuplicate
    ENDIF
 
-RETURN DuplicateMRU
+   cCompare := Upper( cNewItem )
+
+   nDuplicate := AScan( ;
+      aMRU_File, ;
+      {|aItem| Upper( aItem[MRU_FILENAME] ) == cCompare } )
+
+   IF nDuplicate == 0
+      nDuplicate := NOFOUND
+   ENDIF
+
+RETURN nDuplicate
 
 *-----------------------------------------------------------------------------*
-FUNCTION AddMenuElement( NewItem , cAction )
+STATIC FUNCTION BuildMRUCaption( cFileName )
 *-----------------------------------------------------------------------------*
-   LOCAL action
-   LOCAL Caption , xCaption
-   LOCAL cyMRU_Id , cxMRU_Id
-   LOCAL x , n , cx
+   LOCAL cCaption
 
-   Caption := iif( Len( NewItem ) < 40, NewItem, SubStr( NewItem, 1, 3 ) + '...' + SubStr( NewItem, Len( NewItem ) - 34 ) )
-   action := iif( cAction == NIL, {|| Nil }, &( '{|| ' + Left( cAction, At("(",cAction ) ) + ' "' + NewItem + '" ) }' ) )
+   cCaption := iif( ;
+      Len( cFileName ) < 40, ;
+      cFileName, ;
+      SubStr( cFileName, 1, 3 ) + "..." + ;
+      SubStr( cFileName, Len( cFileName ) - 34 ) )
 
-   // Check if this is the first item
+RETURN cCaption
+
+*-----------------------------------------------------------------------------*
+STATIC FUNCTION BuildMRUAction( cFileName, cAction )
+*-----------------------------------------------------------------------------*
+   LOCAL bAction
+   LOCAL cProcName
+
+   IF Empty( cAction )
+      RETURN {|| Nil }
+   ENDIF
+
+   cProcName := Left( cAction, At( "(", cAction ) )
+
+   bAction := &( ;
+      '{|| ' + cProcName + ' "' + cFileName + '" ) }' )
+
+RETURN bAction
+
+*-----------------------------------------------------------------------------*
+STATIC FUNCTION RefreshMRUMenuCaptions()
+*-----------------------------------------------------------------------------*
+   LOCAL n
+   LOCAL cMenuId
+   LOCAL cCaption
+
+   FOR n := 1 TO Len( aMRU_File )
+
+      cMenuId := aMRU_File[n, MRU_MENU_ID]
+
+      cCaption := ;
+         "&" + hb_ntos( n ) + " " + ;
+         aMRU_File[n, MRU_CAPTION]
+
+      _ModifyMenuItem( ;
+         cMenuId, ;
+         MRUParentForm, ;
+         cCaption, ;
+         aMRU_File[n, MRU_ACTION] )
+
+   NEXT
+
+RETURN Nil
+
+*-----------------------------------------------------------------------------*
+FUNCTION AddMenuElement( cNewItem, cAction )
+*-----------------------------------------------------------------------------*
+   LOCAL bAction
+   LOCAL cCaption
+   LOCAL cMenuId
+   LOCAL cNewMenuId
+   LOCAL n
+   LOCAL nFreeIndex
+   LOCAL nPos
+
+   cCaption := BuildMRUCaption( cNewItem )
+   bAction  := BuildMRUAction( cNewItem, cAction )
+
    IF MRUCount == 0
-      // Modify a first element the menu
-      cxMRU_Id := cMRU_Id
-      _ModifyMenuItem ( cxMRU_Id , MRUParentForm , '&1 ' + caption , action )
-      AAdd( aMRU_File , { caption, NewItem, cxMRU_Id, action, 1 } )
+
+      cMenuId := cMRU_Id
+
+      _ModifyMenuItem( ;
+         cMenuId, ;
+         MRUParentForm, ;
+         "&1 " + cCaption, ;
+         bAction )
+
+      AAdd( aMRU_File, ;
+         { cCaption, cNewItem, cMenuId, bAction, 1 } )
+
    ELSE
-      // Add a new element to the menu
+
+      nFreeIndex := 1
+
       FOR n := 1 TO Len( aMRU_File ) + 1
-         x := AScan( aMRU_File , {|y| y[5] == n } )
-         IF x == 0
-            x := n
+
+         nPos := AScan( ;
+            aMRU_File, ;
+            {|aItem| aItem[MRU_INDEX] == n } )
+
+         IF nPos == 0
+            nFreeIndex := n
             EXIT
          ENDIF
+
       NEXT
 
-      cyMRU_Id := cMRU_Id + '_' + hb_ntos( x )
-      cxMRU_Id := aMRU_File[1, 3]
-      _InsertMenuItem ( cxMRU_Id , MRUParentForm , '&1 ' + caption , action, cyMRU_Id )
-      // Insert a first element the menu
-      AIns( aMRU_File, 1, { caption, NewItem, cyMRU_Id, action, x }, .T. )
-      FOR n := 1 TO Len( aMRU_File )
-         cx := hb_ntos( n )
-         cxMRU_Id := aMRU_File[n, 3]
-         xCaption := '&' + cx + ' ' + aMRU_File[n, 1]
-         _ModifyMenuItem ( cxMRU_Id , MRUParentForm , xCaption , aMRU_File[n, 4] )
-      NEXT
+      cNewMenuId := cMRU_Id + "_" + hb_ntos( nFreeIndex )
+      cMenuId    := aMRU_File[1, MRU_MENU_ID]
+
+      _InsertMenuItem( ;
+         cMenuId, ;
+         MRUParentForm, ;
+         "&1 " + cCaption, ;
+         bAction, ;
+         cNewMenuId )
+
+      AIns( ;
+         aMRU_File, ;
+         1, ;
+         { ;
+            cCaption, ;
+            cNewItem, ;
+            cNewMenuId, ;
+            bAction, ;
+            nFreeIndex ;
+         }, ;
+         .T. )
+
+      RefreshMRUMenuCaptions()
+
       IF Len( aMRU_File ) > maxMRU_Files
-         cxMRU_Id := aMRU_File[ Len(aMRU_File), 3 ]
-         ASize( aMRU_File , maxMRU_Files )
-         _RemoveMenuItem( cxMRU_Id , MRUParentForm )
+
+         cMenuId := aMRU_File[Len( aMRU_File ), MRU_MENU_ID]
+
+         ASize( aMRU_File, maxMRU_Files )
+
+         _RemoveMenuItem( cMenuId, MRUParentForm )
+
       ENDIF
+
    ENDIF
-   // Increment the menu count
+
    MRUCount++
-      
+
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-STATIC FUNCTION ReorderMRUList( DuplicateLocation )
+STATIC FUNCTION ReorderMRUList( nDuplicateLocation )
 *-----------------------------------------------------------------------------*
-   LOCAL cxMRU_Id
+   LOCAL cMenuId
 
-   // Move entries previously "more recent" than the
-   // duplicate down one in the MRU list
-   IF DuplicateLocation > 1
-      cxMRU_Id := aMRU_File[ DuplicateLocation, 3 ]
-      _RemoveMenuItem( cxMRU_Id , MRUParentForm )
-      hb_ADel( aMRU_File, DuplicateLocation, .T. )
+   IF nDuplicateLocation <= 1
+      RETURN Nil
    ENDIF
-   
+
+   cMenuId := aMRU_File[nDuplicateLocation, MRU_MENU_ID]
+
+   _RemoveMenuItem( cMenuId, MRUParentForm )
+
+   hb_ADel( aMRU_File, nDuplicateLocation, .T. )
+
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
 FUNCTION SaveMRUFileList()
 *-----------------------------------------------------------------------------*
    LOCAL cFile
-   LOCAL i
-   
+   LOCAL n
+
    BEGIN INI FILE cFileIni
-      // Loop through all MRU
-      FOR i := 1 TO maxMRU_Files
-         // Write MRU to INI with key as it's position in list
-         cFile := iif( i <= Len( aMRU_File ), aMru_File[i, 2], "" )
-         SET SECTION cSectionIni ENTRY hb_ntos( i ) TO cFile
+
+      FOR n := 1 TO maxMRU_Files
+
+         cFile := iif( ;
+            n <= Len( aMRU_File ), ;
+            aMRU_File[n, MRU_FILENAME], ;
+            "" )
+
+         SET SECTION cSectionIni ;
+            ENTRY hb_ntos( n ) ;
+            TO cFile
+
       NEXT
 
    END INI
@@ -177,46 +291,53 @@ FUNCTION SaveMRUFileList()
 RETURN Nil
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineMruItem ( caption , cIniFile , cSection , nMaxItems , action , name )
+FUNCTION _DefineMruItem( ;
+   cCaption, ;
+   cIniFile, ;
+   cSection, ;
+   nMaxItems, ;
+   cAction, ;
+   cName )
 *-----------------------------------------------------------------------------*
    LOCAL aTmp := {}
    LOCAL cValue := ""
    LOCAL lExist := .F.
    LOCAL n
 
-   DEFAULT caption := " (Empty) ", ;
+   DEFAULT ;
+      cCaption  := " (Empty) ", ;
       nMaxItems := 10, ;
-      name := "MRU", ;
-      cIniFile := "mru.ini", ;
-      cSection := "MRU"
+      cName     := "MRU", ;
+      cIniFile  := "mru.ini", ;
+      cSection  := "MRU"
 
-   cFileIni := cIniFile
-   cSectionIni := cSection
+   cFileIni      := cIniFile
+   cSectionIni   := cSection
    MRUParentForm := _HMG_xMainMenuParentName
-   MRUCount  := 0
-   aMRU_File := {}
-   cMRU_Id := name
-   maxMRU_Files := nMaxItems
+   MRUCount      := 0
+   aMRU_File     := {}
+   cMRU_Id       := cName
+   maxMRU_Files  := nMaxItems
 
    BEGIN INI FILENAME cIniFile
 
-      FOR n := 1 TO nMaxItems  // Retrieve entry from INI
+      FOR n := 1 TO nMaxItems
 
-         GET cValue SECTION cSection ENTRY hb_ntos( n ) DEFAULT ""
+         GET cValue ;
+            SECTION cSection ;
+            ENTRY hb_ntos( n ) ;
+            DEFAULT ""
 
-         IF ! Empty( cValue )  // Check if a value was returned
-
-            lExist := .T.
-            AAdd( aTmp, cValue )
-
-            IF n == 1
-               MENUITEM caption NAME &name
-            ENDIF
-
-         ELSE
-
+         IF Empty( cValue )
             EXIT
+         ENDIF
 
+         lExist := .T.
+
+         AAdd( aTmp, cValue )
+
+         IF n == 1
+            MENUITEM cCaption NAME &cName
          ENDIF
 
       NEXT
@@ -225,17 +346,17 @@ FUNCTION _DefineMruItem ( caption , cIniFile , cSection , nMaxItems , action , n
 
    IF lExist
 
-      IF Empty( action )
-         action := Nil
+      IF Empty( cAction )
+         cAction := Nil
       ENDIF
 
       FOR EACH n IN aTmp DESCEND
-         AddMRUItem( n, action )
+         AddMRUItem( n, cAction )
       NEXT
 
    ELSE
 
-      MENUITEM caption NAME &name DISABLED
+      MENUITEM cCaption NAME &cName DISABLED
 
    ENDIF
 
@@ -244,38 +365,37 @@ RETURN Nil
 *-----------------------------------------------------------------------------*
 FUNCTION ClearMRUList()
 *-----------------------------------------------------------------------------*
-   LOCAL cxMRU_Id
+   LOCAL cMenuId
    LOCAL n
 
-#ifndef __XHARBOUR__
-
-   FOR EACH n IN aMRU_File DESCEND
-      cxMRU_Id := n[ 3 ]
-      IF n:__enumIsLast()
-         _ModifyMenuItem( cxMRU_Id , MRUParentForm , ' (Empty) ' , {|| Nil } )
-         SetProperty( MRUParentForm , cxMRU_Id , 'Enabled' , .F. )
-         cMRU_Id := cxMRU_Id
-         aMRU_File := {}
-         MRUCount := 0
-      ELSE 
-         _RemoveMenuItem( cxMRU_Id , MRUParentForm )
-      ENDIF
-
-#else
-
    FOR n := Len( aMRU_File ) TO 1 STEP -1
-      cxMRU_Id := aMRU_File[n,3]
+
+      cMenuId := aMRU_File[n, MRU_MENU_ID]
+
       IF n > 1
-         _RemoveMenuItem( cxMRU_Id , MRUParentForm )
-      ELSE 
-         _ModifyMenuItem( cxMRU_Id , MRUParentForm , ' (Empty) ' , {|| Nil } )
-         SetProperty( MRUParentForm , cxMRU_Id , 'Enabled' , .F. )
-         cMRU_Id := cxMRU_Id
+
+         _RemoveMenuItem( cMenuId, MRUParentForm )
+
+      ELSE
+
+         _ModifyMenuItem( ;
+            cMenuId, ;
+            MRUParentForm, ;
+            " (Empty) ", ;
+            {|| Nil } )
+
+         SetProperty( ;
+            MRUParentForm, ;
+            cMenuId, ;
+            "Enabled", ;
+            .F. )
+
+         cMRU_Id   := cMenuId
          aMRU_File := {}
-         MRUCount := 0
+         MRUCount  := 0
+
       ENDIF
 
-#endif
    NEXT
 
 RETURN Nil

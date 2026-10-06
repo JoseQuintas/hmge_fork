@@ -35,15 +35,14 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2025, https://harbour.github.io/
+    Copyright 1999-2026, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
 
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
- ---------------------------------------------------------------------------*/
+---------------------------------------------------------------------------*/
 #define _WIN32_IE 0x0501
 
 #ifdef __XCC__
@@ -52,256 +51,239 @@
 #include <mgdefs.h>
 #include <commctrl.h>
 
-// Compatibility definitions for older Borland C++ compilers
+/* 
+ * Compatibility layer for legacy Borland C++ compilers.
+ */
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 #define WC_SCROLLBAR "ScrollBar"
 #define WC_STATIC    "Static"
 #endif
 
-// Function prototype for the window procedure used in subclassing
-LRESULT APIENTRY  SubClassFunc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-static WNDPROC    lpfnOldWndProc;
-
-// Function prototype to retrieve the instance handle of the application
+/* Internal function prototypes for window procedure subclassing and instance retrieval */
+LRESULT APIENTRY  SubClassFunc( HWND, UINT, WPARAM, LPARAM );
 HINSTANCE         GetInstance( void );
 
+/* 
+ * Global pointer to the original window procedure of the ListView.
+ * Used to chain messages back to the default handler after custom processing.
+ */
+static WNDPROC    s_lpOldWndProc = NULL;
+
 /*
- * FUNCTION: INITBROWSE
- *
- * Initializes a ListView control with custom styles.
- *
+ * Function: INITBROWSE
+ * Purpose: Initializes and creates a Win32 ListView control configured as an HMG Browse.
  * Parameters:
- *   1: HWND - Handle of the parent window.
- *   2: HMENU - Menu handle (used as control ID).
- *   3: INT - X coordinate of the control.
- *   4: INT - Y coordinate of the control.
- *   5: INT - Width of the control.
- *   6: INT - Height of the control.
- *   7: LOGICAL - WS_TABSTOP style (TRUE or FALSE).
- *
- * Returns:
- *   HWND - Handle of the created ListView control.
- *
- * Purpose:
- *   Creates a ListView control with specified styles and dimensions,
- *   and subclasses it to intercept messages like WM_MOUSEWHEEL for scrolling.
- *   The WS_TABSTOP style is added based on the value of hb_parl(7).
+ *    1: HWND  - Parent window handle.
+ *    2: HMENU - Control ID (passed as HMENU in Win32 API for child windows).
+ *    3: INT   - X coordinate (horizontal position).
+ *    4: INT   - Y coordinate (vertical position).
+ *    5: INT   - Width of the control.
+ *    6: INT   - Height of the control.
+ *    7: LOGIC - TabStop flag (True to disable tab stop, False to enable).
+ * Returns: HWND - Handle to the newly created ListView control.
  */
 HB_FUNC( INITBROWSE )
 {
    HWND                 hListView;
-   DWORD                style = LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | LVS_REPORT;
-
-   // Initialize common controls for ListView
+   HWND                 hParent;
+   HMENU                hMenu;
+   DWORD                dwStyle;
    INITCOMMONCONTROLSEX icex;
+   int                  nX, nY, nW, nH;
+   BOOL                 lTabStop;
+
+   // Extract parameters from the Harbour virtual machine stack
+   hParent = hmg_par_raw_HWND( 1 );
+   hMenu = hmg_par_raw_HMENU( 2 );
+   nX = hb_parni( 3 );
+   nY = hb_parni( 4 );
+   nW = hb_parni( 5 );
+   nH = hb_parni( 6 );
+   lTabStop = !hb_parl( 7 ); // Logic is inverted based on HMG's internal parameter passing
+
+   // Ensure the ListView common control class is initialized within the process
    icex.dwSize = sizeof( INITCOMMONCONTROLSEX );
-   icex.dwICC  = ICC_LISTVIEW_CLASSES;
+   icex.dwICC = ICC_LISTVIEW_CLASSES;
    InitCommonControlsEx( &icex );
 
-   // Add WS_TABSTOP if hb_parl(7) is false
-   if( !hb_parl( 7 ) )
+   // Define base styles: 
+   // LVS_REPORT: Required for grid-like multi-column display.
+   // LVS_SINGLESEL: Restricts selection to one row at a time.
+   // LVS_SHOWSELALWAYS: Selection remains visible even when control loses focus.
+   dwStyle = WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS;
+
+   if( lTabStop )
    {
-      style |= WS_TABSTOP;
+      dwStyle |= WS_TABSTOP;
    }
 
-   // Create the ListView control
-   hListView = CreateWindowEx
-      (
-         WS_EX_CLIENTEDGE,                // Extended style with client edge
-         WC_LISTVIEW,                     // Class name for ListView
-         TEXT( "" ),                      // No text needed
-         style,                           // Combined style flags
-         hb_parni( 3 ),                   // X position
-         hb_parni( 4 ),                   // Y position
-         hb_parni( 5 ),                   // Width
-         hb_parni( 6 ),                   // Height
-         hmg_par_raw_HWND( 1 ),           // Parent window handle
-         hmg_par_raw_HMENU( 2 ),          // Menu handle
-         GetInstance(),                   // Module instance handle
-         NULL                             // Additional parameters
-      );
+   // Create the ListView control using the extended client edge style for a 3D border effect
+   hListView = CreateWindowEx( WS_EX_CLIENTEDGE, WC_LISTVIEW, TEXT( "" ), dwStyle, nX, nY, nW, nH, hParent, hMenu, GetInstance(), NULL );
 
-   // Subclass to intercept messages like WM_MOUSEWHEEL
-   lpfnOldWndProc = SubclassWindow1( hListView, SubClassFunc );
+   // Subclass the control to intercept specific messages (like Mouse Wheel)
+   if( hListView != NULL )
+   {
+      s_lpOldWndProc = SubclassWindow1( hListView, SubClassFunc );
+   }
+
+   // Return the handle to the Harbour application
    hmg_ret_raw_HWND( hListView );
 }
 
 /*
- * FUNCTION: SubClassFunc
- *
- * Message handling function to process WM_MOUSEWHEEL events.
- *
- * Parameters:
- *   hWnd: HWND - Handle of the window receiving the message.
- *   msg: UINT - The message identifier.
- *   wParam: WPARAM - Additional message-specific information.
- *   lParam: LPARAM - Additional message-specific information.
- *
- * Returns:
- *   LRESULT - Result of the message processing.
- *
- * Purpose:
- *   Intercepts WM_MOUSEWHEEL messages to simulate up/down arrow key presses
- *   for scrolling the ListView control when the mouse wheel is used.
- *   Other messages are passed to the original window procedure.
+ * Function: SubClassFunc
+ * Purpose: Custom Window Procedure for the Browse control.
+ * Logic: Intercepts WM_MOUSEWHEEL to provide consistent row-by-row navigation.
+ * Why: Standard ListView wheel scrolling can be erratic in certain report modes; 
+ *      translating it to keyboard events ensures the selection moves predictably.
  */
-LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+LRESULT APIENTRY SubClassFunc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-   if( msg == WM_MOUSEWHEEL )
+   if( uMsg == WM_MOUSEWHEEL )
    {
-      // Scroll up or down based on the wheel delta
+      // Determine rotation direction: Positive is away from user (Up), Negative is toward user (Down)
       if( GET_WHEEL_DELTA_WPARAM( wParam ) > 0 )
       {
-         keybd_event( VK_UP, 0, 0, 0 );   // Simulate UP arrow key press
+         // Simulate a physical Up Arrow key press to move selection up
+         keybd_event( VK_UP, 0, 0, 0 );
       }
       else
       {
-         keybd_event( VK_DOWN, 0, 0, 0 ); // Simulate DOWN arrow key press
+         // Simulate a physical Down Arrow key press to move selection down
+         keybd_event( VK_DOWN, 0, 0, 0 );
       }
-
-      return CallWindowProc( lpfnOldWndProc, hWnd, 0, 0, 0 );
    }
 
-   return CallWindowProc( lpfnOldWndProc, hWnd, msg, wParam, lParam );
+   // Pass all other messages (and the wheel message) to the original handler
+   return CallWindowProc( s_lpOldWndProc, hWnd, uMsg, wParam, lParam );
 }
 
 /*
- * FUNCTION: INITVSCROLLBAR
- *
- * Initializes a vertical scrollbar control.
- *
+ * Function: INITVSCROLLBAR
+ * Purpose: Creates a standalone vertical scrollbar control.
  * Parameters:
- *   1: HWND - Handle of the parent window.
- *   2: INT - X coordinate of the scrollbar.
- *   3: INT - Y coordinate of the scrollbar.
- *   4: INT - Width of the scrollbar.
- *   5: INT - Height of the scrollbar.
- *
- * Returns:
- *   HWND - Handle of the created scrollbar control.
- *
- * Purpose:
- *   Creates a vertical scrollbar control with specified dimensions and sets its scroll range.
+ *    1: HWND - Parent window handle.
+ *    2: INT  - X position.
+ *    3: INT  - Y position.
+ *    4: INT  - Width.
+ *    5: INT  - Height.
+ * Returns: HWND - Handle to the scrollbar.
+ * Side Effects: Sets an initial default range of 1 to 100.
  */
 HB_FUNC( INITVSCROLLBAR )
 {
    HWND  hScrollbar;
+   HWND  hParent;
+   int   nX, nY, nW, nH;
 
-   hScrollbar = CreateWindowEx
-      (
-         0,             // No extended styles
-         WC_SCROLLBAR,  // Scrollbar control class
-         TEXT( "" ),    // No window text
-         WS_CHILD | WS_VISIBLE | SBS_VERT,   // Style for visible vertical scrollbar
-         hb_parni( 2 ),                         // X position
-         hb_parni( 3 ),                         // Y position
-         hb_parni( 4 ),                         // Width
-         hb_parni( 5 ),                         // Height
-         hmg_par_raw_HWND( 1 ),                 // Parent window handle
-         ( HMENU ) NULL,                        // No menu handle
-         GetInstance(),                         // Module instance handle
-         NULL                                   // Additional parameters
-      );
+   hParent = hmg_par_raw_HWND( 1 );
+   nX = hb_parni( 2 );
+   nY = hb_parni( 3 );
+   nW = hb_parni( 4 );
+   nH = hb_parni( 5 );
 
-   // Set scroll range from 1 to 100, and allow immediate redraw
-   SetScrollRange( hScrollbar, SB_CTL, 1, 100, TRUE );
+   // Create the scrollbar with SBS_VERT style for vertical orientation
+   hScrollbar = CreateWindowEx( 0, WC_SCROLLBAR, TEXT( "" ), WS_CHILD | WS_VISIBLE | SBS_VERT, nX, nY, nW, nH, hParent, ( HMENU ) NULL, GetInstance(), NULL );
+
+   // Initialize with a standard range to prevent division-by-zero or UI glitches before first update
+   if( hScrollbar != NULL )
+   {
+      SetScrollRange( hScrollbar, SB_CTL, 1, 100, TRUE );
+   }
+
    hmg_ret_raw_HWND( hScrollbar );
 }
 
 /*
- * FUNCTION: GETSCROLLRANGEMAX
- *
- * Retrieves the maximum scroll range for a scrollbar.
- *
+ * Function: GETSCROLLRANGEMAX
+ * Purpose: Retrieves the maximum scrolling position of a specified scrollbar.
  * Parameters:
- *   1: HWND - Handle of the scrollbar control.
- *   2: INT - Scrollbar type (e.g., SB_CTL for a control scrollbar).
- *
- * Returns:
- *   INT - The maximum scroll range value.
- *
- * Purpose:
- *   Gets the maximum scroll position of a scrollbar control.
+ *    1: HWND - Handle to the control or window containing the scrollbar.
+ *    2: INT  - Scrollbar type (SB_CTL for control, SB_HORZ/SB_VERT for window bars).
+ * Returns: INT - The maximum value of the scroll range.
  */
 HB_FUNC( GETSCROLLRANGEMAX )
 {
-   int   minPos, maxPos;
+   HWND  hWnd;
+   int   nType;
+   int   nMin, nMax;
 
-   // Retrieve the range limits for the specified scrollbar
-   GetScrollRange( hmg_par_raw_HWND( 1 ), hb_parni( 2 ), &minPos, &maxPos );
-   hmg_ret_NINT( maxPos );
+   hWnd = hmg_par_raw_HWND( 1 );
+   nType = hb_parni( 2 );
+
+   nMin = 0;
+   nMax = 0;
+
+   if( hWnd != NULL )
+   {
+      // Win32 API fills nMin and nMax with the current range limits
+      GetScrollRange( hWnd, nType, &nMin, &nMax );
+   }
+
+   hmg_ret_NINT( nMax );
 }
 
 /*
- * FUNCTION: INITVSCROLLBARBUTTON
- *
- * Creates a static control styled as a button, typically to represent a scroll button.
- *
+ * Function: INITVSCROLLBARBUTTON
+ * Purpose: Creates a static placeholder control, typically used as a visual 
+ *          anchor or "filler" button in custom scrollbar implementations.
  * Parameters:
- *   1: HWND - Handle of the parent window.
- *   2: INT - X coordinate of the button.
- *   3: INT - Y coordinate of the button.
- *   4: INT - Width of the button.
- *   5: INT - Height of the button.
- *
- * Returns:
- *   HWND - Handle of the created static control (button).
- *
- * Purpose:
- *   Creates a static control that visually resembles a button, often used as part of a custom scrollbar implementation.
+ *    1: HWND - Parent window handle.
+ *    2: INT  - X, Y, W, H coordinates.
+ * Returns: HWND - Handle to the static control.
+ * Why: Used to fill the small square area where horizontal and vertical 
+ *      scrollbars meet, or to act as a custom scroll button container.
  */
 HB_FUNC( INITVSCROLLBARBUTTON )
 {
-   hmg_ret_raw_HWND
-   (
-      CreateWindow
-         (
-            WC_STATIC,                          // Static control class
-            TEXT( "" ),                         // No text
-            WS_CHILD | WS_VISIBLE | SS_SUNKEN,  // Styles to display sunken look
-            hb_parni( 2 ),          // X position
-            hb_parni( 3 ),          // Y position
-            hb_parni( 4 ),          // Width
-            hb_parni( 5 ),          // Height
-            hmg_par_raw_HWND( 1 ),  // Parent window handle
-            ( HMENU ) NULL,         // No menu handle
-            GetInstance(),          // Module instance handle
-            NULL                    // Additional parameters
-         )
-   );
+   HWND  hWnd;
+   HWND  hParent;
+   int   nX, nY, nW, nH;
+
+   hParent = hmg_par_raw_HWND( 1 );
+   nX = hb_parni( 2 );
+   nY = hb_parni( 3 );
+   nW = hb_parni( 4 );
+   nH = hb_parni( 5 );
+
+   // SS_SUNKEN provides a recessed 3D look consistent with classic Windows scrollbars
+   hWnd = CreateWindow( WC_STATIC, TEXT( "" ), WS_CHILD | WS_VISIBLE | SS_SUNKEN, nX, nY, nW, nH, hParent, ( HMENU ) NULL, GetInstance(), NULL );
+
+   hmg_ret_raw_HWND( hWnd );
 }
 
 /*
- * FUNCTION: SETSCROLLINFO
- *
- * Sets the scroll info for a scrollbar, including page size, position, and range.
- *
+ * Function: SETSCROLLINFO
+ * Purpose: Configures scrollbar parameters using the modern 32-bit SCROLLINFO structure.
  * Parameters:
- *   1: HWND - Handle of the scrollbar control.
- *   2: INT - Maximum scroll range.
- *   3: INT - Current scroll position.
- *   4: INT - Page size (visible area).
- *
- * Returns:
- *   INT - Nonzero if successful; otherwise, zero.
- *
- * Purpose:
- *   Configures the scrollbar's properties, such as the total range, current position, and the size of the visible portion.
- *   This is essential for properly displaying and controlling the scrollbar's behavior.
+ *    1: HWND - Handle to the scrollbar control.
+ *    2: INT  - Maximum range value.
+ *    3: INT  - Current thumb position.
+ *    4: INT  - Page size (determines the proportional size of the scroll thumb).
+ * Returns: LOGIC - Success or failure of the operation.
  */
 HB_FUNC( SETSCROLLINFO )
 {
+   HWND        hWnd;
    SCROLLINFO  si;
+   int         nMax, nPos, nPage;
+
+   hWnd = hmg_par_raw_HWND( 1 );
+   nMax = hb_parni( 2 );
+   nPos = hb_parni( 3 );
+   nPage = hb_parni( 4 );
+
+   // Clear structure to avoid garbage data in optional fields
    ZeroMemory( &si, sizeof( si ) );
 
-   // Configure scroll information
    si.cbSize = sizeof( SCROLLINFO );
+   // SIF_PAGE: Set thumb size, SIF_POS: Set position, SIF_RANGE: Set min/max
    si.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
    si.nMin = 1;
-   si.nMax = hb_parni( 2 );         // Maximum scroll range
-   si.nPage = hb_parni( 4 );        // Page size
-   si.nPos = hb_parni( 3 );         // Scroll position
+   si.nMax = nMax;
+   si.nPage = nPage;
+   si.nPos = nPos;
 
-   // Apply scroll info and return success/failure
-   hb_retl( SetScrollInfo( hmg_par_raw_HWND( 1 ), SB_CTL, &si, TRUE ) );
+   // Apply settings to the control (SB_CTL indicates a standalone scrollbar control)
+   hb_retl( SetScrollInfo( hWnd, SB_CTL, &si, TRUE ) );
 }

@@ -35,250 +35,285 @@
 	www - https://harbour.github.io/
 
 	"Harbour Project"
-	Copyright 1999-2025, https://harbour.github.io/
+	Copyright 1999-2026, https://harbour.github.io/
 
 	"WHAT32"
 	Copyright 2002 AJ Wos <andrwos@aust1.net> 
 
 	"HWGUI"
   	Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
  ---------------------------------------------------------------------------*/
 
-/* Include necessary headers for MiniGUI, Windows controls, and Harbour API */
 #include <mgdefs.h>
 #include <commctrl.h>
 
-/* Define static class name for older Borland compilers */
+// Compatibility fix for legacy Borland compilers that do not define WC_STATIC.
 #if ( defined( __BORLANDC__ ) && __BORLANDC__ < 1410 )
 #define WC_STATIC "Static"
 #endif
 #include "hbapiitm.h"
 #include "hbvm.h"
 
-/* Declare window procedure for custom check label control */
+// Forward declaration of the subclassed window procedure for the CheckLabel control.
 LRESULT APIENTRY  ChkLabelFunc( HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam );
-static WNDPROC    LabelOldWndProc;                 // Store original window procedure
 
-/* External function to load images with specified parameters */
+// Stores the original window procedure of the Static control to allow message chaining (CallWindowProc).
+static WNDPROC    LabelOldWndProc;
+
+// External HMG function to handle image loading with support for scaling and transparency.
 extern HBITMAP    HMG_LoadPicture
                   (
-                     const char  *FileName,        // Image file path
-                     int         New_Width,        // Desired width
-                     int         New_Height,       // Desired height
-                     HWND        hWnd,             // Parent window handle
-                     int         ScaleStretch,     // Scaling option
-                     int         Transparent,      // Transparency option
-                     long        BackgroundColor,  // Background color
-                     int         AdjustImage,      // Image adjustment flag
-                     HB_BOOL     bAlphaFormat,     // Alpha format support
-                     int         iAlpfaConstant    // Alpha constant value
+                     const char  *FileName,
+                     int         New_Width,
+                     int         New_Height,
+                     HWND        hWnd,
+                     int         ScaleStretch,
+                     int         Transparent,
+                     long        BackgroundColor,
+                     int         AdjustImage,
+                     HB_BOOL     bAlphaFormat,
+                     int         iAlpfaConstant
                   );
-#ifdef UNICODE
-LPWSTR            AnsiToWide( LPCSTR );            // Convert ANSI to Unicode string
-#endif
-HINSTANCE         GetInstance( void );             // Get current instance handle
-HINSTANCE         GetResources( void );            // Get resource instance handle
 
-/* Structure to store check label control state */
+#ifdef UNICODE
+LPWSTR            AnsiToWide( LPCSTR );
+#endif
+HINSTANCE         GetInstance( void );
+HINSTANCE         GetResources( void );
+
+/*
+   INSCHK Structure
+   Internal state container for the CheckLabel control.
+   This structure is attached to the Win32 window via GWLP_USERDATA.
+*/
 typedef struct
 {
-   BOOL     lCheck;                    // Indicates if the control is checked
-   int      cxLeftEdge, cxRightEdge;   // Window border sizes
-   int      cxButton;                  // Check box button width
-   int      cxSpace;                   // Spacing between check box and label
-   BOOL     lLeftCheck;                // Check box on left side flag
-   HBITMAP  himage;                    // Bitmap for checked state
-   HBITMAP  himagemask;                // Mask for checked state bitmap
-   HBITMAP  himage2;                   // Bitmap for unchecked state
-   HBITMAP  himagemask2;               // Mask for unchecked state bitmap
+   BOOL     lCheck;                    // Current toggle state (Checked/Unchecked).
+   int      cxLeftEdge, cxRightEdge;   // Calculated widths of the non-client borders.
+   int      cxButton;                  // Width allocated for the checkbox/image.
+   int      cxSpace;                   // Horizontal padding between the checkbox and the label text.
+   BOOL     lLeftCheck;                // Positioning flag: TRUE for left-aligned, FALSE for right-aligned.
+   HBITMAP  himage;                    // Bitmap handle for the 'Checked' state.
+   HBITMAP  himagemask;                // Transparency mask for the 'Checked' bitmap.
+   HBITMAP  himage2;                   // Bitmap handle for the 'Unchecked' state.
+   HBITMAP  himagemask2;               // Transparency mask for the 'Unchecked' bitmap.
 } INSCHK, *PINSCHK;
 
-/* Create a bitmap mask for transparent image rendering */
+/*
+   Function: CreateBitmapMask
+   Purpose:  Generates a monochrome mask bitmap from a color bitmap based on a transparent color.
+   Input:    hbmColour (Source bitmap), crTransparent (Color to treat as transparent).
+   Returns:  HBITMAP (The generated mask) or NULL on failure.
+   Logic:    Uses BitBlt with SRCCOPY and SRCINVERT to isolate the background color, 
+             enabling transparent drawing on DCs that don't support alpha channels natively.
+*/
 HBITMAP CreateBitmapMask( HBITMAP hbmColour, COLORREF crTransparent )
 {
-   HDC      hdcMem, hdcMem2;           // Device contexts for bitmap operations
-   HBITMAP  hbmMask;                   // Mask bitmap
-   BITMAP   bm;  // Bitmap information structure
-   GetObject( hbmColour, sizeof( BITMAP ), &bm );                 // Get bitmap properties
-   hbmMask = CreateBitmap( bm.bmWidth, bm.bmHeight, 1, 1, NULL ); // Create monochrome bitmap
-   hdcMem = CreateCompatibleDC( 0 );      // Create memory DC for source bitmap
+   HDC      hdcMem, hdcMem2;
+   HBITMAP  hbmMask;
+   BITMAP   bm;
+
+   GetObject( hbmColour, sizeof( BITMAP ), &bm );
+   hbmMask = CreateBitmap( bm.bmWidth, bm.bmHeight, 1, 1, NULL );
+
+   hdcMem = CreateCompatibleDC( 0 );
    if( !hdcMem )
    {
-      return NULL;                        // Return NULL on failure
+      return NULL;
    }
 
-   hdcMem2 = CreateCompatibleDC( 0 );     // Create memory DC for mask
+   hdcMem2 = CreateCompatibleDC( 0 );
    if( !hdcMem2 )
    {
-      DeleteDC( hdcMem );                 // Clean up source DC
-      return NULL;                        // Return NULL on failure
+      DeleteDC( hdcMem );
+      return NULL;
    }
 
-   SelectObject( hdcMem, hbmColour );     // Select source bitmap into DC
-   SelectObject( hdcMem2, hbmMask );      // Select mask bitmap into DC
-   SetBkColor( hdcMem2, crTransparent );  // Set transparent color for mask
-   BitBlt( hdcMem2, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY );   // Copy bitmap to mask
-   BitBlt( hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem2, 0, 0, SRCINVERT ); // Invert mask onto source
-   DeleteDC( hdcMem );     // Clean up source DC
-   DeleteDC( hdcMem2 );    // Clean up mask DC
-   return hbmMask;         // Return created mask
+   SelectObject( hdcMem, hbmColour );
+   SelectObject( hdcMem2, hbmMask );
+
+   // Setting the background color of the source DC determines which color becomes 'white' in the mono mask.
+   SetBkColor( hdcMem2, crTransparent );
+   BitBlt( hdcMem2, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY );
+
+   // Invert the source bitmap against the mask to prepare for SRCPAINT operations.
+   BitBlt( hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem2, 0, 0, SRCINVERT );
+
+   DeleteDC( hdcMem );
+   DeleteDC( hdcMem2 );
+
+   return hbmMask;
 }
 
-/* Calculate the check box position within the label */
+/*
+   Function: GetCheck
+   Purpose:  Calculates the bounding rectangle where the checkbox/image should be drawn.
+   Input:    pbtn (Control state), rect (Window rectangle to be modified).
+   Logic:    Adjusts the input rectangle based on whether the checkbox is on the left or right 
+             side of the control, accounting for non-client edge offsets.
+*/
 void GetCheck( INSCHK *pbtn, RECT *rect )
 {
-   if( pbtn->lLeftCheck )  // If check box is on the left
+   if( pbtn->lLeftCheck )
    {
-      rect->right = rect->left + pbtn->cxButton;                     // Adjust right edge
+      rect->right = rect->left + pbtn->cxButton;
    }
    else
    {
-      rect->left = rect->right - pbtn->cxButton;                     // Adjust left edge
+      rect->left = rect->right - pbtn->cxButton;
    }
 
-   if( pbtn->cxRightEdge > pbtn->cxLeftEdge )                        // Adjust for border asymmetry
+   // Adjust for asymmetrical borders (e.g., specific themes or styles).
+   if( pbtn->cxRightEdge > pbtn->cxLeftEdge )
    {
-      OffsetRect( rect, pbtn->cxRightEdge - pbtn->cxLeftEdge, 0 );   // Shift rectangle
+      OffsetRect( rect, pbtn->cxRightEdge - pbtn->cxLeftEdge, 0 );
    }
 }
 
-/* Free memory allocated for check label structure */
+/*
+   Function: FreeInsChk
+   Purpose:  Performs memory cleanup for the INSCHK structure and its GDI objects.
+   Input:    pbtn (Pointer to the structure to free).
+   Side Effects: Deletes GDI bitmaps and masks from memory to prevent leaks.
+*/
 static void FreeInsChk( PINSCHK pbtn )
 {
-   if( !pbtn )             // Check if structure exists
+   if( !pbtn )
    {
       return;
    }
 
-   if( pbtn->himage )      // Free checked state bitmap
+   if( pbtn->himage )
    {
       DeleteObject( pbtn->himage );
    }
 
-   if( pbtn->himagemask )  // Free checked state mask
+   if( pbtn->himagemask )
    {
       DeleteObject( pbtn->himagemask );
    }
 
-   if( pbtn->himage2 )     // Free unchecked state bitmap
+   if( pbtn->himage2 )
    {
       DeleteObject( pbtn->himage2 );
    }
 
-   if( pbtn->himagemask2 ) // Free unchecked state mask
+   if( pbtn->himagemask2 )
    {
       DeleteObject( pbtn->himagemask2 );
    }
 
-   HeapFree( GetProcessHeap(), 0, pbtn ); // Free structure memory
+   HeapFree( GetProcessHeap(), 0, pbtn );
 }
 
-/* Initialize check box in label control */
+/*
+   Function: InsertCheck
+   Purpose:  Initializes or updates the internal state of a CheckLabel control.
+   Input:    hWnd (Control handle), himage/himage2 (Bitmaps), BtnWidth (Size), 
+             lCheck (Initial state), lLeftCheck (Alignment).
+   Returns:  BOOL (Success/Failure).
+   Logic:    Allocates the INSCHK structure and calculates transparency masks. 
+             It uses SetWindowPos with SWP_FRAMECHANGED to force the OS to recalculate 
+             the non-client area via WM_NCCALCSIZE.
+*/
 BOOL InsertCheck( HWND hWnd, HBITMAP himage, HBITMAP himage2, int BtnWidth, BOOL lCheck, BOOL lLeftCheck )
 {
-   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );  // Get existing structure
+   // Retrieve existing data to clean up if this is a re-initialization.
+   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );
 
-   // Free existing structure if it exists
    if( pbtn )
    {
-      if( pbtn->himage )                     // Free checked state bitmap
-      {
-         DeleteObject( pbtn->himage );
-      }
-
-      if( pbtn->himagemask )                 // Free checked state mask
-      {
-         DeleteObject( pbtn->himagemask );
-      }
-
-      if( pbtn->himage2 )                    // Free unchecked state bitmap
-      {
-         DeleteObject( pbtn->himage2 );
-      }
-
-      if( pbtn->himagemask2 )                // Free unchecked state mask
-      {
-         DeleteObject( pbtn->himagemask2 );
-      }
-
-      HeapFree( GetProcessHeap(), 0, pbtn ); // Free structure
-      SetWindowLongPtr( hWnd, GWLP_USERDATA, ( LONG_PTR ) NULL ); // Clear user data
+      FreeInsChk( pbtn );
+      SetWindowLongPtr( hWnd, GWLP_USERDATA, ( LONG_PTR ) NULL );
    }
 
-   pbtn = ( INSCHK * ) HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( INSCHK ) ); // Allocate new structure
+   pbtn = ( INSCHK * ) HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( INSCHK ) );
    if( !pbtn )
    {
-      return FALSE;                 // Return FALSE on allocation failure
+      return FALSE;
    }
 
-   pbtn->lCheck = lCheck;           // Set checked state
-   pbtn->lLeftCheck = lLeftCheck;   // Set check box position flag
-   pbtn->cxButton = BtnWidth;       // Set button width
-   if( pbtn->cxButton < 0 )         // Validate button width
+   pbtn->lCheck = lCheck;
+   pbtn->lLeftCheck = lLeftCheck;
+   pbtn->cxButton = BtnWidth;
+
+   // Fallback to system default scrollbar width if no specific width is provided.
+   if( pbtn->cxButton < 0 )
    {
-      pbtn->cxButton = GetSystemMetrics( SM_CXVSCROLL ); // Use default width
+      pbtn->cxButton = GetSystemMetrics( SM_CXVSCROLL );
    }
 
-   pbtn->himage = himage;     // Store checked state bitmap
-   pbtn->himage2 = himage2;   // Store unchecked state bitmap
-   pbtn->cxSpace = GetSystemMetrics( SM_CXSIZEFRAME ) / 4;  // Set spacing
-   if( himage != NULL )          // Create mask for checked state
+   pbtn->himage = himage;
+   pbtn->himage2 = himage2;
+   pbtn->cxSpace = GetSystemMetrics( SM_CXSIZEFRAME ) / 4;
+
+   // Generate masks for both states to support transparent rendering.
+   if( himage != NULL )
    {
       pbtn->himagemask = CreateBitmapMask( himage, RGB( 0, 0, 0 ) );
       if( !pbtn->himagemask )
       {
-         FreeInsChk( pbtn );     // Free structure on failure
+         FreeInsChk( pbtn );
          return FALSE;
       }
    }
    else
    {
-      pbtn->himagemask = NULL;   // No mask if no image
+      pbtn->himagemask = NULL;         // No mask if no image
    }
 
-   if( himage2 != NULL )         // Create mask for unchecked state
+   if( himage2 != NULL )
    {
       pbtn->himagemask2 = CreateBitmapMask( himage2, RGB( 0, 0, 0 ) );
       if( !pbtn->himagemask2 )
       {
-         FreeInsChk( pbtn );     // Free structure on failure
+         FreeInsChk( pbtn );
          return FALSE;
       }
    }
    else
    {
-      pbtn->himagemask2 = NULL;  // No mask if no image
+      pbtn->himagemask2 = NULL;        // No mask if no image
    }
 
-   SetWindowLongPtr( hWnd, GWLP_USERDATA, ( LONG_PTR ) pbtn ); // Associate structure with window
+   SetWindowLongPtr( hWnd, GWLP_USERDATA, ( LONG_PTR ) pbtn );
 
-   // Force non-client area update
+   // Trigger non-client area recalculation.
    SetWindowPos( hWnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER );
 
-   return TRUE;            // Return success
+   return TRUE;
 }
 
-/* Draw check mark or image in the label */
+/*
+   Function: DrawCheck
+   Purpose:  Renders the checkbox or custom image onto the window's Device Context.
+   Input:    hWnd (Control handle), pbtn (State data), prect (Target rectangle).
+   Logic:    If no bitmaps are provided, it draws a simple text-based "V" or space.
+             If bitmaps exist, it performs a masked BitBlt (AND/PAINT) to achieve transparency.
+             Note: Uses GetWindowDC because drawing occurs in the non-client area.
+*/
 static void DrawCheck( HWND hWnd, INSCHK *pbtn, RECT *prect )
 {
-   HBITMAP  hBitmap;       // Bitmap to draw
-   HBITMAP  hBitmapMask;   // Corresponding mask
-   HDC      hdc = GetWindowDC( hWnd ); // Get window DC
+   HBITMAP  hBitmap;
+   HBITMAP  hBitmapMask;
+   HDC      hdc = GetWindowDC( hWnd );
+
    if( !hdc )
    {
-      return;  // Exit if DC unavailable
+      return;
    }
 
-   hBitmap = pbtn->lCheck ? pbtn->himage : pbtn->himage2;               // Select bitmap based on state
-   hBitmapMask = pbtn->lCheck ? pbtn->himagemask : pbtn->himagemask2;   // Select mask
-   if( hBitmap == NULL )   // Draw text if no bitmap
+   hBitmap = pbtn->lCheck ? pbtn->himage : pbtn->himage2;
+   hBitmapMask = pbtn->lCheck ? pbtn->himagemask : pbtn->himagemask2;
+
+   if( hBitmap == NULL )
    {
-      FillRect( hdc, prect, GetSysColorBrush( COLOR_WINDOW ) );   // Fill background
-      SetBkMode( hdc, TRANSPARENT );   // Set transparent background mode
+      // Default rendering: Text-based checkmark.
+      FillRect( hdc, prect, GetSysColorBrush( COLOR_WINDOW ) );
+      SetBkMode( hdc, TRANSPARENT );
       if( pbtn->lCheck )
       {
-         DrawText( hdc, TEXT( "V" ), 1, prect, DT_CENTER | DT_VCENTER | DT_SINGLELINE );  // Draw check mark
+         DrawText( hdc, TEXT( "V" ), 1, prect, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
       }
       else
       {
@@ -287,305 +322,377 @@ static void DrawCheck( HWND hWnd, INSCHK *pbtn, RECT *prect )
    }
    else
    {
-      int      wRow = prect->top;                                                // Top position
-      int      wCol = prect->left;                                               // Left position
-      HBITMAP  hbmOld;                                                           // Previous bitmap handle
-      BITMAP   bm;                                                               // Bitmap information
-      HDC      hdcMem = CreateCompatibleDC( hdc );                               // Create memory DC
+      // Graphical rendering: Masked bitmap.
+      int      wRow = prect->top;
+      int      wCol = prect->left;
+      HBITMAP  hbmOld;
+      BITMAP   bm;
+      HDC      hdcMem = CreateCompatibleDC( hdc );
+
       if( !hdcMem )
       {
-         ReleaseDC( hWnd, hdc );                                                 // Release window DC
+         ReleaseDC( hWnd, hdc );
          return;
       }
 
-      hbmOld = ( HBITMAP ) SelectObject( hdcMem, hBitmapMask );                  // Select mask into DC
-      GetObject( hBitmap, sizeof( bm ), &bm );                                   // Get bitmap properties
-      BitBlt( hdc, wCol, wRow, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCAND );  // Apply mask
-      SelectObject( hdcMem, hBitmap );    // Select bitmap into DC
-      BitBlt( hdc, wCol, wRow, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCPAINT );   // Draw bitmap
-      SelectObject( hdcMem, hbmOld );     // Restore original bitmap
-      DeleteDC( hdcMem );                 // Clean up memory DC
+      // Step 1: Apply the mask using SRCAND (filters out the background).
+      hbmOld = ( HBITMAP ) SelectObject( hdcMem, hBitmapMask );
+      GetObject( hBitmap, sizeof( bm ), &bm );
+      BitBlt( hdc, wCol, wRow, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCAND );
+
+      // Step 2: Apply the image using SRCPAINT (paints the actual pixels).
+      SelectObject( hdcMem, hBitmap );
+      BitBlt( hdc, wCol, wRow, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCPAINT );
+
+      SelectObject( hdcMem, hbmOld );
+      DeleteDC( hdcMem );
    }
 
-   ReleaseDC( hWnd, hdc );                // Release window DC
+   ReleaseDC( hWnd, hdc );
 }
 
-/* Harbour function to create check label control */
+/*
+   HB_FUNC: INITCHKLABEL
+   Purpose: Harbour-level constructor for the CheckLabel control.
+   Params:  Various HMG control properties (Parent, Caption, Coords, Styles, Images, etc.).
+   Returns: HWND of the created control.
+   Logic:   Creates a standard Win32 Static control with SS_NOTIFY, then subclasses it 
+            to inject checkbox behavior and custom non-client area drawing.
+*/
 HB_FUNC( INITCHKLABEL )
 {
-   HWND     hbutton;                      // Window handle for control
-   HBITMAP  himage = NULL;                // Bitmap for checked state
-   HBITMAP  himage2 = NULL;               // Bitmap for unchecked state
+   HWND     hbutton;
+   HBITMAP  himage = NULL;
+   HBITMAP  himage2 = NULL;
 #ifndef UNICODE
-   LPCSTR   lpWindowName = hb_parc( 2 );  // Window caption (ANSI)
+   LPCSTR   lpWindowName = hb_parc( 2 );
 #else
-   LPWSTR   lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) ); // Convert to Unicode
+   LPWSTR   lpWindowName = AnsiToWide( ( char * ) hb_parc( 2 ) );
 #endif
-   int      BtnWidth = hb_parni( 7 );     // Button width parameter
-   DWORD    Style = WS_CHILD | SS_NOTIFY; // Base window styles
-   DWORD    ExStyle = hb_parl( 12 ) ? WS_EX_CLIENTEDGE : 0; // Extended style for client edge
-   if( hb_parl( 11 ) )           // Add border style
+   int      BtnWidth = hb_parni( 7 );
+
+   // Define base styles. SS_NOTIFY is required for the Static control to receive mouse clicks.
+   DWORD    Style = WS_CHILD | SS_NOTIFY;
+   DWORD    ExStyle = hb_parl( 12 ) ? WS_EX_CLIENTEDGE : 0;
+
+   // Map Harbour logical parameters to Win32 Window Styles.
+   if( hb_parl( 11 ) )
    {
       Style |= WS_BORDER;
    }
 
-   if( hb_parl( 13 ) )           // Add horizontal scroll style
+   if( hb_parl( 13 ) )
    {
       Style |= WS_HSCROLL;
    }
 
-   if( hb_parl( 14 ) )           // Add vertical scroll style
+   if( hb_parl( 14 ) )
    {
       Style |= WS_VSCROLL;
    }
 
-   if( hb_parl( 15 ) )           // Add transparent style
+   if( hb_parl( 15 ) )
    {
       ExStyle |= WS_EX_TRANSPARENT;
    }
 
-   if( !hb_parl( 16 ) )          // Add visible style if not hidden
+   if( !hb_parl( 16 ) )
    {
       Style |= WS_VISIBLE;
    }
 
-   if( hb_parl( 17 ) )           // Align text right
+   if( hb_parl( 17 ) )
    {
       Style |= ES_RIGHT;
    }
 
-   if( hb_parl( 18 ) )           // Center text
+   if( hb_parl( 18 ) )
    {
       Style |= ES_CENTER;
    }
 
-   if( hb_parl( 23 ) )           // Center image vertically
+   if( hb_parl( 23 ) )
    {
       Style |= SS_CENTERIMAGE;
    }
 
-   hbutton = CreateWindowEx      // Create the static control
-   ( ExStyle,                    // Extended window styles
-      WC_STATIC,                 // Static control class
-      lpWindowName,              // Window caption
-      Style,                     // Window styles
-      hb_parni( 4 ),             // X position
-      hb_parni( 5 ),             // Y position
-      hb_parni( 6 ),             // Width
-      hb_parni( 7 ),             // Height
-      hmg_par_raw_HWND( 1 ),     // Parent window handle
-      hmg_par_raw_HMENU( 3 ),    // Menu handle
-      GetInstance(),             // Instance handle
-      NULL                       // No creation parameters
-   );
+   hbutton = CreateWindowEx
+      (
+         ExStyle,
+         WC_STATIC,
+         lpWindowName,
+         Style,
+         hb_parni( 4 ),
+         hb_parni( 5 ),
+         hb_parni( 6 ),
+         hb_parni( 7 ),
+         hmg_par_raw_HWND( 1 ),
+         hmg_par_raw_HMENU( 3 ),
+         GetInstance(),
+         NULL
+      );
 
-   if( !hbutton )                // Check for creation failure
+   if( !hbutton )
    {
 #ifdef UNICODE
-      hb_xfree( lpWindowName );  // Free Unicode string
+      hb_xfree( lpWindowName );
 #endif
-      hb_ret();                  // Return on failure
+      hb_ret();
       return;
    }
 
-   if( hb_parc( 19 ) != NULL )   // Load checked state image
+   // Load custom images if paths are provided in parameters 19 and 20.
+   if( hb_parc( 19 ) != NULL )
    {
       himage = HMG_LoadPicture( hb_parc( 19 ), -1, -1, NULL, 0, 0, -1, 0, HB_FALSE, 255 );
    }
 
-   if( hb_parc( 20 ) != NULL )   // Load unchecked state image
+   if( hb_parc( 20 ) != NULL )
    {
       himage2 = HMG_LoadPicture( hb_parc( 20 ), -1, -1, NULL, 0, 0, -1, 0, HB_FALSE, 255 );
    }
 
-   if( !InsertCheck( hbutton, himage, himage2, BtnWidth, hb_parl( 22 ), hb_parl( 21 ) ) ) // Initialize check box
+   // Initialize the internal structure.
+   if( !InsertCheck( hbutton, himage, himage2, BtnWidth, hb_parl( 22 ), hb_parl( 21 ) ) )
    {
-      if( himage )               // Free checked state image
+      if( himage )
       {
          DeleteObject( himage );
       }
 
-      if( himage2 )              // Free unchecked state image
+      if( himage2 )
       {
          DeleteObject( himage2 );
       }
 
-      DestroyWindow( hbutton );  // Destroy control on failure
+      DestroyWindow( hbutton );
 #ifdef UNICODE
-      hb_xfree( lpWindowName );  // Free Unicode string
+      hb_xfree( lpWindowName );
 #endif
-      hb_ret();                  // Return on failure
+      hb_ret();
       return;
    }
 
-   LabelOldWndProc = SubclassWindow1( hbutton, ChkLabelFunc ); // Subclass window procedure
-   SetWindowPos( hbutton, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER );  // Update non-client area
-   hmg_ret_raw_HWND( hbutton );           // Return control handle
+   // Subclass the control to intercept painting and sizing messages.
+   LabelOldWndProc = SubclassWindow1( hbutton, ChkLabelFunc );
+
+   // Force a frame update to ensure the checkbox space is reserved immediately.
+   SetWindowPos( hbutton, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER );
+
+   hmg_ret_raw_HWND( hbutton );
 #ifdef UNICODE
-   hb_xfree( lpWindowName );              // Free Unicode string
+   hb_xfree( lpWindowName );
 #endif
 }
 
-/* Harbour function to set check label state */
+/*
+   HB_FUNC: SETCHKLABEL
+   Purpose: Updates the checked state of the control from Harbour.
+   Params:  1: HWND, 2: Logical (Checked state).
+   Logic:   Updates the internal structure and forces a redraw of the non-client area.
+*/
 HB_FUNC( SETCHKLABEL )
 {
-   HWND     hWnd = hmg_par_raw_HWND( 1 ); // Get window handle
-   RECT     rect; // Rectangle for drawing
-   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );  // Get control data
+   HWND     hWnd = hmg_par_raw_HWND( 1 );
+   RECT     rect;
+   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );
+
    if( !pbtn )
    {
-      return;                    // Exit if no data
-   }
-
-   pbtn->lCheck = hb_parl( 2 );  // Set checked state
-   GetWindowRect( hWnd, &rect ); // Get window rectangle
-   OffsetRect( &rect, -rect.left, -rect.top );  // Normalize coordinates
-   ShowWindow( hWnd, SW_HIDE );                 // Hide window
-   InvalidateRect( hWnd, &rect, TRUE );         // Invalidate rectangle for redraw
-   GetCheck( pbtn, &rect );                     // Calculate check box position
-   DrawCheck( hWnd, pbtn, &rect );              // Draw check mark or image
-   ShowWindow( hWnd, SW_SHOW );                 // Show window
-}
-
-/* Harbour function to get check label state */
-HB_FUNC( GETCHKLABEL )
-{
-   HWND     hWnd = hmg_par_raw_HWND( 1 );       // Get window handle
-   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );  // Get control data
-   if( !pbtn )
-   {
-      hb_retl( FALSE );                // Return FALSE if no data
       return;
    }
 
-   hb_retl( ( BOOL ) pbtn->lCheck );   // Return checked state
+   pbtn->lCheck = hb_parl( 2 );
+
+   GetWindowRect( hWnd, &rect );
+   OffsetRect( &rect, -rect.left, -rect.top );
+
+   // Redraw sequence: Hide/Invalidate/Draw/Show ensures a clean visual update.
+   ShowWindow( hWnd, SW_HIDE );
+   InvalidateRect( hWnd, &rect, TRUE );
+   GetCheck( pbtn, &rect );
+   DrawCheck( hWnd, pbtn, &rect );
+   ShowWindow( hWnd, SW_SHOW );
 }
 
-/* Harbour function to replace check label images */
+/*
+   HB_FUNC: GETCHKLABEL
+   Purpose: Retrieves the current checked state.
+   Params:  1: HWND.
+   Returns: Logical.
+*/
+HB_FUNC( GETCHKLABEL )
+{
+   HWND     hWnd = hmg_par_raw_HWND( 1 );
+   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );
+
+   if( !pbtn )
+   {
+      hb_retl( FALSE );
+      return;
+   }
+
+   hb_retl( ( BOOL ) pbtn->lCheck );
+}
+
+/*
+   HB_FUNC: REPLACECHECKIMAGE
+   Purpose: Dynamically changes the bitmaps used for the checkbox states.
+   Params:  1: HWND, 2: Path Checked, 3: Path Unchecked, 4: Width, 5: State, 6: Alignment.
+*/
 HB_FUNC( REPLACECHECKIMAGE )
 {
-   HBITMAP  himage = NULL;             // New checked state image
-   HBITMAP  himage2 = NULL;            // New unchecked state image
-   if( hb_parc( 2 ) != NULL )          // Load new checked state image
+   HBITMAP  himage = NULL;
+   HBITMAP  himage2 = NULL;
+
+   if( hb_parc( 2 ) != NULL )
    {
       himage = HMG_LoadPicture( hb_parc( 2 ), -1, -1, NULL, 0, 0, -1, 0, HB_FALSE, 255 );
    }
 
-   if( hb_parc( 3 ) != NULL )          // Load new unchecked state image
+   if( hb_parc( 3 ) != NULL )
    {
       himage2 = HMG_LoadPicture( hb_parc( 3 ), -1, -1, NULL, 0, 0, -1, 0, HB_FALSE, 255 );
    }
 
-   if( !InsertCheck( ( HWND ) HB_PARNL( 1 ), himage, himage2, hb_parni( 4 ), hb_parl( 5 ), hb_parl( 6 ) ) ) // Update images
+   if( !InsertCheck( ( HWND ) HB_PARNL( 1 ), himage, himage2, hb_parni( 4 ), hb_parl( 5 ), hb_parl( 6 ) ) )
    {
-      if( himage )                     // Free checked state image on failure
+      if( himage )
       {
          DeleteObject( himage );
       }
 
-      if( himage2 )                    // Free unchecked state image on failure
+      if( himage2 )
       {
          DeleteObject( himage2 );
       }
    }
 }
 
-/* Call Harbour event handler for label events */
+/*
+   Function: CallLabelEvent
+   Purpose:  Routes Win32 messages to a Harbour-level event handler function.
+   Input:    hWnd, Msg, wParam, lParam.
+   Logic:    Looks for a Harbour function named "OLABELEVENTS" and executes it via the VM.
+             This allows HMG users to handle low-level events in PRG code.
+*/
 static void CallLabelEvent( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
-   static PHB_SYMB   pSymbol = NULL;   // Symbol for event handler
-   if( !pSymbol )                      // Initialize symbol if not set
+   static PHB_SYMB   pSymbol = NULL;
+
+   if( !pSymbol )
    {
       pSymbol = hb_dynsymSymbol( hb_dynsymGet( "OLABELEVENTS" ) );
    }
 
-   if( pSymbol )                       // If symbol exists, call Harbour function
+   if( pSymbol )
    {
-      hb_vmPushSymbol( pSymbol );      // Push symbol to stack
-      hb_vmPushNil();                  // Push NIL as object
-      hb_vmPushNumInt( ( HB_PTRUINT ) hWnd );   // Push window handle
-      hb_vmPushLong( Msg );                     // Push message
-      hb_vmPushNumInt( wParam );                // Push wParam
-      hb_vmPushNumInt( lParam );                // Push lParam
-      hb_vmDo( 4 );                    // Execute with 4 parameters
+      hb_vmPushSymbol( pSymbol );
+      hb_vmPushNil();
+      hb_vmPushNumInt( ( HB_PTRUINT ) hWnd );
+      hb_vmPushLong( Msg );
+      hb_vmPushNumInt( wParam );
+      hb_vmPushNumInt( lParam );
+      hb_vmDo( 4 );
    }
 }
 
-/* Window procedure for custom check label control */
+/*
+   Function: ChkLabelFunc
+   Purpose:  Subclassed Window Procedure for the CheckLabel control.
+   Logic:    Intercepts non-client messages to "steal" space from the label for the checkbox.
+             - WM_NCCALCSIZE: Shrinks the client area so the label text doesn't overlap the checkbox.
+             - WM_NCPAINT: Draws the checkbox in the newly created margin.
+             - WM_NCDESTROY: Ensures memory cleanup when the window is closed.
+*/
 LRESULT APIENTRY ChkLabelFunc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam )
 {
-   LRESULT  r;                   // Return value
-   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );  // Get control data
-   switch( Msg )                 // Handle messages
+   LRESULT  r;
+   INSCHK   *pbtn = ( INSCHK * ) GetWindowLongPtr( hWnd, GWLP_USERDATA );
+
+   switch( Msg )
    {
-      case WM_NCDESTROY:         // Window is being destroyed
+      case WM_NCDESTROY:
          {
-            FreeInsChk( pbtn );  // Free control structure
-            SetWindowLongPtr( hWnd, GWLP_USERDATA, 0 );  // Clear user data
+            FreeInsChk( pbtn );
+            SetWindowLongPtr( hWnd, GWLP_USERDATA, 0 );
          }
          break;
 
-      case WM_NCCALCSIZE:              // Calculate non-client area
+      case WM_NCCALCSIZE:
          {
-            RECT  *prect;              // Rectangle pointer
-            RECT  oldrect;             // Original rectangle
-            if( !pbtn )                // Check if control data exists
+            RECT  *prect;
+            RECT  oldrect;
+
+            if( !pbtn )
             {
                break;
             }
 
-            prect = ( RECT * ) lParam; // Get rectangle from lParam
-            oldrect = *prect;          // Save original rectangle
-            CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );  // Call original procedure
-            SendMessage( hWnd, WM_SETREDRAW, 1, 0 );              // Enable redraw
-            if( pbtn->lLeftCheck )                                // Adjust for left-aligned check box
+            prect = ( RECT * ) lParam;
+            oldrect = *prect;
+
+            // Let the original procedure calculate standard borders first.
+            CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );
+
+            // Enable redraw to prevent artifacts during resizing.
+            SendMessage( hWnd, WM_SETREDRAW, 1, 0 );
+
+            // Calculate the actual border thickness provided by the OS/Theme.
+            pbtn->cxLeftEdge = prect->left - oldrect.left;
+            pbtn->cxRightEdge = oldrect.right - prect->right;
+
+            // Shrink the client area rectangle to reserve space for our custom drawing.
+            if( pbtn->lLeftCheck )
             {
-               pbtn->cxLeftEdge = prect->left - oldrect.left;     // Calculate left edge
-               pbtn->cxRightEdge = oldrect.right - prect->right;  // Calculate right edge
-               prect->left += pbtn->cxButton + pbtn->cxSpace;     // Adjust left position
+               prect->left += pbtn->cxButton + pbtn->cxSpace;
             }
-            else  // Adjust for right-aligned check box
+            else
             {
-               pbtn->cxLeftEdge = prect->left - oldrect.left;     // Calculate left edge
-               pbtn->cxRightEdge = oldrect.right - prect->right;  // Calculate right edge
-               prect->right -= pbtn->cxButton + pbtn->cxSpace;    // Adjust right position
+               prect->right -= pbtn->cxButton + pbtn->cxSpace;
             }
 
-            return 0;   // Return success
+            return 0;
          }
 
-      case WM_NCPAINT:  // Paint non-client area
-         CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );  // Call original procedure
-         if( pbtn )     // If control data exists
+      case WM_NCPAINT:
+         // Draw standard borders first.
+         CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );
+
+         if( pbtn )
          {
-            RECT  rect; // Rectangle for drawing
-            GetWindowRect( hWnd, &rect );                // Get window rectangle
-            OffsetRect( &rect, -rect.left, -rect.top );  // Normalize coordinates
-            GetCheck( pbtn, &rect );                     // Calculate check box position
-            DrawCheck( hWnd, pbtn, &rect );              // Draw check mark or image
+            RECT  rect;
+            GetWindowRect( hWnd, &rect );
+            OffsetRect( &rect, -rect.left, -rect.top );
+
+            // Draw the checkbox in the non-client area reserved during WM_NCCALCSIZE.
+            GetCheck( pbtn, &rect );
+            DrawCheck( hWnd, pbtn, &rect );
          }
 
-         return 0;                  // Return success
+         return 0;
 
-      case WM_MOUSEMOVE:            // Handle mouse movement
+      case WM_MOUSEMOVE:
          {
-            TRACKMOUSEEVENT   tme;  // Track mouse event structure
-            tme.cbSize = sizeof( TRACKMOUSEEVENT );   // Set structure size
-            tme.dwFlags = TME_LEAVE;                  // Track mouse leave event
-            tme.hwndTrack = hWnd;                     // Set window handle
-            tme.dwHoverTime = HOVER_DEFAULT;          // Use default hover time
-            _TrackMouseEvent( &tme );                 // Register mouse tracking
+            // Ensure we receive WM_MOUSELEAVE by tracking the mouse.
+            TRACKMOUSEEVENT   tme;
+            tme.cbSize = sizeof( TRACKMOUSEEVENT );
+            tme.dwFlags = TME_LEAVE;
+            tme.hwndTrack = hWnd;
+            tme.dwHoverTime = HOVER_DEFAULT;
+            _TrackMouseEvent( &tme );
          }
 
-         CallLabelEvent( hWnd, Msg, wParam, lParam ); // Call event handler
-         r = hmg_par_LRESULT( -1 );                   // Get return value from Harbour
-         return( r != 0 ) ? r : CallWindowProc( LabelOldWndProc, hWnd, 0, 0, 0 );   // Return or call original
+         CallLabelEvent( hWnd, Msg, wParam, lParam );
+         r = hmg_par_LRESULT( -1 );
+         return( r != 0 ) ? r : CallWindowProc( LabelOldWndProc, hWnd, 0, 0, 0 );
 
-      case WM_MOUSELEAVE:  // Handle mouse leave
-         CallLabelEvent( hWnd, Msg, wParam, lParam ); // Call event handler
-         r = hmg_par_LRESULT( -1 );                   // Get return value from Harbour
-         return( r != 0 ) ? r : CallWindowProc( LabelOldWndProc, hWnd, 0, 0, 0 );   // Return or call original
+      case WM_MOUSELEAVE:
+         CallLabelEvent( hWnd, Msg, wParam, lParam );
+         r = hmg_par_LRESULT( -1 );
+         return( r != 0 ) ? r : CallWindowProc( LabelOldWndProc, hWnd, 0, 0, 0 );
    }
 
-   return CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );             // Pass unhandled messages to original procedure
+   // Pass all other messages to the original Static control handler.
+   return CallWindowProc( LabelOldWndProc, hWnd, Msg, wParam, lParam );
 }

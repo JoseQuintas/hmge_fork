@@ -35,14 +35,13 @@
     www - https://harbour.github.io/
 
     "Harbour Project"
-    Copyright 1999-2025, https://harbour.github.io/
+    Copyright 1999-2026, https://harbour.github.io/
 
     "WHAT32"
     Copyright 2002 AJ Wos <andrwos@aust1.net>
 
     "HWGUI"
     Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
  ---------------------------------------------------------------------------*/
 #include <mgdefs.h>
 
@@ -75,6 +74,7 @@ extern HB_EXPORT void      hb_evalBlock0( PHB_ITEM pCodeBlock );
 #endif
 extern HB_EXPORT BOOL      Array2Rect( PHB_ITEM aRect, RECT *rc );
 extern HB_EXPORT PHB_ITEM  Rect2Array( RECT *rc );
+
 extern void                hmg_ErrorExit( LPCTSTR lpMessage, DWORD dwError, BOOL bExit );
 
 typedef HMODULE ( __stdcall *SHGETFOLDERPATH ) ( HWND, int, HANDLE, DWORD, LPTSTR );
@@ -83,7 +83,6 @@ typedef HMODULE ( __stdcall *SHGETFOLDERPATH ) ( HWND, int, HANDLE, DWORD, LPTST
 LPWSTR   AnsiToWide( LPCSTR );
 LPSTR    WideToAnsi( LPWSTR );
 #endif
-BOOL     SysRefresh( void );
 
 // Minigui Resources control system
 void     RegisterResource( HANDLE hResource, LPCSTR szType );
@@ -128,7 +127,7 @@ HB_FUNC( WAITRUNPIPE )
    STARTUPINFO          StartupInfo;
    PROCESS_INFORMATION  ProcessInfo;
    HANDLE               ReadPipeHandle;
-   HANDLE               WritePipeHandle;  // not used here
+   HANDLE               WritePipeHandle;
    char                 *Data;
 
 #ifndef UNICODE
@@ -238,7 +237,7 @@ HB_FUNC( WAITRUNPIPE )
    Returns:
      None.
 */
-HB_FUNC( COPYRTFTOCLIPBOARD ) // CopyRtfToClipboard(cRtfText) store cRTFText in Windows clipboard
+HB_FUNC( COPYRTFTOCLIPBOARD )
 {
    HGLOBAL     hglbCopy;
    char        *lptstrCopy;
@@ -291,7 +290,7 @@ HB_FUNC( COPYRTFTOCLIPBOARD ) // CopyRtfToClipboard(cRtfText) store cRTFText in 
    Returns:
      None.
 */
-HB_FUNC( COPYTOCLIPBOARD ) // CopyToClipboard(cText) store cText in Windows clipboard
+HB_FUNC( COPYTOCLIPBOARD )
 {
    HGLOBAL     hglbCopy;
    char        *lptstrCopy;
@@ -541,9 +540,10 @@ HB_FUNC( INKEYGUI )
    UINT     uElapse = hb_parnidef( 1, USER_TIMER_MINIMUM );
    UINT_PTR uTimer;
    MSG      Msg;
-   BOOL     bRet, bBreak = FALSE;
-   UINT     uRet = 0;
+   BOOL     bExitLoop = FALSE;
+   UINT     uResult = 0;
 
+   /* Treat zero as the maximum supported timeout. */
    if( uElapse == 0 )
    {
       uElapse = USER_TIMER_MAXIMUM;
@@ -551,49 +551,49 @@ HB_FUNC( INKEYGUI )
 
    uTimer = SetTimer( NULL, 0, uElapse, NULL );
 
-   while( ( bRet = GetMessage( &Msg, NULL, 0, 0 ) ) != 0 )
+   while( GetMessage( &Msg, NULL, 0, 0 ) != 0 )
    {
-      if( bRet == -1 )
+      switch( Msg.message )
       {
-         // handle the error and possibly exit
-         hmg_ErrorExit( TEXT( "INKEYGUI" ), 0, TRUE );
+         case WM_KEYDOWN:
+         case WM_SYSKEYDOWN:
+            uResult = ( UINT ) Msg.wParam;
+            bExitLoop = TRUE;
+            break;
+
+         case WM_TIMER:
+            if( Msg.wParam == uTimer )
+            {
+               bExitLoop = TRUE;
+            }
+            break;
+
+         case WM_LBUTTONDOWN:
+         case WM_RBUTTONDOWN:
+            uResult = ( Msg.message == WM_LBUTTONDOWN ) ? K_LBUTTONDOWN : K_RBUTTONDOWN;
+
+            /* Repost mouse event to the original window. */
+            PostMessage( Msg.hwnd, Msg.message, Msg.wParam, Msg.lParam );
+
+            bExitLoop = TRUE;
+            break;
+
+         default:
+            /* Standard message processing */
+            TranslateMessage( &Msg );
+            DispatchMessage( &Msg );
+            break;
       }
-      else
+
+      if( bExitLoop )
       {
-         switch( Msg.message )
-         {
-            case WM_KEYDOWN:
-            case WM_SYSKEYDOWN:
-               bBreak = TRUE;
-               uRet = ( UINT ) Msg.wParam;
-               break;
-
-            case WM_TIMER:
-               bBreak = ( Msg.wParam == uTimer );
-               break;
-
-            case WM_LBUTTONDOWN:
-            case WM_RBUTTONDOWN:
-               bBreak = TRUE;
-               uRet = ( Msg.message == WM_LBUTTONDOWN ) ? K_LBUTTONDOWN : K_RBUTTONDOWN;
-               PostMessage( Msg.hwnd, Msg.message, Msg.wParam, Msg.lParam );
-               break;
-         }
-      }
-
-      if( bBreak )
-      {
-         KillTimer( NULL, uTimer );
          break;
-      }
-      else
-      {
-         TranslateMessage( &Msg );  // Translates virtual key codes
-         DispatchMessage( &Msg );   // Dispatches message to window
       }
    }
 
-   hb_retns( uRet );
+   KillTimer( NULL, uTimer );
+
+   hb_retns( uResult );
 }
 
 /*
@@ -678,7 +678,7 @@ HB_FUNC( C_GETSPECIALFOLDER ) // Contributed By Ryszard Ry ko
    LPSTR          pStr;
 #endif
    TCHAR          *lpBuffer = ( TCHAR * ) hb_xgrab( ( MAX_PATH + 1 ) * sizeof( TCHAR ) );
-   LPITEMIDLIST   pidlBrowse;                   // PIDL selected by user
+   LPITEMIDLIST   pidlBrowse; // PIDL selected by user
    hb_ret();
 
    if( SUCCEEDED( SHGetSpecialFolderLocation( GetActiveWindow(), hb_parni( 1 ), &pidlBrowse ) ) )
@@ -698,7 +698,6 @@ HB_FUNC( C_GETSPECIALFOLDER ) // Contributed By Ryszard Ry ko
    hb_xfree( lpBuffer );
 }
 
-//#define __WIN98__
 #ifdef __WIN98__
 
 /*
@@ -971,18 +970,19 @@ HB_FUNC( GETWINDOWSDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
 
-#ifdef UNICODE
-   LPSTR pStr;
-#endif
    if( GetWindowsDirectory( szBuffer, MAX_PATH ) )
    {
 #ifndef UNICODE
       hb_retc( szBuffer );
 #else
-      pStr = WideToAnsi( szBuffer );
+      LPSTR pStr = WideToAnsi( szBuffer );
       hb_retc( pStr );
       hb_xfree( pStr );
 #endif
+   }
+   else
+   {
+      hb_retc_null();
    }
 }
 
@@ -1001,18 +1001,19 @@ HB_FUNC( GETSYSTEMDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
 
-#ifdef UNICODE
-   LPSTR pStr;
-#endif
    if( GetSystemDirectory( szBuffer, MAX_PATH ) )
    {
 #ifndef UNICODE
       hb_retc( szBuffer );
 #else
-      pStr = WideToAnsi( szBuffer );
+      LPSTR pStr = WideToAnsi( szBuffer );
       hb_retc( pStr );
       hb_xfree( pStr );
 #endif
+   }
+   else
+   {
+      hb_retc_null();
    }
 }
 
@@ -1031,18 +1032,19 @@ HB_FUNC( GETTEMPDIR )
 {
    TCHAR szBuffer[MAX_PATH + 1] = { 0 };
 
-#ifdef UNICODE
-   LPSTR pStr;
-#endif
    if( GetTempPath( MAX_PATH, szBuffer ) )
    {
 #ifndef UNICODE
       hb_retc( szBuffer );
 #else
-      pStr = WideToAnsi( szBuffer );
+      LPSTR pStr = WideToAnsi( szBuffer );
       hb_retc( pStr );
       hb_xfree( pStr );
 #endif
+   }
+   else
+   {
+      hb_retc_null();
    }
 }
 
@@ -1127,23 +1129,11 @@ typedef BOOL ( WINAPI *LPFN_WOW64DISABLEWOW64FSREDIRECTION ) ( PVOID * );
 typedef BOOL ( WINAPI *LPFN_WOW64REVERTWOW64FSREDIRECTION ) ( PVOID );
 
 /*
-   SHELLEXECUTE
-
-   Executes a specified program or opens a file using its associated application.
-   This function provides a high-level way to launch processes and interact with the shell.
-
-   Input Parameters:
-     hWnd: HWND - A handle to a parent window.  This window receives any message boxes that the executed application produces.  Can be NULL.
-     lpOperation: string - The operation to perform (e.g., "open", "print", "explore").  If NULL, the default operation is performed.
-     lpFile: string - The file to execute or open.
-     lpParameters: string - Parameters to pass to the executable.  If NULL, no parameters are passed.
-     lpDirectory: string - The default directory.  If NULL, the current directory is used.
-     nShowCmd: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
-
-   Return Value:
-     HANDLE - If successful, returns a value greater than 32. If an error occurs, the function returns an error value that is less than or equal to 32.
-              Use GetLastError() to get extended error information.
-*/
+ * SHELLEXECUTE
+ *
+ * Executes a file or application using the Windows shell.
+ * Returns a valid HANDLE on success or NIL on failure.
+ */
 HB_FUNC( SHELLEXECUTE )
 {
 #ifndef UNICODE
@@ -1157,39 +1147,45 @@ HB_FUNC( SHELLEXECUTE )
    LPCWSTR                             lpParameters = AnsiToWide( ( char * ) hb_parc( 4 ) );
    LPCWSTR                             lpDirectory = AnsiToWide( ( char * ) hb_parc( 5 ) );
 #endif
-   LPFN_ISWOW64PROCESS                 fnIsWow64Process;
-   BOOL                                bIsWow64 = FALSE;
-   LPFN_WOW64DISABLEWOW64FSREDIRECTION fnDisable;
-   PVOID                               OldValue = NULL;
-   BOOL                                bRestore = FALSE;
-   LPFN_WOW64REVERTWOW64FSREDIRECTION  fnRevert;
-   HMODULE                             hDll = GetModuleHandle( TEXT( "kernel32.dll" ) );
+   HMODULE                             hKernel32 = GetModuleHandle( TEXT( "kernel32.dll" ) );
    HINSTANCE                           hInst;
 
-   // Dynamically load IsWow64Process to check if the process is running under WOW64 (Windows 32-bit on Windows 64-bit).
-   fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( hDll, "IsWow64Process" );
-   if( NULL != fnIsWow64Process )
+   BOOL                                bIsWow64 = FALSE;
+   BOOL                                bRestore = FALSE;
+   PVOID                               pOldValue = NULL;
+
+   LPFN_ISWOW64PROCESS                 fnIsWow64Process;
+   LPFN_WOW64DISABLEWOW64FSREDIRECTION fnDisable;
+   LPFN_WOW64REVERTWOW64FSREDIRECTION  fnRevert;
+
+   /*
+    * Detect WOW64 environment
+    */
+   fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( hKernel32, "IsWow64Process" );
+
+   if( fnIsWow64Process != NULL )
    {
       fnIsWow64Process( GetCurrentProcess(), &bIsWow64 );
    }
 
-   // If running under WOW64, disable file system redirection to access the native system directories.
+   /*
+    * Temporarily disable file system redirection
+    */
    if( bIsWow64 )
    {
-      fnDisable = ( LPFN_WOW64DISABLEWOW64FSREDIRECTION ) wapi_GetProcAddress( hDll, "Wow64DisableWow64FsRedirection" );
-      if( NULL != fnDisable )
+      fnDisable = ( LPFN_WOW64DISABLEWOW64FSREDIRECTION ) wapi_GetProcAddress( hKernel32, "Wow64DisableWow64FsRedirection" );
+
+      if( fnDisable != NULL && fnDisable( &pOldValue ) )
       {
-         if( fnDisable( &OldValue ) )
-         {
-            bRestore = TRUE;
-         }
+         bRestore = TRUE;
       }
    }
 
-   CoInitialize( NULL );                        // Initialize COM library for ShellExecute
+   CoInitialize( NULL );
+
    hInst = ShellExecute
       (
-         hmg_par_raw_HWND( 1 ),
+         HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 ),
          HB_ISNIL( 2 ) ? NULL : lpOperation,
          lpFile,
          HB_ISNIL( 4 ) ? NULL : lpParameters,
@@ -1197,24 +1193,29 @@ HB_FUNC( SHELLEXECUTE )
          hb_parni( 6 )
       );
 
-   if( ( INT_PTR ) hInst <= SE_ERR_DLLNOTFOUND )
-   {
-      hb_ret();                                 // Return NULL on failure.
-   }
-   else
+   if( ( INT_PTR ) hInst > SE_ERR_DLLNOTFOUND )
    {
       hmg_ret_raw_HANDLE( hInst );
    }
+   else
+   {
+      hb_ret();
+   }
 
-   hb_idleSleep( 1.0 );                         // Introduce a short delay to allow the launched process to initialize.
+   CoUninitialize();
 
-   // If file system redirection was disabled, restore it.
+   hb_idleSleep( 1.0 );
+
+   /*
+    * Restore WOW64 redirection
+    */
    if( bRestore )
    {
-      fnRevert = ( LPFN_WOW64REVERTWOW64FSREDIRECTION ) wapi_GetProcAddress( hDll, "Wow64RevertWow64FsRedirection" );
-      if( NULL != fnRevert )
+      fnRevert = ( LPFN_WOW64REVERTWOW64FSREDIRECTION ) wapi_GetProcAddress( hKernel32, "Wow64RevertWow64FsRedirection" );
+
+      if( fnRevert != NULL )
       {
-         fnRevert( OldValue );
+         fnRevert( pOldValue );
       }
    }
 
@@ -1227,61 +1228,101 @@ HB_FUNC( SHELLEXECUTE )
 }
 
 /*
-   SHELLEXECUTEEX
-
-   Executes a program using extended parameters, providing more control over the execution process.
-   This function uses the SHELLEXECUTEINFO structure to specify various options.
-
-   Input Parameters:
-     hWnd: HWND - A handle to a parent window.  This window receives any message boxes that the executed application produces.  Can be NULL.
-     lpOperation: string - The operation to perform (e.g., "open", "print", "explore").  If NULL, the default operation is performed.
-     lpFile: string - The file to execute or open.
-     lpParameters: string - Parameters to pass to the executable.  If NULL, no parameters are passed.
-     lpDirectory: string - The default directory.  If NULL, the current directory is used.
-     nShowCmd: int - How the application should be displayed (e.g., SW_SHOWNORMAL, SW_MAXIMIZE).
-
-   Return Value:
-     HANDLE - If successful, returns the process handle of the newly executed process. Returns NULL on failure.
-*/
+ * SHELLEXECUTEEX
+ *
+ * Executes a program using SHELLEXECUTEINFO and
+ * returns the created process handle.
+ */
 HB_FUNC( SHELLEXECUTEEX )
 {
 #ifndef UNICODE
-   LPCSTR            lpOperation = hb_parc( 2 );
-   LPCSTR            lpFile = hb_parc( 3 );
-   LPCSTR            lpParameters = hb_parc( 4 );
-   LPCSTR            lpDirectory = hb_parc( 5 );
+   LPCSTR                              lpOperation = hb_parc( 2 );
+   LPCSTR                              lpFile = hb_parc( 3 );
+   LPCSTR                              lpParameters = hb_parc( 4 );
+   LPCSTR                              lpDirectory = hb_parc( 5 );
 #else
-   LPCWSTR           lpOperation = AnsiToWide( ( char * ) hb_parc( 2 ) );
-   LPCWSTR           lpFile = AnsiToWide( ( char * ) hb_parc( 3 ) );
-   LPCWSTR           lpParameters = AnsiToWide( ( char * ) hb_parc( 4 ) );
-   LPCWSTR           lpDirectory = AnsiToWide( ( char * ) hb_parc( 5 ) );
+   LPCWSTR                             lpOperation = HB_ISNIL( 2 ) ? NULL : AnsiToWide( ( char * ) hb_parc( 2 ) );
+   LPCWSTR                             lpFile = HB_ISNIL( 3 ) ? NULL : AnsiToWide( ( char * ) hb_parc( 3 ) );
+   LPCWSTR                             lpParameters = HB_ISNIL( 4 ) ? NULL : AnsiToWide( ( char * ) hb_parc( 4 ) );
+   LPCWSTR                             lpDirectory = HB_ISNIL( 5 ) ? NULL : AnsiToWide( ( char * ) hb_parc( 5 ) );
 #endif
-   SHELLEXECUTEINFO  SHExecInfo;
-   ZeroMemory( &SHExecInfo, sizeof( SHExecInfo ) );
+   SHELLEXECUTEINFO                    shExecInfo = { 0 };
+   HMODULE                             hKernel32 = GetModuleHandle( TEXT( "kernel32.dll" ) );
+   BOOL                                bIsWow64 = FALSE;
+   BOOL                                bRestore = FALSE;
+   BOOL                                bSuccess;
+   PVOID                               pOldValue = NULL;
 
-   SHExecInfo.cbSize = sizeof( SHExecInfo );
-   SHExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;  // Request the process handle to be returned.
-   SHExecInfo.hwnd = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 );  // Use active window if hWnd is NIL
-   SHExecInfo.lpVerb = HB_ISNIL( 2 ) ? NULL : lpOperation;
-   SHExecInfo.lpFile = lpFile;
-   SHExecInfo.lpParameters = HB_ISNIL( 4 ) ? NULL : lpParameters;
-   SHExecInfo.lpDirectory = HB_ISNIL( 5 ) ? NULL : lpDirectory;
-   SHExecInfo.nShow = hb_parni( 6 );
+   LPFN_ISWOW64PROCESS                 fnIsWow64Process;
+   LPFN_WOW64DISABLEWOW64FSREDIRECTION fnDisable;
+   LPFN_WOW64REVERTWOW64FSREDIRECTION  fnRevert;
 
-   if( ShellExecuteEx( &SHExecInfo ) )
+   /* Detect WOW64 */
+   fnIsWow64Process = ( LPFN_ISWOW64PROCESS ) wapi_GetProcAddress( hKernel32, "IsWow64Process" );
+   if( fnIsWow64Process )
    {
-      hmg_ret_raw_HWND( SHExecInfo.hProcess );  // Return the process handle.
+      fnIsWow64Process( GetCurrentProcess(), &bIsWow64 );
+   }
+
+   /* Disable FS redirection */
+   if( bIsWow64 )
+   {
+      fnDisable = ( LPFN_WOW64DISABLEWOW64FSREDIRECTION ) wapi_GetProcAddress( hKernel32, "Wow64DisableWow64FsRedirection" );
+      if( fnDisable && fnDisable( &pOldValue ) )
+      {
+         bRestore = TRUE;
+      }
+   }
+
+   shExecInfo.cbSize = sizeof( shExecInfo );
+   shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+   shExecInfo.hwnd = HB_ISNIL( 1 ) ? GetActiveWindow() : hmg_par_raw_HWND( 1 );
+   shExecInfo.lpVerb = HB_ISNIL( 2 ) ? NULL : lpOperation;
+   shExecInfo.lpFile = lpFile;
+   shExecInfo.lpParameters = HB_ISNIL( 4 ) ? NULL : lpParameters;
+   shExecInfo.lpDirectory = HB_ISNIL( 5 ) ? NULL : lpDirectory;
+   shExecInfo.nShow = hb_parni( 6 );
+
+   bSuccess = ShellExecuteEx( &shExecInfo );
+
+   if( bRestore )
+   {
+      fnRevert = ( LPFN_WOW64REVERTWOW64FSREDIRECTION ) wapi_GetProcAddress( hKernel32, "Wow64RevertWow64FsRedirection" );
+      if( fnRevert )
+      {
+         fnRevert( pOldValue );
+      }
+   }
+
+   if( bSuccess )
+   {
+      hmg_ret_raw_HWND( shExecInfo.hProcess );
    }
    else
    {
-      hb_ret();         // Return NULL on failure.
+      hb_ret();
    }
 
 #ifdef UNICODE
-   hb_xfree( ( TCHAR * ) lpOperation );
-   hb_xfree( ( TCHAR * ) lpFile );
-   hb_xfree( ( TCHAR * ) lpParameters );
-   hb_xfree( ( TCHAR * ) lpDirectory );
+   if( lpOperation )
+   {
+      hb_xfree( ( void * ) lpOperation );
+   }
+
+   if( lpFile )
+   {
+      hb_xfree( ( void * ) lpFile );
+   }
+
+   if( lpParameters )
+   {
+      hb_xfree( ( void * ) lpParameters );
+   }
+
+   if( lpDirectory )
+   {
+      hb_xfree( ( void * ) lpDirectory );
+   }
 #endif
 }
 
@@ -1327,7 +1368,7 @@ HB_FUNC( WAITRUN )
 #endif
    if( !bResult )
    {
-      hb_retni( -1 );   // Return -1 if process creation failed.
+      hb_retni( -1 );         // Return -1 if process creation failed.
       return;
    }
 
@@ -1752,14 +1793,14 @@ HB_FUNC( WINVERSION )
       { 4, 0, 0, 0, VER_NT_SERVER, "Windows NT Server 4.0" },
    };
 
-   char                 osName[64] = "Unknown Operating System";
-   char                 sp[128] = "";
-   char                 buildStr[32] = "";
-   char                 edition[64] = "";
-   BOOL                 filled = FALSE;
+   char                       osName[64] = "Unknown Operating System";
+   char                       sp[128] = "";
+   char                       buildStr[32] = "";
+   char                       edition[64] = "";
+   BOOL                       filled = FALSE;
 
    /* --- Preferred path: RtlGetVersion --- */
-   HMODULE              hNtdll = GetModuleHandleA( "ntdll.dll" );
+   HMODULE                    hNtdll = GetModuleHandleA( "ntdll.dll" );
    if( hNtdll )
    {
       typedef LONG ( WINAPI *RtlGetVersionPtr ) ( OSVERSIONINFOEXW * );
@@ -1839,7 +1880,7 @@ HB_FUNC( WINVERSION )
                DWORD build = osvi.dwBuildNumber;
                if( osvi.dwPlatformId == VER_PLATFORM_WIN32_NT && osvi.dwMajorVersion <= 4 )
                {
-                  build &= 0xFFFF;      /* old NT style */
+                  build &= 0xFFFF;           /* old NT style */
                }
 
                hb_snprintf( buildStr, sizeof( buildStr ), "%lu", ( unsigned long ) build );

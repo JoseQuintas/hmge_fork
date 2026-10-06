@@ -35,7 +35,7 @@
 	www - https://harbour.github.io/
 
 	"Harbour Project"
-	Copyright 1999-2024, https://harbour.github.io/
+	Copyright 1999-2026, https://harbour.github.io/
 
 	"WHAT32"
 	Copyright 2002 AJ Wos <andrwos@aust1.net> 
@@ -53,10 +53,10 @@
 #endif
 
 #define MG_VER_MAJOR    3        /* Major version number */
-#define MG_VER_MINOR    5        /* Minor version number */
-#define MG_VER_RELEASE  3        /* Release number */
+#define MG_VER_MINOR    6        /* Minor version number */
+#define MG_VER_RELEASE  1        /* Release number */
 
-#define __HMG__         0x030503 /* Three bytes: Major + Minor + Build. */
+#define __HMG__         0x030601 /* Three bytes: Major + Minor + Build. */
 
 #define __RELEASE__
 

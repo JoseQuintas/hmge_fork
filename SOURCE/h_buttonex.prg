@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -49,22 +49,20 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 
 #define BP_PUSHBUTTON 1
-
-#define PBS_NORMAL 1
-#define PBS_HOT 2
-#define PBS_PRESSED 3
-#define PBS_DISABLED 4
+#define PBS_NORMAL    1
+#define PBS_HOT       2
+#define PBS_PRESSED   3
+#define PBS_DISABLED  4
 #define PBS_DEFAULTED 5
 
-#define DT_TOP 0
-#define DT_LEFT 0
-#define DT_CENTER 1
-#define DT_RIGHT 2
-#define DT_VCENTER 4
-#define DT_BOTTOM 8
+#define DT_TOP        0
+#define DT_LEFT       0
+#define DT_CENTER     1
+#define DT_RIGHT      2
+#define DT_VCENTER    4
+#define DT_BOTTOM     8
 #define DT_SINGLELINE 32
 
-/* Aspects for owner buttons */
 #define OBT_HORIZONTAL    0
 #define OBT_VERTICAL      1
 #define OBT_LEFTTEXT      2
@@ -76,28 +74,26 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #define OBT_ADJUST       128
 
 #if defined( __XHARBOUR__ ) .OR. ( __HARBOUR__ - 0 < 0x030200 )
-  #xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
+#xtranslate hb_UAt( <c>, <n> ) => At( <c>, <n> )
 #endif
 
-STATIC lXPThemeActive := .F.
+*-----------------------------------------------------------------------------*
+FUNCTION _DefineOwnerButton( ControlName, ParentForm, x, y, Caption, ProcedureName, w, h, ;
+      image, tooltip, gotfocus, lostfocus, flat, notrans, HelpId, invisible, notabstop, ;
+      default, icon, fontname, fontsize, bold, italic, underline, strikeout, lvertical, ;
+      lefttext, uptext, aRGB_bk, aRGB_font, lnohotlight, lnoxpstyle, ladjust, handcursor, ;
+      imagewidth, imageheight, aGradInfo, lhorizontal, bInit, cKey )
+*-----------------------------------------------------------------------------*
+   LOCAL ControlHandle, FontHandle, aRet, aBmp, cParentForm, cPicture, mVar, k
+   LOCAL ow := NIL, oc := NIL
 
-*-----------------------------------------------------------------------------*
-FUNCTION _DefineOwnerButton ( ControlName, ParentForm, x, y, Caption, ProcedureName, ;
-      w, h, image, tooltip, gotfocus, lostfocus, flat, notrans, HelpId, invisible, ;
-      notabstop, default, icon, fontname, fontsize, bold, italic, underline, strikeout, ;
-      lvertical, lefttext, uptext, aRGB_bk, aRGB_font, lnohotlight, lnoxpstyle, ;
-      ladjust, handcursor, imagewidth, imageheight, aGradInfo, lhorizontal, bInit, cKey )
-*-----------------------------------------------------------------------------*
-   LOCAL ControlHandle , FontHandle
-   LOCAL aRet, aBmp
-   LOCAL cParentForm
-   LOCAL cPicture
-   LOCAL mVar
-   LOCAL k
-   LOCAL oc := NIL, ow := NIL
 #ifdef _OBJECT_
    ow := oDlu2Pixel()
 #endif
+
+   /*-----------------------------------------------------------------------*/
+   /* Defaults */
+   /*-----------------------------------------------------------------------*/
 
    hb_default( @w, 100 )
    hb_default( @h, 28 )
@@ -115,17 +111,17 @@ FUNCTION _DefineOwnerButton ( ControlName, ParentForm, x, y, Caption, ProcedureN
    hb_default( @imagewidth, -1 )
    hb_default( @imageheight, -1 )
 
-   IF ladjust  // ignore CAPTION clause when ADJUST is defined
+   IF ladjust
       Caption := ""
    ENDIF
 
    IF _HMG_ToolBarActive
-      RETURN Nil
+      RETURN NIL
    ENDIF
 
-   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
-   ENDIF
+   /*-----------------------------------------------------------------------*/
+   /* Resolve active form / frame */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
       ParentForm := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
@@ -134,203 +130,201 @@ FUNCTION _DefineOwnerButton ( ControlName, ParentForm, x, y, Caption, ProcedureN
    ENDIF
 
    IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentForm := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+      ParentForm := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
-      MsgMiniGuiError ( "Window: " + IFNIL( ParentForm, "Parent", ParentForm ) + " is not defined." )
+   /*-----------------------------------------------------------------------*/
+   /* Validation */
+   /*-----------------------------------------------------------------------*/
+
+   IF ! _IsWindowDefined( ParentForm )
+      MsgMiniGuiError( "Window: " + IFNIL( ParentForm, "Parent", ParentForm ) + " is not defined." )
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentForm )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentForm )
+      MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
    ENDIF
 
    IF ! Empty( image ) .AND. ! Empty( icon )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentForm + ". Either bitmap or icon must be specified." )
+      MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentForm + ". Either bitmap or icon must be specified." )
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Initialization */
+   /*-----------------------------------------------------------------------*/
 
    cPicture := IFEMPTY( icon, image, icon )
    IF ISARRAY( cPicture )
-      image := cPicture [1]
+      image := cPicture[ 1 ]
    ENDIF
 
-   IF aRGB_bk != NIL .AND. ! IsArrayRGB ( aRGB_bk )
+   IF aRGB_bk != NIL .AND. ! IsArrayRGB( aRGB_bk )
       aRGB_bk := nRGB2Arr( aRGB_bk )
    ENDIF
-
-   IF aRGB_font != NIL .AND. ! IsArrayRGB ( aRGB_font )
+   IF aRGB_font != NIL .AND. ! IsArrayRGB( aRGB_font )
       aRGB_font := nRGB2Arr( aRGB_font )
    ENDIF
 
    mVar := '_' + ParentForm + '_' + ControlName
-
    cParentForm := ParentForm
+   ParentForm := GetFormHandle( ParentForm )
 
-   ParentForm := GetFormHandle ( ParentForm )
+   aRet := InitOwnerButton( ParentForm, Caption, 0, x, y, w, h, image, flat, notrans, invisible, notabstop, default, icon, imagewidth, imageheight )
+   ControlHandle := aRet[ 1 ]
 
-   aRet := InitOwnerButton ( ParentForm, Caption, 0, x, y, w, h, image, flat, notrans, invisible, notabstop, default, icon, imagewidth, imageheight )
-
-   ControlHandle := aRet [1]
-
-   IF ! Empty( image ) .AND. Empty( aRet [2] )
-      aRet [2] := iif( _HMG_IsThemed .AND. hb_UAt ( ".", image ) == 0 .AND. imagewidth < 0 .AND. imageheight < 0, ;
-         C_GetResPicture ( image ), _SetBtnPicture ( ControlHandle, image, imagewidth, imageheight ) )
+   IF ! Empty( image ) .AND. Empty( aRet[ 2 ] )
+      aRet[ 2 ] := iif( _HMG_IsThemed .AND. hb_UAt( ".", image ) == 0 .AND. imagewidth < 0 .AND. imageheight < 0, ;
+         C_GetResPicture( image ), _SetBtnPicture( ControlHandle, image, imagewidth, imageheight ) )
    ENDIF
 
-   IF FontHandle != 0
+   /*-----------------------------------------------------------------------*/
+   /* Font setup                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
+      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
       _SetFontHandle( ControlHandle, FontHandle )
    ELSE
       __defaultNIL( @FontName, _HMG_DefaultFontName )
       __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-      FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+      FontHandle := _SetFont( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
    ENDIF
 
    IF _HMG_BeginTabActive
-      AAdd ( _HMG_ActiveTabCurrentPageMap , Controlhandle )
+      AAdd( _HMG_ActiveTabCurrentPageMap, ControlHandle )
    ENDIF
 
    IF tooltip != NIL
-      SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( cParentForm ) )
+      SetToolTip( ControlHandle, tooltip, GetFormToolTipHandle( cParentForm ) )
    ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* Control registration */
+   /*-----------------------------------------------------------------------*/
    k := _GetControlFree()
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( mVar, k )
 #else
-   Public &mVar. := k
+   PUBLIC &mVar. := k
 #endif
 
-   _HMG_aControlType [k] :=  "OBUTTON"
-   _HMG_aControlNames [k] :=   ControlName
-   _HMG_aControlHandles [k] :=   ControlHandle
-   _HMG_aControlParenthandles [k] :=   ParentForm
-   _HMG_aControlIds [k] :=   0
-   _HMG_aControlProcedures [k] :=   ProcedureName
-   _HMG_aControlPageMap [k] :=   {}
-   _HMG_aControlValue [k] :=   aGradInfo
-   _HMG_aControlInputMask [k] :=   hb_defaultValue( handcursor, .F. )
-   _HMG_aControllostFocusProcedure [k] :=   lostfocus
-   _HMG_aControlGotFocusProcedure [k] :=   gotfocus
-   _HMG_aControlChangeProcedure [k] :=   ""
-   _HMG_aControlDeleted [k]   :=   FALSE
-   _HMG_aControlBkColor  [k]  :=  aRGB_bk
-   _HMG_aControlFontColor [k] :=  aRGB_font
-   _HMG_aControlDblClick  [k] :=  default
-   _HMG_aControlHeadClick [k] :=  { imagewidth, imageheight }
-   _HMG_aControlRow [k]       :=  y
-   _HMG_aControlCol [k]       :=  x
-   _HMG_aControlWidth [k]     :=  w
-   _HMG_aControlHeight [k]    :=  h
-   _HMG_aControlSpacing [k]   :=  iif( lvertical, 1, 0 ) + iif( lefttext, OBT_LEFTTEXT, 0 ) + iif( uptext, OBT_UPTEXT, 0 ) + iif( !lnohotlight, OBT_HOTLIGHT, 0 ) + iif( flat, OBT_FLAT, 0 ) + iif( notrans, OBT_NOTRANSPARENT, 0 ) + iif( lnoxpstyle, OBT_NOXPSTYLE, 0 ) + iif( ladjust, OBT_ADJUST, 0 )
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture [k]   :=   cPicture
-   _HMG_aControlContainerHandle [k] :=   0
-   _HMG_aControlFontName [k]    := fontname
-   _HMG_aControlFontSize [k]    := fontsize
-   _HMG_aControlFontAttributes[k] := { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip [k]     :=  tooltip
-   _HMG_aControlRangeMin [k]    :=  hb_defaultValue( lhorizontal, .F. )
-   _HMG_aControlRangeMax [k]    :=  { iif( lnohotlight, 2, 0 ), .F. }  // used for mouse hot tracking !!
-   _HMG_aControlCaption [k]     :=  Caption
-   _HMG_aControlVisible [k]     :=  iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId [k]      :=  HelpId
-   _HMG_aControlFontHandle [k]  :=  FontHandle
-   _HMG_aControlBrushHandle [k] :=  aRet [2]  // handle to an Image (Icon or Bitmap)
-   _HMG_aControlEnabled [k]     :=  .T.
-   _HMG_aControlMiscData1 [k]   :=  IFEMPTY( icon, 0, 1 )  // 0 - bitmap  1 - icon
-   _HMG_aControlMiscData2 [k]   :=  ''
+   _HMG_aControlType[ k ] := "OBUTTON"
+   _HMG_aControlNames[ k ] := ControlName
+   _HMG_aControlHandles[ k ] := ControlHandle
+   _HMG_aControlParenthandles[ k ] := ParentForm
+   _HMG_aControlIds[ k ] := 0
+   _HMG_aControlProcedures[ k ] := ProcedureName
+   _HMG_aControlPageMap[ k ] := {}
+   _HMG_aControlValue[ k ] := aGradInfo
+   _HMG_aControlInputMask[ k ] := hb_defaultValue( handcursor, .F. )
+   _HMG_aControllostFocusProcedure[ k ] := lostfocus
+   _HMG_aControlGotFocusProcedure[ k ] := gotfocus
+   _HMG_aControlChangeProcedure[ k ] := ""
+   _HMG_aControlDeleted[ k ] := .F.
+   _HMG_aControlBkColor[ k ] := aRGB_bk
+   _HMG_aControlFontColor[ k ] := aRGB_font
+   _HMG_aControlDblClick[ k ] := default
+   _HMG_aControlHeadClick[ k ] := { imagewidth, imageheight }
+   _HMG_aControlRow[ k ] := y
+   _HMG_aControlCol[ k ] := x
+   _HMG_aControlWidth[ k ] := w
+   _HMG_aControlHeight[ k ] := h
 
-   IF ! Empty( _HMG_aControlBrushHandle [k] ) .AND. imagewidth < 0 .AND. imageheight < 0
+   _HMG_aControlSpacing[ k ] := iif( lvertical, 1, 0 ) + iif( lefttext, OBT_LEFTTEXT, 0 ) + ;
+      iif( uptext, OBT_UPTEXT, 0 ) + iif( !lnohotlight, OBT_HOTLIGHT, 0 ) + iif( flat, OBT_FLAT, 0 ) + ;
+      iif( notrans, OBT_NOTRANSPARENT, 0 ) + iif( lnoxpstyle, OBT_NOXPSTYLE, 0 ) + iif( ladjust, OBT_ADJUST, 0 )
 
-      SWITCH _HMG_aControlMiscData1 [k]
+   _HMG_aControlContainerRow[ k ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlContainerCol[ k ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlPicture[ k ] := cPicture
+   _HMG_aControlContainerHandle[ k ] := 0
+   _HMG_aControlFontName[ k ] := fontname
+   _HMG_aControlFontSize[ k ] := fontsize
+   _HMG_aControlFontAttributes[ k ] := { bold, italic, underline, strikeout }
+   _HMG_aControlToolTip[ k ] := tooltip
+   _HMG_aControlRangeMin[ k ] := hb_defaultValue( lhorizontal, .F. )
+   _HMG_aControlRangeMax[ k ] := { iif( lnohotlight, 2, 0 ), .F. }
+   _HMG_aControlCaption[ k ] := Caption
+   _HMG_aControlVisible[ k ] := ! invisible
+   _HMG_aControlHelpId[ k ] := HelpId
+   _HMG_aControlFontHandle[ k ] := FontHandle
+   _HMG_aControlBrushHandle[ k ] := aRet[ 2 ]
+   _HMG_aControlEnabled[ k ] := .T.
+   _HMG_aControlMiscData1[ k ] := IFEMPTY( icon, 0, 1 )
+   _HMG_aControlMiscData2[ k ] := ''
+
+   IF ! Empty( _HMG_aControlBrushHandle[ k ] ) .AND. imagewidth < 0 .AND. imageheight < 0
+      SWITCH _HMG_aControlMiscData1[ k ]
       CASE 0
-         aBmp := GetBitmapSize ( _HMG_aControlBrushHandle [k] )
+         aBmp := GetBitmapSize( _HMG_aControlBrushHandle[ k ] )
          EXIT
       CASE 1
-         aBmp := GetIconSize ( _HMG_aControlBrushHandle [k] )
+         aBmp := GetIconSize( _HMG_aControlBrushHandle[ k ] )
       ENDSWITCH
-
-      _HMG_aControlHeadClick [k] := { aBmp[1], aBmp[2] }
-
+      _HMG_aControlHeadClick[ k ] := { aBmp[ 1 ], aBmp[ 2 ] }
    ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* OOP and Init procedure */
+   /*-----------------------------------------------------------------------*/
+
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, k, mVar )
 #ifdef _OBJECT_
-      ow := _WindowObj ( ParentForm )
+      ow := _WindowObj( ParentForm )
       oc := _ControlObj( ControlHandle )
 #endif
    ENDIF
 
-   Do_ControlEventProcedure ( bInit, k, ow, oc )
+   Do_ControlEventProcedure( bInit, k, ow, oc )
+   _SetHotKeyByName( cParentForm, cKey, ProcedureName )
 
-   _SetHotKeyByName ( cParentForm, ckey, ProcedureName )
-
-RETURN Nil
+RETURN NIL
 
 *-----------------------------------------------------------------------------*
 FUNCTION OBTNEVENTS( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
-   LOCAL i
+   LOCAL i := AScan( _HMG_aControlHandles, hWnd )
 
-   IF ( i := AScan( _HMG_aControlHandles, hWnd ) ) > 0 .AND. _HMG_aControlType [i] == "OBUTTON"
+   IF i > 0 .AND. _HMG_aControlType[ i ] == "OBUTTON"
 
-      wParam := _HMG_aControlRangeMax [i][1]
-      lParam := _HMG_aControlRangeMax [i][2]
+      wParam := _HMG_aControlRangeMax[ i ][ 1 ]
+      lParam := _HMG_aControlRangeMax[ i ][ 2 ]
 
       SWITCH nMsg
-
       CASE WM_MOUSEMOVE
-
-         IF _HMG_aControlInputMask [i]
+         IF _HMG_aControlInputMask[ i ]
             RC_CURSOR( "MINIGUI_FINGER" )
          ENDIF
-
          IF ! lParam
-
-            _HMG_aControlRangeMax [i][2] := .T.
-
-            IF AND( _HMG_aControlSpacing [i], OBT_HOTLIGHT ) == OBT_HOTLIGHT .OR. _HMG_IsThemed
-
-               _DoControlEventProcedure ( _HMG_aControlGotFocusProcedure [i] , i )
-
+            _HMG_aControlRangeMax[ i ][ 2 ] := .T.
+            IF AND( _HMG_aControlSpacing[ i ], OBT_HOTLIGHT ) == OBT_HOTLIGHT .OR. _HMG_IsThemed
+               _DoControlEventProcedure( _HMG_aControlGotFocusProcedure[ i ], i )
                IF wParam == 0
                   InvalidateRect( hWnd, 0 )
-                  _HMG_aControlRangeMax [i][1] := 1
+                  _HMG_aControlRangeMax[ i ][ 1 ] := 1
                ENDIF
-
             ENDIF
-
          ENDIF
          EXIT
-
       CASE WM_MOUSELEAVE
-
          IF lParam
-
-            _HMG_aControlRangeMax [i][2] := .F.
-
-            _DoControlEventProcedure ( _HMG_aControlLostFocusProcedure [i] , i )
-
-            IF AND( _HMG_aControlSpacing [i], OBT_HOTLIGHT ) == OBT_HOTLIGHT .OR. lXPThemeActive
-
+            _HMG_aControlRangeMax[ i ][ 2 ] := .F.
+            _DoControlEventProcedure( _HMG_aControlLostFocusProcedure[ i ], i )
+            IF AND( _HMG_aControlSpacing[ i ], OBT_HOTLIGHT ) == OBT_HOTLIGHT .OR. _HMG_IsThemed
                IF wParam == 1
-                  _HMG_aControlRangeMax [i][1] := 0
+                  _HMG_aControlRangeMax[ i ][ 1 ] := 0
                   InvalidateRect( hWnd, 0 )
                ENDIF
-
             ENDIF
-
          ENDIF
-
       ENDSWITCH
 
    ENDIF
@@ -340,150 +334,80 @@ RETURN 0
 *-----------------------------------------------------------------------------*
 FUNCTION OwnButtonPaint( pdis )
 *-----------------------------------------------------------------------------*
-   LOCAL hDC
-   LOCAL itemState
-   LOCAL itemAction
-   LOCAL i
-   LOCAL rgbTrans
-   LOCAL hWnd
-   LOCAL lFlat
-   LOCAL lNotrans
-   LOCAL oldBkMode
-   LOCAL oldTextColor
-   LOCAL hOldFont
-   LOCAL hBrush
-   LOCAL nFreeSpace
-   LOCAL x1
-   LOCAL y1
-   LOCAL x2
-   LOCAL y2
-   LOCAL xp1
-   LOCAL yp1
-   LOCAL xp2
-   LOCAL yp2
-   LOCAL aBmp := {}
-   LOCAL aMetr
-   LOCAL aBtnRc
-   LOCAL aBtnClipRc
-   LOCAL aDarkColor
-   LOCAL lDisabled
-   LOCAL lSelected
-   LOCAL lFocus
-   LOCAL lDrawEntire
-   LOCAL loFocus
-   LOCAL loSelect
-   LOCAL hTheme
-   LOCAL nStyle
-   LOCAL lnoxpstyle
-   LOCAL lnoadjust
-   LOCAL lXPThemeActive := .F.
-   LOCAL pozYpic
-   LOCAL pozYtext := 0
-   LOCAL xPoz
-   LOCAL nCRLF
-   LOCAL lGradient
-   LOCAL aGradient
-   LOCAL lvertical
+   LOCAL hDC, itemState, itemAction, i, rgbTrans, hWnd
+   LOCAL oldBkMode, oldTextColor, hOldFont, hBrush
+   LOCAL x1, y1, x2, y2, xp1, yp1, xp2, yp2, aBmp := {}, aMetr, aBtnRc, aBtnClipRc
+   LOCAL lDisabled, lSelected, lFocus, lDrawEntire, lFlat, lNotrans
+   LOCAL lnoxpstyle, lnoadjust, lXPThemeActive := .F.
+   LOCAL pozYpic, pozYtext := 0, xPoz, nCRLF, lGradient, aGradient, lvertical
+   LOCAL nStyle, hTheme, aDarkColor, nFreeSpace
 
    hDC := GETOWNBTNDC( pdis )
-
    IF Empty( hDC ) .OR. GETOWNBTNCTLTYPE( pdis ) <> ODT_BUTTON
-      RETURN ( 1 )
+      RETURN 1
    ENDIF
 
-   itemAction := GETOWNBTNITEMACTION ( pdis )
-   lDrawEntire := ( AND( itemAction, ODA_DRAWENTIRE ) == ODA_DRAWENTIRE )
-   loFocus := ( AND( itemAction, ODA_FOCUS ) == ODA_FOCUS )
-   loSelect := ( AND( itemAction, ODA_SELECT ) == ODA_SELECT )
-
-   IF ! lDrawEntire .AND. ! loFocus .AND. ! loSelect
-      RETURN ( 1 )
+   itemAction := GETOWNBTNITEMACTION( pdis )
+   lDrawEntire := AND( itemAction, ODA_DRAWENTIRE ) == ODA_DRAWENTIRE
+   IF ! lDrawEntire .AND. ! AND( itemAction, ODA_FOCUS ) == ODA_FOCUS .AND. ! AND( itemAction, ODA_SELECT ) == ODA_SELECT
+      RETURN 1
    ENDIF
 
    hWnd := GETOWNBTNHANDLE( pdis )
    aBtnRc := GETOWNBTNRECT( pdis )
    itemState := GETOWNBTNSTATE( pdis )
 
-   i := AScan ( _HMG_aControlHandles , hWnd )
-
-   IF ( i <= 0 .OR. _HMG_aControlType[ i ] <> "OBUTTON" )
-      RETURN ( 1 )
+   i := AScan( _HMG_aControlHandles, hWnd )
+   IF i <= 0 .OR. _HMG_aControlType[ i ] <> "OBUTTON"
+      RETURN 1
    ENDIF
 
    nCRLF := hb_tokenCount( _HMG_aControlCaption[ i ], CRLF )
+   lDisabled := AND( itemState, ODS_DISABLED ) == ODS_DISABLED
+   lSelected := AND( itemState, ODS_SELECTED ) == ODS_SELECTED
+   lFocus := AND( itemState, ODS_FOCUS ) == ODS_FOCUS
+   lFlat := AND( _HMG_aControlSpacing[ i ], OBT_FLAT ) == OBT_FLAT
+   lNotrans := AND( _HMG_aControlSpacing[ i ], OBT_NOTRANSPARENT ) == OBT_NOTRANSPARENT
+   lnoxpstyle := AND( _HMG_aControlSpacing[ i ], OBT_NOXPSTYLE ) == OBT_NOXPSTYLE
+   lnoadjust := ! AND( _HMG_aControlSpacing[ i ], OBT_ADJUST ) == OBT_ADJUST
 
-   lDisabled := ( AND( itemState, ODS_DISABLED ) == ODS_DISABLED )
-   lSelected := ( AND( itemState, ODS_SELECTED ) == ODS_SELECTED )
-   lFocus := ( AND( itemState, ODS_FOCUS ) == ODS_FOCUS )
-   lFlat := ( AND( _HMG_aControlSpacing [ i ], OBT_FLAT ) == OBT_FLAT )
-   lNotrans := ( AND( _HMG_aControlSpacing [ i ], OBT_NOTRANSPARENT ) == OBT_NOTRANSPARENT )
-   lnoxpstyle := ( AND( _HMG_aControlSpacing [ i ], OBT_NOXPSTYLE ) == OBT_NOXPSTYLE )
-   lnoadjust := ! ( AND( _HMG_aControlSpacing [ i ], OBT_ADJUST ) == OBT_ADJUST )
+   rgbTrans := iif( lNotrans, iif( IsArrayRGB( _HMG_aControlBkColor[ i ] ), RGB( _HMG_aControlBkColor[ i,1], _HMG_aControlBkColor[ i,2], _HMG_aControlBkColor[ i,3] ), GetSysColor( COLOR_BTNFACE ) ), NIL )
 
-   IF ! lNotrans
-
-      rgbTrans := NIL
-
-   ELSE
-
-      IF IsArrayRGB( _HMG_aControlBkColor [ i ] ) .AND. ! lXPThemeActive
-         rgbTrans := RGB( _HMG_aControlBkColor [ i, 1 ], _HMG_aControlBkColor [ i, 2 ], _HMG_aControlBkColor [ i, 3 ] )
-      ELSE
-         rgbTrans := GetSysColor ( COLOR_BTNFACE )
-      ENDIF
-
-   ENDIF
-
-   aGradient := _HMG_aControlValue [i]
-   lGradient := ( ISARRAY( aGradient ) .AND. ! Empty( _HMG_aControlBkColor [i] ) )
-   lvertical := ( _HMG_aControlRangeMin [i] == .F. )
+   aGradient := _HMG_aControlValue[ i ]
+   lGradient := ISARRAY( aGradient ) .AND. ! Empty( _HMG_aControlBkColor[ i ] )
+   lvertical := _HMG_aControlRangeMin[ i ] == .F.
 
    IF ! lnoxpstyle .AND. _HMG_IsThemed .AND. ! lGradient
-
       lXPThemeActive := .T.
       nStyle := PBS_NORMAL
-
-      IF AND( itemState, ODS_HOTLIGHT ) == ODS_HOTLIGHT .OR. _HMG_aControlRangeMax [i][1] == 1
+      IF AND( itemState, ODS_HOTLIGHT ) == ODS_HOTLIGHT .OR. _HMG_aControlRangeMax[ i ][ 1 ] == 1
          nStyle := PBS_HOT
       ELSEIF lFocus
          nStyle := PBS_DEFAULTED
       ENDIF
-
       IF lDisabled
          nStyle := PBS_DISABLED
       ENDIF
-
       IF lSelected
          nStyle := PBS_PRESSED
       ENDIF
-
       aBtnClipRc := AClone( aBtnRc )
-      aBtnClipRc[ 3 ] += 1
-      aBtnClipRc[ 4 ] += 1
-
+      aBtnClipRc[3] += 1 ; aBtnClipRc[4] += 1
       hTheme := OpenThemeData( hWnd, ToUnicode( "BUTTON" ) )
       DrawThemeBackground( hTheme, hDC, BP_PUSHBUTTON, nStyle, aBtnRc, aBtnClipRc )
       CloseThemeData( hTheme )
-
    ELSE
-
-      DrawButton( hDC, iif( lFocus .OR. _HMG_aControlRangeMax [ i ][ 1 ] == 1, 1, 0 ), ;
-         DFCS_BUTTONPUSH + iif( lSelected, DFCS_PUSHED, 0 ) + iif( lDisabled, DFCS_INACTIVE, 0 ) + iif( lflat, DFCS_FLAT, 0 ), ;
-         pdis, iif( AND( _HMG_aControlSpacing [ i ], OBT_HOTLIGHT ) == OBT_HOTLIGHT, _HMG_aControlRangeMax [ i ][ 1 ], 2 ), iif( lflat, 1, 0 ) )
-
+      DrawButton( hDC, iif( lFocus .OR. _HMG_aControlRangeMax[ i ][ 1 ] == 1, 1, 0 ), DFCS_BUTTONPUSH + iif( lSelected, DFCS_PUSHED, 0 ) + iif( lDisabled, DFCS_INACTIVE, 0 ) + iif( lflat, DFCS_FLAT, 0 ), pdis, iif( AND( _HMG_aControlSpacing[ i ], OBT_HOTLIGHT ) == OBT_HOTLIGHT, _HMG_aControlRangeMax[ i ][ 1 ], 2 ), iif( lflat, 1, 0 ) )
    ENDIF
 
-   hOldFont := SelectObject( hDC, _HMG_aControlFontHandle [ i ] )
+   hOldFont := SelectObject( hDC, _HMG_aControlFontHandle[ i ] )
    aMetr := GetTextMetric( hDC )
    oldBkMode := SetBkMode( hDC, TRANSPARENT )
-   oldTextColor := SetTextColor( hDC, GetRed ( GetSysColor ( COLOR_BTNTEXT ) ), GetGreen ( GetSysColor ( COLOR_BTNTEXT ) ), GetBlue ( GetSysColor ( COLOR_BTNTEXT ) ) )
+   oldTextColor := SetTextColor( hDC, GetRed( GetSysColor( COLOR_BTNTEXT ) ), GetGreen( GetSysColor( COLOR_BTNTEXT ) ), GetBlue( GetSysColor( COLOR_BTNTEXT ) ) )
 
    IF ! lDisabled
-
-      IF Empty( _HMG_aControlFontColor [ i ] ) .OR. ! IsArrayRGB( _HMG_aControlFontColor [ i ] )
-         SetTextColor( hDC, GetRed ( GetSysColor ( COLOR_BTNTEXT ) ), GetGreen ( GetSysColor ( COLOR_BTNTEXT ) ), GetBlue ( GetSysColor ( COLOR_BTNTEXT ) ) )
-      ELSE
-         SetTextColor( hDC, _HMG_aControlFontColor [ i, 1 ], _HMG_aControlFontColor [ i, 2 ], _HMG_aControlFontColor [ i, 3 ] )
+      IF ! Empty( _HMG_aControlFontColor[ i ] ) .AND. IsArrayRGB( _HMG_aControlFontColor[ i ] )
+         SetTextColor( hDC, _HMG_aControlFontColor[ i,1 ], _HMG_aControlFontColor[ i,2 ], _HMG_aControlFontColor[ i,3 ] )
       ENDIF
 
       IF ! Empty( _HMG_aControlBkColor [ i ] ) .AND. ! lXPThemeActive
@@ -573,16 +497,11 @@ FUNCTION OwnButtonPaint( pdis )
 
    ENDIF
 
-   IF ! Empty( _HMG_aControlBrushHandle [ i ] )
-
-      SWITCH _HMG_aControlMiscData1 [ i ]
-      CASE 0
-         aBmp := GetBitmapSize( _HMG_aControlBrushHandle [ i ] )
-         EXIT
-      CASE 1
-         aBmp := GetIconSize( _HMG_aControlBrushHandle [ i ] )
+   IF ! Empty( _HMG_aControlBrushHandle[ i ] )
+      SWITCH _HMG_aControlMiscData1[ i ]
+      CASE 0 ; aBmp := GetBitmapSize( _HMG_aControlBrushHandle[ i ] ) ; EXIT
+      CASE 1 ; aBmp := GetIconSize( _HMG_aControlBrushHandle[ i ] ) ; EXIT
       ENDSWITCH
-
    ENDIF
 
    IF AND( _HMG_aControlSpacing [ i ], OBT_VERTICAL ) == OBT_VERTICAL  // vertical text/picture aspect
@@ -597,9 +516,9 @@ FUNCTION OwnButtonPaint( pdis )
       IF Empty( nCRLF )
          nFreeSpace := Round( ( aBtnRc[ 4 ] - 4 - ( aMetr[ 4 ] + yp2 ) ) / 3, 0 )
          nCRLF := 1
-      ELSE
+   ELSE
          nFreeSpace := Round( ( aBtnRc[ 4 ] - 4 - ( y2 + yp2 ) ) / 3, 0 )
-      ENDIF
+   ENDIF
 
       IF ! Empty( _HMG_aControlCaption[ i ] )  // button has caption
 
@@ -746,7 +665,7 @@ FUNCTION OwnButtonPaint( pdis )
          ELSE
 
             IF lnoadjust
-               DrawGlyph( hDC, xp1, yp1, xp2, yp2 , _HMG_aControlBrushHandle [ i ] , rgbTrans , .F. , .F. )
+               DrawGlyph( hDC, xp1, yp1, xp2, yp2, _HMG_aControlBrushHandle [ i ] , rgbTrans, .F. , .F. )
                DrawText( hDC, _HMG_aControlCaption[ i ], x1, y1, x2, y1 + y2, DT_CENTER )
             ELSE
                DrawGlyph( hDC, aBtnRc[ 1 ] + 3, aBtnRc[ 2 ] + 3 , aBtnRc[ 3 ] - 6, aBtnRc[ 4 ] - 6 , _HMG_aControlBrushHandle [ i ] , rgbTrans , .F. , .T. )
@@ -771,7 +690,6 @@ FUNCTION OwnButtonPaint( pdis )
    ENDIF
 
    IF ( lSelected .OR. lFocus ) .AND. ! lDisabled .AND. ! lXPThemeActive
-      SetTextColor( hDC, GetRed ( GetSysColor ( COLOR_BTNTEXT ) ) , GetGreen ( GetSysColor ( COLOR_BTNTEXT ) ) , GetBlue ( GetSysColor ( COLOR_BTNTEXT ) ) )
       DrawFocusRect( pdis )
    ENDIF
 
@@ -779,19 +697,19 @@ FUNCTION OwnButtonPaint( pdis )
    SetBkMode( hDC, oldBkMode )
    SetTextColor( hDC, oldTextColor )
 
-RETURN ( 1 )
+RETURN 1
 
 *-----------------------------------------------------------------------------*
 STATIC FUNCTION ToUnicode( cString )
 *-----------------------------------------------------------------------------*
-   LOCAL cOutString As String
+   LOCAL cOut As String
    LOCAL Char
 
    FOR EACH Char IN cString
-      cOutString += Char + Chr( 0 )
+      cOut += Char + Chr( 0 )
    NEXT
 
-RETURN ( cOutString + Chr( 0 ) )
+RETURN cOut + Chr( 0 )
 
 *-----------------------------------------------------------------------------*
 FUNCTION _SetBtnPictureMask( hWnd, i )

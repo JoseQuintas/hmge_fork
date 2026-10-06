@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -48,291 +48,263 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
+/* Label layout constants */
+#define LABEL_BLINK_INTERVAL_MS     500
+#define LABEL_AUTOSIZE_ENABLED      1
+#define LABEL_SMALL_FONT_LIMIT      14
+#define LABEL_HEIGHT_PADDING_SMALL  12
+#define LABEL_HEIGHT_PADDING_LARGE  16
+
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineLabel ( ControlName, ParentFormName, x, y, Caption, w, h, ;
-      fontname, fontsize, bold, BORDER, CLIENTEDGE, HSCROLL, VSCROLL, ;
-      TRANSPARENT, aRGB_bk, aRGB_font, ProcedureName, tooltip, HelpId, invisible, ;
-      italic, underline, strikeout, autosize, rightalign, centeralign, ;
-      blink, mouseover, mouseleave, VCenterAlign, NoPrefix, nId, bInit, dblclick, rclick )
+FUNCTION _DefineLabel( ControlName, ParentFormName, nCol, nRow, cCaption, nWidth, nHeight, ;
+      cFontName, nFontSize, lBold, lBorder, lClientEdge, lHScroll, lVScroll, ;
+      lTransparent, aRGB_Bk, aRGB_Font, bProcedure, cToolTip, nHelpId, lInvisible, ;
+      lItalic, lUnderline, lStrikeout, lAutoSize, lRightAlign, lCenterAlign, ;
+      lBlink, bMouseOver, bMouseLeave, lVCenterAlign, lNoPrefix, nId, bInit, bDblClick, bRClick )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle, ControlHandle, FontHandle
-   LOCAL mVar
-   LOCAL k := 0
-   LOCAL Style
-   LOCAL blInit
+   LOCAL hParent, hCtrl, hFont
+   LOCAL cVar, nIdx
+   LOCAL nStyle, bDlgInit
    LOCAL lDialogInMemory
-   LOCAL oc := NIL, ow := NIL
 
-#ifdef _OBJECT_
-   ow := oDlu2Pixel()
-#endif
+   /* Apply defaults */
+   hb_default( @nWidth, 120 )
+   hb_default( @nHeight, 24 )
+   hb_default( @lInvisible, .F. )
+   hb_default( @lBold, .F. )
+   hb_default( @lItalic, .F. )
+   hb_default( @lUnderline, .F. )
+   hb_default( @lStrikeout, .F. )
+   hb_default( @lVCenterAlign, .F. )
+   __defaultNIL( @bProcedure, "" )
+   __defaultNIL( @bRClick, "" )
 
-   hb_default( @w, 120 )
-   hb_default( @h, 24 )
-   __defaultNIL( @ProcedureName, "" )
-   hb_default( @invisible, .F. )
-   hb_default( @bold, .F. )
-   hb_default( @italic, .F. )
-   hb_default( @underline, .F. )
-   hb_default( @strikeout, .F. )
-   hb_default( @VCenterAlign, .F. )
-   __defaultNIL( @rclick, "" )
-
-   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+   /* Font resolution */
+   IF ( hFont := GetFontHandle( cFontName ) ) != 0
+      GetFontParamByRef( hFont, @cFontName, @nFontSize, @lBold, @lItalic, @lUnderline, @lStrikeout )
    ENDIF
 
+   /* Context detection for window/dialog/frame */
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
       ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
-      __defaultNIL( @FontName, _HMG_ActiveFontName )
-      __defaultNIL( @FontSize, _HMG_ActiveFontSize )
+      __defaultNIL( @cFontName, _HMG_ActiveFontName )
+      __defaultNIL( @nFontSize, _HMG_ActiveFontSize )
    ENDIF
 
-   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+   IF _HMG_FrameLevel > 0 .AND. .NOT. _HMG_ParentWindowActive
+      nCol += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      nRow += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+      ParentFormName := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
    ENDIF
 
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /* Validation */
+   IF .NOT. _IsWindowDefined( ParentFormName ) .AND. .NOT. lDialogInMemory
+      MsgMiniGuiError( "Window: " + hb_defaultValue( ParentFormName, "Parent" ) + " is not defined." )
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF hb_isChar( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
-
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
+      MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
    ENDIF
 
-   IF ISARRAY ( Caption )
-      mVar := ''
-      AEval ( Caption, {|v| mVar += cValToChar ( v ) } )
-      Caption := mVar
-   ELSEIF ISBLOCK ( Caption )
-      Caption := cValToChar ( Eval ( Caption ) )
+   /* Caption handling */
+   IF hb_isArray( cCaption )
+      cCaption := hb_ValToStr( cCaption )
+   ELSEIF hb_isBlock( cCaption )
+      cCaption := cValToChar( Eval( cCaption ) )
    ELSE
-      Caption := cValToChar ( Caption )
+      cCaption := cValToChar( cCaption )
    ENDIF
 
-   IF aRGB_bk != NIL .AND. ! IsArrayRGB ( aRGB_bk )
-      aRGB_bk := nRGB2Arr( aRGB_bk )
+   /* Color conversion */
+   IF aRGB_Bk != NIL .AND. .NOT. IsArrayRGB( aRGB_Bk )
+      aRGB_Bk := nRGB2Arr( aRGB_Bk )
+   ENDIF
+   IF aRGB_Font != NIL .AND. .NOT. IsArrayRGB( aRGB_Font )
+      aRGB_Font := nRGB2Arr( aRGB_Font )
    ENDIF
 
-   IF aRGB_font != NIL .AND. ! IsArrayRGB ( aRGB_font )
-      aRGB_font := nRGB2Arr( aRGB_font )
-   ENDIF
+   cVar := "_" + ParentFormName + "_" + ControlName
+   nIdx := _GetControlFree()
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
-
+   /* Control creation */
    IF _HMG_BeginDialogActive
+      hParent := _HMG_ActiveDialogHandle
+      nStyle := WS_CHILD + SS_NOTIFY
+      IF lBorder      ; nStyle += WS_BORDER      ; ENDIF
+      IF .NOT. lInvisible ; nStyle += WS_VISIBLE ; ENDIF
+      IF lHScroll     ; nStyle += WS_HSCROLL     ; ENDIF
+      IF lVScroll     ; nStyle += WS_VSCROLL     ; ENDIF
+      IF lRightAlign  ; nStyle += ES_RIGHT       ; ENDIF
+      IF lCenterAlign ; nStyle += ES_CENTER      ; ENDIF
+      IF lVCenterAlign; nStyle += SS_CENTERIMAGE ; ENDIF
 
-      ParentFormHandle := _HMG_ActiveDialogHandle
-
-      Style := WS_CHILD + SS_NOTIFY
-
-      IF border
-         Style += WS_BORDER
-      ENDIF
-
-      IF !invisible
-         Style += WS_VISIBLE
-      ENDIF
-
-      IF HSCROLL
-         Style += WS_HSCROLL
-      ENDIF
-
-      IF VSCROLL
-         Style += WS_VSCROLL
-      ENDIF
-
-      IF rightalign
-         Style += ES_RIGHT
-      ENDIF
-
-      IF centeralign
-         Style += ES_CENTER
-      ENDIF
-
-      IF VCenterAlign
-         Style += SS_CENTERIMAGE
-      ENDIF
-
-      IF lDialogInMemory         //Dialog Template
-
-         //          {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
-         blInit := {|x, y, z| InitDialogLabel( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, "static", style, 0, x, y, w, h, caption, HelpId, tooltip, FontName, FontSize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
-
+      IF lDialogInMemory
+         bDlgInit := {|x,y,z| InitDialogLabel(x,y,z) }
+         AAdd( _HMG_aDialogItems, { nId, nIdx, "static", nStyle, 0, nCol, nRow, nWidth, nHeight, ;
+               cCaption, nHelpId, cToolTip, cFontName, nFontSize, lBold, lItalic, lUnderline, lStrikeout, ;
+               bDlgInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
       ELSE
-
-         ControlHandle := GetDialogItemHandle ( ParentFormHandle, nId )
-
-         x := GetWindowCol ( Controlhandle )
-         y := GetWindowRow ( Controlhandle )
-         w := GetWindowWidth  ( Controlhandle )
-         h := GetWindowHeight ( Controlhandle )
-
-         IF caption != NIL
-            SetWindowText ( ControlHandle , caption )
+         hCtrl := GetDialogItemHandle( hParent, nId )
+         IF cCaption != NIL
+            SetWindowText( hCtrl, cCaption )
          ENDIF
-
-         SetWindowStyle ( ControlHandle, Style, .T. )
-
+         SetWindowStyle( hCtrl, nStyle, .T. )
       ENDIF
-
    ELSE
-
-      ParentFormHandle := GetFormHandle ( ParentFormName )
-
-      Controlhandle := InitLabel ( ParentFormHandle, Caption, 0, x, y, w, h, '', ( ISBLOCK( ProcedureName ) .OR. ISBLOCK( dblclick ) .OR. ISBLOCK( rclick ) .OR. ISSTRING( tooltip ) ), ( ISBLOCK( mouseover ) .OR. ISBLOCK( mouseleave ) ) , border , clientedge , HSCROLL , VSCROLL , TRANSPARENT , invisible , rightalign , centeralign , VCenterAlign , NoPrefix )
-
+      hParent := GetFormHandle( ParentFormName )
+      hCtrl := InitLabel( hParent, cCaption, 0, nCol, nRow, nWidth, nHeight, '', ;
+         ( hb_isBlock( bProcedure ) .OR. hb_isBlock( bDblClick ) .OR. hb_isBlock( bRClick ) .OR. hb_isString( cToolTip ) ), ;
+         ( hb_isBlock( bMouseOver ) .OR. hb_isBlock( bMouseLeave ) ), ;
+         lBorder, lClientEdge, lHScroll, lVScroll, lTransparent, lInvisible, lRightAlign, lCenterAlign, lVCenterAlign, lNoPrefix )
    ENDIF
 
+   /* Post-creation setup */
    IF .NOT. lDialogInMemory
-
-      IF FontHandle != 0
-         _SetFontHandle( ControlHandle, FontHandle )
+      IF hFont != 0
+         _SetFontHandle( hCtrl, hFont )
       ELSE
-         __defaultNIL( @FontName, _HMG_DefaultFontName )
-         __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-         FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+         __defaultNIL( @cFontName, _HMG_DefaultFontName )
+         __defaultNIL( @nFontSize, _HMG_DefaultFontSize )
+         hFont := _SetFont( hCtrl, cFontName, nFontSize, lBold, lItalic, lUnderline, lStrikeout )
       ENDIF
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap , Controlhandle )
+         AAdd( _HMG_ActiveTabCurrentPageMap, hCtrl )
       ENDIF
-
-      IF tooltip != NIL
-         SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( ParentFormName ) )
+      IF cToolTip != NIL
+         SetToolTip( hCtrl, cToolTip, GetFormToolTipHandle( ParentFormName ) )
       ENDIF
-
    ENDIF
 
+   /* Register control in HMG arrays */
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( cVar, nIdx )
 #else
-   Public &mVar. := k
+   Public &cVar. := nIdx
 #endif
 
-   _HMG_aControlType [k] :=  "LABEL"
-   _HMG_aControlNames  [k] :=  ControlName
-   _HMG_aControlHandles  [k] :=  ControlHandle
-   _HMG_aControlParenthandles  [k] :=  ParentFormHandle
-   _HMG_aControlIds  [k] :=  nId
-   _HMG_aControlProcedures  [k] :=  ProcedureName
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue [k] :=   Nil
-   _HMG_aControlInputMask  [k] :=  transparent
-   _HMG_aControllostFocusProcedure  [k] :=  mouseleave
-   _HMG_aControlGotFocusProcedure [k] :=  mouseover
-   _HMG_aControlChangeProcedure  [k] :=  rclick
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor  [k] :=  aRGB_bk
-   _HMG_aControlFontColor  [k] :=  aRGB_font
-   _HMG_aControlDblClick   [k] :=  _HMG_ActiveTabButtons
-   _HMG_aControlHeadClick  [k] :=  dblclick
-   _HMG_aControlRow  [k] :=  y
-   _HMG_aControlCol  [k] :=  x
-   _HMG_aControlWidth  [k] :=  w
-   _HMG_aControlHeight   [k] :=  h
-   _HMG_aControlSpacing  [k] :=  iif ( autosize , 1 , 0 )
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  ""
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  fontname
-   _HMG_aControlFontSize  [k] := fontsize
-   _HMG_aControlFontAttributes  [k] :=  { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip  [k] :=  tooltip
-   _HMG_aControlRangeMin [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveTabName , '' )
-   _HMG_aControlRangeMax [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameParentFormName [_HMG_FrameLevel] , '' )
-   _HMG_aControlCaption  [k] :=  Caption
-   _HMG_aControlVisible  [k] :=  iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId  [k] :=  HelpId
-   _HMG_aControlFontHandle  [k] :=  FontHandle
-   _HMG_aControlBrushHandle   [k] :=  0
-   _HMG_aControlEnabled   [k] :=  .T.
-   _HMG_aControlMiscData1 [k] :=  { 0, blink, .T. }
-   _HMG_aControlMiscData2 [k] :=  ''
+   _HMG_aControlType[ nIdx ] := "LABEL"
+   _HMG_aControlNames[ nIdx ] := ControlName
+   _HMG_aControlHandles[ nIdx ] := hCtrl
+   _HMG_aControlParenthandles[ nIdx ] := hParent
+   _HMG_aControlIds[ nIdx ] := nId
+   _HMG_aControlProcedures[ nIdx ] := bProcedure
+   _HMG_aControlPageMap[ nIdx ] := {}
+   _HMG_aControlValue[ nIdx ] := NIL
+   _HMG_aControlInputMask[ nIdx ] := lTransparent
+   _HMG_aControllostFocusProcedure[ nIdx ] := bMouseLeave
+   _HMG_aControlGotFocusProcedure[ nIdx ] := bMouseOver
+   _HMG_aControlChangeProcedure[ nIdx ] := bRClick
+   _HMG_aControlDeleted[ nIdx ] := .F.
+   _HMG_aControlBkColor[ nIdx ] := aRGB_Bk
+   _HMG_aControlFontColor[ nIdx ] := aRGB_Font
+   _HMG_aControlDblClick[ nIdx ] := _HMG_ActiveTabButtons
+   _HMG_aControlHeadClick[ nIdx ] := bDblClick
+   _HMG_aControlRow[ nIdx ] := nRow
+   _HMG_aControlCol[ nIdx ] := nCol
+   _HMG_aControlWidth[ nIdx ] := nWidth
+   _HMG_aControlHeight[ nIdx ] := nHeight
+   _HMG_aControlSpacing[ nIdx ] := iif( lAutoSize, LABEL_AUTOSIZE_ENABLED, 0 )
+   _HMG_aControlContainerRow[ nIdx ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlContainerCol[ nIdx ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 )
+   _HMG_aControlPicture[ nIdx ] := ""
+   _HMG_aControlContainerHandle[ nIdx ] := 0
+   _HMG_aControlFontName[ nIdx ] := cFontName
+   _HMG_aControlFontSize[ nIdx ] := nFontSize
+   _HMG_aControlFontAttributes[ nIdx ] := { lBold, lItalic, lUnderline, lStrikeout }
+   _HMG_aControlToolTip[ nIdx ] := cToolTip
+   _HMG_aControlRangeMin[ nIdx ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveTabName, '' )
+   _HMG_aControlRangeMax[ nIdx ] := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ], '' )
+   _HMG_aControlCaption[ nIdx ] := cCaption
+   _HMG_aControlVisible[ nIdx ] := .NOT. lInvisible
+   _HMG_aControlHelpId[ nIdx ] := nHelpId
+   _HMG_aControlFontHandle[ nIdx ] := hFont
+   _HMG_aControlBrushHandle[ nIdx ] := 0
+   _HMG_aControlEnabled[ nIdx ] := .T.
+   _HMG_aControlMiscData1[ nIdx ] := { 0, lBlink, .T. }
+   _HMG_aControlMiscData2[ nIdx ] := ''
 
+   /* Final UI adjustments */
    IF .NOT. lDialogInMemory
-      IF autosize
-         _SetControlWidth ( ControlName , ParentFormName , GetTextWidth( NIL, Caption, FontHandle ) + ;
-            iif( bold .OR. italic, GetTextWidth( NIL, " ", FontHandle ), 0 ) )
-         _SetControlHeight ( ControlName , ParentFormName , FontSize + iif( FontSize < 14, 12, 16 ) )
+      IF lAutoSize
+         _LabelApplyAutoSize( ControlName, ParentFormName, nIdx )
       ENDIF
-      IF blink
-         _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
-            iif( _HMG_aControlMiscData1 [k] [3], _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
+      IF lBlink
+         _LabelEnableBlink( ControlName, ParentFormName, nIdx )
       ENDIF
       IF .NOT. _HMG_BeginWindowActive
-         _Refresh ( k )
+         _Refresh( nIdx )
       ENDIF
    ENDIF
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
-#ifdef _OBJECT_
-      ow := _WindowObj ( ParentFormHandle )
-      oc := _ControlObj( ControlHandle )
-#endif
+      Eval( _HMG_bOnControlInit, nIdx, cVar )
    ENDIF
-
-   Do_ControlEventProcedure ( bInit, k, ow, oc )
-
-RETURN Nil
+   Do_ControlEventProcedure( bInit, nIdx )
+RETURN NIL
 
 *-----------------------------------------------------------------------------*
-FUNCTION InitDialogLabel( ParentFormName, ControlHandle, k )
+FUNCTION InitDialogLabel( ParentFormName, hCtrl, nIdx )
 *-----------------------------------------------------------------------------*
-   LOCAL ControlName := _HMG_aControlNames [k]
-
-   IF _HMG_aControlSpacing [k] == 1
-      _SetControlWidth ( ControlName , ParentFormName , GetTextWidth( NIL, _HMG_aControlCaption [k] , _HMG_aControlFontHandle [k] ) + ;
-         iif( _HMG_aControlFontAttributes [k] [1] .OR. _HMG_aControlFontAttributes [k] [2], ;
-         GetTextWidth( NIL, " ", _HMG_aControlFontHandle [k] ), 0 ) )
-      _SetControlHeight ( ControlName , ParentFormName , _HMG_aControlFontSize [k] + iif( _HMG_aControlFontSize [k] < 14, 12, 16 ) )
-      RedrawWindow ( ControlHandle )
+   LOCAL cName := _HMG_aControlNames[ nIdx ]
+   IF _HMG_aControlSpacing[ nIdx ] == LABEL_AUTOSIZE_ENABLED
+      _LabelApplyAutoSize( cName, ParentFormName, nIdx )
+      RedrawWindow( hCtrl )
    ENDIF
-   IF _HMG_aControlMiscData1 [k] [2]
-      _DefineTimer ( 'BlinkTimer' + hb_ntos( k ) , ParentFormName , 500 , {|| _HMG_aControlMiscData1 [k] [3] := ! _HMG_aControlMiscData1 [k] [3], ;
-         iif( _HMG_aControlMiscData1 [k] [3], _ShowControl ( ControlName , ParentFormName ), _HideControl ( ControlName , ParentFormName ) ) } )
+   IF _HMG_aControlMiscData1[ nIdx ][ 2 ]
+      _LabelEnableBlink( cName, ParentFormName, nIdx )
    ENDIF
-   // JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]  // Modal
-      _HMG_aControlDeleted [k] := .T.
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[ 3 ]
+      _HMG_aControlDeleted[ nIdx ] := .T.
    ENDIF
-
-RETURN Nil
+RETURN NIL
 
 *-----------------------------------------------------------------------------*
-FUNCTION OLABELEVENTS ( hWnd, nMsg, wParam, lParam )
+FUNCTION OLABELEVENTS( hWnd, nMsg, wParam, lParam )
 *-----------------------------------------------------------------------------*
-   LOCAL i
-
+   LOCAL nIdx := AScan( _HMG_aControlHandles, hWnd )   // direct handle lookup
    HB_SYMBOL_UNUSED( wParam )
    HB_SYMBOL_UNUSED( lParam )
-
-   IF ( i := AScan ( _HMG_aControlHandles, hWnd ) ) > 0
-
+   IF nIdx > 0
       SWITCH nMsg
-
       CASE WM_MOUSEMOVE
-        _DoControlEventProcedure ( _HMG_aControlGotFocusProcedure [i] , i )
-        EXIT
-
+         _DoControlEventProcedure( _HMG_aControlGotFocusProcedure[ nIdx ], nIdx )
+         EXIT
       CASE WM_MOUSELEAVE
-        _DoControlEventProcedure ( _HMG_aControlLostFocusProcedure [i] , i )
-        EXIT
-
+         _DoControlEventProcedure( _HMG_aControlLostFocusProcedure[ nIdx ], nIdx )
+         EXIT
       ENDSWITCH
-
    ENDIF
-
 RETURN 0
+
+*-----------------------------------------------------------------------------*
+STATIC PROCEDURE _LabelApplyAutoSize( cName, cParent, nIdx )
+*-----------------------------------------------------------------------------*
+   LOCAL hFont := _HMG_aControlFontHandle[ nIdx ]
+   LOCAL cCap  := _HMG_aControlCaption[ nIdx ]
+   LOCAL nSize := _HMG_aControlFontSize[ nIdx ]
+   LOCAL aAttr := _HMG_aControlFontAttributes[ nIdx ]
+   LOCAL nW, nH
+
+   nW := GetTextWidth( NIL, cCap, hFont )
+   IF aAttr[1] .OR. aAttr[2]
+      nW += GetTextWidth( NIL, " ", hFont )
+   ENDIF
+   nH := nSize + iif( nSize < LABEL_SMALL_FONT_LIMIT, LABEL_HEIGHT_PADDING_SMALL, LABEL_HEIGHT_PADDING_LARGE )
+
+   _SetControlWidth( cName, cParent, nW )
+   _SetControlHeight( cName, cParent, nH )
+RETURN
+
+*-----------------------------------------------------------------------------*
+STATIC PROCEDURE _LabelEnableBlink( cName, cParent, nIdx )
+*-----------------------------------------------------------------------------*
+   LOCAL aBlink := _HMG_aControlMiscData1[ nIdx ]
+   _DefineTimer( 'BlinkTimer' + hb_ntos( nIdx ), cParent, LABEL_BLINK_INTERVAL_MS, ;
+      {|| aBlink[3] := !aBlink[3], iif( aBlink[3], _ShowControl( cName, cParent ), _HideControl( cName, cParent ) ) } )
+RETURN

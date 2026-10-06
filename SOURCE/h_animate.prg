@@ -38,227 +38,237 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
 
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
-
 ---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 
 #ifdef _USERINIT_
-*------------------------------------------------------------------------------*
+
+/*
+ * PROCEDURE: _InitAnimateRes
+ * Purpose: Automatically initializes the ANIMATERES control system during application startup.
+ * Logic: Registers the custom methods and properties into the HMG Extended internal handler system.
+ */
 INIT PROCEDURE _InitAnimateRes
-*------------------------------------------------------------------------------*
-
-   InstallMethodHandler ( 'Release', 'ReleaseAnimateRes' )
-   InstallPropertyHandler ( 'File', 'SetAnimateResFile', 'GetAnimateResFile' )
-   InstallPropertyHandler ( 'ResId', 'SetAnimateResId', 'GetAnimateResId' )
-
+   // Register the cleanup method to ensure DLL resources are freed when the control is destroyed.
+   InstallMethodHandler( 'Release', 'ReleaseAnimateRes' )
+   
+   // Map the 'File' property to its respective getter and setter functions.
+   InstallPropertyHandler( 'File', 'SetAnimateResFile', 'GetAnimateResFile' )
+   
+   // Map the 'ResId' property to its respective getter and setter functions.
+   InstallPropertyHandler( 'ResId', 'SetAnimateResId', 'GetAnimateResId' )
 RETURN
 
-*------------------------------------------------------------------------------*
-FUNCTION _DefineAnimateRes ( ControlName, ParentForm, x, y, w, h, cFile, nRes, ;
+/*
+ * FUNCTION: _DefineAnimateRes
+ * Purpose: Constructor for the ANIMATERES control, which displays AVI animations from resource DLLs.
+ * Parameters:
+ *    - ControlName: String identifier for the control.
+ *    - ParentForm: Name of the window containing the control.
+ *    - x, y, w, h: Coordinates and dimensions.
+ *    - cFile: Path to the DLL file containing the AVI resource.
+ *    - nRes: Numeric ID of the AVI resource within the DLL.
+ *    - tooltip: Text to display on hover.
+ *    - HelpId: Numeric ID for context-sensitive help.
+ *    - invisible: Logical flag to hide the control initially.
+ */
+FUNCTION _DefineAnimateRes( ControlName, ParentForm, x, y, w, h, cFile, nRes, ;
       tooltip, HelpId, invisible )
-*------------------------------------------------------------------------------*
-   LOCAL ControlHandle
-   LOCAL hAvi
-   LOCAL cParentForm
-   LOCAL mVar
+   LOCAL ControlHandle, hAvi, cParentForm, mVar
 
+   // Set default dimensions and visibility if not provided.
    hb_default( @w, 200 )
    hb_default( @h, 50 )
    hb_default( @invisible, .F. )
 
+   // Determine the active parent form if using the 'DEFINE WINDOW' command block.
    IF _HMG_BeginWindowActive
       ParentForm := _HMG_ActiveFormName
    ENDIF
-
+   
+   // Adjust coordinates if the control is placed inside a Frame container.
    IF _HMG_FrameLevel > 0
-      x  := x + _HMG_ActiveFrameCol[_HMG_FrameLevel ]
-      y  := y + _HMG_ActiveFrameRow[_HMG_FrameLevel ]
-      ParentForm := _HMG_ActiveFrameParentFormName[_HMG_FrameLevel ]
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+      ParentForm := _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
+   // Validation: Ensure the parent exists and the control name is unique.
+   IF .NOT. _IsWindowDefined( ParentForm )
       MsgMiniGuiError( "Window: " + ParentForm + " is not defined." )
    ENDIF
-
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
-
-   IF _IsControlDefined ( ControlName, ParentForm )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentForm )
+      MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
    ENDIF
 
+   // Create the internal variable name used for the control index.
    mVar := '_' + ParentForm + '_' + ControlName
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , Len ( _HMG_aControlNames ) + 1 )
+   _SetNameList( mVar, Len( _HMG_aControlNames ) + 1 )
 #else
-   Public &mVar. := Len ( _HMG_aControlNames ) + 1
+   Public &mVar. := Len( _HMG_aControlNames ) + 1
 #endif
 
    cParentForm := ParentForm
+   ParentForm := GetFormHandle( ParentForm )
 
-   ParentForm := GetFormHandle ( ParentForm )
+   // Call the C-level function to create the Win32 control and load the DLL.
+   // hAvi is passed by reference to receive the DLL instance handle.
+   ControlHandle := InitAnimateRes( ParentForm, @hAvi, x, y, w, h, cFile, nRes, invisible )
 
-   ControlHandle := InitAnimateRes ( ParentForm, @hAvi, x, y, w, h, cFile, nRes, invisible )
-
+   // Handle Tab control integration if the control is defined inside a Tab page.
    IF _HMG_BeginTabActive
-      AAdd ( _HMG_ActiveTabCurrentPageMap, Controlhandle )
+      AAdd( _HMG_ActiveTabCurrentPageMap, ControlHandle )
    ENDIF
-
+   
+   // Apply tooltip if specified.
    IF tooltip != NIL
-      SetToolTip ( ControlHandle, tooltip, GetFormToolTipHandle ( cParentForm ) )
+      SetToolTip( ControlHandle, tooltip, GetFormToolTipHandle( cParentForm ) )
    ENDIF
 
-   AAdd ( _HMG_aControlType, "ANIMATERES" )
-   AAdd ( _HMG_aControlNames, ControlName )
-   AAdd ( _HMG_aControlHandles, ControlHandle )
-   AAdd ( _HMG_aControlParentHandles, ParentForm )
-   AAdd ( _HMG_aControlIds, nRes )
-   AAdd ( _HMG_aControlProcedures, "" )
-   AAdd ( _HMG_aControlPageMap, {} )
-   AAdd ( _HMG_aControlValue, cFile )
-   AAdd ( _HMG_aControlInputMask, "" )
-   AAdd ( _HMG_aControllostFocusProcedure, "" )
-   AAdd ( _HMG_aControlGotFocusProcedure, "" )
-   AAdd ( _HMG_aControlChangeProcedure, "" )
-   AAdd ( _HMG_aControlDeleted, .F. )
-   AAdd ( _HMG_aControlBkColor, Nil )
-   AAdd ( _HMG_aControlFontColor, Nil )
-   AAdd ( _HMG_aControlDblClick, "" )
-   AAdd ( _HMG_aControlHeadClick, {} )
-   AAdd ( _HMG_aControlRow, y )
-   AAdd ( _HMG_aControlCol, x )
-   AAdd ( _HMG_aControlWidth, w )
-   AAdd ( _HMG_aControlHeight, h )
-   AAdd ( _HMG_aControlSpacing, 0 )
-   AAdd ( _HMG_aControlContainerRow, iif ( _HMG_FrameLevel > 0,_HMG_ActiveFrameRow[_HMG_FrameLevel ], -1 ) )
-   AAdd ( _HMG_aControlContainerCol, iif ( _HMG_FrameLevel > 0,_HMG_ActiveFrameCol[_HMG_FrameLevel ], -1 ) )
-   AAdd ( _HMG_aControlPicture, "" )
-   AAdd ( _HMG_aControlContainerHandle, 0 )
-   AAdd ( _HMG_aControlFontName, '' )
-   AAdd ( _HMG_aControlFontSize, 0 )
-   AAdd ( _HMG_aControlFontAttributes, { FALSE, FALSE, FALSE, FALSE } )
-   AAdd ( _HMG_aControlToolTip, tooltip  )
-   AAdd ( _HMG_aControlRangeMin, 0  )
-   AAdd ( _HMG_aControlRangeMax, 0  )
-   AAdd ( _HMG_aControlCaption, ''  )
-   AAdd ( _HMG_aControlVisible, iif( invisible, FALSE, TRUE ) )
-   AAdd ( _HMG_aControlHelpId, HelpId )
-   AAdd ( _HMG_aControlFontHandle, 0 )
-   AAdd ( _HMG_aControlBrushHandle, 0 )
-   AAdd ( _HMG_aControlEnabled, .T. )
-   AAdd ( _HMG_aControlMiscData1, hAvi )
-   AAdd ( _HMG_aControlMiscData2, '' )
+   // Synchronize HMG internal state arrays with the new control's properties.
+   AAdd( _HMG_aControlType, "ANIMATERES" )
+   AAdd( _HMG_aControlNames, ControlName )
+   AAdd( _HMG_aControlHandles, ControlHandle )
+   AAdd( _HMG_aControlParentHandles, ParentForm )
+   AAdd( _HMG_aControlIds, nRes )
+   AAdd( _HMG_aControlProcedures, "" )
+   AAdd( _HMG_aControlPageMap, {} )
+   AAdd( _HMG_aControlValue, cFile )
+   AAdd( _HMG_aControlInputMask, "" )
+   AAdd( _HMG_aControllostFocusProcedure, "" )
+   AAdd( _HMG_aControlGotFocusProcedure, "" )
+   AAdd( _HMG_aControlChangeProcedure, "" )
+   AAdd( _HMG_aControlDeleted, .F. )
+   AAdd( _HMG_aControlBkColor, Nil )
+   AAdd( _HMG_aControlFontColor, Nil )
+   AAdd( _HMG_aControlDblClick, "" )
+   AAdd( _HMG_aControlHeadClick, {} )
+   AAdd( _HMG_aControlRow, y )
+   AAdd( _HMG_aControlCol, x )
+   AAdd( _HMG_aControlWidth, w )
+   AAdd( _HMG_aControlHeight, h )
+   AAdd( _HMG_aControlSpacing, 0 )
+   AAdd( _HMG_aControlContainerRow, iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[ _HMG_FrameLevel ], -1 ) )
+   AAdd( _HMG_aControlContainerCol, iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[ _HMG_FrameLevel ], -1 ) )
+   AAdd( _HMG_aControlPicture, "" )
+   AAdd( _HMG_aControlContainerHandle, 0 )
+   AAdd( _HMG_aControlFontName, '' )
+   AAdd( _HMG_aControlFontSize, 0 )
+   AAdd( _HMG_aControlFontAttributes, { .F., .F., .F., .F. } )
+   AAdd( _HMG_aControlToolTip, tooltip )
+   AAdd( _HMG_aControlRangeMin, 0 )
+   AAdd( _HMG_aControlRangeMax, 0 )
+   AAdd( _HMG_aControlCaption, '' )
+   AAdd( _HMG_aControlVisible, iif( invisible, .F., .T. ) )
+   AAdd( _HMG_aControlHelpId, HelpId )
+   AAdd( _HMG_aControlFontHandle, 0 )
+   AAdd( _HMG_aControlBrushHandle, 0 )
+   AAdd( _HMG_aControlEnabled, .T. )
+   
+   // Store the DLL handle in MiscData1 for later release during control destruction.
+   AAdd( _HMG_aControlMiscData1, hAvi )
+   AAdd( _HMG_aControlMiscData2, '' )
 
+   // Trigger OOP initialization if the Object-Oriented mode is active.
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, Len( _HMG_aControlNames ), mVar )
+      Eval( _HMG_bOnControlInit, Len( _HMG_aControlNames ), mVar )
    ENDIF
-
 RETURN NIL
 
-*------------------------------------------------------------------------------*
-FUNCTION SetAnimateResFile ( cWindow, cControl, cProperty, cValue )
-*------------------------------------------------------------------------------*
-
-   IF GetControlType ( cControl, cWindow ) == 'ANIMATERES' .AND. Upper ( cProperty ) == 'FILE'
-
-      _HMG_UserComponentProcess := .T.
-
-      _HMG_aControlValue[ GetControlIndex ( cControl, cWindow ) ] :=  cValue
-
-   ELSE
-
-      _HMG_UserComponentProcess := .F.
-
-   ENDIF
-
+/*
+ * FUNCTION: SetAnimateResFile
+ * Purpose: Updates the DLL file path associated with the control.
+ */
+FUNCTION SetAnimateResFile( cWindow, cControl, cProperty, cValue )
+   _AnimateResProp( cWindow, cControl, cProperty, cValue, "FILE", _HMG_aControlValue, .T. )
 RETURN NIL
 
-*------------------------------------------------------------------------------*
-FUNCTION GetAnimateResFile ( cWindow, cControl )
-*------------------------------------------------------------------------------*
-   LOCAL RetVal := Nil
+/*
+ * FUNCTION: GetAnimateResFile
+ * Purpose: Retrieves the current DLL file path from internal storage.
+ */
+FUNCTION GetAnimateResFile( cWindow, cControl )
+RETURN _AnimateResProp( cWindow, cControl, "", NIL, "", _HMG_aControlValue, .F. )
 
-   IF GetControlType ( cControl, cWindow ) == 'ANIMATERES'
-
-      _HMG_UserComponentProcess := .T.
-
-      RetVal := _HMG_aControlValue[ GetControlIndex ( cControl, cWindow ) ]
-
-   ELSE
-
-      _HMG_UserComponentProcess := .F.
-
-   ENDIF
-
-RETURN RetVal
-
-*------------------------------------------------------------------------------*
-FUNCTION SetAnimateResId ( cWindow, cControl, cProperty, cValue )
-*------------------------------------------------------------------------------*
-
-   IF GetControlType ( cControl, cWindow ) == 'ANIMATERES' .AND. Upper ( cProperty ) == 'RESID'
-
-      _HMG_UserComponentProcess := .T.
-
-      _HMG_aControlIds[ GetControlIndex ( cControl, cWindow ) ] :=  cValue
-
-   ELSE
-
-      _HMG_UserComponentProcess := .F.
-
-   ENDIF
-
+/*
+ * FUNCTION: SetAnimateResId
+ * Purpose: Updates the Resource ID for the AVI within the DLL.
+ */
+FUNCTION SetAnimateResId( cWindow, cControl, cProperty, cValue )
+   _AnimateResProp( cWindow, cControl, cProperty, cValue, "RESID", _HMG_aControlIds, .T. )
 RETURN NIL
 
-*------------------------------------------------------------------------------*
-FUNCTION GetAnimateResId ( cWindow, cControl )
-*------------------------------------------------------------------------------*
-   LOCAL RetVal := Nil
+/*
+ * FUNCTION: GetAnimateResId
+ * Purpose: Retrieves the current Resource ID from internal storage.
+ */
+FUNCTION GetAnimateResId( cWindow, cControl )
+RETURN _AnimateResProp( cWindow, cControl, "", NIL, "", _HMG_aControlIds, .F. )
 
-   IF GetControlType ( cControl, cWindow ) == 'ANIMATERES'
+/*
+ * STATIC FUNCTION: _AnimateResProp
+ * Purpose: Centralized helper for getting/setting ANIMATERES properties.
+ * Reasoning: Reduces code duplication by abstracting the array lookup and validation logic.
+ * Parameters:
+ *    - lSet: Logical flag (.T. for Set, .F. for Get).
+ *    - aStorage: Reference to the specific HMG internal array being accessed.
+ */
+STATIC FUNCTION _AnimateResProp( cWindow, cControl, cProperty, ;
+      xValue, cExpectedProp, aStorage, lSet )
 
-      _HMG_UserComponentProcess := .T.
+   LOCAL nIndex
+   LOCAL xRetVal := NIL
 
-      RetVal := _HMG_aControlIds[ GetControlIndex ( cControl, cWindow ) ]
+   // Ensure we are operating on the correct control type.
+   IF GetControlType( cControl, cWindow ) == "ANIMATERES"
 
+      nIndex := GetControlIndex( cControl, cWindow )
+
+      IF lSet
+         // Verify the property name matches before updating internal storage.
+         IF Upper( cProperty ) == cExpectedProp
+            _HMG_UserComponentProcess := .T.
+            aStorage[ nIndex ] := xValue
+         ELSE
+            _HMG_UserComponentProcess := .F.
+         ENDIF
+      ELSE
+         // Retrieve the value from the specified storage array.
+         _HMG_UserComponentProcess := .T.
+         xRetVal := aStorage[ nIndex ]
+      ENDIF
    ELSE
-
       _HMG_UserComponentProcess := .F.
-
    ENDIF
 
-RETURN RetVal
+RETURN xRetVal
 
-*------------------------------------------------------------------------------*
-PROCEDURE ReleaseAnimateRes ( cWindow, cControl )
-*------------------------------------------------------------------------------*
-
-   IF _IsControlDefined ( cControl, cWindow ) .AND. GetControlType ( cControl, cWindow ) == 'ANIMATERES'
-
-      UnloadAnimateLib( _GetControlObject ( cControl, cWindow ) )
-
+/*
+ * PROCEDURE: ReleaseAnimateRes
+ * Purpose: Cleans up resources when the control is destroyed.
+ * Side Effects: Unloads the DLL from memory to prevent resource leaks.
+ */
+PROCEDURE ReleaseAnimateRes( cWindow, cControl )
+   IF _IsControlDefined( cControl, cWindow ) .AND. GetControlType( cControl, cWindow ) == 'ANIMATERES'
+      // UnloadAnimateLib takes the DLL handle stored in MiscData1.
+      UnloadAnimateLib( _GetControlObject( cControl, cWindow ) )
       _HMG_UserComponentProcess := .T.
-
    ELSE
-
       _HMG_UserComponentProcess := .F.
-
    ENDIF
-
 RETURN
-
-*------------------------------------------------------------------------------*
-* Low Level C Routines
-*------------------------------------------------------------------------------*
 
 #pragma BEGINDUMP
 
@@ -266,78 +276,115 @@ RETURN
 #include <mmsystem.h>
 #include <commctrl.h>
 
-// If compiled in UNICODE mode, declare a function to convert ANSI strings to wide-character strings
 #ifdef UNICODE
    LPWSTR AnsiToWide( LPCSTR );
 #endif
 
-// Harbour function to initialize and display an animated control (e.g., a loading animation)
+/*
+ * HB_FUNC: INITANIMATERES
+ * Purpose: C-level interface to create the Win32 Animation control.
+ * Logic:
+ *    1. Loads the specified DLL into the process address space.
+ *    2. Creates a window of class 'SysAnimate32'.
+ *    3. Uses Animate_OpenEx to bind the AVI resource from the DLL to the control.
+ * Returns: HWND of the created control.
+ */
 HB_FUNC( INITANIMATERES )
 {
-   HWND AnimationCtrl;        // Handle for the animation control
-   HINSTANCE avi;             // Handle to the loaded library for the AVI resource
+   HWND      hAnimation;
+   HINSTANCE hAvi;
+
 #ifndef UNICODE
-   LPCSTR lpszDllName = hb_parc( 7 ); // Get the DLL name (resource file) from the 7th Harbour function parameter
+   LPCSTR lpszDllName = hb_parc( 7 );
 #else
-   LPWSTR lpszDllName = AnsiToWide( ( char * ) hb_parc( 7 ) ); // Convert to wide-character if in UNICODE mode
+   LPWSTR lpszDllName = AnsiToWide( ( char * ) hb_parc( 7 ) );
 #endif
 
-   // Define window style for the animation control
-   DWORD Style = WS_CHILD | WS_VISIBLE | ACS_TRANSPARENT | ACS_CENTER | ACS_AUTOPLAY;
+   /*
+    * Define Win32 Animation Control Styles:
+    * ACS_TRANSPARENT: Uses the parent's background color.
+    * ACS_CENTER: Centers the animation within the control area.
+    * ACS_AUTOPLAY: Starts playback immediately upon opening.
+    */
+   DWORD Style =
+      WS_CHILD |
+      ACS_TRANSPARENT |
+      ACS_CENTER |
+      ACS_AUTOPLAY;
 
-   // Initialize the common controls for the animation class
-   INITCOMMONCONTROLSEX i;
-   i.dwSize = sizeof( INITCOMMONCONTROLSEX );
-   i.dwICC  = ICC_ANIMATE_CLASS; // Specify that we are using the animation control class
-   InitCommonControlsEx( &i ); // Load the necessary common controls
+   /*
+    * Initialize the Common Controls library for the Animate class.
+    */
+   INITCOMMONCONTROLSEX icc;
 
-   // Check if the 9th parameter indicates the animation should initially be hidden
+   icc.dwSize = sizeof( INITCOMMONCONTROLSEX );
+   icc.dwICC  = ICC_ANIMATE_CLASS;
+
+   InitCommonControlsEx( &icc );
+
+   /*
+    * Apply visibility based on the 'invisible' parameter.
+    */
    if( ! hb_parl( 9 ) )
-   {
-      Style |= WS_VISIBLE;    // Add visibility to the style if not hidden
-   }
+      Style |= WS_VISIBLE;
 
-   // Load the specified DLL containing the AVI resource
-   avi = LoadLibrary( lpszDllName );
+   /*
+    * Load the external library containing the AVI resource.
+    */
+   hAvi = LoadLibrary( lpszDllName );
 
-   // Create the animation control window with the specified parameters
-   AnimationCtrl = CreateWindowEx
-                   (
-      0,                       // Extended window style
-      ANIMATE_CLASS,           // Predefined class name for animation controls
-      NULL,                    // No window name
-      Style,                   // Style for the animation control
-      hb_parni( 3 ),           // Left position
-      hb_parni( 4 ),           // Top position
-      hb_parni( 5 ),           // Width
-      hb_parni( 6 ),           // Height
-      hmg_par_raw_HWND( 1 ),   // Parent window handle
-      hmg_par_raw_HMENU( 2 ),  // Handle to menu or child window ID
-      avi,                     // Instance handle of the loaded DLL
-      NULL                     // Additional parameters (not used here)
-                   );
+   /*
+    * Create the actual Win32 control.
+    */
+   hAnimation = CreateWindowEx(
+      0,
+      ANIMATE_CLASS,
+      NULL,
+      Style,
+      hb_parni( 3 ), // x
+      hb_parni( 4 ), // y
+      hb_parni( 5 ), // width
+      hb_parni( 6 ), // height
+      hmg_par_raw_HWND( 1 ),  // Parent HWND
+      hmg_par_raw_HMENU( 2 ), // Control ID
+      hAvi,
+      NULL );
 
-   // Open and play the specified AVI resource in the animation control
-   Animate_OpenEx( ( HWND ) AnimationCtrl, avi, MAKEINTRESOURCE( hb_parni( 8 ) ) );
+   /*
+    * Load the AVI resource from the DLL and start the animation.
+    * MAKEINTRESOURCE converts the numeric ID to a resource pointer.
+    */
+   Animate_OpenEx(
+      hAnimation,
+      hAvi,
+      MAKEINTRESOURCE( hb_parni( 8 ) ) );
 
-   // Store the library handle in the second return parameter
-   HB_STORNL( ( LONG_PTR ) avi, 2 );
+   /*
+    * Store the DLL handle back into the second parameter (passed by reference).
+    * This allows the Harbour level to keep track of the handle for cleanup.
+    */
+   HB_STORNL( ( LONG_PTR ) hAvi, 2 );
 
-   // Return the animation control handle to the caller
-   hmg_ret_raw_HANDLE( AnimationCtrl );
+   /*
+    * Return the control's window handle.
+    */
+   hmg_ret_raw_HANDLE( hAnimation );
 }
 
-// Harbour function to unload the library associated with an animation control
+/*
+ * HB_FUNC: UNLOADANIMATELIB
+ * Purpose: Frees the DLL handle loaded during control initialization.
+ * Parameter: Handle to the loaded library (HINSTANCE).
+ */
 HB_FUNC( UNLOADANIMATELIB )
 {
-   // Retrieve the handle of the library to unload from the function's first parameter
    HINSTANCE hLib = hmg_par_raw_HINSTANCE( 1 );
 
-   // If the library handle is valid, free the loaded library
+   /*
+    * Decrement the reference count of the loaded DLL.
+    */
    if( hLib )
-   {
       FreeLibrary( hLib );
-   }
 }
 
 #pragma ENDDUMP

@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -49,204 +49,408 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineButton ( ControlName, ParentFormName, x, y, Caption, ProcedureName, ;
-   w, h, fontname, fontsize, tooltip, gotfocus, lostfocus, flat, NoTabStop, HelpId, ;
-   invisible, bold, italic, underline, strikeout, multiline, default, key, nId )
+FUNCTION _DefineButton( ControlName, ParentFormName, x, y, Caption, ;
+      ProcedureName, w, h, FontName, FontSize, tooltip, ;
+      gotfocus, lostfocus, flat, NoTabStop, HelpId, invisible, ;
+      bold, italic, underline, strikeout, multiline, ;
+      lDefault, key, nId )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle , ControlHandle , FontHandle
-   LOCAL mVar
-   LOCAL blInit
-   LOCAL k
-   LOCAL Style
+
+   LOCAL nParentHandle
+   LOCAL nControlHandle := 0
+   LOCAL nFontHandle
+   LOCAL nControl
+   LOCAL nStyle
+
+   LOCAL cVarName
+   LOCAL bDlgInit
+
    LOCAL lDialogInMemory
+
+   LOCAL nContainerRow := -1
+   LOCAL nContainerCol := -1
+
+   /* Defaults */
 
    hb_default( @w, 100 )
    hb_default( @h, 28 )
-   __defaultNIL( @lostfocus, "" )
-   __defaultNIL( @gotfocus, "" )
-   hb_default( @invisible, .F. )
+
    hb_default( @flat, .F. )
    hb_default( @NoTabStop, .F. )
+   hb_default( @invisible, .F. )
 
-   IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+   __defaultNIL( @lostfocus, "" )
+   __defaultNIL( @gotfocus, "" )
+
+   /* Resolve predefined font */
+
+   IF ( nFontHandle := GetFontHandle( FontName ) ) != 0
+
+      GetFontParamByRef( ;
+         nFontHandle, ;
+         @FontName, ;
+         @FontSize, ;
+         @bold, ;
+         @italic, ;
+         @underline, ;
+         @strikeout )
+
    ENDIF
+
+   /* Active parent */
 
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
-      ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
+
+      ParentFormName := ;
+         iif( _HMG_BeginDialogActive, ;
+              _HMG_ActiveDialogName, ;
+              _HMG_ActiveFormName )
+
       __defaultNIL( @FontName, _HMG_ActiveFontName )
       __defaultNIL( @FontSize, _HMG_ActiveFontSize )
+
    ENDIF
 
-   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+   /* Frame offsets */
+
+   IF _HMG_FrameLevel > 0 .AND. ! _HMG_ParentWindowActive
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentFormName := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
+      nContainerRow := ;
+         _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      nContainerCol := ;
+         _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /* Validation */
+
+   IF !_IsWindowDefined( ParentFormName ) .AND. ;
+         ! lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentFormName, "Parent", ParentFormName ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ;
+         ! lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentFormName + ;
+         " Already defined." )
+
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   /* Allocation */
+
+   cVarName := "_" + ParentFormName + "_" + ControlName
+   nControl := _GetControlFree()
+
+   /* Dialog mode */
 
    IF _HMG_BeginDialogActive
 
-      ParentFormHandle := _HMG_ActiveDialogHandle
+      nParentHandle := _HMG_ActiveDialogHandle
 
-      Style :=  BS_NOTIFY + WS_CHILD + BS_PUSHBUTTON
+      nStyle := ;
+         BS_NOTIFY + ;
+         WS_CHILD + ;
+         BS_PUSHBUTTON
+
       IF flat
-         style += BS_FLAT
-      ENDIF
-      IF !NoTabStop
-         style += WS_TABSTOP
-      ENDIF
-      IF !invisible
-         style += WS_VISIBLE
+         nStyle += BS_FLAT
       ENDIF
 
-      IF lDialogInMemory         //Dialog Template
+      IF ! NoTabStop
+         nStyle += WS_TABSTOP
+      ENDIF
 
-         //           {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
-         blInit := {|x, y, z| InitDialogButtonImage( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, "button", style, 0, x, y, w, h, caption, HelpId, tooltip, FontName, FontSize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
+      IF ! invisible
+         nStyle += WS_VISIBLE
+      ENDIF
+
+      IF lDialogInMemory
+
+         bDlgInit := ;
+            {|a, b, c| InitDialogButtonImage( a, b, c ) }
+
+         AAdd( ;
+            _HMG_aDialogItems, ;
+            { ;
+               nId, ;
+               nControl, ;
+               "button", ;
+               nStyle, ;
+               0, ;
+               x, ;
+               y, ;
+               w, ;
+               h, ;
+               Caption, ;
+               HelpId, ;
+               tooltip, ;
+               FontName, ;
+               FontSize, ;
+               bold, ;
+               italic, ;
+               underline, ;
+               strikeout, ;
+               bDlgInit, ;
+               _HMG_BeginTabActive, ;
+               .F., ;
+               _HMG_ActiveTabPage ;
+            } )
 
       ELSE
 
-         ControlHandle := GetDialogItemHandle( ParentFormHandle, nId )
+         nControlHandle := ;
+            GetDialogItemHandle( nParentHandle, nId )
 
-         x := GetWindowCol ( Controlhandle )
-         y := GetWindowRow ( Controlhandle )
-         w := GetWindowWidth  ( Controlhandle )
-         h := GetWindowHeight ( Controlhandle )
+         x := GetWindowCol( nControlHandle )
+         y := GetWindowRow( nControlHandle )
 
-         IF FontHandle != 0
-            _SetFontHandle( ControlHandle, FontHandle )
+         w := GetWindowWidth( nControlHandle )
+         h := GetWindowHeight( nControlHandle )
+
+         IF nFontHandle != 0
+
+            _SetFontHandle( nControlHandle, nFontHandle )
+
          ELSE
+
             __defaultNIL( @FontName, _HMG_DefaultFontName )
             __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-            FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+
+            nFontHandle := ;
+               _SetFont( ;
+                  nControlHandle, ;
+                  FontName, ;
+                  FontSize, ;
+                  bold, ;
+                  italic, ;
+                  underline, ;
+                  strikeout )
+
          ENDIF
 
-         IF caption != NIL
-            SetWindowText ( ControlHandle , caption )
+         IF Caption != NIL
+            SetWindowText( nControlHandle, Caption )
          ENDIF
 
-         SetWindowStyle ( ControlHandle, style, .T. )
+         SetWindowStyle( nControlHandle, nStyle, .T. )
 
       ENDIF
 
    ELSE
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
+      nParentHandle := GetFormHandle( ParentFormName )
 
-      ControlHandle := InitButton ( ParentFormHandle, Caption, 0, x, y, w, h, '', 0, flat, NoTabStop, invisible, multiline, default )
+      nControlHandle := ;
+         InitButton( ;
+            nParentHandle, ;
+            Caption, ;
+            0, ;
+            x, ;
+            y, ;
+            w, ;
+            h, ;
+            "", ;
+            0, ;
+            flat, ;
+            NoTabStop, ;
+            invisible, ;
+            multiline, ;
+            lDefault )
 
    ENDIF
 
-   IF .NOT. lDialogInMemory
+   /* Runtime font */
 
-      IF FontHandle != 0
-         _SetFontHandle( ControlHandle, FontHandle )
+   IF ! lDialogInMemory
+
+      IF nFontHandle != 0
+
+         _SetFontHandle( nControlHandle, nFontHandle )
+
       ELSE
+
          __defaultNIL( @FontName, _HMG_DefaultFontName )
          __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-         FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
+
+         nFontHandle := ;
+            _SetFont( ;
+               nControlHandle, ;
+               FontName, ;
+               FontSize, ;
+               bold, ;
+               italic, ;
+               underline, ;
+               strikeout )
+
       ENDIF
 
    ENDIF
 
+   /* Register name */
+
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( cVarName, nControl )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &cVarName. := nControl
+
 #endif
 
-   _HMG_aControlType [k] := "BUTTON"
-   _HMG_aControlNames [k] := ControlName
-   _HMG_aControlHandles [k] := ControlHandle
-   _HMG_aControlParenthandles [k] := ParentFormHandle
-   _HMG_aControlIds [k] := nId
-   _HMG_aControlProcedures [k] := ProcedureName
-   _HMG_aControlPageMap [k] := {}
-   _HMG_aControlValue [k] := Nil
-   _HMG_aControlInputMask [k] := iif ( ISCHARACTER( key ), key, "" )
-   _HMG_aControllostFocusProcedure [k] := lostfocus
-   _HMG_aControlGotFocusProcedure [k] := gotfocus
-   _HMG_aControlChangeProcedure [k] := ""
-   _HMG_aControlDeleted [k] := FALSE
-   _HMG_aControlBkColor [k] := Nil
-   _HMG_aControlFontColor [k] := Nil
-   _HMG_aControlDblClick [k] := ""
-   _HMG_aControlHeadClick [k] := {}
-   _HMG_aControlRow [k] := y
-   _HMG_aControlCol [k] := x
-   _HMG_aControlWidth [k] := w
-   _HMG_aControlHeight [k] := h
-   _HMG_aControlSpacing [k] := 0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture [k] := ""
-   _HMG_aControlContainerHandle [k] := 0
-   _HMG_aControlFontName [k] := fontname
-   _HMG_aControlFontSize [k] := fontsize
-   _HMG_aControlFontAttributes [k] := { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip [k] := tooltip
-   _HMG_aControlRangeMin [k] := 0
-   _HMG_aControlRangeMax [k] := 0
-   _HMG_aControlCaption [k] := Caption
-   _HMG_aControlVisible [k] := iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId [k] := HelpId
-   _HMG_aControlFontHandle [k] := FontHandle
-   _HMG_aControlBrushHandle [k] := 0
-   _HMG_aControlEnabled [k] := .T.
-   _HMG_aControlMiscData1 [k] := 0
-   _HMG_aControlMiscData2 [k] := ''
+   /* Identity */
+
+   _HMG_aControlType[ nControl ]          := "BUTTON"
+   _HMG_aControlNames[ nControl ]         := ControlName
+   _HMG_aControlHandles[ nControl ]       := nControlHandle
+   _HMG_aControlParentHandles[ nControl ] := nParentHandle
+   _HMG_aControlIds[ nControl ]           := nId
+
+   /* Events */
+
+   _HMG_aControlProcedures[ nControl ]         := ProcedureName
+   _HMG_aControllostFocusProcedure[ nControl ] := lostfocus
+   _HMG_aControlGotFocusProcedure[ nControl ]  := gotfocus
+   _HMG_aControlChangeProcedure[ nControl ]    := ""
+
+   /* State */
+
+   _HMG_aControlPageMap[ nControl ] := {}
+   _HMG_aControlValue[ nControl ]   := NIL
+
+   _HMG_aControlInputMask[ nControl ] := ;
+      iif( ISCHARACTER( key ), key, "" )
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := ! invisible
+
+   /* Geometry */
+
+   _HMG_aControlRow[ nControl ]    := y
+   _HMG_aControlCol[ nControl ]    := x
+
+   _HMG_aControlWidth[ nControl ]  := w
+   _HMG_aControlHeight[ nControl ] := h
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ]    := nContainerRow
+   _HMG_aControlContainerCol[ nControl ]    := nContainerCol
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /* Appearance */
+
+   _HMG_aControlBkColor[ nControl ]   := NIL
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   _HMG_aControlPicture[ nControl ] := ""
+
+   _HMG_aControlFontName[ nControl ] := FontName
+   _HMG_aControlFontSize[ nControl ] := FontSize
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { bold, italic, underline, strikeout }
+
+   _HMG_aControlToolTip[ nControl ] := tooltip
+   _HMG_aControlCaption[ nControl ] := Caption
+
+   _HMG_aControlFontHandle[ nControl ]  := nFontHandle
+   _HMG_aControlBrushHandle[ nControl ] := 0
+
+   /* Misc */
+
+   _HMG_aControlRangeMin[ nControl ] := 0
+   _HMG_aControlRangeMax[ nControl ] := 0
+
+   _HMG_aControlHelpId[ nControl ] := HelpId
+
+   _HMG_aControlDblClick[ nControl ] := ""
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   _HMG_aControlMiscData1[ nControl ] := 0
+   _HMG_aControlMiscData2[ nControl ] := ""
+
+   /* OOP */
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
    ENDIF
 
-   IF .NOT. lDialogInMemory
+   /* Runtime init */
+
+   IF ! lDialogInMemory
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap , ControlHandle )
+         AAdd( _HMG_ActiveTabCurrentPageMap, nControlHandle )
       ENDIF
 
       IF tooltip != NIL
-         SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( ParentFormName ) )
+
+         SetToolTip( ;
+            nControlHandle, ;
+            tooltip, ;
+            GetFormToolTipHandle( ParentFormName ) )
+
       ENDIF
 
-      _SetHotKeyByName ( ParentFormName , key , ProcedureName )
+      _SetHotKeyByName( ;
+         ParentFormName, ;
+         key, ;
+         ProcedureName )
 
    ENDIF
 
-RETURN Nil
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineImageButton ( ControlName, ParentFormName, x, y, Caption, ProcedureName, ;
-   w, h, image, tooltip, gotfocus, lostfocus, flat, notrans, HelpId, invisible, ;
-   notabstop, default, icon, extract, nIdx, noxpstyle, key, nId )
+FUNCTION _DefineImageButton( ControlName, ParentFormName, x, y, Caption, ;
+      ProcedureName, w, h, image, tooltip, gotfocus, lostfocus, ;
+      flat, notrans, HelpId, invisible, notabstop, lDefault, ;
+      icon, extract, nIdx, noxpstyle, key, nId )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle , ControlHandle
+
+   LOCAL nParentHandle
+   LOCAL nControlHandle := 0
+   LOCAL nControl
+   LOCAL nStyle
+   LOCAL nhImage := 0
+
    LOCAL aRet
-   LOCAL mVar
+   LOCAL cVarName
    LOCAL cPicture
-   LOCAL blInit
-   LOCAL k
-   LOCAL Style
-   LOCAL nhImage
+   LOCAL bDlgInit
+
    LOCAL lDialogInMemory
+
+   LOCAL nContainerRow := -1
+   LOCAL nContainerCol := -1
+
+   /* Defaults */
 
    hb_default( @flat, .F. )
    hb_default( @invisible, .F. )
@@ -254,167 +458,335 @@ FUNCTION _DefineImageButton ( ControlName, ParentFormName, x, y, Caption, Proced
    hb_default( @noxpstyle, .F. )
    hb_default( @nIdx, 0 )
 
+   /* Toolbar protection */
+
    IF _HMG_ToolBarActive
-      RETURN Nil
+      RETURN NIL
    ENDIF
+
+   /* Active parent */
 
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
-      ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
+
+      ParentFormName := ;
+         iif( _HMG_BeginDialogActive, ;
+              _HMG_ActiveDialogName, ;
+              _HMG_ActiveFormName )
+
    ENDIF
 
-   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+   /* Frame offsets */
+
+   IF _HMG_FrameLevel > 0 .AND. ! _HMG_ParentWindowActive
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentFormName := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
+      nContainerRow := ;
+         _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      nContainerCol := ;
+         _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /* Validation */
+
+   IF !_IsWindowDefined( ParentFormName ) .AND. ;
+         ! lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentFormName, "Parent", ParentFormName ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ;
+         ! lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentFormName + ;
+         " Already defined." )
+
    ENDIF
 
-   IF !Empty( image ) .AND. !Empty( icon )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + ". Either bitmap or icon must be specified." )
+   IF ! Empty( image ) .AND. ! Empty( icon )
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentFormName + ;
+         ". Either bitmap or icon must be specified." )
+
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   /* Allocation */
+
+   cVarName := "_" + ParentFormName + "_" + ControlName
+
+   nControl := _GetControlFree()
 
    cPicture := IFEMPTY( icon, image, icon )
+
    IF ISARRAY( cPicture )
-      image := cPicture [1]
+      image := cPicture[1]
    ENDIF
+
+   /* Dialog mode */
 
    IF _HMG_BeginDialogActive
 
-      ParentFormHandle := _HMG_ActiveDialogHandle
+      nParentHandle := _HMG_ActiveDialogHandle
 
-      Style := BS_NOTIFY + BS_BITMAP + WS_CHILD + BS_PUSHBUTTON
+      nStyle := ;
+         BS_NOTIFY + ;
+         BS_BITMAP + ;
+         WS_CHILD + ;
+         BS_PUSHBUTTON
+
       IF flat
-         style += BS_FLAT
-      ENDIF
-      IF !NoTabStop
-         style += WS_TABSTOP
-      ENDIF
-      IF !invisible
-         style += WS_VISIBLE
+         nStyle += BS_FLAT
       ENDIF
 
-      IF lDialogInMemory         //Dialog Template
+      IF ! notabstop
+         nStyle += WS_TABSTOP
+      ENDIF
 
-         //          {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,ToolTip,FontName,FontSize,bold,italic,,}}  --->_HMG_aDialogItems
-         blInit := {|x, y, z| InitDialogButtonImage( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, "button", style, 0, x, y, w, h, caption, HelpId, tooltip, , , , , , , blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
+      IF ! invisible
+         nStyle += WS_VISIBLE
+      ENDIF
+
+      IF lDialogInMemory
+
+         bDlgInit := ;
+            {|a, b, c| InitDialogButtonImage( a, b, c ) }
+
+         AAdd( ;
+            _HMG_aDialogItems, ;
+            { ;
+               nId, ;
+               nControl, ;
+               "button", ;
+               nStyle, ;
+               0, ;
+               x, ;
+               y, ;
+               w, ;
+               h, ;
+               Caption, ;
+               HelpId, ;
+               tooltip, ;
+               , ;
+               , ;
+               , ;
+               , ;
+               , ;
+               , ;
+               bDlgInit, ;
+               _HMG_BeginTabActive, ;
+               .F., ;
+               _HMG_ActiveTabPage ;
+            } )
 
       ELSE
 
-         ControlHandle := GetDialogItemHandle( ParentFormHandle, nId )
+         nControlHandle := ;
+            GetDialogItemHandle( nParentHandle, nId )
 
-         x := GetWindowCol ( Controlhandle )
-         y := GetWindowRow ( Controlhandle )
-         w := GetWindowWidth  ( Controlhandle )
-         h := GetWindowHeight ( Controlhandle )
+         x := GetWindowCol( nControlHandle )
+         y := GetWindowRow( nControlHandle )
 
-         SetWindowStyle ( ControlHandle, style, .T. )
+         w := GetWindowWidth( nControlHandle )
+         h := GetWindowHeight( nControlHandle )
 
-         _SetBtnPicture( ControlHandle, image )
+         SetWindowStyle( nControlHandle, nStyle, .T. )
+
+         _SetBtnPicture( nControlHandle, image )
 
       ENDIF
 
    ELSE
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
+      nParentHandle := GetFormHandle( ParentFormName )
 
-      aRet := InitImageButton ( ParentFormHandle, Caption, 0, x, y, w, h, image, flat, notrans, invisible, notabstop, default, icon, extract, nIdx, ( _HMG_IsThemed .AND. !noxpstyle ) )
+      aRet := ;
+         InitImageButton( ;
+            nParentHandle, ;
+            Caption, ;
+            0, ;
+            x, ;
+            y, ;
+            w, ;
+            h, ;
+            image, ;
+            flat, ;
+            notrans, ;
+            invisible, ;
+            notabstop, ;
+            lDefault, ;
+            icon, ;
+            extract, ;
+            nIdx, ;
+            ( _HMG_IsThemed .AND. ! noxpstyle ) )
 
-      ControlHandle := aRet [1]
-      nhImage := aRet [2]
+      nControlHandle := aRet[1]
+      nhImage        := aRet[2]
 
    ENDIF
+
+   /* Register name */
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( cVarName, nControl )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &cVarName. := nControl
+
 #endif
 
-   _HMG_aControlType [k] :=  "BUTTON"
-   _HMG_aControlNames [k] :=  ControlName
-   _HMG_aControlHandles [k] :=  ControlHandle
-   _HMG_aControlParenthandles [k] :=  ParentFormHandle
-   _HMG_aControlIds [k] :=  nId
-   _HMG_aControlProcedures [k] :=  ProcedureName
-   _HMG_aControlPageMap [k] :=  {}
-   _HMG_aControlValue [k] :=  Nil
-   _HMG_aControlInputMask [k] :=  iif ( ISCHARACTER( key ), key, "" )
-   _HMG_aControllostFocusProcedure [k] :=  lostfocus
-   _HMG_aControlGotFocusProcedure [k] :=  gotfocus
-   _HMG_aControlChangeProcedure [k] :=  ""
-   _HMG_aControlDeleted [k] :=  FALSE
-   _HMG_aControlBkColor [k] :=  Nil
-   _HMG_aControlFontColor [k] :=  Nil
-   _HMG_aControlDblClick  [k] :=  noxpstyle
-   _HMG_aControlHeadClick [k] :=  {}
-   _HMG_aControlRow [k] :=   y
-   _HMG_aControlCol [k] :=   x
-   _HMG_aControlWidth [k] :=   w
-   _HMG_aControlHeight [k] :=   h
-   _HMG_aControlSpacing [k] :=   0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture [k] :=   cPicture
-   _HMG_aControlContainerHandle [k] :=   0
-   _HMG_aControlFontName [k] :=   ''
-   _HMG_aControlFontSize [k] :=   0
-   _HMG_aControlFontAttributes [k] :=   { .F. , .F. , .F. , .F. }
-   _HMG_aControlToolTip [k] :=    tooltip
-   _HMG_aControlRangeMin [k] :=   0
-   _HMG_aControlRangeMax [k] :=   0
-   _HMG_aControlCaption [k] :=    Caption
-   _HMG_aControlVisible [k] :=    iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId [k] :=    HelpId
-   _HMG_aControlFontHandle [k] :=  0
-   _HMG_aControlBrushHandle [k] := nhImage
-   _HMG_aControlEnabled [k] :=   .T.
-   _HMG_aControlMiscData1 [k] := IFEMPTY( icon, 0, 1 )  // 0 - bitmap  1 - icon
-   _HMG_aControlMiscData2 [k] := ''
+   /* Identity */
+
+   _HMG_aControlType[ nControl ]          := "BUTTON"
+   _HMG_aControlNames[ nControl ]         := ControlName
+   _HMG_aControlHandles[ nControl ]       := nControlHandle
+   _HMG_aControlParentHandles[ nControl ] := nParentHandle
+   _HMG_aControlIds[ nControl ]           := nId
+
+   /* Events */
+
+   _HMG_aControlProcedures[ nControl ]         := ProcedureName
+   _HMG_aControllostFocusProcedure[ nControl ] := lostfocus
+   _HMG_aControlGotFocusProcedure[ nControl ]  := gotfocus
+   _HMG_aControlChangeProcedure[ nControl ]    := ""
+
+   /* State */
+
+   _HMG_aControlPageMap[ nControl ] := {}
+   _HMG_aControlValue[ nControl ]   := NIL
+
+   _HMG_aControlInputMask[ nControl ] := ;
+      iif( ISCHARACTER( key ), key, "" )
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := ! invisible
+
+   /* Geometry */
+
+   _HMG_aControlRow[ nControl ]    := y
+   _HMG_aControlCol[ nControl ]    := x
+
+   _HMG_aControlWidth[ nControl ]  := w
+   _HMG_aControlHeight[ nControl ] := h
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ]    := nContainerRow
+   _HMG_aControlContainerCol[ nControl ]    := nContainerCol
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /* Appearance */
+
+   _HMG_aControlBkColor[ nControl ]   := NIL
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   _HMG_aControlPicture[ nControl ] := cPicture
+
+   _HMG_aControlFontName[ nControl ] := ""
+   _HMG_aControlFontSize[ nControl ] := 0
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { .F., .F., .F., .F. }
+
+   _HMG_aControlToolTip[ nControl ] := tooltip
+   _HMG_aControlCaption[ nControl ] := Caption
+
+   _HMG_aControlFontHandle[ nControl ]  := 0
+   _HMG_aControlBrushHandle[ nControl ] := nhImage
+
+   /* Misc */
+
+   _HMG_aControlRangeMin[ nControl ] := 0
+   _HMG_aControlRangeMax[ nControl ] := 0
+
+   _HMG_aControlHelpId[ nControl ] := HelpId
+
+   _HMG_aControlDblClick[ nControl ] := noxpstyle
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   _HMG_aControlMiscData1[ nControl ] := ;
+      IFEMPTY( icon, 0, 1 )
+
+   _HMG_aControlMiscData2[ nControl ] := ""
+
+   /* OOP */
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
    ENDIF
 
-   IF .NOT. lDialogInMemory
+   /* Runtime init */
+
+   IF ! lDialogInMemory
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap , Controlhandle )
+         AAdd( _HMG_ActiveTabCurrentPageMap, nControlHandle )
       ENDIF
 
       IF tooltip != NIL
-         SetToolTip ( ControlHandle , tooltip , GetFormToolTipHandle ( ParentFormName ) )
+
+         SetToolTip( ;
+            nControlHandle, ;
+            tooltip, ;
+            GetFormToolTipHandle( ParentFormName ) )
+
       ENDIF
 
-      _SetHotKeyByName ( ParentFormName , key , ProcedureName )
+      _SetHotKeyByName( ;
+         ParentFormName, ;
+         key, ;
+         ProcedureName )
 
    ENDIF
 
-RETURN Nil
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
-FUNCTION InitDialogButtonImage( ParentFormName, ControlHandle, k )
+FUNCTION InitDialogButtonImage( ParentFormName, ;
+      nControlHandle, nControl )
 *-----------------------------------------------------------------------------*
+
    LOCAL image
 
-   image := _HMG_aControlPicture  [k]
-   IF !Empty( image ) .AND. ValType( ParentFormName ) <> 'U'
-      _SetBtnPicture( ControlHandle, image )
-   ENDIF
-// JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]  // Modal
-      _HMG_aControlDeleted [k] := .T.
+   image := _HMG_aControlPicture[ nControl ]
+
+   IF ! Empty( image ) .AND. ;
+         ValType( ParentFormName ) != "U"
+
+      _SetBtnPicture( nControlHandle, image )
+
    ENDIF
 
-RETURN Nil
+   /* Modal dialog cleanup */
+
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. ;
+         _HMG_aDialogTemplate[3]
+
+      _HMG_aControlDeleted[ nControl ] := .T.
+
+   ENDIF
+
+RETURN NIL

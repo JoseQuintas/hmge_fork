@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -45,258 +45,495 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
  ---------------------------------------------------------------------------*/
 
-#include 'minigui.ch'
+#include "minigui.ch"
+
+#define HOTKEY_ID_MAX  49151
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineHotKey ( cParentForm, nMod, nKey, bAction )
+STATIC FUNCTION _FindHotKey( hParent, nMod, nKey )
 *-----------------------------------------------------------------------------*
-   LOCAL nParentForm
+
+   LOCAL cType
+   LOCAL nIndex
+
+   FOR EACH cType IN _HMG_aControlType
+
+      nIndex := hb_enumindex( cType )
+
+      IF cType == "HOTKEY" .AND. ;
+            _HMG_aControlParentHandles[ nIndex ] == hParent .AND. ;
+            _HMG_aControlPageMap[ nIndex ] == nMod .AND. ;
+            _HMG_aControlValue[ nIndex ] == nKey
+
+         RETURN nIndex
+
+      ENDIF
+
+   NEXT
+
+RETURN 0
+
+
+*-----------------------------------------------------------------------------*
+FUNCTION _DefineHotKey( cParentForm, nMod, nKey, bAction )
+*-----------------------------------------------------------------------------*
+
+   LOCAL hParent := 0
+
    LOCAL nId
-   LOCAL k
+   LOCAL nControl
+
    LOCAL lSuccess
-   // BK 22-Apr-2012
-   IF _HMG_BeginWindowMDIActive .AND. Empty( _HMG_ActiveFormName )
-      nParentForm := GetActiveMdiHandle()
-      IF nParentForm == 0
+
+   /* Resolve active form / MDI context */
+
+   IF _HMG_BeginWindowMDIActive .AND. ;
+         Empty( _HMG_ActiveFormName )
+
+      hParent := GetActiveMdiHandle()
+
+      IF hParent == 0
+
          cParentForm := _HMG_MainClientMDIName
+
       ELSE
-         cParentForm := _GetWindowProperty ( nParentForm, "PROP_FORMNAME" )
+
+         cParentForm := ;
+            _GetWindowProperty( hParent, "PROP_FORMNAME" )
+
       ENDIF
+
    ELSEIF _HMG_BeginWindowActive
+
       cParentForm := _HMG_ActiveFormName
+
    ENDIF
 
-   IF HB_ISNIL ( cParentForm )
-      MsgMiniGuiError ( "ON KEY: Parent Window is Not specified." )
+   /* Validation */
+
+   IF HB_ISNIL( cParentForm )
+
+      MsgMiniGuiError( ;
+         "ON KEY: Parent Window is Not specified." )
+
    ENDIF
 
-   // Check if the window/form is defined.
-   IF .NOT. _IsWindowDefined ( cParentForm )
-      MsgMiniGuiError ( "Window " + cParentForm + " is not defined." )
+   IF !_IsWindowDefined( cParentForm )
+
+      MsgMiniGuiError( ;
+         "Window " + cParentForm + " is not defined." )
+
    ENDIF
 
-   IF _GetHotKeyBlock ( cParentForm, nMod , nKey ) != NIL
-      _ReleaseHotKey ( cParentForm, nMod , nKey )
-   ENDIF
-   // BK 22-Apr-2012
-   IF _HMG_BeginWindowMDIActive .AND. Empty( _HMG_ActiveFormName )
-      nParentForm := GetActiveMdiHandle()
-      IF nParentForm == 0
-         nParentForm := GetFormHandle ( cParentForm )
-      ENDIF
-   ELSE
-      nParentForm := GetFormHandle ( cParentForm )
+   /* Replace existing hotkey */
+
+   IF _GetHotKeyBlock( cParentForm, nMod, nKey ) != NIL
+
+      _ReleaseHotKey( cParentForm, nMod, nKey )
+
    ENDIF
 
-   #define HOTKEY_ID_MAX  49151
+   /* Resolve parent handle */
+
+   IF hParent == 0
+      hParent := GetFormHandle( cParentForm )
+   ENDIF
+
+   /* Register hotkey */
+
    nId := _GetId( HOTKEY_ID_MAX )
 
-   lSuccess := InitHotKey ( nParentForm , nMod , nKey , nId )
+   lSuccess := ;
+      InitHotKey( ;
+         hParent, ;
+         nMod, ;
+         nKey, ;
+         nId )
 
-   k := _GetControlFree()
+   /* Allocate internal control slot */
 
-   _HMG_aControlType [k] :=  "HOTKEY"
-   _HMG_aControlNames  [k] :=  ''
-   _HMG_aControlHandles  [k] :=  0
-   _HMG_aControlParentHandles  [k] :=  nParentForm
-   _HMG_aControlIds  [k] :=  nId
-   _HMG_aControlProcedures  [k] :=  bAction
-   _HMG_aControlPageMap  [k] :=  nMod
-   _HMG_aControlValue  [k] :=  nKey
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControllostFocusProcedure  [k] :=  ""
-   _HMG_aControlGotFocusProcedure   [k] :=  ""
-   _HMG_aControlChangeProcedure  [k] :=  ""
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor  [k] :=  Nil
-   _HMG_aControlFontColor  [k] :=  Nil
-   _HMG_aControlDblClick   [k] :=  ""
-   _HMG_aControlHeadClick  [k] :=  {}
-   _HMG_aControlRow  [k] :=  0
-   _HMG_aControlCol   [k] :=  0
-   _HMG_aControlWidth  [k] :=  0
-   _HMG_aControlHeight  [k] :=  0
-   _HMG_aControlSpacing   [k] :=  0
-   _HMG_aControlContainerRow  [k] :=  0
-   _HMG_aControlContainerCol   [k] :=  0
-   _HMG_aControlPicture   [k] :=  ""
-   _HMG_aControlContainerHandle   [k] :=  0
-   _HMG_aControlFontName   [k] :=  ''
-   _HMG_aControlFontSize  [k] :=  0
-   _HMG_aControlFontAttributes  [k] :=  { .F. , .F. , .F. , .F. }
-   _HMG_aControlToolTip   [k] :=  ''
-   _HMG_aControlRangeMin   [k] :=  0
-   _HMG_aControlRangeMax   [k] :=  0
-   _HMG_aControlCaption   [k] :=  ''
-   _HMG_aControlVisible   [k] :=  .T.
-   _HMG_aControlHelpId  [k] :=  0
-   _HMG_aControlFontHandle  [k] :=  0
-   _HMG_aControlBrushHandle  [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] := 0
-   _HMG_aControlMiscData2 [k] := ''
+   nControl := _GetControlFree()
+
+   /* Identity */
+
+   _HMG_aControlType[ nControl ]          := "HOTKEY"
+   _HMG_aControlNames[ nControl ]         := ""
+
+   _HMG_aControlHandles[ nControl ]       := 0
+   _HMG_aControlParentHandles[ nControl ] := hParent
+
+   _HMG_aControlIds[ nControl ] := nId
+
+   /* Events */
+
+   _HMG_aControlProcedures[ nControl ] := bAction
+
+   _HMG_aControlLostFocusProcedure[ nControl ] := ""
+   _HMG_aControlGotFocusProcedure[ nControl ]  := ""
+   _HMG_aControlChangeProcedure[ nControl ]    := ""
+
+   /* Internal HOTKEY storage */
+
+   /*
+      PageMap stores modifier flags.
+   */
+
+   _HMG_aControlPageMap[ nControl ] := nMod
+
+   /*
+      Value stores virtual key code.
+   */
+
+   _HMG_aControlValue[ nControl ] := nKey
+
+   _HMG_aControlInputMask[ nControl ] := ""
+
+   /* Runtime state */
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := .T.
+
+   /* Appearance */
+
+   _HMG_aControlBkColor[ nControl ]   := NIL
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   _HMG_aControlPicture[ nControl ] := ""
+
+   _HMG_aControlFontName[ nControl ] := ""
+   _HMG_aControlFontSize[ nControl ] := 0
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { .F., .F., .F., .F. }
+
+   _HMG_aControlToolTip[ nControl ] := ""
+   _HMG_aControlCaption[ nControl ] := ""
+
+   _HMG_aControlFontHandle[ nControl ]  := 0
+   _HMG_aControlBrushHandle[ nControl ] := 0
+
+   /* Geometry */
+
+   _HMG_aControlRow[ nControl ]    := 0
+   _HMG_aControlCol[ nControl ]    := 0
+
+   _HMG_aControlWidth[ nControl ]  := 0
+   _HMG_aControlHeight[ nControl ] := 0
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ] := 0
+   _HMG_aControlContainerCol[ nControl ] := 0
+
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /* Miscellaneous */
+
+   _HMG_aControlRangeMin[ nControl ] := 0
+   _HMG_aControlRangeMax[ nControl ] := 0
+
+   _HMG_aControlDblClick[ nControl ] := ""
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   _HMG_aControlHelpId[ nControl ] := 0
+
+   _HMG_aControlMiscData1[ nControl ] := 0
+   _HMG_aControlMiscData2[ nControl ] := ""
 
 RETURN lSuccess
 
-*-----------------------------------------------------------------------------*
-PROCEDURE _ReleaseHotKey ( cParentForm, nMod , nKey )
-*-----------------------------------------------------------------------------*
-   LOCAL nParentFormHandle := GetFormHandle ( cParentForm )
-   LOCAL ControlType
-   LOCAL i
-
-   FOR EACH ControlType IN _HMG_aControlType
-      i := hb_enumindex( ControlType )
-      IF ControlType == 'HOTKEY' .AND. _HMG_aControlParentHandles [i] == nParentFormHandle .AND. _HMG_aControlPageMap [i] == nMod .AND. _HMG_aControlValue [i] == nKey
-         _EraseControl( i, GetFormIndex ( cParentForm ) )
-         EXIT
-      ENDIF
-   NEXT
-
-RETURN
 
 *-----------------------------------------------------------------------------*
-FUNCTION _GetHotKeyBlock ( cParentForm, nMod, nKey )
+PROCEDURE _ReleaseHotKey( cParentForm, nMod, nKey )
 *-----------------------------------------------------------------------------*
-   LOCAL nParentFormHandle := GetFormHandle ( cParentForm )
-   LOCAL bRetVal := Nil
-   LOCAL ControlType
-   LOCAL i
 
-   FOR EACH ControlType IN _HMG_aControlType
-      i := hb_enumindex( ControlType )
-      IF ControlType == 'HOTKEY' .AND. _HMG_aControlParentHandles [i] == nParentFormHandle .AND. _HMG_aControlPageMap [i] == nMod .AND. _HMG_aControlValue [i] == nKey
-         bRetVal := _HMG_aControlProcedures [i]
-         EXIT
-      ENDIF
-   NEXT
+   LOCAL hParent := GetFormHandle( cParentForm )
+   LOCAL nIndex
 
-RETURN ( bRetVal )
+   nIndex := _FindHotKey( hParent, nMod, nKey )
 
-*-----------------------------------------------------------------------------*
-PROCEDURE _PushKey ( nKey )
-*-----------------------------------------------------------------------------*
-   Keybd_Event ( nKey, .F. )
-   Keybd_Event ( nKey, .T. )
+   IF nIndex != 0
+
+      _EraseControl( ;
+         nIndex, ;
+         GetFormIndex( cParentForm ) )
+
+   ENDIF
 
 RETURN
 
-// HMG_PressKey( nVK1, nVK2, ... ) --> array { nVK1, nVK2, ... }
+
 *-----------------------------------------------------------------------------*
-FUNCTION HMG_PressKey( ... )  // by Dr. Claudio Soto, April 2016
+FUNCTION _GetHotKeyBlock( cParentForm, nMod, nKey )
 *-----------------------------------------------------------------------------*
+
+   LOCAL hParent := GetFormHandle( cParentForm )
+   LOCAL nIndex
+
+   nIndex := _FindHotKey( hParent, nMod, nKey )
+
+   IF nIndex != 0
+      RETURN _HMG_aControlProcedures[ nIndex ]
+   ENDIF
+
+RETURN NIL
+
+
+*-----------------------------------------------------------------------------*
+PROCEDURE _PushKey( nKey )
+*-----------------------------------------------------------------------------*
+
+   Keybd_Event( nKey, .F. )   // KeyDown
+   Keybd_Event( nKey, .T. )   // KeyUp
+
+RETURN
+
+
+/* 
+  HMG_PressKey( nVK1, nVK2, ... ) --> { nVK1, nVK2, ... }
+  by Dr. Claudio Soto, April 2016
+ */
+*-----------------------------------------------------------------------------*
+FUNCTION HMG_PressKey( ... )
+*-----------------------------------------------------------------------------*
+
    LOCAL aVK := {}
+
    LOCAL nVK
    LOCAL i
 
+   /* Press keys */
+
    FOR i := 1 TO PCount()
+
       nVK := PValue( i )
+
       IF ISNUMERIC( nVK )
-         AADD( aVK, nVK )
-         Keybd_Event( nVK, .F. )    // KeyDown
+
+         AAdd( aVK, nVK )
+
+         Keybd_Event( nVK, .F. )   // KeyDown
+
       ELSE
-         MsgMiniGuiError ( "HMG_PressKey: Invalid parameter." )
+
+         MsgMiniGuiError( ;
+            "HMG_PressKey: Invalid parameter." )
+
       ENDIF
+
    NEXT
 
+   /* Release keys in reverse order */
+
    FOR i := Len( aVK ) TO 1 STEP -1
-      Keybd_Event( aVK[ i ], .T. )  // KeyUp
+      Keybd_Event( aVK[ i ], .T. )   // KeyUp
    NEXT
 
 RETURN aVK
 
+
 *-----------------------------------------------------------------------------*
-FUNCTION _SetHotKeyByName ( cParentForm, cKey, bAction )
+FUNCTION _SetHotKeyByName( cParentForm, cKey, bAction )
 *-----------------------------------------------------------------------------*
+
    LOCAL aKey
    LOCAL lSuccess := .F.
 
    IF _HMG_BeginWindowActive
       cParentForm := _HMG_ActiveFormName
    ENDIF
-   IF Empty ( cParentForm )
-      MsgMiniGuiError ( "ON KEY: Parent Window is Not specified." )
+
+   IF Empty( cParentForm )
+
+      MsgMiniGuiError( ;
+         "ON KEY: Parent Window is Not specified." )
+
    ENDIF
 
-   IF ! Empty ( cKey ) .AND. ISCHARACTER ( cKey )
-      aKey := _DetermineKey ( cKey )
-      IF aKey [1] != 0
-         IF ! HB_ISNIL ( _GetHotKeyBlock ( cParentForm, aKey [2], aKey [1] ) )
-            MsgMiniGuiError ( "The hotkey " + cKey + " is Already defined." )
+   IF ! Empty( cKey ) .AND. ;
+         ISCHARACTER( cKey )
+
+      aKey := _DetermineKey( cKey )
+
+      IF aKey[1] != 0
+
+         IF ! HB_ISNIL( ;
+               _GetHotKeyBlock( ;
+                  cParentForm, ;
+                  aKey[2], ;
+                  aKey[1] ) )
+
+            MsgMiniGuiError( ;
+               "The hotkey " + cKey + ;
+               " is Already defined." )
+
          ENDIF
-         lSuccess := _DefineHotKey ( cParentForm, aKey [2], aKey [1], bAction )
+
+         lSuccess := ;
+            _DefineHotKey( ;
+               cParentForm, ;
+               aKey[2], ;
+               aKey[1], ;
+               bAction )
+
       ELSE
-         MsgMiniGuiError ( "The hotkey " + cKey + " is not valid." )
+
+         MsgMiniGuiError( ;
+            "The hotkey " + cKey + ;
+            " is not valid." )
+
       ENDIF
+
    ENDIF
 
 RETURN lSuccess
 
-*-----------------------------------------------------------------------------*
-FUNCTION _DetermineKey ( cKey )
-*-----------------------------------------------------------------------------*
-   LOCAL aKey := { 0, 0 }
-   LOCAL nAlt, nCtrl, nShift, nWin
-   LOCAL nPos
-   LOCAL cKey2 := Upper ( cKey )
-   LOCAL cText
 
-   nAlt := nCtrl := nShift := nWin := 0
+*-----------------------------------------------------------------------------*
+FUNCTION _DetermineKey( cKey )
+*-----------------------------------------------------------------------------*
+
+   LOCAL aKey := { 0, 0 }
+
+   LOCAL nAlt   := 0
+   LOCAL nCtrl  := 0
+   LOCAL nShift := 0
+   LOCAL nWin   := 0
+
+   LOCAL nPos
+
+   LOCAL cRemaining := Upper( cKey )
+   LOCAL cToken
+
+   /* Initialize key table */
 
    IF _SetGetGlobal( "_HMG_aKeyTables" ) == NIL
+
       STATIC _HMG_aKeyTables AS GLOBAL VALUE ;
-      { "LBUTTON", "RBUTTON", "CANCEL", "MBUTTON", "XBUTTON1", "XBUTTON2", ".7", "BACK", "TAB", ".10", ;
-      ".11", "CLEAR", "RETURN", ".14", ".15", "SHIFT", "CONTROL", "MENU", "PAUSE", "CAPITAL", ;
-      "KANA", ".22", "JUNJA", "FINAL", "HANJA", ".26", "ESCAPE", "CONVERT", "NONCONVERT", "ACCEPT", ;
-      "MODECHANGE", "SPACE", "PRIOR", "NEXT", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", ;
-      "SELECT", "PRINT", "EXECUTE", "SNAPSHOT", "INSERT", "DELETE", "HELP", "0", "1", "2", ;
-      "3", "4", "5", "6", "7", "8", "9", ".58", ".59", ".60", ;
-      ".61", ".62", ".63", ".64", "A", "B", "C", "D", "E", "F", ;
-      "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", ;
-      "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", ;
-      "LWIN", "RWIN", "APPS", ".94", "SLEEP", "NUMPAD0", "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", ;
-      "NUMPAD5", "NUMPAD6", "NUMPAD7", "NUMPAD8", "NUMPAD9", "MULTIPLY", "ADD", "SEPARATOR", "SUBTRACT", "DECIMAL", ;
-      "DIVIDE", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", ;
-      "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19", ;
-      "F20", "F21", "F22", "F23", "F24", ".136", ".137", ".138", ".139", ".140", ;
-      ".141", ".142", ".143", "NUMLOCK", "SCROLL", ".146", ".147", ".148", ".149", ".150", ;
-      ".151", ".152", ".153", ".154", ".155", ".156", ".157", ".158", ".159", "LSHIFT", ;
-      "RSHIFT", "LCONTROL", "RCONTROL", "LMENU", "RMENU" } // 165
+      { ;
+      "LBUTTON", "RBUTTON", "CANCEL", "MBUTTON", ;
+      "XBUTTON1", "XBUTTON2", ".7", "BACK", ;
+      "TAB", ".10", ".11", "CLEAR", ;
+      "RETURN", ".14", ".15", "SHIFT", ;
+      "CONTROL", "MENU", "PAUSE", "CAPITAL", ;
+      "KANA", ".22", "JUNJA", "FINAL", ;
+      "HANJA", ".26", "ESCAPE", "CONVERT", ;
+      "NONCONVERT", "ACCEPT", "MODECHANGE", "SPACE", ;
+      "PRIOR", "NEXT", "END", "HOME", ;
+      "LEFT", "UP", "RIGHT", "DOWN", ;
+      "SELECT", "PRINT", "EXECUTE", "SNAPSHOT", ;
+      "INSERT", "DELETE", "HELP", "0", ;
+      "1", "2", "3", "4", ;
+      "5", "6", "7", "8", ;
+      "9", ".58", ".59", ".60", ;
+      ".61", ".62", ".63", ".64", ;
+      "A", "B", "C", "D", ;
+      "E", "F", "G", "H", ;
+      "I", "J", "K", "L", ;
+      "M", "N", "O", "P", ;
+      "Q", "R", "S", "T", ;
+      "U", "V", "W", "X", ;
+      "Y", "Z", "LWIN", "RWIN", ;
+      "APPS", ".94", "SLEEP", "NUMPAD0", ;
+      "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", ;
+      "NUMPAD5", "NUMPAD6", "NUMPAD7", "NUMPAD8", ;
+      "NUMPAD9", "MULTIPLY", "ADD", "SEPARATOR", ;
+      "SUBTRACT", "DECIMAL", "DIVIDE", "F1", ;
+      "F2", "F3", "F4", "F5", ;
+      "F6", "F7", "F8", "F9", ;
+      "F10", "F11", "F12", "F13", ;
+      "F14", "F15", "F16", "F17", ;
+      "F18", "F19", "F20", "F21", ;
+      "F22", "F23", "F24", ".136", ;
+      ".137", ".138", ".139", ".140", ;
+      ".141", ".142", ".143", "NUMLOCK", "SCROLL", ;
+      ".146", ".147", ".148", ".149", ;
+      ".150", ".151", ".152", ".153", ;
+      ".154", ".155", ".156", ".157", ;
+      ".158", ".159", "LSHIFT", "RSHIFT", ;
+      "LCONTROL", "RCONTROL", "LMENU", "RMENU" ;
+      }
+
    ENDIF
 
-   DO WHILE ! Empty ( cKey2 )
+   /* Parse key string */
 
-      IF ( nPos := At ( "+", cKey2 ) ) == 0
+   DO WHILE ! Empty( cRemaining )
 
-         cKey2 := AllTrim ( cKey2 )
-         nPos := AScan ( _SetGetGlobal( "_HMG_aKeyTables" ), { |c| cKey2 == c } )
-         cKey2 := ""
+      nPos := At( "+", cRemaining )
+
+      IF nPos == 0
+
+         cRemaining := AllTrim( cRemaining )
+
+         nPos := ;
+            AScan( ;
+               _SetGetGlobal( "_HMG_aKeyTables" ), ;
+               {|c| cRemaining == c } )
+
+         cRemaining := ""
+
          IF nPos != 0
-            aKey := { nPos, nAlt + nCtrl + nShift + nWin }
+
+            aKey := ;
+               { ;
+               nPos, ;
+               nAlt + nCtrl + nShift + nWin ;
+               }
+
          ENDIF
 
       ELSE
 
-         cText := AllTrim ( Left( cKey2, nPos - 1 ) )
-         cKey2 := SubStr ( cKey2, nPos + 1 )
+         cToken := ;
+            AllTrim( Left( cRemaining, nPos - 1 ) )
+
+         cRemaining := ;
+            SubStr( cRemaining, nPos + 1 )
 
          DO CASE
-         CASE cText == "ALT"
+
+         CASE cToken == "ALT"
+
             nAlt := MOD_ALT
+
+            /*
+               Internal compatibility logic.
+            */
+
             IF nCtrl != 0
                nAlt := MOD_SHIFT
             ENDIF
-         CASE cText == "CTRL" .OR. cText == "CONTROL"
+
+         CASE cToken == "CTRL" .OR. ;
+               cToken == "CONTROL"
+
             nCtrl := MOD_CONTROL
-         CASE cText == "SHIFT" .OR. cText == "SHFT"
+
+         CASE cToken == "SHIFT" .OR. ;
+               cToken == "SHFT"
+
             nShift := MOD_SHIFT
+
+            /*
+               Internal compatibility logic.
+            */
+
             IF nCtrl != 0
                nShift := MOD_ALT
             ENDIF
-         CASE cText == "WIN"
+
+         CASE cToken == "WIN"
+
             nWin := MOD_WIN
+
          OTHERWISE
-            cKey2 := ""  // Invalid keyword
+
+            /* Invalid modifier */
+
+            cRemaining := ""
+
          ENDCASE
 
       ENDIF

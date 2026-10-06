@@ -38,7 +38,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -51,11 +51,24 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 
 #define MAX_IMAGE 10
-*-----------------------------------------------------------------------------*
-FUNCTION _DefineImageList ( ControlName , ParentForm , w , h , aImage , aImageMask , aColor , ImageCount , mask )
-*-----------------------------------------------------------------------------*
-   LOCAL i , mVar , maskimage , color , k
-   LOCAL ControlHandles , id , PosImage
+
+/*--------------------------------------------------------------------*
+   Helper: RGB normalization
+*--------------------------------------------------------------------*/
+STATIC FUNCTION _NormRGB( aColor )
+   IF IsArrayRGB( aColor )
+      RETURN RGB( aColor[1], aColor[2], aColor[3] )
+   ENDIF
+RETURN aColor
+
+/*--------------------------------------------------------------------*
+   Define ImageList control
+*--------------------------------------------------------------------*/
+FUNCTION _DefineImageList ( ControlName , ParentForm , w , h , aImage , ;
+                            aImageMask , aColor , ImageCount , mask )
+
+   LOCAL i, k, id, mVar, kCtrl
+   LOCAL controlHandles, maskImage, colorVal, posImage
 
    hb_default( @w, 24 )
    hb_default( @h, 24 )
@@ -69,156 +82,168 @@ FUNCTION _DefineImageList ( ControlName , ParentForm , w , h , aImage , aImageMa
       ParentForm := _HMG_ActiveFormName
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
+   IF !_IsWindowDefined( ParentForm )
       MsgMiniGuiError( "Window: " + ParentForm + " is not defined." )
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentForm )
+   IF _IsControlDefined( ControlName, ParentForm )
       MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
    ENDIF
 
-   mVar := '_' + ParentForm + '_' + ControlName
+   mVar := "_" + ParentForm + "_" + ControlName
 
    k := Len( aImage )
    IF ImageCount == 0
       ImageCount := IFEMPTY( k, MAX_IMAGE, k )
    ENDIF
 
-   Id := _GetId()
-   ControlHandles := InitImageList ( w , h , mask , ImageCount )
+   id := _GetId()
+   controlHandles := InitImageList( w, h, mask, ImageCount )
 
-   k := _GetControlFree()
+   kCtrl := _GetControlFree()
 
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( mVar, kCtrl )
 #else
-   Public &mVar. := k
+   PUBLIC &mVar. := kCtrl
 #endif
 
-   _HMG_aControlType [k] := "IMAGELIST"
-   _HMG_aControlNames [k] :=  ControlName
-   _HMG_aControlHandles [k] :=  ControlHandles
-   _HMG_aControlParenthandles [k] :=  GetFormHandle( ParentForm )
-   _HMG_aControlIds [k] :=  id
-   _HMG_aControlProcedures  [k] :=  ""
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue  [k] :=  ImageCount
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControllostFocusProcedure  [k] :=  ""
-   _HMG_aControlGotFocusProcedure  [k] :=  ""
-   _HMG_aControlChangeProcedure  [k] :=  ""
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor   [k] := Nil
-   _HMG_aControlFontColor   [k] := Nil
-   _HMG_aControlDblClick   [k] :=  ""
-   _HMG_aControlHeadClick   [k] := {}
-   _HMG_aControlRow  [k] :=  0
-   _HMG_aControlCol  [k] :=  0
-   _HMG_aControlWidth   [k] :=  w
-   _HMG_aControlHeight  [k] :=  h
-   _HMG_aControlSpacing  [k] :=  0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  ""
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  ''
-   _HMG_aControlFontSize  [k] :=  0
-   _HMG_aControlFontAttributes  [k] :=  { .F. , .F. , .F. , .F. }
-   _HMG_aControlToolTip   [k] :=  ''
-   _HMG_aControlRangeMin  [k] :=  0
-   _HMG_aControlRangeMax  [k] :=  0
-   _HMG_aControlCaption  [k] :=  ''
-   _HMG_aControlVisible  [k] :=  .T.
-   _HMG_aControlHelpId  [k] :=  0
-   _HMG_aControlFontHandle  [k] :=  0
-   _HMG_aControlBrushHandle  [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] :=  0
-   _HMG_aControlMiscData2 [k] :=  ''
+   /*---------------- Control registration (core metadata) ----------------*/
+   _HMG_aControlType[kCtrl]              := "IMAGELIST"
+   _HMG_aControlNames[kCtrl]             := ControlName
+   _HMG_aControlHandles[kCtrl]           := controlHandles
+   _HMG_aControlParenthandles[kCtrl]     := GetFormHandle( ParentForm )
+   _HMG_aControlIds[kCtrl]               := id
+   _HMG_aControlProcedures[kCtrl]        := ""
+   _HMG_aControlPageMap[kCtrl]           := {}
+   _HMG_aControlValue[kCtrl]             := ImageCount
+   _HMG_aControlInputMask[kCtrl]         := ""
+   _HMG_aControllostFocusProcedure[kCtrl]:= ""
+   _HMG_aControlGotFocusProcedure[kCtrl] := ""
+   _HMG_aControlChangeProcedure[kCtrl]   := ""
+   _HMG_aControlDeleted[kCtrl]           := .F.
+   _HMG_aControlBkColor[kCtrl]           := Nil
+   _HMG_aControlFontColor[kCtrl]         := Nil
+   _HMG_aControlDblClick[kCtrl]          := ""
+   _HMG_aControlHeadClick[kCtrl]         := {}
+   _HMG_aControlRow[kCtrl]               := 0
+   _HMG_aControlCol[kCtrl]               := 0
+   _HMG_aControlWidth[kCtrl]             := w
+   _HMG_aControlHeight[kCtrl]            := h
+   _HMG_aControlSpacing[kCtrl]           := 0
+   _HMG_aControlContainerRow[kCtrl]      := IIF( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[_HMG_FrameLevel], -1 )
+   _HMG_aControlContainerCol[kCtrl]      := IIF( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[_HMG_FrameLevel], -1 )
+   _HMG_aControlPicture[kCtrl]           := ""
+   _HMG_aControlContainerHandle[kCtrl]   := 0
+   _HMG_aControlFontName[kCtrl]          := ""
+   _HMG_aControlFontSize[kCtrl]          := 0
+   _HMG_aControlFontAttributes[kCtrl]    := { .F., .F., .F., .F. }
+   _HMG_aControlToolTip[kCtrl]           := ""
+   _HMG_aControlRangeMin[kCtrl]          := 0
+   _HMG_aControlRangeMax[kCtrl]          := 0
+   _HMG_aControlCaption[kCtrl]           := ""
+   _HMG_aControlVisible[kCtrl]           := .T.
+   _HMG_aControlHelpId[kCtrl]            := 0
+   _HMG_aControlFontHandle[kCtrl]        := 0
+   _HMG_aControlBrushHandle[kCtrl]       := 0
+   _HMG_aControlEnabled[kCtrl]           := .T.
+   _HMG_aControlMiscData1[kCtrl]         := 0
+   _HMG_aControlMiscData2[kCtrl]         := ""
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, kCtrl, mVar )
    ENDIF
 
+   /*---------------- Image population ----------------*/
    FOR i := 1 TO Len( aImage )
+
       IF mask
+
          IF Len( aImageMask ) > 0
-            maskimage := iif( i <= Len( aImageMask ), aImageMask [i], "" )
-            PosImage := IL_Add( ControlHandles , aImage [i] , maskimage , w , h , ImageCount )
+            maskImage := IIF( i <= Len( aImageMask ), aImageMask[i], "" )
+            posImage := IL_Add( controlHandles, aImage[i], maskImage, w, h, ImageCount )
          ELSE
-            IF IsArrayRGB( aColor )
-               color := RGB ( aColor [1] , aColor [2] , aColor [3] )
-            ELSE
-               color := aColor
-            ENDIF
-            PosImage := IL_AddMasked( ControlHandles , aImage [i] , color , w , h , ImageCount )
+            colorVal := _NormRGB( aColor )
+            posImage := IL_AddMasked( controlHandles, aImage[i], colorVal, w, h, ImageCount )
          ENDIF
+
       ELSE
-         PosImage := IL_Add( ControlHandles , aImage [i] , "" , w , h , ImageCount )
+         posImage := IL_Add( controlHandles, aImage[i], "", w, h, ImageCount )
       ENDIF
-      IF PosImage == -1
-         MsgMiniGuiError( "Image: " + aImage [i] + " is not added. Check image size." )
+
+      IF posImage == -1
+         MsgMiniGuiError( "Image: " + aImage[i] + " is not added. Check image size." )
       ENDIF
+
    NEXT
 
 RETURN Nil
 
-*-----------------------------------------------------------------------------*
+
+/*--------------------------------------------------------------------*
+   Add image (normal)
+*--------------------------------------------------------------------*/
 FUNCTION _AddImageToImageList ( ControlName, ParentControl, Image, MaskImage )
-*-----------------------------------------------------------------------------*
-   LOCAL w , h , c
 
-   w := _GetControlWidth ( ControlName, ParentControl )
-   h := _GetControlHeight ( ControlName, ParentControl )
-   c := GetControlHandle ( ControlName, ParentControl )
+   LOCAL w, h, c
 
-RETURN IL_Add( c , image , hb_defaultValue( maskimage, "" ) , w , h )
+   w := _GetControlWidth( ControlName, ParentControl )
+   h := _GetControlHeight( ControlName, ParentControl )
+   c := GetControlHandle( ControlName, ParentControl )
 
-*-----------------------------------------------------------------------------*
+RETURN IL_Add( c, Image, hb_defaultValue( MaskImage, "" ), w, h )
+
+
+/*--------------------------------------------------------------------*
+   Add masked image
+*--------------------------------------------------------------------*/
 FUNCTION _AddImageMaskedToImageList ( ControlName, ParentControl, Image, aColor )
-*-----------------------------------------------------------------------------*
-   LOCAL w, h, c, color := 0
 
-   w := _GetControlWidth ( ControlName, ParentControl )
-   h := _GetControlHeight ( ControlName, ParentControl )
-   c := GetControlHandle ( ControlName, ParentControl )
-   IF IsArrayRGB ( aColor )
-      color := RGB ( aColor [1], aColor [2], aColor [3] )
-   ENDIF
+   LOCAL w, h, c
 
-RETURN IL_AddMasked( c , image , color , w , h )
+   w := _GetControlWidth( ControlName, ParentControl )
+   h := _GetControlHeight( ControlName, ParentControl )
+   c := GetControlHandle( ControlName, ParentControl )
 
-*-----------------------------------------------------------------------------*
+RETURN IL_AddMasked( c, Image, _NormRGB( aColor ), w, h )
+
+
+/*--------------------------------------------------------------------*
+   Set background color
+*--------------------------------------------------------------------*/
 FUNCTION _ImageListSetBkColor ( ControlName, ParentControl, aColor )
-*-----------------------------------------------------------------------------*
-   LOCAL c, color := 0
 
-   c := GetControlHandle ( ControlName, ParentControl )
-   IF IsArrayRGB ( aColor )
-      color := RGB ( aColor [1], aColor [2], aColor [3] )
-   ENDIF
+   LOCAL c
 
-RETURN IL_SetBkColor( c, color )
+   c := GetControlHandle( ControlName, ParentControl )
 
-*-----------------------------------------------------------------------------*
+RETURN IL_SetBkColor( c, _NormRGB( aColor ) )
+
+
+/*--------------------------------------------------------------------*
+   Erase image region
+*--------------------------------------------------------------------*/
 FUNCTION _EraseImage ( ControlName, ParentControl, ix, iy )
-*-----------------------------------------------------------------------------*
+
    LOCAL w, h
 
-   w := _GetControlWidth ( ControlName, ParentControl )
-   h := _GetControlHeight ( ControlName, ParentControl )
-   IL_EraseImage( GetFormHandle ( ParentControl ), ix, iy, w, h )
+   w := _GetControlWidth( ControlName, ParentControl )
+   h := _GetControlHeight( ControlName, ParentControl )
 
-RETURN Nil
+RETURN IL_EraseImage( GetFormHandle( ParentControl ), ix, iy, w, h )
 
-*-----------------------------------------------------------------------------*
+
+/*--------------------------------------------------------------------*
+   Begin drag operation
+*--------------------------------------------------------------------*/
 FUNCTION _BeginDragImage ( ControlName, ParentControl, imageindex, ix, iy )
-*-----------------------------------------------------------------------------*
+
    LOCAL c, h
 
-   c := GetControlHandle ( ControlName, ParentControl )
-   h := GetFormHandle ( ParentControl )
+   c := GetControlHandle( ControlName, ParentControl )
+   h := GetFormHandle( ParentControl )
+
    _HMG_ActiveDragImageHandle := h
-   IL_BeginDrag( h, c, ImageIndex, ix, iy )
+   IL_BeginDrag( h, c, imageindex, ix, iy )
 
 RETURN Nil

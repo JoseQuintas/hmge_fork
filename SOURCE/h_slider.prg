@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -43,215 +43,470 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    "HWGUI"
    Copyright 2001-2021 Alexander S.Kresin <alex@kresin.ru>
 
----------------------------------------------------------------------------*/
+ ---------------------------------------------------------------------------*/
 
 #include "minigui.ch"
 #include "i_winuser.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineSlider ( ControlName, ParentFormName, x, y, w, h, lo, hi, value, ;
-   tooltip, scroll, change, vertical, noticks, both, top, left, HelpId, invisible, ;
-   notabstop, backcolor, nId, enableselrange, nSelMin, nSelMax, bInit )
+FUNCTION _DefineSlider( ControlName, ParentFormName, ;
+      x, y, w, h, lo, hi, value, ;
+      tooltip, scroll, change, vertical, ;
+      noticks, both, top, left, ;
+      HelpId, invisible, notabstop, ;
+      backcolor, nId, enableselrange, ;
+      nSelMin, nSelMax, bInit )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle, ControlHandle
-   LOCAL blInit
-   LOCAL mVar
-   LOCAL k
-   LOCAL Style
+
+   LOCAL hParent
+   LOCAL hControl
+
+   LOCAL cVarName
+
+   LOCAL nControl
+   LOCAL nStyle
+
+   LOCAL bDlgInit
+
    LOCAL lDialogInMemory
-   LOCAL oc := NIL, ow := NIL
+
+   LOCAL ow := NIL
+   LOCAL oc := NIL
 
 #ifdef _OBJECT_
    ow := oDlu2Pixel()
 #endif
 
-   hb_default( @w, iif( vertical, 35 + iif( both, 5, 0 ), 120 ) )
-   hb_default( @h, iif( vertical, 120, 35 + iif( both, 5, 0 ) ) )
+   /*-----------------------------------------------------------------------*/
+   /* Defaults                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   hb_default( ;
+      @w, ;
+      iif( vertical, ;
+           35 + iif( both, 5, 0 ), ;
+           120 ) )
+
+   hb_default( ;
+      @h, ;
+      iif( vertical, ;
+           120, ;
+           35 + iif( both, 5, 0 ) ) )
+
    hb_default( @lo, 0 )
    hb_default( @hi, 100 )
-   hb_default( @value, Int( ( hi - lo ) / 2 ) )
 
-   hb_default( @enableselrange, .F. ) /* P.Ch. 16.10. */
-   hb_default( @nSelMin, 0 )  
-   hb_default( @nSelMax, 0 )  
+   hb_default( ;
+      @value, ;
+      Int( ( hi - lo ) / 2 ) )
 
-   __defaultNIL( @scroll, "" )
-   __defaultNIL( @change, "" )
+   hb_default( @enableselrange, .F. )
+   hb_default( @nSelMin, 0 )
+   hb_default( @nSelMax, 0 )
+
    hb_default( @invisible, .F. )
    hb_default( @notabstop, .F. )
 
+   __defaultNIL( @scroll, "" )
+   __defaultNIL( @change, "" )
+
+   /*-----------------------------------------------------------------------*/
+   /* Resolve active parent                                                 */
+   /*-----------------------------------------------------------------------*/
+
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
-      ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
+
+      ParentFormName := ;
+         iif( _HMG_BeginDialogActive, ;
+              _HMG_ActiveDialogName, ;
+              _HMG_ActiveFormName )
+
    ENDIF
 
-   IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+   /*-----------------------------------------------------------------------*/
+   /* Frame offset adjustment                                               */
+   /*-----------------------------------------------------------------------*/
+
+   IF _HMG_FrameLevel > 0 .AND. ;
+         ! _HMG_ParentWindowActive
+
+      x += _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
+      y += _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
+
+      ParentFormName := ;
+         _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ]
+
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
+   /*-----------------------------------------------------------------------*/
+   /* Validation                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF .NOT. _IsWindowDefined( ParentFormName ) .AND. ;
+         .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentFormName, "Parent", ParentFormName ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ;
+         ControlName == "0"
+
       ControlName := HMG_GetUniqueName()
+
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ;
+         .NOT. lDialogInMemory
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentFormName + ;
+         " Already defined." )
+
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   /*-----------------------------------------------------------------------*/
+   /* Control allocation                                                    */
+   /*-----------------------------------------------------------------------*/
+
+   cVarName := "_" + ParentFormName + "_" + ControlName
+
+   nControl := _GetControlFree()
+
+   /*-----------------------------------------------------------------------*/
+   /* Dialog mode                                                           */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginDialogActive
 
-      ParentFormHandle := _HMG_ActiveDialogHandle
+      hParent := _HMG_ActiveDialogHandle
 
-      Style := WS_CHILD
+      nStyle := WS_CHILD
 
-      IF !NoTabStop
-         Style += WS_TABSTOP
+      IF ! notabstop
+         nStyle += WS_TABSTOP
       ENDIF
 
-      IF !invisible
-         Style += WS_VISIBLE
+      IF ! invisible
+         nStyle += WS_VISIBLE
       ENDIF
 
       IF vertical
-         Style += TBS_VERT
+         nStyle += TBS_VERT
       ENDIF
 
-      IF !noticks
-         Style += TBS_AUTOTICKS
+      IF ! noticks
+         nStyle += TBS_AUTOTICKS
       ELSE
-         Style += TBS_NOTICKS
+         nStyle += TBS_NOTICKS
       ENDIF
 
       IF both
-         Style += TBS_BOTH
+         nStyle += TBS_BOTH
       ENDIF
+
       IF top
-         Style += TBS_TOP
+         nStyle += TBS_TOP
       ENDIF
+
       IF left
-         Style += TBS_LEFT
+         nStyle += TBS_LEFT
       ENDIF
 
       IF enableselrange
-         Style += TBS_ENABLESELRANGE
+         nStyle += TBS_ENABLESELRANGE
       ENDIF
 
-      IF Len( _HMG_aDialogTemplate ) > 0 //Dialog Template
-         /* TODO */ /* P.Ch. 16.10. */
+      /*--------------------------------------------------------------------*/
+      /* Dialog template mode                                               */
+      /*--------------------------------------------------------------------*/
 
-         // {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
-         blInit := {|x, y, z| InitDialogSlider( x, y, z ) }
-         AAdd( _HMG_aDialogItems, { nId, k, "msctls_trackbar32", style, 0, x, y, w, h, "", HelpId, tooltip, "", 0, , , , , blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
+      IF Len( _HMG_aDialogTemplate ) > 0
+
+         bDlgInit := ;
+            {|a, b, c| InitDialogSlider( a, b, c ) }
+
+         AAdd( ;
+            _HMG_aDialogItems, ;
+            { ;
+               nId, ;
+               nControl, ;
+               "msctls_trackbar32", ;
+               nStyle, ;
+               0, ;
+               x, ;
+               y, ;
+               w, ;
+               h, ;
+               "", ;
+               HelpId, ;
+               tooltip, ;
+               "", ;
+               0, ;
+               , ;
+               , ;
+               , ;
+               , ;
+               bDlgInit, ;
+               _HMG_BeginTabActive, ;
+               .F., ;
+               _HMG_ActiveTabPage ;
+            } )
+
+      /*--------------------------------------------------------------------*/
+      /* Runtime dialog mode                                                */
+      /*--------------------------------------------------------------------*/
 
       ELSE
-         ControlHandle := GetDialogItemHandle( ParentFormHandle, nId )
 
-         x := GetWindowCol( Controlhandle )
-         y := GetWindowRow( Controlhandle )
-         w := GetWindowWidth( Controlhandle )
-         h := GetWindowHeight( Controlhandle )
+         hControl := ;
+            GetDialogItemHandle( hParent, nId )
 
-         SetWindowStyle( ControlHandle, Style, .T. )
+         x := GetWindowCol( hControl )
+         y := GetWindowRow( hControl )
+
+         w := GetWindowWidth( hControl )
+         h := GetWindowHeight( hControl )
+
+         SetWindowStyle( hControl, nStyle, .T. )
+
       ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Standard form mode                                                    */
+   /*-----------------------------------------------------------------------*/
 
    ELSE
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
-      /* P.Ch. 16.10. */
-      ControlHandle := InitSlider( ParentFormHandle, 0, x, y, w, h, lo, hi, vertical, noticks, both, top, left, invisible, notabstop, enableselrange, nSelMin, nSelMax )
+      hParent := GetFormHandle( ParentFormName )
+
+      hControl := ;
+         InitSlider( ;
+            hParent, ;
+            0, ;
+            x, ;
+            y, ;
+            w, ;
+            h, ;
+            lo, ;
+            hi, ;
+            vertical, ;
+            noticks, ;
+            both, ;
+            top, ;
+            left, ;
+            invisible, ;
+            notabstop, ;
+            enableselrange, ;
+            nSelMin, ;
+            nSelMax )
 
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Runtime-only initialization                                           */
+   /*-----------------------------------------------------------------------*/
 
    IF .NOT. lDialogInMemory
+
       IF _HMG_BeginTabActive
-         AAdd( _HMG_ActiveTabCurrentPageMap, ControlHandle )
+         AAdd( _HMG_ActiveTabCurrentPageMap, hControl )
       ENDIF
 
-      SendMessage( ControlHandle, TBM_SETPOS, 1, value )
+      SendMessage( hControl, TBM_SETPOS, 1, value )
 
       IF tooltip != NIL
-         SetToolTip( ControlHandle, tooltip, GetFormToolTipHandle( ParentFormName ) )
+
+         SetToolTip( ;
+            hControl, ;
+            tooltip, ;
+            GetFormToolTipHandle( ParentFormName ) )
+
       ENDIF
 
    ENDIF
 
+   /*-----------------------------------------------------------------------*/
+   /* Register control name                                                 */
+   /*-----------------------------------------------------------------------*/
+
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+
+   _SetNameList( cVarName, nControl )
+
 #else
-   Public &mVar. := k
+
+   PUBLIC &cVarName. := nControl
+
 #endif
 
-   _HMG_aControlType [k] := "SLIDER"
-   _HMG_aControlNames [k] :=  ControlName
-   _HMG_aControlHandles [k] :=  ControlHandle
-   _HMG_aControlParentHandles  [k] :=  ParentFormHandle
-   _HMG_aControlIds  [k] := nId
-   _HMG_aControlProcedures  [k] :=  scroll
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue  [k] :=  Value
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControlLostFocusProcedure [k] :=  ""
-   _HMG_aControlGotFocusProcedure  [k] :=  ""
-   _HMG_aControlChangeProcedure    [k] :=  change
-   _HMG_aControlDeleted [k] :=  .F.
-   _HMG_aControlBkColor [k] :=  backcolor
-   _HMG_aControlFontColor [k] :=  Nil
-   _HMG_aControlDblClick  [k] :=  _HMG_ActiveTabButtons
-   _HMG_aControlHeadClick  [k] :=  {}
-   _HMG_aControlRow  [k] :=  y
-   _HMG_aControlCol  [k] :=  x
-   _HMG_aControlWidth   [k] :=  w
-   _HMG_aControlHeight  [k] :=  h
-   _HMG_aControlSpacing [k] :=  0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  ""
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  ''
-   _HMG_aControlFontSize  [k] :=  0
-   _HMG_aControlFontAttributes  [k] :=  { .F. , .F. , .F. , .F. }
-   _HMG_aControlToolTip  [k] :=  tooltip
-   _HMG_aControlRangeMin [k] :=  Lo
-   _HMG_aControlRangeMax [k] :=  Hi
-   _HMG_aControlCaption  [k] :=  ''
-   _HMG_aControlVisible  [k] :=  iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId   [k] :=  HelpId
-   _HMG_aControlFontHandle  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveTabName , '' )
-   _HMG_aControlBrushHandle [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameParentFormName [_HMG_FrameLevel] , '' )
-   _HMG_aControlMiscData2 [k] :=  ''
+   /*-----------------------------------------------------------------------*/
+   /* Identity                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlType[ nControl ]          := "SLIDER"
+   _HMG_aControlNames[ nControl ]         := ControlName
+
+   _HMG_aControlHandles[ nControl ]       := hControl
+   _HMG_aControlParentHandles[ nControl ] := hParent
+
+   _HMG_aControlIds[ nControl ]           := nId
+
+   /*-----------------------------------------------------------------------*/
+   /* Event procedures                                                      */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlProcedures[ nControl ]         := scroll
+   _HMG_aControlLostFocusProcedure[ nControl ] := ""
+   _HMG_aControlGotFocusProcedure[ nControl ]  := ""
+   _HMG_aControlChangeProcedure[ nControl ]    := change
+
+   /*-----------------------------------------------------------------------*/
+   /* Runtime state                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlPageMap[ nControl ]   := {}
+   _HMG_aControlValue[ nControl ]     := value
+   _HMG_aControlInputMask[ nControl ] := ""
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := ! invisible
+
+   /*-----------------------------------------------------------------------*/
+   /* Geometry                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRow[ nControl ]    := y
+   _HMG_aControlCol[ nControl ]    := x
+
+   _HMG_aControlWidth[ nControl ]  := w
+   _HMG_aControlHeight[ nControl ] := h
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveFrameRow[ _HMG_FrameLevel ], ;
+           -1 )
+
+   _HMG_aControlContainerCol[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveFrameCol[ _HMG_FrameLevel ], ;
+           -1 )
+
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Appearance                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlBkColor[ nControl ]   := backcolor
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   _HMG_aControlPicture[ nControl ] := ""
+
+   _HMG_aControlFontName[ nControl ] := ""
+   _HMG_aControlFontSize[ nControl ] := 0
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { .F., .F., .F., .F. }
+
+   _HMG_aControlToolTip[ nControl ] := tooltip
+
+   _HMG_aControlCaption[ nControl ] := ""
+
+   /*
+      FontHandle slot reused internally for:
+      - Active tab name tracking
+   */
+
+   _HMG_aControlFontHandle[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveTabName, ;
+           "" )
+
+   _HMG_aControlBrushHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Miscellaneous                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRangeMin[ nControl ] := lo
+   _HMG_aControlRangeMax[ nControl ] := hi
+
+   _HMG_aControlHelpId[ nControl ] := HelpId
+
+   _HMG_aControlDblClick[ nControl ] := ;
+      _HMG_ActiveTabButtons
+
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   /*
+      MiscData1 reused internally for:
+      - Parent frame form name
+   */
+
+   _HMG_aControlMiscData1[ nControl ] := ;
+      iif( _HMG_FrameLevel > 0, ;
+           _HMG_ActiveFrameParentFormName[ _HMG_FrameLevel ], ;
+           "" )
+
+   _HMG_aControlMiscData2[ nControl ] := ""
+
+   /*-----------------------------------------------------------------------*/
+   /* OOP integration                                                       */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
+
 #ifdef _OBJECT_
-      ow := _WindowObj ( ParentFormHandle )
-      oc := _ControlObj( ControlHandle )
+      ow := _WindowObj( hParent )
+      oc := _ControlObj( hControl )
 #endif
+
    ENDIF
 
-   Do_ControlEventProcedure ( bInit, k, ow, oc )
+   /*-----------------------------------------------------------------------*/
+   /* Init callback                                                         */
+   /*-----------------------------------------------------------------------*/
 
-RETURN Nil
+   Do_ControlEventProcedure( bInit, nControl, ow, oc )
+
+RETURN NIL
+
 
 *-----------------------------------------------------------------------------*
-FUNCTION InitDialogSlider( ParentName, ControlHandle, k )
+FUNCTION InitDialogSlider( ParentName, hControl, nControl )
 *-----------------------------------------------------------------------------*
 
-   IF ValType( ParentName ) <> 'U'
-      SendMessage( ControlHandle , TBM_SETPOS , 1 , _HMG_aControlValue [k] )
-   ENDIF
-// JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]   // Modal
-      _HMG_aControlDeleted [k] := .T.
+   IF ValType( ParentName ) <> "U"
+
+      SendMessage( ;
+         hControl, ;
+         TBM_SETPOS, ;
+         1, ;
+         _HMG_aControlValue[ nControl ] )
+
    ENDIF
 
-RETURN Nil
+   /* Modal dialog cleanup */
+
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. ;
+         _HMG_aDialogTemplate[3]
+
+      _HMG_aControlDeleted[ nControl ] := .T.
+
+   ENDIF
+
+RETURN NIL

@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -48,94 +48,226 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 
 *-----------------------------------------------------------------------------*
-FUNCTION _DefineTimer ( ControlName , ParentForm , Interval , ProcedureName , Once , bInit )
+FUNCTION _DefineTimer( ControlName, ParentForm, ;
+      Interval, ProcedureName, Once, bInit )
 *-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle
-   LOCAL mVar
-   LOCAL id
-   LOCAL k
+
+   LOCAL nParentHandle
+   LOCAL cVarName
+   LOCAL nId
+   LOCAL nControl
+
    LOCAL lSuccess
+
+   LOCAL nContainerRow := -1
+   LOCAL nContainerCol := -1
+
+   /*-----------------------------------------------------------------------*/
+   /* Resolve active form                                                   */
+   /*-----------------------------------------------------------------------*/
 
    IF _HMG_BeginWindowActive
       ParentForm := _HMG_ActiveFormName
    ENDIF
 
-   IF .NOT. _IsWindowDefined ( ParentForm )
-      MsgMiniGuiError( "Window: " + IFNIL( ParentForm, "Parent", ParentForm ) + " is not defined." )
+   /*-----------------------------------------------------------------------*/
+   /* Validation                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   IF .NOT. _IsWindowDefined( ParentForm )
+
+      MsgMiniGuiError( ;
+         "Window: " + ;
+         IFNIL( ParentForm, "Parent", ParentForm ) + ;
+         " is not defined." )
+
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
+
       ControlName := HMG_GetUniqueName()
+
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentForm )
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentForm + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentForm )
+
+      MsgMiniGuiError( ;
+         "Control: " + ;
+         ControlName + ;
+         " Of " + ;
+         ParentForm + ;
+         " Already defined." )
+
    ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Defaults                                                              */
+   /*-----------------------------------------------------------------------*/
 
    hb_default( @Interval, 1000 )
+   hb_default( @Once, .F. )
+
    IF _HMG_ProgrammaticChange
       Interval := Max( Interval, 10 )
    ENDIF
 
-   mVar := '_' + ParentForm + '_' + ControlName
-   ParentFormHandle := GetFormHandle( ParentForm )
+   /*-----------------------------------------------------------------------*/
+   /* Frame container                                                       */
+   /*-----------------------------------------------------------------------*/
 
-   Id := _GetId()
-   lSuccess := InitTimer ( ParentFormHandle , id , Interval )
+   IF _HMG_FrameLevel > 0
 
-   k := _GetControlFree()
+      nContainerRow := ;
+         _HMG_ActiveFrameRow[ _HMG_FrameLevel ]
 
-#ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
-#else
-   Public &mVar. := k
-#endif
+      nContainerCol := ;
+         _HMG_ActiveFrameCol[ _HMG_FrameLevel ]
 
-   _HMG_aControlType [k] := "TIMER"
-   _HMG_aControlNames [k] :=   ControlName
-   _HMG_aControlHandles [k] :=   0
-   _HMG_aControlParenthandles [k] :=  ParentFormHandle
-   _HMG_aControlIds [k] :=   id
-   _HMG_aControlProcedures  [k] :=  ProcedureName
-   _HMG_aControlPageMap  [k] :=  {}
-   _HMG_aControlValue  [k] :=  Interval
-   _HMG_aControlInputMask  [k] :=  ""
-   _HMG_aControllostFocusProcedure  [k] :=  ""
-   _HMG_aControlGotFocusProcedure  [k] :=  ""
-   _HMG_aControlChangeProcedure  [k] :=  ""
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor   [k] := Nil
-   _HMG_aControlFontColor   [k] := Nil
-   _HMG_aControlDblClick   [k] := ""
-   _HMG_aControlHeadClick   [k] := {}
-   _HMG_aControlRow  [k] :=  0
-   _HMG_aControlCol  [k] :=  0
-   _HMG_aControlWidth   [k] := 0
-   _HMG_aControlHeight  [k] :=  0
-   _HMG_aControlSpacing  [k] :=  0
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  hb_defaultValue( Once, .F. )
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  ''
-   _HMG_aControlFontSize  [k] :=  0
-   _HMG_aControlFontAttributes  [k] :=  { .F. , .F. , .F. , .F. }
-   _HMG_aControlToolTip   [k] :=  ''
-   _HMG_aControlRangeMin  [k] :=   0
-   _HMG_aControlRangeMax  [k] :=   0
-   _HMG_aControlCaption  [k] :=   ''
-   _HMG_aControlVisible  [k] :=   .T.
-   _HMG_aControlHelpId  [k] :=   0
-   _HMG_aControlFontHandle  [k] :=  0
-   _HMG_aControlBrushHandle [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] := 0
-   _HMG_aControlMiscData2 [k] := ''
-
-   IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
    ENDIF
 
-   Do_ControlEventProcedure ( bInit, k )
+   /*-----------------------------------------------------------------------*/
+   /* Timer creation                                                        */
+   /*-----------------------------------------------------------------------*/
+
+   cVarName := "_" + ParentForm + "_" + ControlName
+
+   nParentHandle := GetFormHandle( ParentForm )
+
+   nId := _GetId()
+
+   lSuccess := ;
+      InitTimer( ;
+         nParentHandle, ;
+         nId, ;
+         Interval )
+
+   /*-----------------------------------------------------------------------*/
+   /* Control allocation                                                    */
+   /*-----------------------------------------------------------------------*/
+
+   nControl := _GetControlFree()
+
+   /*-----------------------------------------------------------------------*/
+   /* Register control name                                                 */
+   /*-----------------------------------------------------------------------*/
+
+#ifdef _NAMES_LIST_
+
+   _SetNameList( cVarName, nControl )
+
+#else
+
+   PUBLIC &cVarName. := nControl
+
+#endif
+
+   /*-----------------------------------------------------------------------*/
+   /* Identity                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlType[ nControl ]          := "TIMER"
+   _HMG_aControlNames[ nControl ]         := ControlName
+
+   _HMG_aControlHandles[ nControl ]       := 0
+   _HMG_aControlParentHandles[ nControl ] := nParentHandle
+
+   _HMG_aControlIds[ nControl ] := nId
+
+   /*-----------------------------------------------------------------------*/
+   /* Event procedures                                                      */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlProcedures[ nControl ] := ProcedureName
+
+   _HMG_aControlLostFocusProcedure[ nControl ] := ""
+   _HMG_aControlGotFocusProcedure[ nControl ]  := ""
+   _HMG_aControlChangeProcedure[ nControl ]    := ""
+
+   /*-----------------------------------------------------------------------*/
+   /* Runtime state                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlPageMap[ nControl ]   := {}
+   _HMG_aControlValue[ nControl ]     := Interval
+   _HMG_aControlInputMask[ nControl ] := ""
+
+   _HMG_aControlDeleted[ nControl ] := .F.
+   _HMG_aControlEnabled[ nControl ] := .T.
+   _HMG_aControlVisible[ nControl ] := .T.
+
+   /*-----------------------------------------------------------------------*/
+   /* Geometry                                                              */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRow[ nControl ]    := 0
+   _HMG_aControlCol[ nControl ]    := 0
+
+   _HMG_aControlWidth[ nControl ]  := 0
+   _HMG_aControlHeight[ nControl ] := 0
+
+   _HMG_aControlSpacing[ nControl ] := 0
+
+   _HMG_aControlContainerRow[ nControl ] := ;
+      nContainerRow
+
+   _HMG_aControlContainerCol[ nControl ] := ;
+      nContainerCol
+
+   _HMG_aControlContainerHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Appearance                                                            */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlBkColor[ nControl ]   := NIL
+   _HMG_aControlFontColor[ nControl ] := NIL
+
+   /*
+      Picture slot internally stores
+      TIMER ONCE state.
+   */
+
+   _HMG_aControlPicture[ nControl ] := Once
+
+   _HMG_aControlFontName[ nControl ] := ""
+   _HMG_aControlFontSize[ nControl ] := 0
+
+   _HMG_aControlFontAttributes[ nControl ] := ;
+      { .F., .F., .F., .F. }
+
+   _HMG_aControlToolTip[ nControl ] := ""
+   _HMG_aControlCaption[ nControl ] := ""
+
+   _HMG_aControlFontHandle[ nControl ]  := 0
+   _HMG_aControlBrushHandle[ nControl ] := 0
+
+   /*-----------------------------------------------------------------------*/
+   /* Miscellaneous                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   _HMG_aControlRangeMin[ nControl ] := 0
+   _HMG_aControlRangeMax[ nControl ] := 0
+
+   _HMG_aControlHelpId[ nControl ] := 0
+
+   _HMG_aControlDblClick[ nControl ] := ""
+   _HMG_aControlHeadClick[ nControl ] := {}
+
+   _HMG_aControlMiscData1[ nControl ] := 0
+   _HMG_aControlMiscData2[ nControl ] := ""
+
+   /*-----------------------------------------------------------------------*/
+   /* OOP integration                                                       */
+   /*-----------------------------------------------------------------------*/
+
+   IF _HMG_lOOPEnabled
+      Eval( _HMG_bOnControlInit, nControl, cVarName )
+   ENDIF
+
+   /*-----------------------------------------------------------------------*/
+   /* Init callback                                                         */
+   /*-----------------------------------------------------------------------*/
+
+   Do_ControlEventProcedure( bInit, nControl )
 
 RETURN lSuccess

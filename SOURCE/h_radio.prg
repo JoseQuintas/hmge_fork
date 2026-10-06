@@ -35,7 +35,7 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
    www - https://harbour.github.io/
 
    "Harbour Project"
-   Copyright 1999-2025, https://harbour.github.io/
+   Copyright 1999-2026, https://harbour.github.io/
 
    "WHAT32"
    Copyright 2002 AJ Wos <andrwos@aust1.net>
@@ -48,310 +48,374 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #include "minigui.ch"
 #include "i_winuser.ch"
 
-*-----------------------------------------------------------------------------*
-FUNCTION _DefineRadioGroup ( ControlName, ParentFormName, x, y, aOptions, Value, ;
-      fontname, fontsize, tooltip, change, width, spacing, HelpId, invisible, ;
-      notabstop, bold, italic, underline, strikeout, backcolor, fontcolor, ;
-      transparent, horizontal, leftjustify, aReadOnly, autosize, gotfocus, lostfocus, aId, bInit )
-*-----------------------------------------------------------------------------*
-   LOCAL ParentFormHandle, ControlHandle, FontHandle
-   LOCAL aHandles[ 0 ]
-   LOCAL blInit
-   LOCAL mVar
-   LOCAL k
-   LOCAL BackCol, BackRow, BackWidth
-   LOCAL Style
-   LOCAL i, n
+/*---------------------------------------------------------------------------*/
+/* Layout constants                                                          */
+/*---------------------------------------------------------------------------*/
+
+#define RADIO_AUTOSIZE_EXTRA_W   21
+#define RADIO_AUTOSIZE_EXTRA_H    8
+#define RADIO_DEFAULT_HEIGHT     28
+#define RADIO_DEFAULT_SPACING    25
+
+/*---------------------------------------------------------------------------*/
+FUNCTION _DefineRadioGroup( ;
+      ControlName, ParentFormName, x, y, aOptions, Value, ;
+      FontName, FontSize, ToolTip, Change, Width, Spacing, ;
+      HelpId, Invisible, NoTabStop, Bold, Italic, Underline, ;
+      StrikeOut, BackColor, FontColor, Transparent, Horizontal, ;
+      LeftJustify, aReadOnly, AutoSize, GotFocus, LostFocus, ;
+      aId, bInit )
+/*---------------------------------------------------------------------------*/
+
+   LOCAL ParentFormHandle
+   LOCAL FontHandle
+   LOCAL aHandles := {}
+   LOCAL cVarName
+   LOCAL nIndex
+   LOCAL nBackRow, nBackCol, nBackWidth
    LOCAL lDialogInMemory
-   LOCAL oc := NIL, ow := NIL
+   LOCAL oControl := NIL, oWindow := NIL
 
 #ifdef _OBJECT_
-   ow := oDlu2Pixel()
+   oWindow := oDlu2Pixel()
 #endif
 
+   /* Apply defaults */
    hb_default( @Width, 120 )
-   __defaultNIL( @change, "" )
-   __defaultNIL( @gotfocus, "" )
-   __defaultNIL( @lostfocus, "" )
-   hb_default( @invisible, .F. )
-   hb_default( @notabstop, .F. )
-   hb_default( @horizontal, .F. )
-   hb_default( @autosize, .F. )
-   hb_default( @Spacing, iif( horizontal, iif( autosize, GetBorderWidth(), 0 ), 25 ) )
-   hb_default( @leftjustify, .F. )
+   hb_default( @Invisible, .F. )
+   hb_default( @NoTabStop, .F. )
+   hb_default( @Horizontal, .F. )
+   hb_default( @AutoSize, .F. )
+   hb_default( @LeftJustify, .F. )
 
+   __defaultNIL( @Change, "" )
+   __defaultNIL( @GotFocus, "" )
+   __defaultNIL( @LostFocus, "" )
+
+   hb_default( @Spacing, iif( Horizontal, iif( AutoSize, GetBorderWidth(), 0 ), RADIO_DEFAULT_SPACING ) )
+
+   /* Font handling */
    IF ( FontHandle := GetFontHandle( FontName ) ) != 0
-      GetFontParamByRef( FontHandle, @FontName, @FontSize, @bold, @italic, @underline, @strikeout )
+      GetFontParamByRef( FontHandle, @FontName, @FontSize, @Bold, @Italic, @Underline, @StrikeOut )
    ENDIF
 
+   /* Context from active window/dialog */
    IF _HMG_BeginWindowActive .OR. _HMG_BeginDialogActive
       ParentFormName := iif( _HMG_BeginDialogActive, _HMG_ActiveDialogName, _HMG_ActiveFormName )
       __defaultNIL( @FontName, _HMG_ActiveFontName )
       __defaultNIL( @FontSize, _HMG_ActiveFontSize )
    ENDIF
 
+   /* Adjust coordinates inside frames */
    IF _HMG_FrameLevel > 0 .AND. !_HMG_ParentWindowActive
-      x := x + _HMG_ActiveFrameCol [_HMG_FrameLevel]
-      y := y + _HMG_ActiveFrameRow [_HMG_FrameLevel]
-      ParentFormName := _HMG_ActiveFrameParentFormName [_HMG_FrameLevel]
+      x += _HMG_ActiveFrameCol[_HMG_FrameLevel]
+      y += _HMG_ActiveFrameRow[_HMG_FrameLevel]
+      ParentFormName := _HMG_ActiveFrameParentFormName[_HMG_FrameLevel]
    ENDIF
+
    lDialogInMemory := _HMG_DialogInMemory
 
-   IF .NOT. _IsWindowDefined ( ParentFormName ) .AND. .NOT. lDialogInMemory
+   /* Validation checks */
+   IF ! _IsWindowDefined( ParentFormName ) .AND. ! lDialogInMemory
       MsgMiniGuiError( "Window: " + IFNIL( ParentFormName, "Parent", ParentFormName ) + " is not defined." )
    ENDIF
 
-   IF ISCHAR ( ControlName ) .AND. ControlName == "0"
+   IF ISCHAR( ControlName ) .AND. ControlName == "0"
       ControlName := HMG_GetUniqueName()
    ENDIF
 
-   IF _IsControlDefined ( ControlName, ParentFormName ) .AND. .NOT. lDialogInMemory
-      MsgMiniGuiError ( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
+   IF _IsControlDefined( ControlName, ParentFormName ) .AND. ! lDialogInMemory
+      MsgMiniGuiError( "Control: " + ControlName + " Of " + ParentFormName + " Already defined." )
    ENDIF
 
-   IF ! ISARRAY ( aReadOnly )
-      aReadOnly := Array ( Len( aOptions ) )
-      AFill ( aReadOnly, .F. )
+   /* ReadOnly array initialization */
+   IF ! ISARRAY( aReadOnly )
+      aReadOnly := Array( Len( aOptions ) )
+      AFill( aReadOnly, .F. )
    ENDIF
 
-   mVar := '_' + ParentFormName + '_' + ControlName
-   k := _GetControlFree()
+   cVarName := "_" + ParentFormName + "_" + ControlName
+   nIndex   := _GetControlFree()
 
+   nBackCol := x
+   nBackRow := y
+
+   /* Create the radio buttons (dialog or runtime) */
    IF _HMG_BeginDialogActive
-
       ParentFormHandle := _HMG_ActiveDialogHandle
 
-      Style := BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON + WS_GROUP
-      IF !notabstop
-         Style += WS_TABSTOP
-      ENDIF
-
-      IF !invisible
-         Style += WS_VISIBLE
-      ENDIF
-
-      IF lDialogInMemory         //Dialog Template
-         //          {{'ID',k/hwnd,class,Style,ExStyle,x,y,w,h,caption,HelpId,tooltip,font,size, bold, italic, underline, strikeout}}  --->_HMG_aDialogItems
-         style := BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON
-         IF !invisible
-            Style += WS_VISIBLE
-         ENDIF
-         aHandles := { 0 }
-
-         BackCol := x
-         BackRow := y
-
-         FOR n := 1 TO Len( aId )
-
-            blInit := iif( n == Len( aId ), {|x, y, z| InitDialogRadioGroup( x,y,z ) }, {|| Nil } )
-            AAdd( _HMG_aDialogItems, { aId[n], k, "button", style, 0, x, y, width, spacing, aOptions[n], HelpId, tooltip, FontName, FontSize, bold, italic, underline, strikeout, blInit, _HMG_BeginTabActive, .F. , _HMG_ActiveTabPage } )
-            IF horizontal
-               x += Width + Spacing
-            ELSE
-               y += Spacing
-            ENDIF
-         NEXT
-
+      IF lDialogInMemory
+         _CreateDialogRadioGroupTemplate( aHandles, aOptions, aId, x, y, Width, Spacing, ;
+            Horizontal, Invisible, ToolTip, HelpId, FontName, FontSize, ;
+            Bold, Italic, Underline, StrikeOut, nIndex )
       ELSE
-
-         ControlHandle := GetDialogItemHandle( ParentFormHandle, aId[1] )
-
-         SetWindowStyle ( ControlHandle, Style, .T. )
-
-         x := GetWindowCol ( Controlhandle )
-         y := GetWindowRow ( Controlhandle )
-         width := GetWindowWidth  ( Controlhandle )
-         spacing := GetWindowHeight ( Controlhandle )
-
-         FOR i := 1 TO Len ( aId )
-
-            ControlHandle := GetDialogItemHandle( ParentFormHandle, aId[i] )
-            SetWindowStyle ( ControlHandle, BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON, .T. )
-
-            IF !invisible
-               SetWindowStyle ( ControlHandle, WS_VISIBLE, .T. )
-            ENDIF
-
-            IF ISARRAY( aOptions )
-               IF i <= Len( aOptions )
-                  SetWindowText ( ControlHandle , aOptions[i] )
-               ENDIF
-            ENDIF
-
-            IF FontHandle != 0
-               _SetFontHandle( ControlHandle, FontHandle )
-            ELSE
-               __defaultNIL( @FontName, _HMG_DefaultFontName )
-               __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-               FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
-            ENDIF
-
-            AAdd ( aHandles , ControlHandle )
-
-         NEXT i
-
+         _CreateDialogRadioGroupControls( aHandles, ParentFormHandle, aOptions, aId, ;
+            Invisible, NoTabStop, FontHandle, @FontName, @FontSize, ;
+            Bold, Italic, Underline, StrikeOut, @x, @y, @Width, @Spacing )
       ENDIF
-
    ELSE
+      ParentFormHandle := GetFormHandle( ParentFormName )
 
-      ParentFormHandle := GetFormHandle ( ParentFormName )
-
-      BackCol := x
-      BackRow := y
-
-      ControlHandle := InitRadioGroup ( ParentFormHandle, aOptions [1], 0, x, y , '' , 0 , width, invisible, notabstop, leftjustify )
-
-      IF FontHandle != 0
-         _SetFontHandle ( ControlHandle, FontHandle )
-      ELSE
-         __defaultNIL( @FontName, _HMG_DefaultFontName )
-         __defaultNIL( @FontSize, _HMG_DefaultFontSize )
-         FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
-      ENDIF
-
-      IF autosize
-         BackWidth := Width
-         Width := GetTextWidth ( NIL, aOptions [1], FontHandle ) + 21
-         MoveWindow ( ControlHandle, x, y, width, GetTextHeight ( NIL, aOptions [1], FontHandle ) + 8, .T. )
-      ENDIF
-
-      AAdd ( aHandles , ControlHandle )
-
-      FOR i := 2 TO Len ( aOptions )
-
-         IF horizontal
-            x += Width + Spacing
-         ELSE
-            y += Spacing
-         ENDIF
-
-         ControlHandle := InitRadioButton ( ParentFormHandle, aOptions [i], 0, x, y , '' , 0 , width, invisible, leftjustify )
-
-         IF FontHandle != 0
-            _SetFontHandle ( ControlHandle, FontHandle )
-         ELSE
-            FontHandle := _SetFont ( ControlHandle, FontName, FontSize, bold, italic, underline, strikeout )
-         ENDIF
-
-         IF autosize
-            Width := GetTextWidth ( NIL, aOptions [i], FontHandle ) + 21
-            MoveWindow ( ControlHandle, x, y, width, GetTextHeight ( NIL, aOptions [i], FontHandle ) + 8, .T. )
-         ENDIF
-
-         AAdd ( aHandles , ControlHandle )
-
-         IF tooltip != NIL
-            SetToolTip ( aHandles [i] , tooltip , GetFormToolTipHandle ( ParentFormName ) )
-         ENDIF
-
-      NEXT i
-
+      _CreateRuntimeRadioGroup( aHandles, ParentFormHandle, aOptions, x, y, Width, Spacing, ;
+         Horizontal, Invisible, NoTabStop, LeftJustify, AutoSize, FontHandle, ;
+         @FontName, @FontSize, Bold, Italic, Underline, StrikeOut, ToolTip, ;
+         ParentFormName, @nBackWidth )
    ENDIF
 
-   IF .NOT. lDialogInMemory
-
-      IF _HMG_IsThemed .AND. ( IsArrayRGB ( backcolor ) .OR. IsArrayRGB ( fontcolor ) )
-         AEval ( aHandles, { | h | SetWindowTheme ( h, "", "" ) } )
+   /* Theme and tooltip handling */
+   IF ! lDialogInMemory
+      IF _HMG_IsThemed .AND. ( IsArrayRGB( BackColor ) .OR. IsArrayRGB( FontColor ) )
+         AEval( aHandles, {|h| SetWindowTheme( h, "", "" ) } )
       ENDIF
 
       IF _HMG_BeginTabActive
-         AAdd ( _HMG_ActiveTabCurrentPageMap , aHandles )
+         AAdd( _HMG_ActiveTabCurrentPageMap, aHandles )
       ENDIF
 
-      IF tooltip != NIL
-         SetToolTip ( aHandles [1] , tooltip , GetFormToolTipHandle ( ParentFormName ) )
+      IF ToolTip != NIL
+         SetToolTip( aHandles[1], ToolTip, GetFormToolTipHandle( ParentFormName ) )
       ENDIF
-
    ENDIF
 
+   /* Register public variable and control metadata */
 #ifdef _NAMES_LIST_
-   _SetNameList( mVar , k )
+   _SetNameList( cVarName, nIndex )
 #else
-   Public &mVar. := k
+   PUBLIC &cVarName. := nIndex
 #endif
 
-   _HMG_aControlType [k] :=  "RADIOGROUP"
-   _HMG_aControlNames  [k] :=  ControlName
-   _HMG_aControlHandles  [k] :=  aHandles
-   _HMG_aControlParenthandles [k] :=  ParentFormHandle
-   _HMG_aControlIds  [k] :=  aId
-   _HMG_aControlProcedures  [k] :=  ""
-   _HMG_aControlPageMap  [k] := aReadOnly
-   _HMG_aControlValue  [k] :=  iif( ISNUMERIC ( Value ), Value, 0 )
-   _HMG_aControlInputMask  [k] :=  transparent
-   _HMG_aControllostFocusProcedure  [k] :=  lostfocus
-   _HMG_aControlGotFocusProcedure  [k] :=  gotfocus
-   _HMG_aControlChangeProcedure  [k] :=  change
-   _HMG_aControlDeleted  [k] :=  .F.
-   _HMG_aControlBkColor [k] :=  backcolor
-   _HMG_aControlFontColor  [k] :=  fontcolor
-   _HMG_aControlDblClick  [k] :=  _HMG_ActiveTabButtons
-   _HMG_aControlHeadClick  [k] :=  autosize
-   _HMG_aControlRow  [k] :=  BackRow
-   _HMG_aControlCol  [k] :=  BackCol
-   _HMG_aControlWidth  [k] :=  iif( autosize, BackWidth, Width )
-   _HMG_aControlHeight  [k] :=  iif( horizontal, 28, Spacing * Len ( aOptions ) + GetBorderHeight() )
-   _HMG_aControlSpacing  [k] :=  Spacing
-   _HMG_aControlContainerRow  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameRow [_HMG_FrameLevel] , -1 )
-   _HMG_aControlContainerCol  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameCol [_HMG_FrameLevel] , -1 )
-   _HMG_aControlPicture  [k] :=  .NOT. NoTabStop
-   _HMG_aControlContainerHandle  [k] :=  0
-   _HMG_aControlFontName  [k] :=  fontname
-   _HMG_aControlFontSize  [k] :=  fontsize
-   _HMG_aControlFontAttributes  [k] :=  { bold, italic, underline, strikeout }
-   _HMG_aControlToolTip  [k] :=   tooltip
-   _HMG_aControlRangeMin  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveTabName , '' )
-   _HMG_aControlRangeMax  [k] :=  iif ( _HMG_FrameLevel > 0 , _HMG_ActiveFrameParentFormName [_HMG_FrameLevel] , '' )
-   _HMG_aControlCaption  [k] :=   aOptions
-   _HMG_aControlVisible  [k] :=   iif( invisible, FALSE, TRUE )
-   _HMG_aControlHelpId  [k] :=   HelpId
-   _HMG_aControlFontHandle  [k] :=   FontHandle
-   _HMG_aControlBrushHandle  [k] :=  0
-   _HMG_aControlEnabled  [k] :=  .T.
-   _HMG_aControlMiscData1 [k] := horizontal
-   _HMG_aControlMiscData2 [k] := ''
+   /* Store control properties in HMG arrays */
+   _HMG_aControlType[nIndex]               := "RADIOGROUP"
+   _HMG_aControlNames[nIndex]              := ControlName
+   _HMG_aControlHandles[nIndex]            := aHandles
+   _HMG_aControlParentHandles[nIndex]      := ParentFormHandle
+   _HMG_aControlIds[nIndex]                := aId
+   _HMG_aControlValue[nIndex]              := iif( ISNUMERIC( Value ), Value, 0 )
+   _HMG_aControlPageMap[nIndex]            := aReadOnly
+   _HMG_aControlDeleted[nIndex]            := .F.
+   _HMG_aControlBkColor[nIndex]            := BackColor
+   _HMG_aControlFontColor[nIndex]          := FontColor
+   _HMG_aControlLostFocusProcedure[nIndex] := LostFocus
+   _HMG_aControlGotFocusProcedure[nIndex]  := GotFocus
+   _HMG_aControlChangeProcedure[nIndex]    := Change
+   _HMG_aControlRow[nIndex]                := nBackRow
+   _HMG_aControlCol[nIndex]                := nBackCol
+   _HMG_aControlWidth[nIndex]              := iif( AutoSize, nBackWidth, Width )
+   _HMG_aControlHeight[nIndex]             := iif( Horizontal, RADIO_DEFAULT_HEIGHT, Spacing * Len( aOptions ) + GetBorderHeight() )
+   _HMG_aControlSpacing[nIndex]            := Spacing
+   _HMG_aControlInputMask[nIndex]          := Transparent
+   _HMG_aControlContainerRow[nIndex]       := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameRow[_HMG_FrameLevel], -1 )
+   _HMG_aControlContainerCol[nIndex]       := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameCol[_HMG_FrameLevel], -1 )
+   _HMG_aControlPicture[nIndex]            := ! NoTabStop
+   _HMG_aControlContainerHandle[nIndex]    := 0
+   _HMG_aControlFontName[nIndex]           := FontName
+   _HMG_aControlFontSize[nIndex]           := FontSize
+   _HMG_aControlFontAttributes[nIndex]     := { Bold, Italic, Underline, StrikeOut }
+   _HMG_aControlToolTip[nIndex]            := ToolTip
+   _HMG_aControlCaption[nIndex]            := aOptions
+   _HMG_aControlProcedures[nIndex]         := ""
+   _HMG_aControlDblClick[nIndex]           := _HMG_ActiveTabButtons
+   _HMG_aControlHeadClick[nIndex]          := AutoSize
+   _HMG_aControlRangeMin[nIndex]           := iif( _HMG_FrameLevel > 0, _HMG_ActiveTabName, "" )
+   _HMG_aControlRangeMax[nIndex]           := iif( _HMG_FrameLevel > 0, _HMG_ActiveFrameParentFormName[_HMG_FrameLevel], "" )
+   _HMG_aControlBrushHandle[nIndex]        := 0
+   _HMG_aControlVisible[nIndex]            := iif( Invisible, FALSE, TRUE )
+   _HMG_aControlHelpId[nIndex]             := HelpId
+   _HMG_aControlFontHandle[nIndex]         := FontHandle
+   _HMG_aControlEnabled[nIndex]            := .T.
+   _HMG_aControlMiscData1[nIndex]          := Horizontal
+   _HMG_aControlMiscData2[nIndex]          := ""
 
-   IF .NOT. lDialogInMemory
-
-      IF ISNUMERIC ( Value ) .AND. Value > 0  // EF 93
-         _SetValue ( , , Value , k )
+   /* Initial value and ReadOnly setup */
+   IF ! lDialogInMemory
+      IF ISNUMERIC( Value ) .AND. Value > 0
+         _SetValue( , , Value, nIndex )
       ENDIF
-
-      SetProperty ( ParentFormName , ControlName , 'ReadOnly' , aReadOnly )
-
+      SetProperty( ParentFormName, ControlName, "ReadOnly", aReadOnly )
    ENDIF
 
+   /* OOP support */
    IF _HMG_lOOPEnabled
-      Eval ( _HMG_bOnControlInit, k, mVar )
+      Eval( _HMG_bOnControlInit, nIndex, cVarName )
 #ifdef _OBJECT_
-      ow := _WindowObj ( ParentFormHandle )
-      oc := _ControlObj( ControlHandle )
+      oWindow  := _WindowObj( ParentFormHandle )
+      oControl := _ControlObj( aHandles[1] )
 #endif
    ENDIF
 
-   Do_ControlEventProcedure ( bInit, k, ow, oc )
+   Do_ControlEventProcedure( bInit, nIndex, oWindow, oControl )
 
 RETURN Nil
 
-*-----------------------------------------------------------------------------*
-FUNCTION InitDialogRadioGroup( ParentName, ControlHandle, k )
-*-----------------------------------------------------------------------------*
-   LOCAL aHandles
-   LOCAL Value
+/*---------------------------------------------------------------------------*/
+STATIC FUNCTION _SetRadioGroupFont( hControl, FontHandle, FontName, FontSize, ;
+      Bold, Italic, Underline, StrikeOut )
 
-   aHandles := _HMG_aControlHandles [k]
-   Value := _HMG_aControlValue [k]
-// EF 93
-   IF ISNUMERIC ( Value ) .AND. Value > 0 .AND. ControlHandle > 0
-      _SetValue ( , , Value , k )
+   IF FontHandle != 0
+      _SetFontHandle( hControl, FontHandle )
+   ELSE
+      __defaultNIL( @FontName, _HMG_DefaultFontName )
+      __defaultNIL( @FontSize, _HMG_DefaultFontSize )
+      FontHandle := _SetFont( hControl, FontName, FontSize, Bold, Italic, Underline, StrikeOut )
    ENDIF
-//JP V40
-   IF Len( _HMG_aControlIds [k] ) == Len( aHandles ) .AND. ParentName != NIL
-      SetProperty ( ParentName , _HMG_aControlNames [k] , 'ReadOnly' , _HMG_aControlPageMap [k] )
+
+RETURN FontHandle
+
+/*---------------------------------------------------------------------------*/
+/* Runtime radio group creation (normal window)                              */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _CreateRuntimeRadioGroup( ;
+      aHandles, ParentFormHandle, aOptions, x, y, Width, Spacing, ;
+      Horizontal, Invisible, NoTabStop, LeftJustify, AutoSize, ;
+      FontHandle, FontName, FontSize, Bold, Italic, Underline, StrikeOut, ;
+      ToolTip, ParentFormName, nBackWidth )
+
+   LOCAL i, hControl
+
+   /* First radio button */
+   hControl := InitRadioGroup( ParentFormHandle, aOptions[1], 0, x, y, "", 0, Width, Invisible, NoTabStop, LeftJustify )
+
+   /* Font setup */
+   FontHandle := _SetRadioGroupFont( hControl, FontHandle, FontName, FontSize, Bold, Italic, Underline, StrikeOut )
+
+   /* AutoSize adjustment for first button */
+   IF AutoSize
+      nBackWidth := Width
+      Width := GetTextWidth( NIL, aOptions[1], FontHandle ) + RADIO_AUTOSIZE_EXTRA_W
+      MoveWindow( hControl, x, y, Width, GetTextHeight( NIL, aOptions[1], FontHandle ) + RADIO_AUTOSIZE_EXTRA_H, .T. )
    ENDIF
-// JP 62
-   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]  // Modal
-      _HMG_aControlDeleted [k] := .T.
+
+   AAdd( aHandles, hControl )
+
+   /* Remaining radio buttons */
+   FOR i := 2 TO Len( aOptions )
+      IF Horizontal
+         x += Width + Spacing
+      ELSE
+         y += Spacing
+      ENDIF
+
+      hControl := InitRadioButton( ParentFormHandle, aOptions[i], 0, x, y, "", 0, Width, Invisible, LeftJustify )
+
+      FontHandle := _SetRadioGroupFont( hControl, FontHandle, FontName, FontSize, Bold, Italic, Underline, StrikeOut )
+
+      /* AutoSize adjustment for current button */
+      IF AutoSize
+         Width := GetTextWidth( NIL, aOptions[i], FontHandle ) + RADIO_AUTOSIZE_EXTRA_W
+         MoveWindow( hControl, x, y, Width, GetTextHeight( NIL, aOptions[i], FontHandle ) + RADIO_AUTOSIZE_EXTRA_H, .T. )
+      ENDIF
+
+      AAdd( aHandles, hControl )
+
+      IF ToolTip != NIL
+         SetToolTip( aHandles[i], ToolTip, GetFormToolTipHandle( ParentFormName ) )
+      ENDIF
+   NEXT
+
+RETURN Nil
+
+/*---------------------------------------------------------------------------*/
+/* Dialog template creation (for resource dialogs)                           */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _CreateDialogRadioGroupTemplate( ;
+      aHandles, aOptions, aId, x, y, Width, Spacing, Horizontal, Invisible, ;
+      ToolTip, HelpId, FontName, FontSize, Bold, Italic, Underline, StrikeOut, nIndex )
+
+   LOCAL n, nStyle, bInit
+
+   nStyle := BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON
+   IF ! Invisible
+      nStyle += WS_VISIBLE
+   ENDIF
+
+   AAdd( aHandles, 0 )
+
+   FOR n := 1 TO Len( aId )
+      bInit := iif( n == Len( aId ), {|xParent, hControl, k| InitDialogRadioGroup( xParent, hControl, k ) }, {|| Nil } )
+
+      AAdd( _HMG_aDialogItems, { ;
+         aId[n], nIndex, "button", nStyle, 0, x, y, Width, Spacing, ;
+         aOptions[n], HelpId, ToolTip, FontName, FontSize, Bold, Italic, Underline, StrikeOut, ;
+         bInit, _HMG_BeginTabActive, .F., _HMG_ActiveTabPage } )
+
+      IF Horizontal
+         x += Width + Spacing
+      ELSE
+         y += Spacing
+      ENDIF
+   NEXT
+
+RETURN Nil
+
+/*---------------------------------------------------------------------------*/
+/* Dialog runtime control initialization                                     */
+/*---------------------------------------------------------------------------*/
+
+STATIC FUNCTION _CreateDialogRadioGroupControls( ;
+      aHandles, ParentFormHandle, aOptions, aId, Invisible, NoTabStop, ;
+      FontHandle, FontName, FontSize, Bold, Italic, Underline, StrikeOut, ;
+      x, y, Width, Spacing )
+
+   LOCAL hControl, n, nStyle
+
+   nStyle := BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON + WS_GROUP
+   IF ! NoTabStop
+      nStyle += WS_TABSTOP
+   ENDIF
+   IF ! Invisible
+      nStyle += WS_VISIBLE
+   ENDIF
+
+   /* First control - get metrics */
+   hControl := GetDialogItemHandle( ParentFormHandle, aId[1] )
+   SetWindowStyle( hControl, nStyle, .T. )
+
+   x       := GetWindowCol( hControl )
+   y       := GetWindowRow( hControl )
+   Width   := GetWindowWidth( hControl )
+   Spacing := GetWindowHeight( hControl )
+
+   /* Configure all radio buttons */
+   FOR n := 1 TO Len( aId )
+      hControl := GetDialogItemHandle( ParentFormHandle, aId[n] )
+
+      SetWindowStyle( hControl, BS_NOTIFY + WS_CHILD + BS_AUTORADIOBUTTON, .T. )
+      IF ! Invisible
+         SetWindowStyle( hControl, WS_VISIBLE, .T. )
+      ENDIF
+
+      IF ISARRAY( aOptions ) .AND. n <= Len( aOptions )
+         SetWindowText( hControl, aOptions[n] )
+      ENDIF
+
+      FontHandle := _SetRadioGroupFont( hControl, FontHandle, FontName, FontSize, Bold, Italic, Underline, StrikeOut )
+
+      AAdd( aHandles, hControl )
+   NEXT
+
+RETURN Nil
+
+/*---------------------------------------------------------------------------*/
+/* Dialog initialization callback                                            */
+/*---------------------------------------------------------------------------*/
+
+FUNCTION InitDialogRadioGroup( ParentName, ControlHandle, nIndex )
+
+   LOCAL aHandles := _HMG_aControlHandles[nIndex]
+   LOCAL Value    := _HMG_aControlValue[nIndex]
+
+   IF ISNUMERIC( Value ) .AND. Value > 0 .AND. ControlHandle > 0
+      _SetValue( , , Value, nIndex )
+   ENDIF
+
+   IF Len( _HMG_aControlIds[nIndex] ) == Len( aHandles ) .AND. ParentName != NIL
+      SetProperty( ParentName, _HMG_aControlNames[nIndex], "ReadOnly", _HMG_aControlPageMap[nIndex] )
+   ENDIF
+
+   IF Len( _HMG_aDialogTemplate ) != 0 .AND. _HMG_aDialogTemplate[3]
+      _HMG_aControlDeleted[nIndex] := .T.
    ENDIF
 
 RETURN Nil
