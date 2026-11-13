@@ -268,7 +268,9 @@ cFilePath( <cFile> ) + "\" + cFileNoExt( <cFile> ) + <cExt>
 #  xtranslate hb_oemtoansi( <x> )         => win_oemtoansi( <x> )
 #  xtranslate __MvGetDef( <x> , <v> )     => iif( __MvExist ( <x> ), __MvGet( <x> ), iif( ValType( <v> ) <> "U", <v>, NIL ) )
 #  xtranslate __MvGetDef( <x> )           => iif( __MvExist ( <x> ), __MvGet( <x> ), NIL )
+#  if ( __HARBOUR__ - 0 >= 0x030400 )
 #  xtranslate hb_osIsWin10()              => os_IsWin10()
+#  endif
 #endif
 
 #  xtranslate IsExe64()                   => ( hb_Version( HB_VERSION_BITWIDTH ) == 64 )
